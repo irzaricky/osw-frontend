@@ -18,7 +18,7 @@ const router = createRouter({
     { 
       path: '/login', 
       component: () => import('./pages/login.vue'),
-      meta: { layout: 'auth' }
+      meta: { layout: 'auth', isPublic: true }
     },
     { 
       path: '/logout', 
@@ -49,6 +49,21 @@ const router = createRouter({
       path: '/warehouse', 
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/users', 
+      component: () => import('./pages/master-data/users/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/error',
+      component: () => import('./pages/error/GenericError.vue'),
+      meta: { layout: 'default', isPublic: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      component: () => import('./pages/error/NotFound.vue'),
+      meta: { layout: 'default', isPublic: true }
     }
   ],
   history: createWebHistory()
@@ -57,9 +72,9 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
   
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (!authStore.isAuthenticated && !to.meta.isPublic) {
     next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
+  } else if (authStore.isAuthenticated && to.path === '/login') {
     next('/')
   } else {
     next()

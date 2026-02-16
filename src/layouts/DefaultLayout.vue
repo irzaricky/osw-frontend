@@ -18,8 +18,14 @@ const links = [[{
   icon: 'i-lucide-database',
   defaultOpen: true,
   children: [{
-    label: 'User Management',
-    to: '/users',
+    label: 'Users',
+    to: '/master-data/users',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Audit Logs',
+    to: '/master-data/logs',
     onSelect: () => {
       open.value = false
     }

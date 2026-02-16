@@ -8,8 +8,13 @@ import AuthLayout from './layouts/AuthLayout.vue'
 const toast = useToast()
 const route = useRoute()
 
+const layouts = {
+  default: DefaultLayout,
+  auth: AuthLayout
+}
+
 const layout = computed(() => {
-  return route.meta.layout === 'auth' ? AuthLayout : DefaultLayout
+  return layouts[route.meta.layout as keyof typeof layouts] || DefaultLayout
 })
 
 const cookie = useStorage('cookie-consent', 'pending')
