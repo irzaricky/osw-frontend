@@ -6,29 +6,68 @@ import { createPinia } from 'pinia'
 import ui from '@nuxt/ui/vue-plugin'
 
 import App from './App.vue'
+import { useAuthStore } from './stores/auth.store'
 
 const app = createApp(App)
+const pinia = createPinia()
 
-app.use(createRouter({
+app.use(pinia)
+
+const router = createRouter({
   routes: [
-    { path: '/', component: () => import('./pages/index.vue') },
-    { path: '/inbox', component: () => import('./pages/inbox.vue') },
-    { path: '/customers', component: () => import('./pages/customers.vue') },
-    {
-      path: '/settings',
-      component: () => import('./pages/settings.vue'),
-      children: [
-        { path: '', component: () => import('./pages/settings/index.vue') },
-        { path: 'members', component: () => import('./pages/settings/members.vue') },
-        { path: 'notifications', component: () => import('./pages/settings/notifications.vue') },
-        { path: 'security', component: () => import('./pages/settings/security.vue') },
-      ]
+    { 
+      path: '/login', 
+      component: () => import('./pages/login.vue'),
+      meta: { layout: 'auth' }
+    },
+    { 
+      path: '/logout', 
+      component: () => import('./pages/logout.vue'),
+      meta: { layout: 'auth' }
+    },
+    { 
+      path: '/', 
+      component: () => import('./pages/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/users', 
+      component: () => import('./pages/users.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/sales', 
+      component: () => import('./pages/sales.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan', 
+      component: () => import('./pages/production-plan.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse', 
+      component: () => import('./pages/warehouse.vue'),
+      meta: { layout: 'default', requiresAuth: true }
     }
   ],
   history: createWebHistory()
-}))
+})
 
-app.use(createPinia())
+router.beforeEach((to, _from, next) => {
+  const authStore = useAuthStore()
+  
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+  } else if (to.path === '/login' && authStore.isAuthenticated) {
+    next('/')
+  } else {
+    next()
+  }
+})
+
+app.use(router)
 app.use(ui)
 
 app.mount('#app')
+
