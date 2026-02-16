@@ -1,5 +1,5 @@
 import { api } from '../../plugins/axios'
-import type { User } from '../../types'
+import type { User } from '../../types/master-data/user'
 
 export interface UserParams {
   page?: number
