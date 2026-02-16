@@ -3,30 +3,46 @@ import type { AvatarProps } from '@nuxt/ui'
 export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
 
+export interface UserDetail {
+  id: number
+  user_id: number
+  employee_number?: string
+  full_name?: string
+  phone_number?: string
+  factory_id?: number
+  line_id?: number
+  factory?: { id: number; name: string }
+  line?: { id: number; name: string }
+  createdAt?: string
+  updatedAt?: string
+  deleted_at?: string | null
+}
+
 export interface User {
   id: number
-  username: string
   email: string
-  password?: string // Optional for update
+  password?: string
   role_id: number
-  role_name?: string // Optional if fetched with role
   active?: boolean
   role?: {
     id: number
     name: string
     division?: {
-        id: number
-        name: string
+      id: number
+      name: string
     }
   }
+  user_detail?: UserDetail
+  createdAt?: string
+  updatedAt?: string
+  deleted_at?: string | null
+  
+  // Flat fields used for create/update form payload
   full_name?: string
   phone_number?: string
+  employee_number?: string
   factory_id?: number
-  factory_name?: string
   line_id?: number
-  line_name?: string
-  created_at?: string
-  updated_at?: string
 }
 
 export interface Notification {
