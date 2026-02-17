@@ -5,8 +5,13 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia } from 'pinia'
 import ui from '@nuxt/ui/vue-plugin'
 
+import { addCollection } from '@iconify/vue'
+import lucideIcons from '@iconify-json/lucide/icons.json'
+
 import App from './App.vue'
 import { useAuthStore } from './stores/auth.store'
+
+addCollection(lucideIcons)
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -53,6 +58,11 @@ const router = createRouter({
     { 
       path: '/master-data/users', 
       component: () => import('./pages/master-data/users/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/vehicles', 
+      component: () => import('./pages/master-data/vehicles/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     {
