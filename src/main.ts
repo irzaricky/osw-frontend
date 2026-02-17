@@ -58,12 +58,12 @@ const router = createRouter({
     {
       path: '/error',
       component: () => import('./pages/error/GenericError.vue'),
-      meta: { layout: 'default', isPublic: true }
+      meta: { layout: 'auth', isPublic: true }
     },
     {
       path: '/:pathMatch(.*)*',
       component: () => import('./pages/error/NotFound.vue'),
-      meta: { layout: 'default', isPublic: true }
+      meta: { layout: 'auth', isPublic: true }
     }
   ],
   history: createWebHistory()
