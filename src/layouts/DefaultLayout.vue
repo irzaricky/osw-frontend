@@ -23,7 +23,15 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
-  }, {
+  },
+  {
+    label: 'Vehicles',
+    to: '/master-data/vehicles',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Audit Logs',
     to: '/master-data/logs',
     onSelect: () => {

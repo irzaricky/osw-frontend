@@ -9,13 +9,14 @@ import { useAppToast } from '../../../composables/useAppToast'
 import type { User } from '../../../types'
 import type { Row } from '@tanstack/table-core'
 
+import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import UserFilters from './components/UserFilters.vue'
 import UserBulkActions from './components/UserBulkActions.vue'
 import UserFormModal from './components/UserFormModal.vue'
 
 // Store
 const userStore = useUserStore()
-const { users, meta, loading, error } = storeToRefs(userStore)
+const { users, meta, loading } = storeToRefs(userStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef('table')
 
@@ -27,7 +28,12 @@ const uiComponents = {
   UDropdownMenu: resolveComponent('UDropdownMenu')
 }
 
-
+// Breadcrumbs
+const breadcrumbItems = [
+  { label: 'Home', to: '/' },
+  { label: 'Master Data' },
+  { label: 'Users' }
+]
 
 // State
 const search = ref('')
@@ -239,6 +245,9 @@ onMounted(() => {
 
 <template>
   <div class="p-6 space-y-6">
+    <!-- Breadcrumbs -->
+    <Breadcrumbs :items="breadcrumbItems" />
+
     <!-- Header -->
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
