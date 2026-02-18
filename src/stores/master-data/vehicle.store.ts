@@ -44,7 +44,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await vehicleService.addVehicle(formData)
+      const response = await vehicleService.createVehicle(formData)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -59,6 +59,25 @@ export const useVehicleStore = defineStore('vehicle', () => {
     error.value = null
     try {
       const response = await vehicleService.updateVehicle(id, formData)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateVehicleStatus(id: number | string, status: boolean) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await vehicleService.updateVehicleStatus(id, status)
+      // Optimistic update
+      const index = vehicles.value.findIndex(v => v.id === id)
+      if (index !== -1) {
+        vehicles.value[index].status = status
+      }
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -118,7 +137,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await vehicleService.addVehicleType(data)
+      const response = await vehicleService.createVehicleType(data)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -170,6 +189,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     fetchVehicleTypes,
     createVehicleType,
     updateVehicleType,
+    updateVehicleStatus,
     deleteVehicleType
   }
 })

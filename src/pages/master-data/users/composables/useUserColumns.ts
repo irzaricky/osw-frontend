@@ -51,7 +51,10 @@ export function useUserColumns(actions: ColumnActions, components: ColumnCompone
           'ariaLabel': 'Select row'
         })
     },
-    { accessorKey: 'id', header: 'ID' },
+    {
+      header: 'No',
+      cell: ({ row }) => row.index + 1
+    },
     {
       accessorKey: 'email',
       header: 'Email'

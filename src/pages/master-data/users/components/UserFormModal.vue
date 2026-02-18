@@ -28,7 +28,24 @@ watch(() => props.user, (val) => {
     delete form[key as keyof Partial<User>]
   }
   Object.assign(form, val)
+  
+  // Extract role_id from nested role object if needed
+  if (!form.role_id && val.role?.id) {
+    form.role_id = val.role.id
+  }
 }, { immediate: true, deep: true })
+
+// Watch for modal open to ensure fresh form in add mode
+watch(() => props.open, (isOpen) => {
+  if (isOpen && props.mode === 'add') {
+    // Clear all form fields
+    for (const key in form) {
+      delete form[key as keyof Partial<User>]
+    }
+    // Reset to empty user
+    Object.assign(form, props.user)
+  }
+})
 
 // Watch factory_id to emit update
 watch(() => form.factory_id, (val) => {
@@ -108,8 +125,10 @@ function close() {
     </template>
 
     <template #footer>
-      <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-      <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+      <div class="flex justify-end gap-2">
+        <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
+        <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+      </div>
     </template>
   </UModal>
 </template>

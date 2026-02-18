@@ -37,7 +37,10 @@ export function useVehicleColumns(actions: ColumnActions, components: ColumnComp
           'ariaLabel': 'Select row'
         })
     },
-    { accessorKey: 'id', header: 'ID' },
+    {
+      header: 'No',
+      cell: ({ row }) => row.index + 1
+    },
     {
       accessorKey: 'vehicle_code',
       header: 'Vehicle Code'
@@ -57,7 +60,7 @@ export function useVehicleColumns(actions: ColumnActions, components: ColumnComp
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const isActive = row.original.status ?? row.original.active
+        const isActive = row.original.status
         return h(
           UBadge,
           { color: isActive ? 'success' : 'error', variant: 'subtle' },
@@ -79,8 +82,8 @@ export function useVehicleColumns(actions: ColumnActions, components: ColumnComp
               onSelect: () => actions.onEdit(vehicle)
             },
             {
-              label: vehicle.status || vehicle.active ? 'Deactivate' : 'Activate',
-              icon: vehicle.status || vehicle.active ? 'i-lucide-toggle-right' : 'i-lucide-toggle-left',
+              label: vehicle.status ? 'Deactivate' : 'Activate',
+              icon: vehicle.status ? 'i-lucide-toggle-right' : 'i-lucide-toggle-left',
               onSelect: () => actions.onToggleStatus(vehicle)
             }
           ],

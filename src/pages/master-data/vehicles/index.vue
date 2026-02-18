@@ -5,7 +5,9 @@ import { useDebounceFn } from '@vueuse/core'
 import { useVehicleStore } from '../../../stores/master-data/vehicle.store'
 import { useVehicleDropdowns } from './composables/useVehicleDropdowns'
 import { useVehicleColumns } from './composables/useVehicleColumns'
+import { useVehicleTypeColumns } from './composables/useVehicleTypeColumns'
 import { useAppToast } from '../../../composables/useAppToast'
+import { useImageUrl } from '../../../composables/useImageUrl'
 import type { Vehicle, VehicleType } from '../../../types'
 import type { Row } from '@tanstack/table-core'
 
@@ -48,11 +50,14 @@ const tabs = [
 const search = ref('')
 const filters = reactive({
   vehicle_type_id: undefined as number | undefined,
-  active: undefined as string | undefined
+  status: undefined as string | undefined
 })
 
 // Dropdowns (shared composable)
 const { vehicleTypes: vehicleTypesDropdown, fetchVehicleTypes } = useVehicleDropdowns()
+
+// Image URL
+const { getImageUrl } = useImageUrl()
 
 // Modal state - Vehicles
 const isModalOpen = ref(false)
@@ -102,6 +107,11 @@ const { columns } = useVehicleColumns({
   onToggleStatus: handleStatusToggle
 }, uiComponents)
 
+const { columns: typeColumns } = useVehicleTypeColumns({
+  onEdit: openEditTypeModal,
+  onDelete: handleTypeDelete
+}, uiComponents)
+
 // Computed
 const selectedCount = computed((): number => {
   return table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0
@@ -115,7 +125,7 @@ async function fetchData() {
     search: search.value
   }
   if (filters.vehicle_type_id) params.vehicle_type_id = filters.vehicle_type_id
-  if (filters.active !== undefined && filters.active !== 'all') params.active = filters.active
+  if (filters.status !== undefined && filters.status !== 'all') params.status = filters.status
 
   await vehicleStore.fetchVehicles(params)
 }
@@ -135,7 +145,7 @@ function openEditModal(vehicle: Vehicle) {
     plate_number: vehicle.plate_number,
     vehicle_type_id: vehicle.vehicle_type?.id,
     image: vehicle.image,
-    status: vehicle.status ?? vehicle.active
+    status: vehicle.status
   })
   isModalOpen.value = true
 }
@@ -162,21 +172,12 @@ async function handleSave(formData: FormData) {
 // --- Row Actions - Vehicles ---
 async function handleStatusToggle(row: Vehicle) {
   try {
-    const formData = new FormData()
-    formData.append('vehicle_code', row.vehicle_code)
-    formData.append('plate_number', row.plate_number)
-    const vehicleTypeId = row.vehicle_type?.id || row.vehicle_type_id
-    if (vehicleTypeId) {
-      formData.append('vehicle_type_id', vehicleTypeId.toString())
-    }
-    
-    formData.append('status', (!(row.status ?? row.active)).toString())
-    
-    const res = await vehicleStore.updateVehicle(row.id, formData)
-    toastSuccess(res.message || `Vehicle ${row.status ?? row.active ? 'deactivated' : 'activated'}`)
-    fetchData()
+    const newStatus = !row.status
+    const res = await vehicleStore.updateVehicleStatus(row.id, newStatus)
+    toastSuccess(res.message || `Vehicle ${newStatus ? 'activated' : 'deactivated'}`)
   } catch (err) {
     toastError(err)
+    fetchData() // Re-fetch to ensure state is correct
   }
 }
 
@@ -367,7 +368,13 @@ onMounted(() => {
                 </div>
                 <div v-if="row.original.image" class="space-y-1">
                   <h4 class="font-semibold text-sm text-highlighted">Image</h4>
-                  <img :src="row.original.image" alt="Vehicle" class="w-32 h-32 object-cover rounded-lg border border-default" />
+                  <a :href="getImageUrl(row.original.image)" target="_blank" rel="noopener noreferrer">
+                    <img 
+                      :src="getImageUrl(row.original.image)" 
+                      alt="Vehicle" 
+                      class="w-32 h-32 object-cover rounded-lg border border-default cursor-pointer hover:opacity-90 transition-opacity"
+                    />
+                  </a>
                 </div>
               </div>
             </template>
@@ -403,49 +410,13 @@ onMounted(() => {
           </div>
 
           <!-- Vehicle Types Table -->
-          <div class="border border-default rounded-lg overflow-hidden">
-            <table class="w-full">
-              <thead class="bg-elevated border-b border-default">
-                <tr>
-                  <th class="px-4 py-3 text-left text-sm font-semibold">ID</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold">Name</th>
-                  <th class="px-4 py-3 text-left text-sm font-semibold">Load Capacity (kg)</th>
-                  <th class="px-4 py-3 text-right text-sm font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="loading" class="border-b border-default">
-                  <td colspan="4" class="px-4 py-8 text-center text-muted">Loading...</td>
-                </tr>
-                <tr v-else-if="!vehicleTypes.length" class="border-b border-default">
-                  <td colspan="4" class="px-4 py-8 text-center text-muted">No vehicle types found</td>
-                </tr>
-                <tr v-else v-for="vt in vehicleTypes" :key="vt.id" class="border-b border-default hover:bg-elevated/50">
-                  <td class="px-4 py-3 text-sm">{{ vt.id }}</td>
-                  <td class="px-4 py-3 text-sm">{{ vt.name }}</td>
-                  <td class="px-4 py-3 text-sm">{{ vt.load_capacity.toLocaleString() }}</td>
-                  <td class="px-4 py-3 text-right">
-                    <div class="flex gap-2 justify-end">
-                      <UButton 
-                        icon="i-lucide-edit" 
-                        color="neutral" 
-                        variant="ghost" 
-                        size="sm"
-                        @click="openEditTypeModal(vt)" 
-                      />
-                      <UButton 
-                        icon="i-lucide-trash-2" 
-                        color="error" 
-                        variant="ghost" 
-                        size="sm"
-                        @click="handleTypeDelete(vt)" 
-                      />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <UTable
+            ref="typeTable"
+            :data="vehicleTypes" 
+            :columns="typeColumns" 
+            :loading="loading"
+            class="w-full"
+          />
         </div>
       </template>
     </UTabs>

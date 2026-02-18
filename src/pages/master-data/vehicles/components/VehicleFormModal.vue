@@ -87,7 +87,7 @@ function handleSave() {
   
   // Add status only when editing
   if (props.mode === 'edit') {
-    const status = form.status ?? form.active ?? true
+    const status = form.status ?? true
     formData.append('status', status.toString())
   }
   

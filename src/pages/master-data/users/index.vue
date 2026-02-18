@@ -10,6 +10,7 @@ import type { User } from '../../../types'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
+import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import UserFilters from './components/UserFilters.vue'
 import UserBulkActions from './components/UserBulkActions.vue'
 import UserFormModal from './components/UserFormModal.vue'
@@ -68,6 +69,14 @@ function createEmptyUser(): Partial<User> {
 
 const currentUser = reactive<Partial<User>>(createEmptyUser())
 
+// Confirm dialog state
+const confirmDialog = reactive({
+  open: false,
+  title: '',
+  description: '',
+  action: null as (() => Promise<void>) | null
+})
+
 // Table state
 const rowSelection = ref({})
 const expanded = ref({})
@@ -114,7 +123,7 @@ function openEditModal(user: User) {
     id: user.id,
     email: user.email,
     password: '',
-    role_id: user.role_id,
+    role_id: user.role?.id || user.role_id,
     active: user.active,
     full_name: user.user_detail?.full_name || '',
     phone_number: user.user_detail?.phone_number || '',
@@ -158,29 +167,41 @@ async function handleStatusToggle(row: User) {
 }
 
 async function handleDelete(row: User) {
-  if (!confirm('Are you sure you want to delete this user?')) return
-  try {
-    const res = await userStore.deleteUser(row.id)
-    toastSuccess(res.message || 'User deleted')
-    fetchData()
-  } catch (err) {
-    toastError(err)
+  confirmDialog.title = 'Delete User'
+  confirmDialog.description = `Are you sure you want to delete user "${row.email}"? This action cannot be undone.`
+  confirmDialog.action = async () => {
+    try {
+      const res = await userStore.deleteUser(row.id)
+      toastSuccess(res.message || 'User deleted')
+      fetchData()
+      confirmDialog.open = false
+    } catch (err) {
+      toastError(err)
+      confirmDialog.open = false
+    }
   }
+  confirmDialog.open = true
 }
 
 async function handleBulkDelete() {
   const selectedRows = table.value?.tableApi?.getFilteredSelectedRowModel().rows || []
   if (!selectedRows.length) return
-  if (!confirm(`Are you sure you want to delete ${selectedRows.length} users?`)) return
-  try {
-    await Promise.all(selectedRows.map((row: Row<User>) => userStore.deleteUser(row.original.id)))
-    rowSelection.value = {}
-    rowSelection.value = {}
-    toastSuccess(`${selectedRows.length} users deleted`)
-    fetchData()
-  } catch (err) {
-    toastError(err)
+  
+  confirmDialog.title = 'Delete Multiple Users'
+  confirmDialog.description = `Are you sure you want to delete ${selectedRows.length} user(s)? This action cannot be undone.`
+  confirmDialog.action = async () => {
+    try {
+      await Promise.all(selectedRows.map((row: Row<User>) => userStore.deleteUser(row.original.id)))
+      rowSelection.value = {}
+      toastSuccess(`${selectedRows.length} users deleted`)
+      fetchData()
+      confirmDialog.open = false
+    } catch (err) {
+      toastError(err)
+      confirmDialog.open = false
+    }
   }
+  confirmDialog.open = true
 }
 
 async function handleExport() {
@@ -271,7 +292,6 @@ onMounted(() => {
         color="neutral" 
         variant="ghost" 
         label="Export" 
-        size="lg"
         @click="handleExport" 
       />
       <UButton 
@@ -348,6 +368,16 @@ onMounted(() => {
       :loading="loading"
       @save="handleSave"
       @update:factory-id="(id) => modalFactoryId = id"
+    />
+
+    <!-- Confirm Dialog -->
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Delete"
+      :loading="loading"
+      @confirm="confirmDialog.action?.()"
     />
   </div>
 </template>

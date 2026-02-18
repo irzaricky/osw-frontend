@@ -3,7 +3,7 @@ import type { DropdownOption } from '../composables/useVehicleDropdowns'
 
 interface Filters {
   vehicle_type_id: number | undefined
-  active: string | undefined
+  status: string | undefined
 }
 
 const props = defineProps<{
@@ -33,7 +33,7 @@ function updateFilter(key: keyof Filters, value: any) {
       @update:model-value="updateFilter('vehicle_type_id', $event)"
     />
     <USelect 
-      :model-value="props.filters.active"
+      :model-value="props.filters.status"
       :items="[
         { label: 'All Status', value: 'all' },
         { label: 'Active', value: 'true' },
@@ -41,7 +41,7 @@ function updateFilter(key: keyof Filters, value: any) {
       ]" 
       placeholder="Filter by Status" 
       class="w-full md:w-40"
-      @update:model-value="updateFilter('active', $event)"
+      @update:model-value="updateFilter('status', $event)"
     />
     
     <UInput 

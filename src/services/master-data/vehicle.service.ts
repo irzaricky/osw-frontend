@@ -1,12 +1,12 @@
 import { api } from '../../plugins/axios'
-import type { Vehicle, VehicleType } from '../../types/master-data/vehicle'
+import type { VehicleType } from '../../types/master-data/vehicle'
 
 export interface VehicleParams {
   page?: number
   limit?: number
   search?: string
   vehicle_type_id?: number
-  active?: boolean | string
+  status?: boolean | string
   [key: string]: any
 }
 
@@ -16,7 +16,7 @@ const vehicleService = {
     return api.get('/master-data/vehicles/dd-vehicle-types')
   },
 
-  addVehicleType(data: Partial<VehicleType>) {
+  createVehicleType(data: Partial<VehicleType>) {
     return api.post('/master-data/vehicles/types', data)
   },
 
@@ -37,7 +37,7 @@ const vehicleService = {
     return api.get(`/master-data/vehicles/${id}`)
   },
 
-  addVehicle(data: FormData) {
+  createVehicle(data: FormData) {
     return api.post('/master-data/vehicles/', data, {
       headers: {
         'Content-Type': 'multipart/form-data'
@@ -51,6 +51,10 @@ const vehicleService = {
         'Content-Type': 'multipart/form-data'
       }
     })
+  },
+
+  updateVehicleStatus(id: number | string, status: boolean) {
+    return api.patch(`/master-data/vehicles/${id}/status`, { status })
   },
 
   deleteVehicle(id: number | string) {
