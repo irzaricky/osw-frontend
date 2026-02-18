@@ -11,7 +11,7 @@ const emit = defineEmits<{
 <template>
   <div v-if="props.count > 0" class="flex items-center gap-3 p-3 bg-primary-50 dark:bg-primary-950 border border-primary-200 dark:border-primary-800 rounded-lg">
     <span class="text-sm font-medium text-primary-900 dark:text-primary-100">
-      {{ props.count }} user(s) selected
+      {{ props.count }} vehicle(s) selected
     </span>
     <UButton 
       icon="i-lucide-trash-2" 

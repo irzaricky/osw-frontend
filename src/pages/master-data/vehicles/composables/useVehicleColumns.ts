@@ -1,11 +1,11 @@
 import { h, type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { User } from '../../../../types'
+import type { Vehicle } from '../../../../types'
 
 interface ColumnActions {
-  onEdit: (user: User) => void
-  onDelete: (user: User) => void
-  onToggleStatus: (user: User) => void
+  onEdit: (vehicle: Vehicle) => void
+  onDelete: (vehicle: Vehicle) => void
+  onToggleStatus: (vehicle: Vehicle) => void
 }
 
 interface ColumnComponents {
@@ -15,24 +15,10 @@ interface ColumnComponents {
   UDropdownMenu: Component | string
 }
 
-// Helper to generate consistent colors based on division ID
-function getDivisionColor(divisionId?: number): string {
-  if (!divisionId) return 'neutral'
-  
-  const colors: Record<number, string> = {
-    1: 'secondary',
-    2: 'warning',
-    3: 'error',
-    4: 'neutral'
-  }
-
-  return colors[divisionId] || 'neutral'
-}
-
-export function useUserColumns(actions: ColumnActions, components: ColumnComponents) {
+export function useVehicleColumns(actions: ColumnActions, components: ColumnComponents) {
   const { UCheckbox, UBadge, UButton, UDropdownMenu } = components
 
-  const columns: TableColumn<User>[] = [
+  const columns: TableColumn<Vehicle>[] = [
     {
       id: 'select',
       header: ({ table }) =>
@@ -56,27 +42,25 @@ export function useUserColumns(actions: ColumnActions, components: ColumnCompone
       cell: ({ row }) => row.index + 1
     },
     {
-      accessorKey: 'email',
-      header: 'Email'
+      accessorKey: 'vehicle_code',
+      header: 'Vehicle Code'
     },
     {
-      accessorKey: 'user_detail.full_name',
-      header: 'Full Name'
+      accessorKey: 'plate_number',
+      header: 'Plate Number'
     },
     {
-      accessorKey: 'role.name',
-      header: 'Role',
+      accessorKey: 'vehicle_type.name',
+      header: 'Vehicle Type',
       cell: ({ row }) => {
-        const divisionId = row.original.role?.division?.id
-        const color = getDivisionColor(divisionId)
-        return h(UBadge, { color, variant: 'subtle' }, () => row.original.role?.name || '-')
+        return h(UBadge, { color: 'primary', variant: 'subtle' }, () => row.original.vehicle_type?.name || '-')
       }
     },
     {
-      accessorKey: 'active',
+      accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const isActive = row.original.active
+        const isActive = row.original.status
         return h(
           UBadge,
           { color: isActive ? 'success' : 'error', variant: 'subtle' },
@@ -88,22 +72,19 @@ export function useUserColumns(actions: ColumnActions, components: ColumnCompone
       id: 'actions',
       header: '',
       cell: ({ row }) => {
-        const user = row.original
-        const isSuperadmin = user.role?.name === 'Superadmin'
+        const vehicle = row.original
 
         const items = [
           [
             {
               label: 'Edit',
               icon: 'i-lucide-edit',
-              disabled: isSuperadmin,
-              onSelect: () => actions.onEdit(user)
+              onSelect: () => actions.onEdit(vehicle)
             },
             {
-              label: user.active ? 'Deactivate' : 'Activate',
-              icon: user.active ? 'i-lucide-user-x' : 'i-lucide-user-check',
-              disabled: isSuperadmin,
-              onSelect: () => actions.onToggleStatus(user)
+              label: vehicle.status ? 'Deactivate' : 'Activate',
+              icon: vehicle.status ? 'i-lucide-toggle-right' : 'i-lucide-toggle-left',
+              onSelect: () => actions.onToggleStatus(vehicle)
             }
           ],
           [
@@ -111,8 +92,7 @@ export function useUserColumns(actions: ColumnActions, components: ColumnCompone
               label: 'Delete',
               icon: 'i-lucide-trash-2',
               color: 'error' as const,
-              disabled: isSuperadmin,
-              onSelect: () => actions.onDelete(user)
+              onSelect: () => actions.onDelete(vehicle)
             }
           ]
         ]

@@ -1,4 +1,7 @@
 import type { User } from './master-data/user'
+import type { Vehicle, VehicleType } from './master-data/vehicle'
+
+export type { User, Vehicle, VehicleType }
 
 export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
