@@ -11,7 +11,7 @@ onMounted(() => {
 
 <template>
   <div class="flex items-center justify-center min-h-screen">
-    <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin" />
+    <UIcon name="i-lucide-loader-circle" class="w-8 h-8 animate-spin" />
     <span class="ml-2">Logging out...</span>
   </div>
 </template>

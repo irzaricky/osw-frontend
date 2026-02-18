@@ -43,7 +43,7 @@ const onSubmit = async (event?: FormSubmitEvent<any>) => {
       title: 'Login Failed',
       description: authStore.error || 'Please check your credentials',
       color: 'error',
-      icon: 'i-heroicons-exclamation-circle'
+      icon: 'i-lucide-alert-circle'
     })
   }
 }
