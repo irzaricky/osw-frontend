@@ -16,10 +16,45 @@ const isOpen = computed({
   set: (value) => emit('update:open', value)
 })
 
-const allKeys = computed(() => {
-  const oldKeys = props.oldData ? Object.keys(props.oldData) : []
-  const newKeys = props.newData ? Object.keys(props.newData) : []
-  return Array.from(new Set([...oldKeys, ...newKeys]))
+const columns = [
+  { key: 'field', label: 'Field', accessorKey: 'field' },
+  { key: 'oldValue', label: 'Old Value', accessorKey: 'oldValue' },
+  { key: 'newValue', label: 'New Value', accessorKey: 'newValue' }
+].map(c => ({ ...c, id: c.key }))
+
+function flattenObject(obj: Record<string, any>, prefix = ''): Record<string, any> {
+  return Object.keys(obj).reduce((acc: Record<string, any>, k) => {
+    const pre = prefix.length ? prefix + '.' : ''
+    if (typeof obj[k] === 'object' && obj[k] !== null && !Array.isArray(obj[k])) {
+      Object.assign(acc, flattenObject(obj[k], pre + k))
+    } else {
+      acc[pre + k] = obj[k]
+    }
+    return acc
+  }, {})
+}
+
+const comparisonRows = computed(() => {
+  const oldDataFlat = props.oldData ? flattenObject(props.oldData) : {}
+  const newDataFlat = props.newData ? flattenObject(props.newData) : {}
+
+  const oldKeys = Object.keys(oldDataFlat)
+  const newKeys = Object.keys(newDataFlat)
+  const allKeys = Array.from(new Set([...oldKeys, ...newKeys])).sort()
+
+  return allKeys.map(key => {
+    const oldValue = oldDataFlat[key]
+    const newValue = newDataFlat[key]
+    const isChanged = oldValue !== newValue
+
+    return {
+      field: key,
+      oldValue: oldValue ?? '-',
+      newValue: newValue ?? '-',
+      isChanged,
+      class: isChanged ? 'bg-yellow-50 dark:bg-yellow-900/10' : ''
+    }
+  })
 })
 </script>
 
@@ -29,37 +64,30 @@ const allKeys = computed(() => {
     title="Log Detail Comparison"
     description="View details of the changes made"
     @update:open="isOpen = $event"
+    :ui="{ body: 'p-0 sm:p-0', content: 'sm:max-w-5xl' }"
   >
     <template #body>
       <div class="max-h-96 overflow-y-auto">
-        <table class="w-full text-sm text-left">
-          <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-            <tr>
-              <th scope="col" class="px-3 py-2">Field</th>
-              <th scope="col" class="px-3 py-2">Old Value</th>
-              <th scope="col" class="px-3 py-2">New Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr 
-              v-for="key in allKeys" 
-              :key="key" 
-              class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-              :class="{ 'bg-yellow-50 dark:bg-yellow-900/10': props.oldData?.[key] !== props.newData?.[key] }"
-            >
-              <td class="px-3 py-2 font-medium">{{ key }}</td>
-              <td class="px-3 py-2" :class="{'text-red-500': props.oldData?.[key] !== props.newData?.[key]}">
-                {{ props.oldData?.[key] ?? '-' }}
-              </td>
-              <td class="px-3 py-2" :class="{'text-green-500': props.oldData?.[key] !== props.newData?.[key]}">
-                {{ props.newData?.[key] ?? '-' }}
-              </td>
-            </tr>
-             <tr v-if="allKeys.length === 0">
-                <td colspan="3" class="px-3 py-2 text-center text-gray-500">No data changes recorded</td>
-            </tr>
-          </tbody>
-        </table>
+        <UTable 
+          :columns="columns" 
+          :data="comparisonRows"
+          class="w-full"
+        >
+          <template #oldValue-cell="{ row }">
+            <span :class="{ 'text-red-500': row.original.isChanged }">
+              {{ row.original.oldValue }}
+            </span>
+          </template>
+          <template #newValue-cell="{ row }">
+            <span :class="{ 'text-green-500': row.original.isChanged }">
+              {{ row.original.newValue }}
+            </span>
+          </template>
+        </UTable>
+        
+        <div v-if="comparisonRows.length === 0" class="p-4 text-center text-sm text-gray-500">
+          No data changes recorded
+        </div>
       </div>
     </template>
     
