@@ -125,7 +125,7 @@ function close() {
     </template>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex justify-end w-full gap-2">
         <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
         <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
       </div>
