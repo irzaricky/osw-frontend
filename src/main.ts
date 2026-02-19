@@ -65,6 +65,11 @@ const router = createRouter({
       component: () => import('./pages/master-data/vehicles/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/audit-logs', 
+      component: () => import('./pages/master-data/audit-logs/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     {
       path: '/error',
       component: () => import('./pages/error/GenericError.vue'),

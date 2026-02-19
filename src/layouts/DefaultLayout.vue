@@ -33,7 +33,7 @@ const links = [[{
   },
   {
     label: 'Audit Logs',
-    to: '/master-data/logs',
+    to: '/master-data/audit-logs',
     onSelect: () => {
       open.value = false
     }
