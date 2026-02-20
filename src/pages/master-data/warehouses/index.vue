@@ -258,19 +258,19 @@ onMounted(() => {
         <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">Warehouse Details</h4>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Warehouse Code:</span> {{ row.original.warehouse_code || '-' }}</p>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Warehouse Name:</span> {{ row.original.name || '-' }}</p>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Notes:</span> {{ row.original.notes || '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Warehouse Code:</span> {{ row.original.warehouse_code || '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Warehouse Name:</span> {{ row.original.name || '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Notes:</span> {{ row.original.notes || '-' }}</p>
           </div>
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">Classification</h4>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Category:</span> {{ row.original.category?.name || '-' }}</p>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Line:</span> {{ row.original.line?.name || '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Category:</span> {{ row.original.category?.name || '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Line:</span> {{ row.original.line?.name || '-' }}</p>
           </div>
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">System Info</h4>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Created:</span> {{ row.original.createdAt ? new Date(row.original.createdAt).toLocaleString() : '-' }}</p>
-            <p class="text-sm break-words whitespace-normal"><span class="text-muted">Updated:</span> {{ row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleString() : '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Created:</span> {{ row.original.createdAt ? new Date(row.original.createdAt).toLocaleString() : '-' }}</p>
+            <p class="text-sm wrap-break-word whitespace-normal"><span class="text-muted">Updated:</span> {{ row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleString() : '-' }}</p>
           </div>
         </div>
       </template>
