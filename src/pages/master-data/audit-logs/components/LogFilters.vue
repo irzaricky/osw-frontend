@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, useTemplateRef } from 'vue'
 import { CalendarDate } from '@internationalized/date'
-import type { DropdownOption } from '../composables/useLogDropdowns'
+import type { DropdownOption, UserDropdownOption } from '../composables/useLogDropdowns'
 
 interface Filters {
   start_date: string | undefined
@@ -16,7 +16,7 @@ const props = defineProps<{
   filters: Filters
   modules: DropdownOption[]
   activities: DropdownOption[]
-  users: DropdownOption[]
+  users: UserDropdownOption[]
 }>()
 
 const emit = defineEmits<{
@@ -102,7 +102,7 @@ function updateFilter(key: keyof Filters, value: any) {
     <!-- User Filter -->
     <USelect 
       :model-value="props.filters.user_id"
-      :items="[{ label: 'All Users', value: undefined }, ...users.map((u: DropdownOption) => ({ label: u.name, value: u.id }))]" 
+      :items="[{ label: 'All Users', value: undefined }, ...users.map((u: UserDropdownOption) => ({ label: u.email, value: u.id }))]" 
       placeholder="Filter by User" 
       class="w-full md:w-40"
       @update:model-value="updateFilter('user_id', $event)"
