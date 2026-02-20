@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, watch, computed } from 'vue'
 import type { WarehousePayload } from '../../../../types'
 import type { DropdownOption } from '../composables/useWarehouseDropdowns'
 
@@ -44,6 +44,62 @@ watch(() => props.open, (isOpen) => {
   }
 })
 
+const categoryItems = computed(() =>
+  props.categories.map(cat => cat.name)
+)
+
+const lineItems = computed(() =>
+  props.lines.map(line => line.name)
+)
+
+const selectedCategory = computed({
+  get() {
+    if (!form.category_id) return undefined
+
+    const found = props.categories.find(
+      c => c.id === form.category_id
+    )
+
+    return found?.name
+  },
+  set(value: string | undefined) {
+    if (!value) {
+      form.category_id = undefined
+      return
+    }
+
+    const found = props.categories.find(
+      c => c.name === value
+    )
+
+    form.category_id = found?.id
+  }
+})
+
+const selectedLine = computed({
+  get() {
+    if (!form.line_id) return undefined
+
+    const found = props.lines.find(
+      l => l.id === form.line_id
+    )
+
+    return found?.name
+  },
+  set(value: string | undefined) {
+    if (!value) {
+      form.line_id = undefined
+      return
+    }
+
+    const found = props.lines.find(
+      l => l.name === value
+    )
+
+    form.line_id = found?.id
+  }
+})
+
 function handleSave() {
   emit('save', {
     warehouse_code: form.warehouse_code,
@@ -79,20 +135,22 @@ function close() {
         </UFormField>
 
         <UFormField label="Category" name="category_id" required>
-          <USelect 
-            v-model="form.category_id"
-            :items="categories.map((cat: DropdownOption) => ({ label: cat.name, value: cat.id }))"
+          <USelectMenu 
+            v-model="selectedCategory"
+            :items="categoryItems"
             placeholder="Select Category"
             class="w-full"
+            clear
           />
         </UFormField>
 
         <UFormField label="Line" name="line_id">
-          <USelect
-            v-model="form.line_id"
-            :items="[{ label: 'No Line', value: undefined }, ...lines.map((line: DropdownOption) => ({ label: line.name, value: line.id }))]"
+          <USelectMenu
+            v-model="selectedLine"
+            :items="lineItems"
             placeholder="Select Line"
             class="w-full"
+            clear
           />
         </UFormField>
 
