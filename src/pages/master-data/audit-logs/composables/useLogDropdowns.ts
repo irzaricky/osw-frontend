@@ -6,10 +6,15 @@ export interface DropdownOption {
   name: string
 }
 
+export interface UserDropdownOption {
+  id: number
+  email: string
+}
+
 export function useLogDropdowns() {
   const modules = ref<DropdownOption[]>([])
   const activities = ref<DropdownOption[]>([])
-  const users = ref<DropdownOption[]>([])
+  const users = ref<UserDropdownOption[]>([])
 
   async function fetchDropdowns() {
     try {
