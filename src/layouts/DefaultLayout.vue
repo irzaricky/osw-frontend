@@ -44,7 +44,15 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
-  }]
+  },
+  {
+    label: 'Customers',
+    to: '/master-data/customers',
+    onSelect: () => {
+      open.value = false
+    }
+  }
+]
 }, {
   label: 'Sales',
   icon: 'i-lucide-shopping-cart',

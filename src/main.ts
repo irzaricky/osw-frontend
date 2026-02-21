@@ -20,6 +20,7 @@ app.use(pinia)
 
 const router = createRouter({
   routes: [
+    //autentikasi
     { 
       path: '/login', 
       component: () => import('./pages/login.vue'),
@@ -35,6 +36,8 @@ const router = createRouter({
       component: () => import('./pages/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+
+    //template (belum kepake)
     { 
       path: '/users', 
       component: () => import('./pages/users.vue'),
@@ -55,6 +58,8 @@ const router = createRouter({
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+
+    // master data
     { 
       path: '/master-data/users', 
       component: () => import('./pages/master-data/users/index.vue'),
@@ -75,6 +80,13 @@ const router = createRouter({
       component: () => import('./pages/master-data/audit-logs/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/customers', 
+      component: () => import('./pages/master-data/customers/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    
+    // error
     {
       path: '/error',
       component: () => import('./pages/error/GenericError.vue'),
