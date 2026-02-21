@@ -125,7 +125,7 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Warehouse Code" name="warehouse_code" required>
           <UInput v-model="form.warehouse_code" placeholder="WH-001" class="w-full" />
         </UFormField>
@@ -162,8 +162,18 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="handleSave"
+        />
       </div>
     </template>
   </UModal>

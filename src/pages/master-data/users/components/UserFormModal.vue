@@ -69,17 +69,28 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
-        <div class="grid grid-cols-1 gap-4">
-        </div>
+      <form class="space-y-4" @submit.prevent="handleSave">
+        <div class="grid grid-cols-1 gap-4" />
         
         <UFormField label="Email" name="email" required>
-          <UInput v-model="form.email" type="email" placeholder="john@example.com" class="w-full" />
+          <UInput
+            v-model="form.email"
+            type="email"
+            placeholder="john@example.com"
+            class="w-full"
+          />
         </UFormField>
         
         <UFormField label="Password" name="password" :required="props.mode === 'add'">
-          <UInput v-model="form.password" type="password" placeholder="********" class="w-full" />
-          <p v-if="props.mode === 'edit'" class="text-xs text-muted mt-1">Leave blank to keep current password</p>
+          <UInput
+            v-model="form.password"
+            type="password"
+            placeholder="********"
+            class="w-full"
+          />
+          <p v-if="props.mode === 'edit'" class="text-xs text-muted mt-1">
+            Leave blank to keep current password
+          </p>
         </UFormField>
         
         <div class="grid grid-cols-2 gap-4">
@@ -126,8 +137,18 @@ function close() {
 
     <template #footer>
       <div class="flex justify-end w-full gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="handleSave"
+        />
       </div>
     </template>
   </UModal>

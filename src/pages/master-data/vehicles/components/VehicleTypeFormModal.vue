@@ -56,21 +56,36 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Type Name" name="name" required>
           <UInput v-model="form.name" placeholder="Truk Box" class="w-full" />
         </UFormField>
         
         <UFormField label="Load Capacity (kg)" name="load_capacity" required>
-          <UInput v-model.number="form.load_capacity" type="number" placeholder="5000" class="w-full" />
+          <UInput
+            v-model.number="form.load_capacity"
+            type="number"
+            placeholder="5000"
+            class="w-full"
+          />
         </UFormField>
       </form>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="handleSave"
+        />
       </div>
     </template>
   </UModal>

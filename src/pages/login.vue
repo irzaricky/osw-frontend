@@ -65,21 +65,25 @@ const onSubmit = async (event?: FormSubmitEvent<any>) => {
         </template>
         
         <template #password-hint>
-          <ULink to="#" class="text-primary font-medium" tabindex="-1">Forgot password?</ULink>
+          <ULink to="#" class="text-primary font-medium" tabindex="-1">
+            Forgot password?
+          </ULink>
         </template>
         
         <template #validation>
-           <UAlert 
-             v-if="authStore.error"
-             color="error" 
-             icon="i-lucide-info" 
-             :title="authStore.error" 
-             class="mb-4"
-           />
+          <UAlert 
+            v-if="authStore.error"
+            color="error" 
+            icon="i-lucide-info" 
+            :title="authStore.error" 
+            class="mb-4"
+          />
         </template>
 
         <template #footer>
-          By signing in, you agree to our <ULink to="#" class="text-primary font-medium">Terms of Service</ULink>.
+          By signing in, you agree to our <ULink to="#" class="text-primary font-medium">
+            Terms of Service
+          </ULink>.
         </template>
       </UAuthForm>
     </UPageCard>

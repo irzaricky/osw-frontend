@@ -30,7 +30,6 @@ function updateFilter(key: keyof Filters, value: any) {
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-    
     <USelect 
       :model-value="props.filters.role_id"
       :items="[{ label: 'All Roles', value: undefined }, ...roles.map((r: DropdownOption) => ({ label: r.name, value: r.id }))]"

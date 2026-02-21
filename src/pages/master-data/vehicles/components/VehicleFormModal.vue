@@ -112,7 +112,7 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSave">
         <div class="grid grid-cols-2 gap-4">
           <UFormField label="Vehicle Code" name="vehicle_code" required>
             <UInput v-model="form.vehicle_code" placeholder="VH-001" class="w-full" />
@@ -142,7 +142,9 @@ function close() {
             variant="area"
             class="min-h-32"
           />
-          <p v-if="imageError" class="text-xs text-error-500 mt-1">{{ imageError }}</p>
+          <p v-if="imageError" class="text-xs text-error-500 mt-1">
+            {{ imageError }}
+          </p>
         </UFormField>
 
         <UFormField v-if="props.mode === 'edit'" label="Status" name="status">
@@ -156,8 +158,19 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" :disabled="!!imageError" @click="handleSave" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          :disabled="!!imageError"
+          @click="handleSave"
+        />
       </div>
     </template>
   </UModal>

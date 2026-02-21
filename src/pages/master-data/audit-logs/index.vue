@@ -148,7 +148,9 @@ onMounted(() => {
     <Breadcrumbs :items="breadcrumbItems" />
 
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Audit Logs</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        Audit Logs
+      </h1>
     </div>
 
     <!-- Filters -->

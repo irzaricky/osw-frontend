@@ -24,7 +24,6 @@ function updateFilter(key: keyof Filters, value: any) {
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-    
     <USelect 
       :model-value="props.filters.vehicle_type_id"
       :items="[{ label: 'All Types', value: undefined }, ...vehicleTypes.map((vt: DropdownOption) => ({ label: vt.name, value: vt.id }))]"

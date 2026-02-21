@@ -33,8 +33,12 @@ function handleCancel() {
   >
     <template #header>
       <div class="text-center">
-        <h3 class="text-lg font-semibold">{{ props.title || 'Confirm Action' }}</h3>
-        <p class="text-sm text-muted mt-1">{{ props.description || 'Are you sure you want to proceed?' }}</p>
+        <h3 class="text-lg font-semibold">
+          {{ props.title || 'Confirm Action' }}
+        </h3>
+        <p class="text-sm text-muted mt-1">
+          {{ props.description || 'Are you sure you want to proceed?' }}
+        </p>
       </div>
     </template>
 

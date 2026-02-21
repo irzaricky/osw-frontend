@@ -63,8 +63,8 @@ const comparisonRows = computed(() => {
     :open="isOpen"
     title="Log Detail Comparison"
     description="View details of the changes made"
-    @update:open="isOpen = $event"
     :ui="{ body: 'p-0 sm:p-0', content: 'sm:max-w-5xl' }"
+    @update:open="isOpen = $event"
   >
     <template #body>
       <div class="max-h-96 overflow-y-auto">
@@ -93,7 +93,7 @@ const comparisonRows = computed(() => {
     
     <template #footer>
       <div class="flex justify-end w-full">
-           <UButton label="Close" @click="isOpen = false" />
+        <UButton label="Close" @click="isOpen = false" />
       </div>
     </template>
   </UModal>

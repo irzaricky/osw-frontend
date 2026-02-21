@@ -310,12 +310,19 @@ onMounted(() => {
 
     <!-- Header -->
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Vehicle Management</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        Vehicle Management
+      </h1>
     </div>
 
 
     <!-- Tabs -->
-    <UTabs v-model="selectedTab" variant="link" :items="tabs" class="w-full">
+    <UTabs
+      v-model="selectedTab"
+      variant="link"
+      :items="tabs"
+      class="w-full"
+    >
       <!-- Vehicles Tab -->
       <template #vehicles>
         <div class="space-y-6 pt-4">
@@ -357,23 +364,37 @@ onMounted(() => {
             <template #expanded="{ row }">
               <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
                 <div class="space-y-1">
-                  <h4 class="font-semibold text-sm text-highlighted">Vehicle Details</h4>
-                  <p class="text-sm"><span class="text-muted">Code:</span> {{ row.original.vehicle_code || '-' }}</p>
-                  <p class="text-sm"><span class="text-muted">Plate:</span> {{ row.original.plate_number || '-' }}</p>
-                  <p class="text-sm"><span class="text-muted">Type:</span> {{ row.original.vehicle_type?.name || '-' }}</p>
+                  <h4 class="font-semibold text-sm text-highlighted">
+                    Vehicle Details
+                  </h4>
+                  <p class="text-sm">
+                    <span class="text-muted">Code:</span> {{ row.original.vehicle_code || '-' }}
+                  </p>
+                  <p class="text-sm">
+                    <span class="text-muted">Plate:</span> {{ row.original.plate_number || '-' }}
+                  </p>
+                  <p class="text-sm">
+                    <span class="text-muted">Type:</span> {{ row.original.vehicle_type?.name || '-' }}
+                  </p>
                 </div>
                 <div class="space-y-1">
-                  <h4 class="font-semibold text-sm text-highlighted">Specifications</h4>
-                  <p class="text-sm"><span class="text-muted">Load Capacity:</span> {{ row.original.vehicle_type?.load_capacity ?? '-' }}</p>
+                  <h4 class="font-semibold text-sm text-highlighted">
+                    Specifications
+                  </h4>
+                  <p class="text-sm">
+                    <span class="text-muted">Load Capacity:</span> {{ row.original.vehicle_type?.load_capacity ?? '-' }}
+                  </p>
                 </div>
                 <div v-if="row.original.image" class="space-y-1">
-                  <h4 class="font-semibold text-sm text-highlighted">Image</h4>
+                  <h4 class="font-semibold text-sm text-highlighted">
+                    Image
+                  </h4>
                   <a :href="getImageUrl(row.original.image)" target="_blank" rel="noopener noreferrer">
                     <img 
                       :src="getImageUrl(row.original.image)" 
                       alt="Vehicle" 
                       class="w-32 h-32 object-cover rounded-lg border border-default cursor-pointer hover:opacity-90 transition-opacity"
-                    />
+                    >
                   </a>
                 </div>
               </div>

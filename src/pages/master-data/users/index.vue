@@ -271,7 +271,9 @@ onMounted(() => {
 
     <!-- Header -->
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        User Management
+      </h1>
     </div>
 
     <UserFilters 
@@ -322,23 +324,49 @@ onMounted(() => {
       <template #expanded="{ row }">
         <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
           <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">Personal Details</h4>
-            <p class="text-sm"><span class="text-muted">Full Name:</span> {{ row.original.user_detail?.full_name || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Employee Number:</span> {{ row.original.user_detail?.employee_number || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Phone:</span> {{ row.original.user_detail?.phone_number || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Email:</span> {{ row.original.email || '-' }}</p>
+            <h4 class="font-semibold text-sm text-highlighted">
+              Personal Details
+            </h4>
+            <p class="text-sm">
+              <span class="text-muted">Full Name:</span> {{ row.original.user_detail?.full_name || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Employee Number:</span> {{ row.original.user_detail?.employee_number || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Phone:</span> {{ row.original.user_detail?.phone_number || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Email:</span> {{ row.original.email || '-' }}
+            </p>
           </div>
           <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">Work Information</h4>
-            <p class="text-sm"><span class="text-muted">Division:</span> {{ row.original.role?.division?.name || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Factory:</span> {{ row.original.user_detail?.factory?.name || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Line:</span> {{ row.original.user_detail?.line?.name || '-' }}</p>
+            <h4 class="font-semibold text-sm text-highlighted">
+              Work Information
+            </h4>
+            <p class="text-sm">
+              <span class="text-muted">Division:</span> {{ row.original.role?.division?.name || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Factory:</span> {{ row.original.user_detail?.factory?.name || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Line:</span> {{ row.original.user_detail?.line?.name || '-' }}
+            </p>
           </div>
           <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">Account Info</h4>
-            <p class="text-sm"><span class="text-muted">Role:</span> {{ row.original.role?.name || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Created:</span> {{ row.original.createdAt || '-' }}</p>
-            <p class="text-sm"><span class="text-muted">Updated:</span> {{ row.original.updatedAt || '-' }}</p>
+            <h4 class="font-semibold text-sm text-highlighted">
+              Account Info
+            </h4>
+            <p class="text-sm">
+              <span class="text-muted">Role:</span> {{ row.original.role?.name || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Created:</span> {{ row.original.createdAt || '-' }}
+            </p>
+            <p class="text-sm">
+              <span class="text-muted">Updated:</span> {{ row.original.updatedAt || '-' }}
+            </p>
           </div>
         </div>
       </template>

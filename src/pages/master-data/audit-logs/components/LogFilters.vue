@@ -75,7 +75,12 @@ function updateFilter(key: keyof Filters, value: any) {
           />
 
           <template #content>
-             <UCalendar v-model="dateRange" class="p-2" :number-of-months="2" range />
+            <UCalendar
+              v-model="dateRange"
+              class="p-2"
+              :number-of-months="2"
+              range
+            />
           </template>
         </UPopover>
       </template>

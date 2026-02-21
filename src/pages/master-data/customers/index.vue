@@ -214,7 +214,6 @@ onMounted(() => {
     </div>
 
     <div class="flex justify-between items-center gap-4">
-      
       <div class="flex gap-2">
         <UButton 
           icon="i-lucide-download" 
