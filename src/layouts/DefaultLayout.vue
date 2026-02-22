@@ -39,6 +39,13 @@ const links = [[{
     }
   },
   {
+    label: 'Warehouse Areas',
+    to: '/master-data/warehouse-areas',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Audit Logs',
     to: '/master-data/audit-logs',
     onSelect: () => {
