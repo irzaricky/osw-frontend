@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveCompo
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import type { Row } from '@tanstack/table-core'
+import QRCode from 'qrcode'
 
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
@@ -10,7 +11,8 @@ import { useWarehouseAreaColumns } from './composables/useWarehouseAreaColumns'
 import { useAppToast } from '../../../composables/useAppToast'
 
 import WarehouseAreaBulkAction from './components/WarehouseAreaBulkAction.vue'
-import WarehouseAreaBinGrid from './components/WarehouseAreaBinGrid.vue'
+import WarehouseAreaBinGridExpanded from './components/WarehouseAreaBinGridExpanded.vue'
+import warehouseBinService from '../../../services/master-data/warehouse-bin.service'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
@@ -72,6 +74,7 @@ function createEmptyArea(): Partial<WarehouseArea> {
     total_rows: 1
   }
 }
+
 const currentArea = reactive<Partial<WarehouseArea>>(createEmptyArea())
 
 // CONFIRM
@@ -86,19 +89,142 @@ const confirmDialog = reactive({
 const rowSelection = ref({})
 const expanded = ref({})
 
-// COLUMNS
-const { columns } = useWarehouseAreaColumns(
-  {
-    onEdit: openEditModal,
-    onDelete: handleDelete,
-    onPrint: openPrintModal
-  },
-  uiComponents
-)
+// PRINT BIN LABELS
+async function openPrintBinLabels(area: WarehouseArea) {
+  try {
+    const totalRows = Number(area.total_rows || 0)
+    const totalCols = Number(area.total_cols || 0)
+    const limit = totalRows * totalCols || 1000
 
-const selectedCount = computed(() => {
-  return table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0
-})
+    const res = await warehouseBinService.list({
+      page: 1,
+      limit,
+      area_id: area.id
+    })
+
+    if (!res.data?.status) {
+      toastError(res.data?.message || 'Failed to fetch bins')
+      return
+    }
+
+    const bins = res.data.data?.rows || []
+    if (!bins.length) {
+      toastError('No bins found for this area')
+      return
+    }
+
+    
+    const qrList = await Promise.all(
+      bins.map(async (bin: any) => {
+        const payload = JSON.stringify({
+          bin_code: bin.bin_code,
+          area_code: area.area_code,
+          row: bin.row_index,
+          col: bin.col_index
+        })
+        const qr = await QRCode.toDataURL(payload, { margin: 1, width: 120 })
+        return { bin, qr }
+      })
+    )
+
+    const warehouseName = area.warehouse?.name || '-'
+    const warehouseCode = area.warehouse?.warehouse_code || '-'
+    const warehouseCategory = area.warehouse?.category?.name || '-'
+    const areaCode = area.area_code || '-'
+    const areaName = area.name || '-'
+    const printedAt = new Date().toLocaleString()
+
+    const labelsHtml = qrList
+      .map(({ bin, qr }) => {
+        return `
+          <div class="paper">
+            <div class="title">STORAGE BIN LABEL</div>
+            <div class="qr-wrapper">
+              <img class="qr" src="${qr}" alt="QR" />
+              <div class="bin">${bin.bin_code || '-'}</div>
+            </div>
+            <table>
+              <tbody>
+                <tr><td class="label">Warehouse</td><td>${warehouseName}</td></tr>
+                <tr><td class="label">Warehouse Number</td><td>${warehouseCode}</td></tr>
+                <tr><td class="label">Warehouse Category</td><td>${warehouseCategory}</td></tr>
+                <tr><td class="label">Area Number</td><td>${areaCode}</td></tr>
+                <tr><td class="label">Area Name</td><td>${areaName}</td></tr>
+                <tr><td class="label">Row</td><td>${bin.row_index ?? '-'}</td></tr>
+                <tr><td class="label">Column</td><td>${bin.col_index ?? '-'}</td></tr>
+                <tr><td class="label">Bin Number</td><td>${bin.bin_code || '-'}</td></tr>
+                <tr><td class="label">Printed At</td><td>${printedAt}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        `
+      })
+      .join('')
+
+    const html = `
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>Storage Bin Labels</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 18px; }
+            .page { width: 900px; margin: 0 auto; }
+            .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+            .paper { border: 2px solid #000; padding: 14px; background: #fff; color: #000; break-inside: avoid; }
+            .title { font-size: 20px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+            .qr-wrapper {
+              text-align: center;
+              margin-bottom: 10px;
+            }
+
+            .qr {
+              width: 120px;
+              height: 120px;
+              display: block;
+              margin: 0 auto;
+            }
+
+            .bin {
+              font-weight: 700;
+              margin-top: 6px;
+              text-align: center;
+            }
+            .qr { width: 120px; height: 120px; display: block; margin-left: auto; }
+            .bin { font-weight: 700; margin-top: 6px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            td { border: 1px solid #000; padding: 8px; font-size: 12px; vertical-align: top; }
+            td.label { background: #e5e5e5; width: 40%; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <div class="page">
+            <div class="grid">
+              ${labelsHtml}
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    const win = window.open('', '_blank', 'width=1100,height=800')
+    if (!win) {
+      toastError('Popup blocked. Please allow popups to print.')
+      return
+    }
+
+    win.document.open()
+    win.document.write(html)
+    win.document.close()
+    win.onload = () => {
+      win.focus()
+      win.print()
+      win.close()
+    }
+  } catch (err: any) {
+    toastError(err?.response?.data?.message || err?.message || err)
+  }
+}
 
 // FETCH
 async function fetchData() {
@@ -134,7 +260,6 @@ function openPrintModal(area: WarehouseArea) {
 async function handleSave(data: WarehouseAreaPayload) {
   try {
     let message = ''
-
     if (modalMode.value === 'add') {
       const res = await areaStore.createArea(data)
       message = res?.message || 'Warehouse Area created'
@@ -147,11 +272,6 @@ async function handleSave(data: WarehouseAreaPayload) {
     isModalOpen.value = false
     await fetchData()
   } catch (err: any) {
-    
-    console.log('SAVE ERROR:', err)
-    console.log('STATUS:', err?.response?.status)
-    console.log('DATA:', err?.response?.data)
-
     toastError(err?.response?.data?.message || err?.message || err)
   }
 }
@@ -166,7 +286,6 @@ async function handleDelete(area: WarehouseArea) {
       toastSuccess(res?.message || 'Deleted')
       await fetchData()
     } catch (err: any) {
-      console.log('DELETE ERROR:', err?.response?.status, err?.response?.data)
       toastError(err?.response?.data?.message || err?.message || err)
     } finally {
       confirmDialog.open = false
@@ -193,7 +312,6 @@ async function handleBulkDelete() {
       toastSuccess(`${selectedRows.length} area(s) deleted`)
       await fetchData()
     } catch (err: any) {
-      console.log('BULK DELETE ERROR:', err?.response?.status, err?.response?.data)
       toastError(err?.response?.data?.message || err?.message || err)
     } finally {
       confirmDialog.open = false
@@ -203,7 +321,22 @@ async function handleBulkDelete() {
   confirmDialog.open = true
 }
 
+// COLUMNS
+const { columns } = useWarehouseAreaColumns(
+  {
+    onEdit: openEditModal,
+    onDelete: handleDelete,
+    onPrint: openPrintModal,
+    onPrintBinLabels: openPrintBinLabels
+  },
+  uiComponents
+)
 
+const selectedCount = computed(() => {
+  return table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0
+})
+
+// WATCHERS
 const debouncedFetch = useDebounceFn(() => {
   meta.value.page = 1
   fetchData()
@@ -219,7 +352,14 @@ watch(
   }
 )
 
+watch(
+  () => meta.value.page,
+  () => {
+    fetchData()
+  }
+)
 
+// LIFECYCLE
 onMounted(async () => {
   await warehouseStore.fetchWarehouses({ page: 1, limit: 100 })
   await fetchData()
@@ -236,50 +376,29 @@ onMounted(async () => {
 
     <!-- FILTER -->
     <div class="flex gap-3">
-      <UInput
-        v-model="search"
-        placeholder="Search area code or name..."
-        icon="i-lucide-search"
-      />
+      <UInput v-model="search" placeholder="Search area code or name..." icon="i-lucide-search" />
 
-      <USelectMenu
-        v-model="filters.warehouse"
-        :items="warehouseItems"
-        searchable
-        placeholder="Filter by Warehouse"
-        class="w-full md:w-44"
-        clear
-      />
+      <USelectMenu v-model="filters.warehouse" :items="warehouseItems" searchable placeholder="Filter by Warehouse"
+        class="w-full md:w-44" clear />
     </div>
 
     <!-- ACTION -->
     <div class="flex gap-2">
-      <UButton
-        icon="i-lucide-plus"
-        color="primary"
-        label="Add Area"
-        @click="openAddModal"
-      />
+      <UButton icon="i-lucide-plus" color="primary" label="Add Area" @click="openAddModal" />
     </div>
 
     <WarehouseAreaBulkAction :count="selectedCount" @delete="handleBulkDelete" />
 
     <!-- TABLE -->
-    <UTable
-      ref="table"
-      v-model:row-selection="rowSelection"
-      v-model:expanded="expanded"
-      :data="areas"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    >
+    <UTable ref="table" v-model:row-selection="rowSelection" v-model:expanded="expanded" :data="areas"
+      :columns="columns" :loading="loading" class="w-full">
       <template #expanded="{ row }">
         <div class="p-4 bg-white dark:bg-slate-950 border-b border-default">
           <div class="mb-3 text-sm font-semibold">
             Area: {{ row.original.area_code }} — {{ row.original.name }}
           </div>
-          <WarehouseAreaBinGrid :area="row.original" />
+
+          <WarehouseAreaBinGridExpanded :area="row.original" />
         </div>
       </template>
     </UTable>
@@ -290,33 +409,17 @@ onMounted(async () => {
         {{ selectedCount }} of {{ meta.total }} row(s) selected.
       </div>
 
-      <UPagination
-        v-model:page="meta.page"
-        :total="meta.total"
-        :items-per-page="meta.limit"
-        @update:page="fetchData"
-      />
+      <UPagination v-model:page="meta.page" :total="meta.total" :items-per-page="meta.limit" @update:page="fetchData" />
     </div>
 
     <!-- MODALS -->
-    <WarehouseAreaFormModal
-      v-model:open="isModalOpen"
-      :mode="modalMode"
-      :area="currentArea"
-      :warehouses="warehouses"
-      :loading="loading"
-      @save="handleSave"
-    />
+    <WarehouseAreaFormModal v-model:open="isModalOpen" :mode="modalMode" :area="currentArea" :warehouses="warehouses"
+      :loading="loading" @save="handleSave" />
 
     <WarehouseAreaPrintModal v-model:open="isPrintOpen" :area="currentArea" />
 
-    <ConfirmDialog
-      v-model:open="confirmDialog.open"
-      :title="confirmDialog.title"
-      :description="confirmDialog.description"
-      confirm-label="Delete"
-      :loading="loading"
-      @confirm="confirmDialog.action?.()"
-    />
+    <ConfirmDialog v-model:open="confirmDialog.open" :title="confirmDialog.title"
+      :description="confirmDialog.description" confirm-label="Delete" :loading="loading"
+      @confirm="confirmDialog.action?.()" />
   </div>
 </template>

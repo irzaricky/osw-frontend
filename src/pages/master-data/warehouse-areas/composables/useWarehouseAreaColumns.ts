@@ -6,6 +6,7 @@ interface ColumnActions {
   onEdit: (area: WarehouseArea) => void
   onDelete: (area: WarehouseArea) => void
   onPrint: (area: WarehouseArea) => void
+  onPrintBinLabels: (area: WarehouseArea) => void 
 }
 
 interface ColumnComponents {
@@ -15,14 +16,10 @@ interface ColumnComponents {
   UDropdownMenu: Component | string
 }
 
-export function useWarehouseAreaColumns(
-  actions: ColumnActions,
-  components: ColumnComponents
-) {
+export function useWarehouseAreaColumns(actions: ColumnActions, components: ColumnComponents) {
   const { UCheckbox, UBadge, UButton, UDropdownMenu } = components
 
   const columns: TableColumn<WarehouseArea>[] = [
-    //  SELECT CHECKBOX
     {
       id: 'select',
       header: ({ table }) =>
@@ -32,78 +29,32 @@ export function useWarehouseAreaColumns(
             : table.getIsAllPageRowsSelected(),
           'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
             table.toggleAllPageRowsSelected(!!value),
-          ariaLabel: 'Select all'
+          'ariaLabel': 'Select all'
         }),
       cell: ({ row }) =>
         h(UCheckbox, {
           modelValue: row.getIsSelected(),
           'onUpdate:modelValue': (value: boolean | 'indeterminate') =>
             row.toggleSelected(!!value),
-          ariaLabel: 'Select row'
+          'ariaLabel': 'Select row'
         })
     },
-
-    //  NO
+    { header: 'No', cell: ({ row }) => row.index + 1 },
+    { accessorKey: 'warehouse.name', header: 'Warehouse' },
+    { accessorKey: 'area_code', header: 'Area Code' },
+    { accessorKey: 'name', header: 'Area Name' },
     {
-      header: 'No',
-      cell: ({ row }) => row.index + 1
-    },
-
-    //  WAREHOUSE
-    {
-      accessorKey: 'warehouse.name',
-      header: 'Warehouse',
-      cell: ({ row }) => row.original.warehouse?.name || '-'
-    },
-
-    //  AREA CODE
-    {
-      accessorKey: 'area_code',
-      header: 'Area Code'
-    },
-
-    //  NAME
-    {
-      accessorKey: 'name',
-      header: 'Area Name'
-    },
-
-    //  COLS
-    {
-      accessorKey: 'total_cols',
       header: 'Cols',
-      cell: ({ row }) =>
-        h(
-          UBadge,
-          { color: 'neutral', variant: 'subtle' },
-          () => String(row.original.total_cols ?? '-')
-        )
+      cell: ({ row }) => h(UBadge, { color: 'neutral', variant: 'subtle' }, () => String(row.original.total_cols ?? 0))
     },
-
-    //  ROWS
     {
-      accessorKey: 'total_rows',
       header: 'Rows',
-      cell: ({ row }) =>
-        h(
-          UBadge,
-          { color: 'neutral', variant: 'subtle' },
-          () => String(row.original.total_rows ?? '-')
-        )
+      cell: ({ row }) => h(UBadge, { color: 'neutral', variant: 'subtle' }, () => String(row.original.total_rows ?? 0))
     },
-
-    //  TOTAL BIN (optional: cols * rows)
     {
-      id: 'total_bin',
       header: 'Total Bin',
-      cell: ({ row }) => {
-        const c = Number(row.original.total_cols ?? 0)
-        const r = Number(row.original.total_rows ?? 0)
-        return c && r ? c * r : '-'
-      }
+      cell: ({ row }) => String((row.original.total_cols ?? 0) * (row.original.total_rows ?? 0))
     },
-
-    //  ACTIONS
     {
       id: 'actions',
       header: '',
@@ -112,43 +63,26 @@ export function useWarehouseAreaColumns(
 
         const items = [
           [
-            {
-              label: 'Edit',
-              icon: 'i-lucide-edit',
-              onSelect: () => actions.onEdit(area)
-            },
-            {
-              label: 'Print',
-              icon: 'i-lucide-printer',
-              onSelect: () => actions.onPrint(area)
-            }
+            { label: 'Edit', icon: 'i-lucide-edit', onSelect: () => actions.onEdit(area) }
           ],
           [
-            {
-              label: 'Delete',
-              icon: 'i-lucide-trash-2',
-              color: 'error' as const,
-              onSelect: () => actions.onDelete(area)
-            }
+            { label: 'Print Bin Labels', icon: 'i-lucide-qr-code', onSelect: () => actions.onPrintBinLabels(area) } 
+          ],
+          [
+            { label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => actions.onDelete(area) }
           ]
         ]
 
-        return h(
-          UDropdownMenu,
-          { items },
-          {
-            default: () =>
-              h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-ellipsis-vertical'
-              })
-          }
-        )
+        return h(UDropdownMenu, { items }, {
+          default: () =>
+            h(UButton, {
+              color: 'neutral',
+              variant: 'ghost',
+              icon: 'i-lucide-ellipsis-vertical'
+            })
+        })
       }
     },
-
-    //  EXPAND
     {
       id: 'expand',
       header: '',
