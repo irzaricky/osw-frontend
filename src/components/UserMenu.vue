@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
+import { api } from '../plugins/axios'
 
 defineProps<{
   collapsed?: boolean
@@ -13,28 +14,35 @@ const appConfig = useAppConfig()
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const user = ref({
-  name: 'Benjamin Canac',
-  avatar: {
-    src: 'https://github.com/benjamincanac.png',
-    alt: 'Benjamin Canac'
+const userData = ref({
+  email: 'Loading...',
+  role: ''
+})
+
+onMounted(async () => {
+  try {
+    const response = await api.get('auth/me')
+    if (response.data?.status && response.data?.data) {
+      userData.value = response.data.data
+    }
+  } catch (error) {
+    console.error('Failed to fetch user:', error)
   }
 })
 
+const user = computed(() => ({
+  name: userData.value.email,
+  avatar: {
+    src: `https://ui-avatars.com/api/?name=${userData.value.email}&background=random`,
+    alt: userData.value.email
+  }
+}))
+
 const items = computed<DropdownMenuItem[][]>(() => ([[{
   type: 'label',
+  slot: 'account',
   label: user.value.name,
   avatar: user.value.avatar
-}], [{
-  label: 'Profile',
-  icon: 'i-lucide-user'
-}, {
-  label: 'Billing',
-  icon: 'i-lucide-credit-card'
-}, {
-  label: 'Settings',
-  icon: 'i-lucide-settings',
-  to: '/settings'
 }], [{
   label: 'Theme',
   icon: 'i-lucide-palette',
@@ -107,31 +115,9 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
     }
   }]
 }], [{
-  label: 'Templates',
-  icon: 'i-lucide-layout-template',
-  children: [{
-    label: 'Starter',
-    to: 'https://starter-vue-template.nuxt.dev/'
-  }, {
-    label: 'Dashboard',
-    to: 'https://dashboard-vue-template.nuxt.dev/',
-    color: 'primary',
-    checked: true,
-    type: 'checkbox'
-  }]
-}], [{
-  label: 'Documentation',
-  icon: 'i-lucide-book-open',
-  to: 'https://ui.nuxt.com/docs/getting-started/installation/vue',
-  target: '_blank'
-}, {
-  label: 'GitHub repository',
-  icon: 'simple-icons:github',
-  to: 'https://github.com/nuxt-ui-templates/dashboard-vue',
-  target: '_blank'
-}], [{
   label: 'Log out',
-  icon: 'i-lucide-log-out'
+  icon: 'i-lucide-log-out',
+  to: '/logout'
 }]]))
 </script>
 
@@ -156,6 +142,12 @@ const items = computed<DropdownMenuItem[][]>(() => ([[{
         trailingIcon: 'text-dimmed'
       }"
     />
+
+    <template #account-label="{ item }">
+      <UTooltip :text="item.label" class="flex-1 truncate text-left">
+        <span class="truncate block">{{ item.label }}</span>
+      </UTooltip>
+    </template>
 
     <template #chip-leading="{ item }">
       <div class="inline-flex items-center justify-center shrink-0 size-5">

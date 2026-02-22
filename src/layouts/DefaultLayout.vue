@@ -87,16 +87,6 @@ const groups = computed(() => [{
   id: 'links',
   label: 'Go to',
   items: links.flat()
-}, {
-  id: 'code',
-  label: 'Code',
-  items: [{
-    id: 'source',
-    label: 'View page source',
-    icon: 'simple-icons:github',
-    to: `https://github.com/nuxt-ui-templates/dashboard-vue/blob/main/src/pages${route.path === '/' ? '/index' : route.path}.vue`,
-    target: '_blank'
-  }]
 }])
 </script>
 
@@ -111,7 +101,10 @@ const groups = computed(() => [{
       :ui="{ footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
-        <TeamsMenu :collapsed="collapsed" />
+        <div class="flex items-center gap-3" :class="collapsed ? 'justify-center p-2' : 'px-2 py-2'">
+          <UAvatar src="https://github.com/vuejs.png" alt="Vue Logo" size="sm" class="shrink-0" />
+          <span v-if="!collapsed" class="font-bold text-[15px] truncate text-gray-900 dark:text-white">OSW SYSTEM</span>
+        </div>
       </template>
 
       <template #default="{ collapsed }">
