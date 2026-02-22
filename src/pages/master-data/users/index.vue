@@ -362,10 +362,10 @@ onMounted(() => {
               <span class="text-muted">Role:</span> {{ row.original.role?.name || '-' }}
             </p>
             <p class="text-sm">
-              <span class="text-muted">Created:</span> {{ row.original.createdAt || '-' }}
+              <span class="text-muted">Created:</span> {{ row.original.createdAt ? new Date(row.original.createdAt).toLocaleString() : '-' }}
             </p>
             <p class="text-sm">
-              <span class="text-muted">Updated:</span> {{ row.original.updatedAt || '-' }}
+              <span class="text-muted">Updated:</span> {{ row.original.updatedAt ? new Date(row.original.updatedAt).toLocaleString() : '-' }}
             </p>
           </div>
         </div>
