@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { reactive, watch, computed } from 'vue'
+import { reactive, watch, computed, ref } from 'vue'
+import * as z from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
 import type { WarehousePayload } from '../../../../types'
 import type { DropdownOption } from '../composables/useWarehouseDropdowns'
+
+const formRef = ref()
 
 const props = defineProps<{
   open: boolean
@@ -17,32 +21,51 @@ const emit = defineEmits<{
   save: [data: Partial<WarehousePayload>]
 }>()
 
-const form = reactive<Partial<WarehousePayload>>({})
+const schema = z.object({
+  warehouse_code: z.string().min(1, 'Warehouse code is required'),
+  name: z.string().min(1, 'Warehouse name is required'),
+  category_id: z.number({ message: 'Category is required' }),
+  line_id:  z.number({ message: 'Line is required' }),
+  notes: z.string().optional()
+})
 
-// Sync form when warehouse prop changes
-watch(() => props.warehouse, (val) => {
-  for (const key in form) {
-    delete form[key as keyof Partial<WarehousePayload>]
-  }
+type Schema = z.output<typeof schema>
 
-  Object.assign(form, val)
-  if (!form.category_id && val.category?.id) {
-    form.category_id = val.category.id
-  }
-  if (!form.line_id && val.line?.id) {
-    form.line_id = val.line.id
-  }
-}, { immediate: true, deep: true })
+const state = reactive<Partial<Schema>>({
+  warehouse_code: '',
+  name: '',
+  category_id: undefined,
+  line_id: undefined,
+  notes: ''
+})
+
+// Sync data when edit
+watch(
+  () => props.warehouse,
+  (val) => {
+    state.warehouse_code = val.warehouse_code ?? ''
+    state.name = val.name ?? ''
+    state.notes = val.notes ?? ''
+
+    state.category_id = val.category_id ?? val.category?.id
+    state.line_id = val.line_id ?? val.line?.id
+  },
+  { immediate: true, deep: true }
+)
 
 // Reset when open in add mode
-watch(() => props.open, (isOpen) => {
-  if (isOpen && props.mode === 'add') {
-    for (const key in form) {
-      delete form[key as keyof Partial<WarehousePayload>]
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && props.mode === 'add') {
+      state.warehouse_code = ''
+      state.name = ''
+      state.category_id = undefined
+      state.line_id = undefined
+      state.notes = ''
     }
-    Object.assign(form, props.warehouse)
   }
-})
+)
 
 const categoryItems = computed(() =>
   props.categories.map(cat => cat.name)
@@ -54,17 +77,17 @@ const lineItems = computed(() =>
 
 const selectedCategory = computed({
   get() {
-    if (!form.category_id) return undefined
+    if (!state.category_id) return undefined
 
     const found = props.categories.find(
-      c => c.id === form.category_id
+      c => c.id === state.category_id
     )
 
     return found?.name
   },
   set(value: string | undefined) {
     if (!value) {
-      form.category_id = undefined
+      state.category_id = undefined
       return
     }
 
@@ -72,23 +95,23 @@ const selectedCategory = computed({
       c => c.name === value
     )
 
-    form.category_id = found?.id
+    state.category_id = found?.id
   }
 })
 
 const selectedLine = computed({
   get() {
-    if (!form.line_id) return undefined
+    if (!state.line_id) return undefined
 
     const found = props.lines.find(
-      l => l.id === form.line_id
+      l => l.id === state.line_id
     )
 
     return found?.name
   },
   set(value: string | undefined) {
     if (!value) {
-      form.line_id = undefined
+      state.line_id = undefined
       return
     }
 
@@ -96,18 +119,16 @@ const selectedLine = computed({
       l => l.name === value
     )
 
-    form.line_id = found?.id
+    state.line_id = found?.id
   }
 })
 
-function handleSave() {
-  emit('save', {
-    warehouse_code: form.warehouse_code,
-    name: form.name,
-    line_id: form.line_id,
-    category_id: form.category_id,
-    notes: form.notes
-  })
+function submitForm() {
+  formRef.value?.submit()
+}
+
+function onSubmit(event: FormSubmitEvent<any>) {
+  emit('save', event.data)
 }
 
 function close() {
@@ -125,13 +146,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
         <UFormField label="Warehouse Code" name="warehouse_code" required>
-          <UInput v-model="form.warehouse_code" placeholder="WH-001" class="w-full" />
+          <UInput v-model="state.warehouse_code" placeholder="WH-001" class="w-full" />
         </UFormField>
 
         <UFormField label="Warehouse Name" name="name" required>
-          <UInput v-model="form.name" placeholder="Main Warehouse" class="w-full" />
+          <UInput v-model="state.name" placeholder="Main Warehouse" class="w-full" />
         </UFormField>
 
         <UFormField label="Category" name="category_id" required>
@@ -144,7 +165,7 @@ function close() {
           />
         </UFormField>
 
-        <UFormField label="Line" name="line_id">
+        <UFormField label="Line" name="line_id" required>
           <USelectMenu
             v-model="selectedLine"
             :items="lineItems"
@@ -155,15 +176,15 @@ function close() {
         </UFormField>
 
         <UFormField label="Notes" name="notes">
-          <UTextarea v-model="form.notes" placeholder="Additional notes..." class="w-full" />
+          <UTextarea v-model="state.notes" placeholder="Additional notes..." class="w-full" />
         </UFormField>
-      </form>
+      </UForm>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
         <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="handleSave" />
+        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
       </div>
     </template>
   </UModal>
