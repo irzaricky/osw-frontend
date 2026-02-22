@@ -58,6 +58,13 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
+  },
+  {
+    label: 'Factories',
+    to: '/master-data/factories',
+    onSelect: () => {
+      open.value = false
+    }
   }
 ]
 }, {
