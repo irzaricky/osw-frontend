@@ -2,22 +2,22 @@
 import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
-import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
-import { useWarehouseDropdowns } from './composables/useWarehouseDropdowns'
-import { useWarehouseColumns } from './composables/useWarehouseColumns'
+import { useDockStore } from '../../../stores/master-data/dock.store'
+import { useDockDropdowns } from './composables/useDockDropdowns'
+import { useDockColumns } from './composables/useDockColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { Warehouse, WarehousePayload } from '../../../types'
+import type { Dock } from '../../../types/master-data/dock'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
-import WarehouseFilters from './components/WarehouseFilters.vue'
-import WarehouseBulkActions from './components/WarehouseBulkActions.vue'
-import WarehouseFormModal from './components/WarehouseFormModal.vue'
+import DockFilters from './components/DockFilters.vue'
+import DockBulkActions from './components/DockBulkActions.vue'
+import DockFormModal from './components/DockFormModal.vue'
 
 // Store
-const warehouseStore = useWarehouseStore()
-const { warehouses, meta, loading } = storeToRefs(warehouseStore)
+const dockStore = useDockStore()
+const { docks, meta, loading } = storeToRefs(dockStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef<any>('table')
 
@@ -37,39 +37,34 @@ const pagination = computed(() => ({
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Master Data' },
-  { label: 'Warehouses' }
+  { label: 'Docks' }
 ]
 
 // State
 const search = ref('')
 const filters = reactive({
-  category_id: undefined as number | undefined,
-  line_id: undefined as number | undefined
+  area_id: undefined as number | undefined
 })
 
 // Dropdowns
-const { 
-  warehouseCategories, 
-  lines, 
-  fetchWarehouseCategories, 
-  fetchLines 
-} = useWarehouseDropdowns()
+const {
+  areas,
+  fetchAreas
+} = useDockDropdowns()
 
 // Modal state
 const isModalOpen = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
-function createEmptyWarehouse(): Partial<Warehouse> {
+function createEmptyDock(): Partial<Dock> {
   return {
     id: undefined,
-    warehouse_code: '',
+    dock_code: '',
     name: '',
-    category: undefined,
-    line: undefined,
-    notes: ''
+    area: undefined
   }
 }
 
-const currentWarehouse = reactive<Partial<Warehouse>>(createEmptyWarehouse())
+const currentDock = reactive<Partial<Dock>>(createEmptyDock())
 
 // Confirm dialog
 const confirmDialog = reactive({
@@ -84,7 +79,7 @@ const rowSelection = ref({})
 const expanded = ref({})
 
 // Columns
-const { columns } = useWarehouseColumns({
+const { columns } = useDockColumns({
   onEdit: openEditModal,
   onDelete: handleDelete
 }, uiComponents, pagination)
@@ -101,42 +96,38 @@ async function fetchData() {
     limit: meta.value.limit,
     search: search.value
   }
-  if (filters.category_id) params.category_id = filters.category_id
-  if (filters.line_id) params.line_id = filters.line_id
-
-  await warehouseStore.fetchWarehouses(params)
+  if (filters.area_id) params.area_id = filters.area_id
+  await dockStore.fetchDocks(params)
 }
 
 // Modal handlers
 function openAddModal() {
   modalMode.value = 'add'
-  Object.assign(currentWarehouse, createEmptyWarehouse())
+  Object.assign(currentDock, createEmptyDock())
   isModalOpen.value = true
 }
 
-function openEditModal(warehouse: Warehouse) {
+function openEditModal(dock: Dock) {
   modalMode.value = 'edit'
-  Object.assign(currentWarehouse, {
-    id: warehouse.id,
-    warehouse_code: warehouse.warehouse_code,
-    name: warehouse.name,
-    category: warehouse.category,
-    line: warehouse.line,
-    notes: warehouse.notes
+  Object.assign(currentDock, {
+    id: dock.id,
+    dock_code: dock.dock_code,
+    name: dock.name,
+    area: dock.area
   })
   isModalOpen.value = true
 }
 
-async function handleSave(data: WarehousePayload) {
+async function handleSave(data: Partial<Dock>) {
   try {
     let message = ''
 
     if (modalMode.value === 'add') {
-      const res = await warehouseStore.createWarehouse(data)
-      message = res.message || 'Warehouse created successfully'
+      const res = await dockStore.createDock(data)
+      message = res.message || 'Dock created successfully'
     } else {
-      const res = await warehouseStore.updateWarehouse(currentWarehouse.id!, data)
-      message = res.message || 'Warehouse updated successfully'
+      const res = await dockStore.updateDock(currentDock.id!, data)
+      message = res.message || 'Dock updated successfully'
     }
     toastSuccess(message)
     isModalOpen.value = false
@@ -146,13 +137,13 @@ async function handleSave(data: WarehousePayload) {
   }
 }
 
-async function handleDelete(row: Warehouse) {
-  confirmDialog.title = 'Delete Warehouse'
-  confirmDialog.description = `Are you sure you want to delete warehouse "${row.warehouse_code}"?`
+async function handleDelete(dock: Dock) {
+  confirmDialog.title = 'Delete Dock'
+  confirmDialog.description = `Are you sure you want to delete dock "${dock.dock_code}"?`
   confirmDialog.action = async () => {
     try {
-      const res = await warehouseStore.deleteWarehouse(row.id)
-      toastSuccess(res.message || 'Warehouse deleted successfully')
+      const res = await dockStore.deleteDock(dock.id)
+      toastSuccess(res.message || 'Dock deleted successfully')
       fetchData()
       confirmDialog.open = false
     } catch (err) {
@@ -167,18 +158,18 @@ async function handleBulkDelete() {
   const selectedRows = table.value?.tableApi?.getFilteredSelectedRowModel().rows || []
   if (!selectedRows.length) return
 
-  confirmDialog.title = 'Delete Multiple Warehouses'
-  confirmDialog.description = `Are you sure you want to delete ${selectedRows.length} warehouse(s)?`
+  confirmDialog.title = 'Delete Multiple Docks'
+  confirmDialog.description = `Are you sure you want to delete ${selectedRows.length} dock(s)?`
 
   confirmDialog.action = async () => {
     try {
       await Promise.all(
-        selectedRows.map((row: Row<Warehouse>) =>
-          warehouseStore.deleteWarehouse(row.original.id)
+        selectedRows.map((row: Row<Dock>) =>
+          dockStore.deleteDock(row.original.id)
         )
       )
       rowSelection.value = {}
-      toastSuccess(`${selectedRows.length} warehouses deleted successfully`)
+      toastSuccess(`${selectedRows.length} docks deleted successfully`)
       fetchData()
       confirmDialog.open = false
     } catch (err) {
@@ -213,8 +204,7 @@ watch(filters, () => {
 // Lifecycle
 onMounted(() => {
   fetchData()
-  fetchWarehouseCategories()
-  fetchLines()
+  fetchAreas()
 })
 </script>
 
@@ -224,15 +214,14 @@ onMounted(() => {
 
     <div class="flex justify-between items-center">
       <h1 class="text-2xl font-bold">
-        Warehouse Management
+        Dock Management
       </h1>
     </div>
 
-    <WarehouseFilters
+    <DockFilters
       :search="search"
       :filters="filters"
-      :warehouse-categories="warehouseCategories"
-      :lines="lines"
+      :areas="areas"
       @update:search="onUpdateSearch"
       @update:filters="onUpdateFilters"
     />
@@ -242,12 +231,12 @@ onMounted(() => {
         icon="i-lucide-plus"
         color="primary"
         variant="solid"
-        label="Add Warehouse"
+        label="Add Dock"
         @click="openAddModal"
       />
     </div>
 
-    <WarehouseBulkActions
+    <DockBulkActions
       :count="selectedCount"
       @delete="handleBulkDelete"
     />
@@ -256,7 +245,7 @@ onMounted(() => {
       ref="table"
       v-model:row-selection="rowSelection"
       v-model:expanded="expanded"
-      :data="loading ? [] : warehouses"
+      :data="loading ? [] : docks"
       :columns="columns"
       :loading="loading"
       class="w-full"
@@ -265,27 +254,16 @@ onMounted(() => {
         <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
-              Warehouse Details
+              Dock Details
             </h4>
             <p class="text-sm wrap-break-word whitespace-normal">
-              <span class="text-muted">Warehouse Code:</span> {{ row.original.warehouse_code || '-' }}
+              <span class="text-muted">Dock Code:</span> {{ row.original.dock_code || '-' }}
             </p>
             <p class="text-sm wrap-break-word whitespace-normal">
-              <span class="text-muted">Warehouse Name:</span> {{ row.original.name || '-' }}
+              <span class="text-muted">Dock Name:</span> {{ row.original.name || '-' }}
             </p>
             <p class="text-sm wrap-break-word whitespace-normal">
-              <span class="text-muted">Notes:</span> {{ row.original.notes || '-' }}
-            </p>
-          </div>
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">
-              Classification
-            </h4>
-            <p class="text-sm wrap-break-word whitespace-normal">
-              <span class="text-muted">Category:</span> {{ row.original.category?.name || '-' }}
-            </p>
-            <p class="text-sm wrap-break-word whitespace-normal">
-              <span class="text-muted">Line:</span> {{ row.original.line?.name || '-' }}
+              <span class="text-muted">Warehouse Area:</span> {{ row.original.area?.name || '-' }}
             </p>
           </div>
           <div class="space-y-1">
@@ -315,12 +293,11 @@ onMounted(() => {
       />
     </div>
 
-    <WarehouseFormModal
+    <DockFormModal
       v-model:open="isModalOpen"
       :mode="modalMode"
-      :warehouse="currentWarehouse"
-      :categories="warehouseCategories"
-      :lines="lines"
+      :dock="currentDock"
+      :areas="areas"
       :loading="loading"
       @save="handleSave"
     />

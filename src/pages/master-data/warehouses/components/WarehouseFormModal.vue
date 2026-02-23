@@ -148,11 +148,11 @@ function close() {
     <template #body>
       <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
         <UFormField label="Warehouse Code" name="warehouse_code" required>
-          <UInput v-model="state.warehouse_code" placeholder="WH-001" class="w-full" />
+          <UInput v-model="state.warehouse_code" placeholder="e.g. WH-001" class="w-full" />
         </UFormField>
 
         <UFormField label="Warehouse Name" name="name" required>
-          <UInput v-model="state.name" placeholder="Main Warehouse" class="w-full" />
+          <UInput v-model="state.name" placeholder="e.g. Main Warehouse" class="w-full" />
         </UFormField>
 
         <UFormField label="Category" name="category_id" required>

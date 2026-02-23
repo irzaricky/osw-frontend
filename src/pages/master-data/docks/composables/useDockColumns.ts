@@ -1,10 +1,10 @@
-import { h, Ref, type Component } from 'vue'
+import { h, Ref,  type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Warehouse } from '../../../../types'
+import type { Dock } from '../../../../types/master-data/dock'
 
 interface ColumnActions {
-  onEdit: (warehouse: Warehouse) => void
-  onDelete: (warehouse: Warehouse) => void
+  onEdit: (warehouse: Dock) => void
+  onDelete: (warehouse: Dock) => void
 }
 
 interface ColumnComponents {
@@ -14,22 +14,10 @@ interface ColumnComponents {
   UDropdownMenu: Component | string
 }
 
-function getCategoryColor(categoryId?: number): string {
-  if (!categoryId) return 'neutral'
-  
-  const colors: Record<number, string> = {
-    1: 'secondary',
-    2: 'warning',
-    3: 'primary'
-  }
+export function useDockColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
+  const { UCheckbox, UButton, UDropdownMenu } = components
 
-  return colors[categoryId] || 'neutral'
-}
-
-export function useWarehouseColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
-  const { UCheckbox, UBadge, UButton, UDropdownMenu } = components
-
-  const columns: TableColumn<Warehouse>[] = [
+  const columns: TableColumn<Dock>[] = [
     {
       id: 'select',
       header: ({ table }) =>
@@ -54,40 +42,30 @@ export function useWarehouseColumns(actions: ColumnActions, components: ColumnCo
       cell: ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1
     },
     {
-      accessorKey: 'warehouse_code',
-      header: 'Warehouse Code'
+      accessorKey: 'dock_code',
+      header: 'Dock Code'
     },
     {
       accessorKey: 'name',
-      header: 'Warehouse Name'
+      header: 'Dock Name'
     },
     {
-      accessorKey: 'category.name',
-      header: 'Category',
-      cell: ({ row }) =>
-        h(
-          UBadge,
-          { color: getCategoryColor(row.original.category?.id), variant: 'subtle' },
-          () => row.original.category?.name || '-'
-        )
-    },
-    {
-      accessorKey: 'line.name',
-      header: 'Line',
-      cell: ({ row }) => row.original.line?.name || '-'
+      accessorKey: 'area.name',
+      header: 'Area',
+      cell: ({ row }) => row.original.area?.name || '-'
     },
     {
       id: 'actions',
       header: '',
       cell: ({ row }) => {
-        const warehouse = row.original
+        const dock = row.original
 
         const items = [
           [
             {
               label: 'Edit',
               icon: 'i-lucide-edit',
-              onSelect: () => actions.onEdit(warehouse)
+              onSelect: () => actions.onEdit(dock)
             }
           ],
           [
@@ -95,18 +73,18 @@ export function useWarehouseColumns(actions: ColumnActions, components: ColumnCo
               label: 'Delete',
               icon: 'i-lucide-trash-2',
               color: 'error' as const,
-              onSelect: () => actions.onDelete(warehouse)
+              onSelect: () => actions.onDelete(dock)
             }
           ]
         ]
 
-        return h(UDropdownMenu, { 
+        return h(UDropdownMenu, {
           items
         }, {
           default: () => h(UButton, {
             color: 'neutral',
             variant: 'ghost',
-            icon: 'i-lucide-ellipsis-vertical'
+            icon: 'i-lucide-more-vertical'
           })
         })
       }
@@ -118,8 +96,8 @@ export function useWarehouseColumns(actions: ColumnActions, components: ColumnCo
         h(UButton, {
           color: 'neutral',
           variant: 'ghost',
-          icon: row.getIsExpanded()
-            ? 'i-lucide-chevron-down'
+          icon: row.getIsExpanded() 
+            ? 'i-lucide-chevron-down' 
             : 'i-lucide-chevron-right',
           size: 'xs',
           onClick: () => row.toggleExpanded()
