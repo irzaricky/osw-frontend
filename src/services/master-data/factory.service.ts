@@ -13,6 +13,10 @@ const factoryService = {
     return api.get('/master-data/factories/', { params })
   },
 
+  getDropdown() {
+    return api.get('/master-data/factories/dropdown')
+  },
+
   getFactoryById(id: number | string) {
     return api.get(`/master-data/factories/${id}`)
   },

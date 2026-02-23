@@ -2,26 +2,29 @@
 import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
+import { useLineStore } from '../../../stores/master-data/line.store'
 import { useFactoryStore } from '../../../stores/master-data/factory.store'
-import { useFactoryColumns } from './composables/useFactoryColumns'
+import { useLineColumns } from './composables/useLineColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { Factory } from '../../../types/master-data/factory'
+import type { Line } from '../../../types/master-data/line'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
-import FactoryFilters from './components/FactoryFilters.vue'
-import FactoryBulkActions from './components/FactoryBulkActions.vue'
-import FactoryFormModal from './components/FactoryFormModal.vue'
+import LineFilters from './components/LineFilters.vue'
+import LineBulkActions from './components/LineBulkActions.vue'
+import LineFormModal from './components/LineFormModal.vue'
 import UploadExcelModal from '../../../components/UploadExcelModal.vue'
 
-// Store
+// Stores
+const lineStore = useLineStore()
 const factoryStore = useFactoryStore()
-const { factories, meta, loading } = storeToRefs(factoryStore)
+const { lines, meta, loading } = storeToRefs(lineStore)
+const { dropdown: factories } = storeToRefs(factoryStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef('table')
 
-// Resolve components in setup context
+// Resolve UI components
 const uiComponents = {
   UCheckbox: resolveComponent('UCheckbox') as any,
   UButton: resolveComponent('UButton') as any,
@@ -32,32 +35,35 @@ const uiComponents = {
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Master Data' },
-  { label: 'Factories' }
+  { label: 'Lines' }
 ]
 
 // State
 const search = ref('')
+const filters = reactive({
+  factory_id: undefined as number | undefined
+})
 
 // Modal state — Form
 const isModalOpen = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
 
-function createEmptyFactory(): Partial<Factory> {
+function createEmptyLine(): Partial<Line> {
   return {
     id: undefined,
+    line_code: '',
     name: '',
-    address: '',
-    phone: '',
-    maps_url: ''
+    factory_id: undefined,
+    sequence: 0
   }
 }
 
-const currentFactory = reactive<Partial<Factory>>(createEmptyFactory())
+const currentLine = reactive<Partial<Line>>(createEmptyLine())
 
 // Modal state — Upload
 const isUploadModalOpen = ref(false)
 
-// Confirm dialog state
+// Confirm dialog
 const confirmDialog = reactive({
   open: false,
   title: '',
@@ -69,7 +75,7 @@ const confirmDialog = reactive({
 const rowSelection = ref({})
 
 // Columns
-const { columns } = useFactoryColumns({
+const { columns } = useLineColumns({
   onEdit: openEditModal,
   onDelete: handleDelete
 }, uiComponents)
@@ -79,25 +85,27 @@ const selectedCount = computed((): number => {
   return table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0
 })
 
-// Data Fetching
+// Data fetching
 async function fetchData() {
   const params: Record<string, any> = {
     page: meta.value.page,
     limit: meta.value.limit,
     search: search.value
   }
-  await factoryStore.fetchFactories(params)
+  if (filters.factory_id) params.factory_id = filters.factory_id
+  await lineStore.fetchLines(params)
 }
 
 // Download
 async function handleDownload() {
   try {
     const params: Record<string, any> = { search: search.value }
-    const blob = await factoryStore.downloadFactories(params)
+    if (filters.factory_id) params.factory_id = filters.factory_id
+    const blob = await lineStore.downloadLines(params)
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `Factories_${new Date().getTime()}.xlsx`)
+    link.setAttribute('download', `Lines_${new Date().getTime()}.xlsx`)
     document.body.appendChild(link)
     link.click()
     link.parentNode?.removeChild(link)
@@ -110,8 +118,8 @@ async function handleDownload() {
 // Upload
 async function handleUpload(file: File) {
   try {
-    const res = await factoryStore.uploadFactories(file)
-    toastSuccess(res.message || 'Factories uploaded successfully')
+    const res = await lineStore.uploadLines(file)
+    toastSuccess(res.message || 'Lines uploaded successfully')
     isUploadModalOpen.value = false
     fetchData()
   } catch (err) {
@@ -119,34 +127,34 @@ async function handleUpload(file: File) {
   }
 }
 
-// Modal Handlers
+// Modal handlers
 function openAddModal() {
   modalMode.value = 'add'
-  Object.assign(currentFactory, createEmptyFactory())
+  Object.assign(currentLine, createEmptyLine())
   isModalOpen.value = true
 }
 
-function openEditModal(factory: Factory) {
+function openEditModal(line: Line) {
   modalMode.value = 'edit'
-  Object.assign(currentFactory, {
-    id: factory.id,
-    name: factory.name,
-    address: factory.address ?? '',
-    phone: factory.phone ?? '',
-    maps_url: factory.maps_url ?? ''
+  Object.assign(currentLine, {
+    id: line.id,
+    line_code: line.line_code,
+    name: line.name,
+    factory_id: line.factory_id,
+    sequence: line.sequence
   })
   isModalOpen.value = true
 }
 
-async function handleSave(data: Partial<Factory>) {
+async function handleSave(data: Partial<Line>) {
   try {
     let message = ''
     if (modalMode.value === 'add') {
-      const res = await factoryStore.createFactory(data)
-      message = res.message || 'Factory created'
+      const res = await lineStore.createLine(data)
+      message = res.message || 'Line created'
     } else {
-      const res = await factoryStore.updateFactory(currentFactory.id!, data)
-      message = res.message || 'Factory updated'
+      const res = await lineStore.updateLine(currentLine.id!, data)
+      message = res.message || 'Line updated'
     }
     toastSuccess(message)
     isModalOpen.value = false
@@ -156,14 +164,14 @@ async function handleSave(data: Partial<Factory>) {
   }
 }
 
-// Row Actions
-async function handleDelete(row: Factory) {
-  confirmDialog.title = 'Delete Factory'
-  confirmDialog.description = `Are you sure you want to delete factory "${row.name}"? This action cannot be undone.`
+// Row actions
+async function handleDelete(row: Line) {
+  confirmDialog.title = 'Delete Line'
+  confirmDialog.description = `Are you sure you want to delete line "${row.name}"? This action cannot be undone.`
   confirmDialog.action = async () => {
     try {
-      const res = await factoryStore.deleteFactory(row.id)
-      toastSuccess(res.message || 'Factory deleted')
+      const res = await lineStore.deleteLine(row.id)
+      toastSuccess(res.message || 'Line deleted')
       fetchData()
       confirmDialog.open = false
     } catch (err) {
@@ -178,13 +186,13 @@ async function handleBulkDelete() {
   const selectedRows = table.value?.tableApi?.getFilteredSelectedRowModel().rows || []
   if (!selectedRows.length) return
 
-  confirmDialog.title = 'Delete Multiple Factories'
-  confirmDialog.description = `Are you sure you want to delete ${selectedRows.length} factory(s)? This action cannot be undone.`
+  confirmDialog.title = 'Delete Multiple Lines'
+  confirmDialog.description = `Are you sure you want to delete ${selectedRows.length} line(s)? This action cannot be undone.`
   confirmDialog.action = async () => {
     try {
-      await Promise.all(selectedRows.map((row: Row<Factory>) => factoryStore.deleteFactory(row.original.id)))
+      await Promise.all(selectedRows.map((row: Row<Line>) => lineStore.deleteLine(row.original.id)))
       rowSelection.value = {}
-      toastSuccess(`${selectedRows.length} factories deleted`)
+      toastSuccess(`${selectedRows.length} lines deleted`)
       fetchData()
       confirmDialog.open = false
     } catch (err) {
@@ -195,9 +203,13 @@ async function handleBulkDelete() {
   confirmDialog.open = true
 }
 
-// Filter Handlers
+// Filter handlers
 function onUpdateSearch(value: string) {
   search.value = value
+}
+
+function onUpdateFilters(partial: Record<string, any>) {
+  Object.assign(filters, partial)
 }
 
 // Watchers
@@ -207,73 +219,74 @@ const debouncedFetch = useDebounceFn(() => {
 }, 300)
 
 watch(search, () => debouncedFetch())
+watch(filters, () => {
+  meta.value.page = 1
+  fetchData()
+}, { deep: true })
 
 // Lifecycle
 onMounted(() => {
   fetchData()
+  factoryStore.fetchDropdown()
 })
 </script>
 
 <template>
   <div class="p-6 space-y-6">
-    <!-- Breadcrumbs -->
     <Breadcrumbs :items="breadcrumbItems" />
 
-    <!-- Header -->
     <div class="flex justify-between items-center mb-4">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        Factory Management
+        Line Management
       </h1>
     </div>
 
-    <div class="flex justify-between items-center gap-4">
-      <div class="flex gap-2">
-        <UButton
-          icon="i-lucide-download"
-          color="neutral"
-          variant="ghost"
-          label="Export"
-          @click="handleDownload"
-        />
-        <UButton
-          icon="i-lucide-upload"
-          color="neutral"
-          variant="ghost"
-          label="Import"
-          @click="isUploadModalOpen = true"
-        />
-        <UButton
-          icon="i-lucide-plus"
-          color="primary"
-          variant="solid"
-          label="Add Factory"
-          @click="openAddModal"
-        />
-      </div>
+    <LineFilters
+      :search="search"
+      :filters="filters"
+      :factories="factories"
+      @update:search="onUpdateSearch"
+      @update:filters="onUpdateFilters"
+    />
 
-      <FactoryFilters
-        :search="search"
-        @update:search="onUpdateSearch"
+    <div class="flex gap-2">
+      <UButton
+        icon="i-lucide-download"
+        color="neutral"
+        variant="ghost"
+        label="Export"
+        @click="handleDownload"
+      />
+      <UButton
+        icon="i-lucide-upload"
+        color="neutral"
+        variant="ghost"
+        label="Import"
+        @click="isUploadModalOpen = true"
+      />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        variant="solid"
+        label="Add Line"
+        @click="openAddModal"
       />
     </div>
 
-    <!-- Bulk Actions -->
-    <FactoryBulkActions
+    <LineBulkActions
       :count="selectedCount"
       @delete="handleBulkDelete"
     />
 
-    <!-- Table -->
     <UTable
       ref="table"
       v-model:row-selection="rowSelection"
-      :data="factories"
+      :data="lines"
       :columns="columns"
       :loading="loading"
       class="w-full"
     />
 
-    <!-- Pagination -->
     <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
       <div class="text-sm text-muted">
         {{ selectedCount }} of {{ meta.total }} row(s) selected.
@@ -286,27 +299,24 @@ onMounted(() => {
       />
     </div>
 
-    <!-- Form Modal -->
-    <FactoryFormModal
+    <LineFormModal
       v-model:open="isModalOpen"
       :mode="modalMode"
-      :factory="currentFactory"
+      :line="currentLine"
+      :factories="factories"
       :loading="loading"
       @save="handleSave"
     />
 
-    <!-- Upload Modal -->
     <UploadExcelModal
       v-model:open="isUploadModalOpen"
-      title="Upload Factories"
-      description="Upload an Excel file to import factory data."
-      :expected-headers="['Factory Name', 'Address', 'Phone', 'Maps URL']"
+      title="Upload Lines"
+      description="Upload an Excel file to import line data."
+      :expected-headers="['Line Code', 'Line Name', 'Factory Name', 'Sequence']"
       :loading="loading"
       @upload="handleUpload"
     />
-    
 
-    <!-- Confirm Dialog -->
     <ConfirmDialog
       v-model:open="confirmDialog.open"
       :title="confirmDialog.title"
