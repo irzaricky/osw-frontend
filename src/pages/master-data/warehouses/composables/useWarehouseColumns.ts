@@ -1,4 +1,4 @@
-import { h, type Component } from 'vue'
+import { h, Ref, type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { Warehouse } from '../../../../types'
 
@@ -26,7 +26,7 @@ function getCategoryColor(categoryId?: number): string {
   return colors[categoryId] || 'neutral'
 }
 
-export function useWarehouseColumns(actions: ColumnActions, components: ColumnComponents) {
+export function useWarehouseColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
   const { UCheckbox, UBadge, UButton, UDropdownMenu } = components
 
   const columns: TableColumn<Warehouse>[] = [
@@ -51,7 +51,7 @@ export function useWarehouseColumns(actions: ColumnActions, components: ColumnCo
     },
     {
       header: 'No',
-      cell: ({ row }) => row.index + 1
+      cell: ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1
     },
     {
       accessorKey: 'warehouse_code',

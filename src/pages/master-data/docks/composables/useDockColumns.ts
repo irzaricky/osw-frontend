@@ -1,4 +1,4 @@
-import { h, type Component } from 'vue'
+import { h, Ref,  type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { Dock } from '../../../../types/master-data/dock'
 
@@ -14,7 +14,7 @@ interface ColumnComponents {
   UDropdownMenu: Component | string
 }
 
-export function useDockColumns(actions: ColumnActions, components: ColumnComponents) {
+export function useDockColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
   const { UCheckbox, UButton, UDropdownMenu } = components
 
   const columns: TableColumn<Dock>[] = [
@@ -39,7 +39,7 @@ export function useDockColumns(actions: ColumnActions, components: ColumnCompone
     },
     {
       header: 'No',
-      cell: ({ row }) => row.index + 1
+      cell: ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1
     },
     {
       accessorKey: 'dock_code',

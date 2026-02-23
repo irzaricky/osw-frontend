@@ -28,6 +28,11 @@ const uiComponents = {
   UDropdownMenu: resolveComponent('UDropdownMenu')
 }
 
+const pagination = computed(() => ({
+  page: meta.value.page,
+  limit: meta.value.limit
+}))
+
 // Breadcrumbs
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -77,7 +82,7 @@ const expanded = ref({})
 const { columns } = useDockColumns({
   onEdit: openEditModal,
   onDelete: handleDelete
-}, uiComponents)
+}, uiComponents, pagination)
 
 // Computed
 const selectedCount = computed(() => {
@@ -240,7 +245,7 @@ onMounted(() => {
       ref="table"
       v-model:row-selection="rowSelection"
       v-model:expanded="expanded"
-      :data="docks"
+      :data="loading ? [] : docks"
       :columns="columns"
       :loading="loading"
       class="w-full"
