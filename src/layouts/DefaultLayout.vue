@@ -46,6 +46,13 @@ const links = [[{
     }
   },
   {
+    label: 'Docks',
+    to: '/master-data/docks',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Audit Logs',
     to: '/master-data/audit-logs',
     onSelect: () => {
