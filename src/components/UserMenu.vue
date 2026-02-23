@@ -20,6 +20,11 @@ const userData = ref({
 })
 
 onMounted(async () => {
+  const token = localStorage.getItem('auth_token')
+  if (!token || token === 'null' || token === 'undefined') {
+    return
+  }
+  
   try {
     const response = await api.get('auth/me')
     if (response.data?.status && response.data?.data) {
