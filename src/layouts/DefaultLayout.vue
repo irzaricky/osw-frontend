@@ -72,6 +72,13 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
+  },
+  {
+    label: 'Lines',
+    to: '/master-data/lines',
+    onSelect: () => {
+      open.value = false
+    }
   }
 ]
 }, {

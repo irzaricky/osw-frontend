@@ -3,6 +3,7 @@ import type { Vehicle, VehicleType } from './master-data/vehicle'
 import type { Warehouse } from './master-data/warehouse'
 import type { WarehouseArea, WarehouseAreaPayload } from './master-data/warehouse-area'
 import type { Factory } from './master-data/factory'
+import type { Line } from './master-data/line'
 
 export type {
   User,

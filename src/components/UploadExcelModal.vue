@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   open: boolean
   loading?: boolean
-}>()
+  title?: string
+  description?: string
+  expectedHeaders?: string[]
+}>(), {
+  title: 'Upload File',
+  description: 'Upload an Excel file (.xlsx / .xls) to import data.',
+  expectedHeaders: () => []
+})
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void
@@ -17,16 +24,15 @@ const dragOver = ref(false)
 
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
-  if (target.files?.length) {
-    setFile(target.files[0])
-  }
+  if (target.files?.length) setFile(target.files[0])
 }
 
 function setFile(file: File) {
-  const allowed = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel']
-  if (!allowed.includes(file.type)) {
-    return
-  }
+  const allowed = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ]
+  if (!allowed.includes(file.type)) return
   selectedFile.value = file
 }
 
@@ -34,15 +40,6 @@ function handleDrop(event: DragEvent) {
   dragOver.value = false
   const file = event.dataTransfer?.files?.[0]
   if (file) setFile(file)
-}
-
-function handleDragOver(event: DragEvent) {
-  event.preventDefault()
-  dragOver.value = true
-}
-
-function handleDragLeave() {
-  dragOver.value = false
 }
 
 function clearFile() {
@@ -70,8 +67,8 @@ function formatFileSize(bytes: number): string {
 <template>
   <UModal
     :open="open"
-    title="Upload Factories"
-    description="Upload an Excel file (.xlsx / .xls) to import factory data."
+    :title="title"
+    :description="description"
     :ui="{ content: 'sm:max-w-[500px]' }"
     @update:open="emit('update:open', $event)"
   >
@@ -85,8 +82,8 @@ function formatFileSize(bytes: number): string {
             : 'border-default hover:border-primary/50 hover:bg-muted/30'"
           @click="fileInput?.click()"
           @drop.prevent="handleDrop"
-          @dragover="handleDragOver"
-          @dragleave="handleDragLeave"
+          @dragover.prevent="dragOver = true"
+          @dragleave="dragOver = false"
         >
           <input
             ref="fileInput"
@@ -96,12 +93,17 @@ function formatFileSize(bytes: number): string {
             @change="handleFileChange"
           />
           <UIcon name="i-lucide-file-spreadsheet" class="w-10 h-10 mx-auto mb-3 text-muted" />
-          <p class="text-sm font-medium">
-            Drag & drop your Excel file here
-          </p>
-          <p class="text-xs text-muted mt-1">
-            or click to browse — .xlsx / .xls only
-          </p>
+          <p class="text-sm font-medium">Drag & drop your Excel file here</p>
+          <p class="text-xs text-muted mt-1">or click to browse — .xlsx / .xls only</p>
+        </div>
+
+        <!-- Expected Headers Hint -->
+        <div
+          v-if="expectedHeaders.length > 0"
+          class="text-xs text-muted bg-muted/20 rounded-lg p-3 space-y-1"
+        >
+          <p class="font-medium text-default">Expected Excel column order:</p>
+          <p>{{ expectedHeaders.map((h, i) => `${String.fromCharCode(65 + i)} — ${h}`).join('  |  ') }}</p>
         </div>
 
         <!-- Selected File Preview -->

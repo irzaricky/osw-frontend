@@ -100,6 +100,11 @@ const router = createRouter({
       component: () => import('./pages/master-data/factories/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/lines', 
+      component: () => import('./pages/master-data/lines/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     
     // error
     {
