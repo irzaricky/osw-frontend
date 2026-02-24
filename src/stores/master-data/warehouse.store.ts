@@ -7,6 +7,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   // State
   const warehouses = ref<Warehouse[]>([])
   const warehouseCategories = ref<WarehouseCategory[]>([])
+  const dropdown = ref<Pick<Warehouse, 'id' | 'name'>[]>([])
 
   const meta = ref({
     page: 1,
@@ -85,9 +86,20 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   // Actions - Dropdown
+  async function fetchDropdown() {
+    try {
+      const response = await warehouseService.getDropdown()
+      const data = response.data
+      if (data.status) {
+        dropdown.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching warehouse dropdown:', e)
+    }
+  }
+
   async function fetchWarehouseCategories() {
-    loading.value = true
-    error.value = null
     try {
       const response = await warehouseService.getWarehouseCategoriesDropdown()
       const data = response.data
@@ -97,8 +109,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
       console.error('Error fetching warehouse categories:', e)
-    } finally {
-      loading.value = false
     }
   }
 
@@ -106,6 +116,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     // State
     warehouses,
     warehouseCategories,
+    dropdown,
     meta,
     loading,
     error,
@@ -116,5 +127,6 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     updateWarehouse,
     deleteWarehouse,
     fetchWarehouseCategories,
+    fetchDropdown
   }
 })

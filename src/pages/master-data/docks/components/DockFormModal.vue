@@ -3,7 +3,7 @@ import { reactive, watch, computed, ref } from 'vue'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Dock } from '../../../../types/master-data/dock'
-import type { DropdownOption } from '../composables/useDockDropdowns'
+import type { WarehouseArea } from '../../../../types/master-data/warehouse-area'
 
 const formRef = ref()
 
@@ -11,7 +11,7 @@ const props = defineProps<{
   open: boolean
   mode: 'add' | 'edit'
   dock: Partial<Dock>
-  areas: DropdownOption[]
+  areas: Pick<WarehouseArea, 'id' | 'name'>[]
   loading: boolean
 }>()
 
