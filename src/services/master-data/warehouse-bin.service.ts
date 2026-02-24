@@ -19,11 +19,21 @@ export type WarehouseBin = {
   capacity?: number | null
 }
 
-const BASE = '/master-data/warehouse_bins' 
+export type WarehouseBinUpdatePayload = {
+  is_dedicated?: boolean
+  dedicated_part_number?: string | null
+  capacity?: number | null
+}
+
+const BASE = '/master-data/warehouse_bins'
 
 const warehouseBinService = {
   list(params?: WarehouseBinParams) {
     return api.get(BASE, { params })
+  },
+
+  update(id: number | string, data: WarehouseBinUpdatePayload) {
+    return api.put(`${BASE}/${id}`, data)
   }
 }
 

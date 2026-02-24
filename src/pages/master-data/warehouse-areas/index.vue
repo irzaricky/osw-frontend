@@ -226,6 +226,7 @@ async function openPrintBinLabels(area: WarehouseArea) {
   }
 }
 
+
 // FETCH
 async function fetchData() {
   const params: Record<string, any> = {
@@ -375,12 +376,22 @@ onMounted(async () => {
     </div>
 
     <!-- FILTER -->
-    <div class="flex gap-3">
-      <UInput v-model="search" placeholder="Search area code or name..." icon="i-lucide-search" />
-
-      <USelectMenu v-model="filters.warehouse" :items="warehouseItems" searchable placeholder="Filter by Warehouse"
-        class="w-full md:w-44" clear />
-    </div>
+    <div class="flex flex-wrap items-center gap-3">
+    <USelectMenu
+      v-model="filters.warehouse"
+      :items="warehouseItems"
+      placeholder="Filter by Warehouse"
+      class="w-full md:w-48"
+      clear
+    />
+    
+    <UInput 
+      v-model="search" 
+      icon="i-lucide-search"
+      placeholder="Search area code or name..."
+      class="w-full md:w-64 ml-auto"
+    />
+  </div>
 
     <!-- ACTION -->
     <div class="flex gap-2">

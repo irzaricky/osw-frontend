@@ -9,6 +9,7 @@ export interface WarehouseArea {
 
   total_cols: number
   total_rows: number
+  
 
   warehouse?: Warehouse
 
@@ -22,4 +23,5 @@ export interface WarehouseAreaPayload {
   name: string
   total_cols: number
   total_rows: number
+  
 }

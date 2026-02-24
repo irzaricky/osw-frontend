@@ -2,8 +2,11 @@ import type { User } from './master-data/user'
 import type { Vehicle, VehicleType } from './master-data/vehicle'
 import type { Warehouse } from './master-data/warehouse'
 import type { WarehouseArea, WarehouseAreaPayload } from './master-data/warehouse-area'
+import type { WarehouseBin, WarehouseBinUpdatePayload } from './master-data/warehouse-bin'
+import type { PartDropdown } from './master-data/part'
 import type { Factory } from './master-data/factory'
 import type { Line } from './master-data/line'
+
 
 export type {
   User,
@@ -15,7 +18,10 @@ export type {
   Line,
   WarehousePayload,
   WarehouseArea,
-  WarehouseAreaPayload
+  WarehouseAreaPayload,
+  WarehouseBin,
+  WarehouseBinUpdatePayload,
+  PartDropdown
 }
 
 export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'

@@ -46,6 +46,13 @@ const links = [[{
     }
   },
   {
+    label: 'Storage Bins',
+    to: '/master-data/storage-bins',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Docks',
     to: '/master-data/docks',
     onSelect: () => {
