@@ -6,15 +6,6 @@ export interface WarehouseCategory {
   deleted_at?: string | null
 }
 
-export interface Line {
-  id: number
-  line_code: string
-  name: string
-  createdAt?: string
-  updatedAt?: string
-  deleted_at?: string | null
-}
-
 export interface Warehouse {
   id: number
   warehouse_code: string
@@ -32,5 +23,5 @@ export interface WarehousePayload {
   name: string
   line_id?: number
   category_id: number
-  notes?: string
+  notes?: string | null
 }

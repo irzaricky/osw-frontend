@@ -2,8 +2,8 @@
 import { reactive, watch, computed, ref } from 'vue'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
-import type { WarehousePayload } from '../../../../types'
-import type { DropdownOption } from '../composables/useWarehouseDropdowns'
+import type { Line } from '../../../../types/master-data/line'
+import type { WarehousePayload, WarehouseCategory } from '../../../../types/master-data/warehouse'
 
 const formRef = ref()
 
@@ -11,8 +11,8 @@ const props = defineProps<{
   open: boolean
   mode: 'add' | 'edit'
   warehouse: Partial<WarehousePayload>
-  categories: DropdownOption[]
-  lines: DropdownOption[]
+  categories: Pick<WarehouseCategory, 'id' | 'name'>[]
+  lines: Pick<Line, 'id' | 'name'>[]
   loading: boolean
 }>()
 
@@ -47,8 +47,8 @@ watch(
     state.name = val.name ?? ''
     state.notes = val.notes ?? ''
 
-    state.category_id = val.category_id ?? val.category?.id
-    state.line_id = val.line_id ?? val.line?.id
+    state.category_id = val.category_id ?? undefined
+    state.line_id = val.line_id ?? undefined
   },
   { immediate: true, deep: true }
 )

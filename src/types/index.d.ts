@@ -9,11 +9,9 @@ export type {
   User,
   Vehicle,
   VehicleType,
-  WarehouseCategory,
   Warehouse,
   Factory,
   Line,
-  WarehousePayload,
   WarehouseArea,
   WarehouseAreaPayload
 }

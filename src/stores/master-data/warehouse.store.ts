@@ -1,13 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import warehouseService, { type WarehouseParams } from '../../services/master-data/warehouse.service'
-import type { Warehouse } from '../../types/master-data/warehouse'
+import type { Warehouse, WarehouseCategory } from '../../types/master-data/warehouse'
 
 export const useWarehouseStore = defineStore('warehouse', () => {
   // State
   const warehouses = ref<Warehouse[]>([])
-  const warehouseCategories = ref<any[]>([])
-  const lines = ref<any[]>([])
+  const warehouseCategories = ref<WarehouseCategory[]>([])
 
   const meta = ref({
     page: 1,
@@ -103,28 +102,10 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     }
   }
 
-  async function fetchLines() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await warehouseService.getLinesDropdown()
-      const data = response.data
-      if (data.status) {
-        lines.value = data.data
-      }
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      console.error('Error fetching lines:', e)
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     // State
     warehouses,
     warehouseCategories,
-    lines,
     meta,
     loading,
     error,
@@ -135,6 +116,5 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     updateWarehouse,
     deleteWarehouse,
     fetchWarehouseCategories,
-    fetchLines
   }
 })
