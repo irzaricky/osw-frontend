@@ -81,6 +81,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/master-data/storage-bins', 
+      component: () => import('./pages/master-data/storage-bins/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/master-data/docks', 
       component: () => import('./pages/master-data/docks/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
