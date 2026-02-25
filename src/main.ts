@@ -110,6 +110,11 @@ const router = createRouter({
       component: () => import('./pages/master-data/lines/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/calendar', 
+      component: () => import('./pages/master-data/calendar/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     
     // error
     {

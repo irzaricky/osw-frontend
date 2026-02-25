@@ -86,6 +86,13 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
+  },
+  {
+    label: 'Calendar',
+    to: '/master-data/calendar',
+    onSelect: () => {
+      open.value = false
+    }
   }
 ]
 }, {
