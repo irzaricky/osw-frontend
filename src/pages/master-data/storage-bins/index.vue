@@ -60,6 +60,17 @@ const confirmDialog = ref({
   action: null as null | (() => Promise<void>)
 })
 
+const selectedWarehouseObj = computed(() => {
+  const id = selectedWarehouse.value?.value
+  if (!id) return undefined
+  return (warehouses.value || []).find((w: any) => w.id === id)
+})
+
+const partTypeCodeFromWarehouse = computed(() => {
+  const categoryName = selectedWarehouseObj.value?.category?.name
+  return mapWarehouseCategoryToPartType(categoryName)
+})
+
 // Warehouse dropdown items
 const warehouseItems = computed<Option[]>(() => [
   { label: 'All Warehouse', value: undefined },
@@ -88,6 +99,17 @@ const warehouseCategoryName = computed(() => {
   const found = (warehouses.value || []).find((w: any) => w.id === id)
   return found?.category?.name || '-'
 })
+
+
+function mapWarehouseCategoryToPartType(categoryName?: string) {
+  const name = (categoryName || '').toLowerCase()
+
+  if (name.includes('finish') || name.includes('finished')) return 'PRODUCT'
+  if (name.includes('wip')) return 'WIP'
+  if (name.includes('raw')) return 'RAW'
+
+  return undefined
+}
 
 async function fetchAreasByWarehouse() {
   const warehouseId = selectedWarehouse.value?.value
@@ -210,12 +232,13 @@ watch(
 )
 
 watch(
-  () => selectedArea.value?.value,
-  async (areaId) => {
-    if (!areaId) return
-
+  () => partTypeCodeFromWarehouse.value,
+  async (code) => {
     try {
-      await partStore.fetchPartsDropdown()
+      const params: any = {}
+      if (code) params.part_type_code = code
+
+      await partStore.fetchPartsDropdown(params)
     } catch (err: any) {
       toastError(err?.response?.data?.message || err?.message || err)
     }

@@ -8,11 +8,12 @@ export const usePartStore = defineStore('part', {
   }),
 
   actions: {
-    async fetchPartsDropdown(params?: { search?: string }) {
+    async fetchPartsDropdown(params?: Record<string, any>) {
+      this.loading = true
       try {
-        this.loading = true
         const res = await partService.dropdown(params)
         if (res.data?.status) this.parts = res.data.data || []
+        else this.parts = []
       } finally {
         this.loading = false
       }

@@ -4,15 +4,14 @@ export type PartDropdown = {
   id: number
   part_number: string
   part_name: string
+  part_type_code?: string | null
 }
 
-export interface PartDropdownParams {
-  search?: string
-}
+const BASE = '/master-data/parts'
 
 const partService = {
-  dropdown(params?: PartDropdownParams) {
-    return api.get('/master-data/parts/dropdown', { params })
+  dropdown(params?: Record<string, any>) {
+    return api.get(`${BASE}/dropdown`, { params })
   }
 }
 
