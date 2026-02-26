@@ -52,7 +52,6 @@ const filters = reactive({
 })
 
 const warehouseItems = computed(() => [
-  { label: 'All Warehouse', value: undefined },
   ...(warehouses.value || []).map((w: any) => ({
     label: w.name,
     value: w.id

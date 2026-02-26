@@ -11,7 +11,7 @@ interface Meta {
 export const useWarehouseAreaStore = defineStore('warehouseArea', {
   state: () => ({
     areas: [] as WarehouseArea[],
-    dropdown: [] as Pick<WarehouseArea, 'id' | 'name'>[],
+    dropdown: [] as Pick<WarehouseArea, 'id' | 'area_code' | 'name' | 'warehouse_id'>[],
     meta: {
       page: 1,
       limit: 10,
@@ -21,9 +21,9 @@ export const useWarehouseAreaStore = defineStore('warehouseArea', {
   }),
 
   actions: {
-    async fetchDropdown() {
+    async fetchDropdown(params?: Record<string, any>) {
       try {
-        const res = await warehouseAreaService.getDropdown()
+        const res = await warehouseAreaService.getDropdown(params)
 
         if (res.data.status) {
           this.dropdown = res.data.data

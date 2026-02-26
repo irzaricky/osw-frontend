@@ -73,7 +73,6 @@ const partTypeCodeFromWarehouse = computed(() => {
 
 // Warehouse dropdown items
 const warehouseItems = computed<Option[]>(() => [
-  { label: 'All Warehouse', value: undefined },
   ...(warehouses.value || []).map((w: any) => ({ label: w.name, value: w.id }))
 ])
 
@@ -119,7 +118,7 @@ async function fetchAreasByWarehouse() {
 
   if (!warehouseId) return
 
-  await areaStore.fetchAreas({ page: 1, limit: 200, warehouse_id: warehouseId })
+  await areaStore.fetchDropdown
 }
 
 async function fetchBinsByArea() {
@@ -248,7 +247,7 @@ watch(
 
 // Lifecycle
 onMounted(async () => {
-  await warehouseStore.fetchWarehouses({ page: 1, limit: 200 })
+  await warehouseStore.fetchDropdown
 })
 
 </script>
