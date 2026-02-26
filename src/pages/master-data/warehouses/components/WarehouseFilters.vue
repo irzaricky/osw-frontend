@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DropdownOption } from '../composables/useWarehouseDropdowns'
+import type { Line } from '../../../../types/master-data/line'
+import type { WarehouseCategory } from '../../../../types/master-data/warehouse'
 
 interface Filters {
   category_id: number | undefined
@@ -10,8 +11,8 @@ interface Filters {
 const props = defineProps<{
   search: string
   filters: Filters
-  warehouseCategories: DropdownOption[]
-  lines: DropdownOption[]
+  warehouseCategories: Pick<WarehouseCategory, 'id' | 'name'>[]
+  lines: Pick<Line, 'id' | 'name'>[]
 }>()
 
 const emit = defineEmits<{

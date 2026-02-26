@@ -6,7 +6,7 @@ import type { Dock } from '../../types/master-data/dock'
 export const useDockStore = defineStore('dock', () => {
   // State
   const docks = ref<Dock[]>([])
-  const areas = ref<any>([])
+  const dropdown = ref<Pick<Dock, 'id' | 'name'>[]>([])
 
   const meta = ref({
     page: 1,
@@ -19,6 +19,19 @@ export const useDockStore = defineStore('dock', () => {
   const error = ref<string | null>(null)
 
   // Actions - Docks
+  async function fetchDropdown() {
+    try {
+      const response = await dockService.getDropdown()
+      const data = response.data
+      if (data.status) {
+        dropdown.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching dock dropdown:', e)
+    }
+  }
+
   async function fetchDocks(params: DockParams = {}) {
     loading.value = true
     error.value = null
@@ -84,37 +97,19 @@ export const useDockStore = defineStore('dock', () => {
     }
   }
 
-  // Actions - Dropdown
-  async function fetchAreas() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await dockService.getAreasDropdown()
-      const data = response.data
-      if (data.status) {
-        areas.value = data.data
-      }
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      console.error('Error fetching areas:', e)
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     // State
     docks,
-    areas,
+    dropdown,
     meta,
     loading,
     error,
 
     // Actions
+    fetchDropdown,
     fetchDocks,
     createDock,
     updateDock,
-    deleteDock,
-    fetchAreas
+    deleteDock
   }
 })

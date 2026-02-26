@@ -3,10 +3,10 @@ import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveCompo
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
-import { useWarehouseDropdowns } from './composables/useWarehouseDropdowns'
+import { useLineStore } from '../../../stores/master-data/line.store'
 import { useWarehouseColumns } from './composables/useWarehouseColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { Warehouse, WarehousePayload } from '../../../types'
+import type { Warehouse, WarehousePayload } from '../../../types/master-data/warehouse'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -17,7 +17,9 @@ import WarehouseFormModal from './components/WarehouseFormModal.vue'
 
 // Store
 const warehouseStore = useWarehouseStore()
-const { warehouses, meta, loading } = storeToRefs(warehouseStore)
+const lineStore = useLineStore()
+const { warehouses, meta, loading, warehouseCategories } = storeToRefs(warehouseStore)
+const { dropdown: lines } = storeToRefs(lineStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef<any>('table')
 
@@ -46,14 +48,6 @@ const filters = reactive({
   category_id: undefined as number | undefined,
   line_id: undefined as number | undefined
 })
-
-// Dropdowns
-const { 
-  warehouseCategories, 
-  lines, 
-  fetchWarehouseCategories, 
-  fetchLines 
-} = useWarehouseDropdowns()
 
 // Modal state
 const isModalOpen = ref(false)
@@ -127,7 +121,7 @@ function openEditModal(warehouse: Warehouse) {
   isModalOpen.value = true
 }
 
-async function handleSave(data: WarehousePayload) {
+async function handleSave(data: Partial<WarehousePayload>) {
   try {
     let message = ''
 
@@ -213,8 +207,8 @@ watch(filters, () => {
 // Lifecycle
 onMounted(() => {
   fetchData()
-  fetchWarehouseCategories()
-  fetchLines()
+  lineStore.fetchDropdown()
+  warehouseStore.fetchWarehouseCategoriesDropdown()
 })
 </script>
 

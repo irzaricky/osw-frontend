@@ -3,7 +3,7 @@ import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveCompo
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { useDockStore } from '../../../stores/master-data/dock.store'
-import { useDockDropdowns } from './composables/useDockDropdowns'
+import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import { useDockColumns } from './composables/useDockColumns'
 import { useAppToast } from '../../../composables/useAppToast'
 import type { Dock } from '../../../types/master-data/dock'
@@ -17,7 +17,9 @@ import DockFormModal from './components/DockFormModal.vue'
 
 // Store
 const dockStore = useDockStore()
+const warehouseAreaStore = useWarehouseAreaStore()
 const { docks, meta, loading } = storeToRefs(dockStore)
+const { dropdown: areas } = storeToRefs(warehouseAreaStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef<any>('table')
 
@@ -45,12 +47,6 @@ const search = ref('')
 const filters = reactive({
   area_id: undefined as number | undefined
 })
-
-// Dropdowns
-const {
-  areas,
-  fetchAreas
-} = useDockDropdowns()
 
 // Modal state
 const isModalOpen = ref(false)
@@ -204,7 +200,7 @@ watch(filters, () => {
 // Lifecycle
 onMounted(() => {
   fetchData()
-  fetchAreas()
+  warehouseAreaStore.fetchDropdown()
 })
 </script>
 

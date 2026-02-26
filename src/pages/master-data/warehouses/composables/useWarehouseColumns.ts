@@ -1,6 +1,6 @@
 import { h, Ref, type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Warehouse } from '../../../../types'
+import type { Warehouse } from '../../../../types/master-data/warehouse'
 
 interface ColumnActions {
   onEdit: (warehouse: Warehouse) => void

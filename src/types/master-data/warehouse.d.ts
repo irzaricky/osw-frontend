@@ -1,14 +1,7 @@
+import type { Line } from './line'
+
 export interface WarehouseCategory {
   id: number
-  name: string
-  createdAt?: string
-  updatedAt?: string
-  deleted_at?: string | null
-}
-
-export interface Line {
-  id: number
-  line_code: string
   name: string
   createdAt?: string
   updatedAt?: string
@@ -32,5 +25,5 @@ export interface WarehousePayload {
   name: string
   line_id?: number
   category_id: number
-  notes?: string
+  notes?: string | null
 }

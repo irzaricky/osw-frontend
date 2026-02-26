@@ -1,10 +1,10 @@
-import { h, Ref,  type Component } from 'vue'
+import { h, Ref, type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Dock } from '../../../../types/master-data/dock'
+import type { Defect } from '../../../../types/master-data/defect'
 
 interface ColumnActions {
-  onEdit: (warehouse: Dock) => void
-  onDelete: (warehouse: Dock) => void
+  onEdit: (defect: Defect) => void
+  onDelete: (defect: Defect) => void
 }
 
 interface ColumnComponents {
@@ -13,10 +13,10 @@ interface ColumnComponents {
   UDropdownMenu: Component | string
 }
 
-export function useDockColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
+export function useDefectColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
   const { UCheckbox, UButton, UDropdownMenu } = components
 
-  const columns: TableColumn<Dock>[] = [
+  const columns: TableColumn<Defect>[] = [
     {
       id: 'select',
       header: ({ table }) =>
@@ -41,30 +41,26 @@ export function useDockColumns(actions: ColumnActions, components: ColumnCompone
       cell: ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1
     },
     {
-      accessorKey: 'dock_code',
-      header: 'Dock Code'
-    },
-    {
       accessorKey: 'name',
-      header: 'Dock Name'
+      header: 'Defect Name'
     },
     {
-      accessorKey: 'area.name',
-      header: 'Area',
-      cell: ({ row }) => row.original.area?.name || '-'
+      accessorKey: 'defect.name',
+      header: 'Defect Category',
+      cell: ({ row }) => row.original.category?.name || '-'
     },
     {
       id: 'actions',
       header: '',
       cell: ({ row }) => {
-        const dock = row.original
-
+        const defect = row.original
+        
         const items = [
           [
             {
               label: 'Edit',
               icon: 'i-lucide-edit',
-              onSelect: () => actions.onEdit(dock)
+              onSelect: () => actions.onEdit(defect)
             }
           ],
           [
@@ -72,18 +68,18 @@ export function useDockColumns(actions: ColumnActions, components: ColumnCompone
               label: 'Delete',
               icon: 'i-lucide-trash-2',
               color: 'error' as const,
-              onSelect: () => actions.onDelete(dock)
+              onSelect: () => actions.onDelete(defect)
             }
           ]
         ]
 
-        return h(UDropdownMenu, {
-          items
+        return h(UDropdownMenu, { 
+          items 
         }, {
           default: () => h(UButton, {
             color: 'neutral',
             variant: 'ghost',
-            icon: 'i-lucide-more-vertical'
+            icon: 'i-lucide-ellipsis-vertical'
           })
         })
       }
@@ -95,8 +91,8 @@ export function useDockColumns(actions: ColumnActions, components: ColumnCompone
         h(UButton, {
           color: 'neutral',
           variant: 'ghost',
-          icon: row.getIsExpanded() 
-            ? 'i-lucide-chevron-down' 
+          icon: row.getIsExpanded()
+            ? 'i-lucide-chevron-down'
             : 'i-lucide-chevron-right',
           size: 'xs',
           onClick: () => row.toggleExpanded()
