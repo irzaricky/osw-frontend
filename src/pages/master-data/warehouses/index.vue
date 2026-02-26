@@ -208,7 +208,7 @@ watch(filters, () => {
 onMounted(() => {
   fetchData()
   lineStore.fetchDropdown()
-  warehouseStore.fetchWarehouseCategories()
+  warehouseStore.fetchWarehouseCategoriesDropdown()
 })
 </script>
 

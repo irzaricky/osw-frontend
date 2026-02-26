@@ -71,6 +71,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/master-data/defects', 
+      component: () => import('./pages/master-data/defects/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/master-data/warehouses', 
       component: () => import('./pages/master-data/warehouses/index.vue'),
       meta: { layout: 'default', requiresAuth: true }

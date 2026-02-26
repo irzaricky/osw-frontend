@@ -99,7 +99,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     }
   }
 
-  async function fetchWarehouseCategories() {
+  async function fetchWarehouseCategoriesDropdown() {
     try {
       const response = await warehouseService.getWarehouseCategoriesDropdown()
       const data = response.data
@@ -126,7 +126,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
     createWarehouse,
     updateWarehouse,
     deleteWarehouse,
-    fetchWarehouseCategories,
+    fetchWarehouseCategoriesDropdown,
     fetchDropdown
   }
 })

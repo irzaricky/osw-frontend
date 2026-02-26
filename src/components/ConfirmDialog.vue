@@ -32,7 +32,7 @@ function handleCancel() {
     @update:open="emit('update:open', $event)"
   >
     <template #header>
-      <div class="text-center">
+      <div class="text-center w-full">
         <h3 class="text-lg font-semibold">
           {{ props.title || 'Confirm Action' }}
         </h3>

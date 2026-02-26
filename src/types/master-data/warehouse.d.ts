@@ -1,3 +1,5 @@
+import type { Line } from './line'
+
 export interface WarehouseCategory {
   id: number
   name: string
