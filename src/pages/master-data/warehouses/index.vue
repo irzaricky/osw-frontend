@@ -6,7 +6,7 @@ import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
 import { useLineStore } from '../../../stores/master-data/line.store'
 import { useWarehouseColumns } from './composables/useWarehouseColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { Warehouse, WarehousePayload } from '../../../types/master-data/warehouse'
+import type { Warehouse } from '../../../types/master-data/warehouse'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -57,8 +57,8 @@ function createEmptyWarehouse(): Partial<Warehouse> {
     id: undefined,
     warehouse_code: '',
     name: '',
-    category: undefined,
-    line: undefined,
+    category_id: undefined,
+    line_id: undefined,
     notes: ''
   }
 }
@@ -114,14 +114,14 @@ function openEditModal(warehouse: Warehouse) {
     id: warehouse.id,
     warehouse_code: warehouse.warehouse_code,
     name: warehouse.name,
-    category: warehouse.category,
-    line: warehouse.line,
+    category_id: warehouse.category?.id,
+    line_id: warehouse.line?.id,
     notes: warehouse.notes
   })
   isModalOpen.value = true
 }
 
-async function handleSave(data: Partial<WarehousePayload>) {
+async function handleSave(data: Partial<Warehouse>) {
   try {
     let message = ''
 

@@ -3,14 +3,14 @@ import { reactive, watch, computed, ref } from 'vue'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { Line } from '../../../../types/master-data/line'
-import type { WarehousePayload, WarehouseCategory } from '../../../../types/master-data/warehouse'
+import type { Warehouse, WarehouseCategory } from '../../../../types/master-data/warehouse'
 
 const formRef = ref()
 
 const props = defineProps<{
   open: boolean
   mode: 'add' | 'edit'
-  warehouse: Partial<WarehousePayload>
+  warehouse: Partial<Warehouse>
   categories: Pick<WarehouseCategory, 'id' | 'name'>[]
   lines: Pick<Line, 'id' | 'name'>[]
   loading: boolean
@@ -18,7 +18,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: [data: Partial<WarehousePayload>]
+  save: [data: Partial<Warehouse>]
 }>()
 
 const schema = z.object({
