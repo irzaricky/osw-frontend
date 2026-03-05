@@ -10,6 +10,10 @@ export interface WarehouseAreaParams {
 }
 
 const warehouseAreaService = {
+  getDropdown(params?: WarehouseAreaParams) {
+    return api.get('/master-data/warehouse_area/dropdown', { params })
+  },
+
   getWarehouseAreas(params?: WarehouseAreaParams) {
     return api.get('/master-data/warehouse_area', { params })
   },

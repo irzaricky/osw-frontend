@@ -3,10 +3,10 @@ import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveCompo
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
-import { useWarehouseDropdowns } from './composables/useWarehouseDropdowns'
+import { useLineStore } from '../../../stores/master-data/line.store'
 import { useWarehouseColumns } from './composables/useWarehouseColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { Warehouse, WarehousePayload } from '../../../types'
+import type { Warehouse } from '../../../types/master-data/warehouse'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -17,7 +17,9 @@ import WarehouseFormModal from './components/WarehouseFormModal.vue'
 
 // Store
 const warehouseStore = useWarehouseStore()
-const { warehouses, meta, loading } = storeToRefs(warehouseStore)
+const lineStore = useLineStore()
+const { warehouses, meta, loading, warehouseCategories } = storeToRefs(warehouseStore)
+const { dropdown: lines } = storeToRefs(lineStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef<any>('table')
 
@@ -47,14 +49,6 @@ const filters = reactive({
   line_id: undefined as number | undefined
 })
 
-// Dropdowns
-const { 
-  warehouseCategories, 
-  lines, 
-  fetchWarehouseCategories, 
-  fetchLines 
-} = useWarehouseDropdowns()
-
 // Modal state
 const isModalOpen = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
@@ -63,8 +57,8 @@ function createEmptyWarehouse(): Partial<Warehouse> {
     id: undefined,
     warehouse_code: '',
     name: '',
-    category: undefined,
-    line: undefined,
+    category_id: undefined,
+    line_id: undefined,
     notes: ''
   }
 }
@@ -120,14 +114,14 @@ function openEditModal(warehouse: Warehouse) {
     id: warehouse.id,
     warehouse_code: warehouse.warehouse_code,
     name: warehouse.name,
-    category: warehouse.category,
-    line: warehouse.line,
+    category_id: warehouse.category?.id,
+    line_id: warehouse.line?.id,
     notes: warehouse.notes
   })
   isModalOpen.value = true
 }
 
-async function handleSave(data: WarehousePayload) {
+async function handleSave(data: Partial<Warehouse>) {
   try {
     let message = ''
 
@@ -213,8 +207,8 @@ watch(filters, () => {
 // Lifecycle
 onMounted(() => {
   fetchData()
-  fetchWarehouseCategories()
-  fetchLines()
+  lineStore.fetchDropdown()
+  warehouseStore.fetchWarehouseCategoriesDropdown()
 })
 </script>
 

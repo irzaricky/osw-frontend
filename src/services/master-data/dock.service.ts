@@ -10,12 +10,9 @@ export interface DockParams {
 }
 
 const dockService = {
-  // Dropdown
-  getAreasDropdown() {
-    return api.get('/master-data/docks/dd-areas')
+  getDropdown() {
+    return api.get('/master-data/docks/dropdown')
   },
-
-  // Docks
   getDocks(params?: DockParams) {
     return api.get('/master-data/docks', { params })
   },

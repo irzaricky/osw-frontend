@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { DropdownOption } from '../composables/useDockDropdowns'
+import type { WarehouseArea } from '../../../../types/master-data/warehouse-area'
 
 interface Filters {
   area_id: number | undefined
@@ -9,7 +9,7 @@ interface Filters {
 const props = defineProps<{
   search: string
   filters: Filters
-  areas: DropdownOption[]
+  areas: Pick<WarehouseArea, 'id' | 'name'>[]
 }>()
 
 const emit = defineEmits<{

@@ -9,7 +9,6 @@ interface ColumnActions {
 
 interface ColumnComponents {
   UCheckbox: Component | string
-  UBadge: Component | string
   UButton: Component | string
   UDropdownMenu: Component | string
 }

@@ -32,6 +32,13 @@ const links = [[{
     }
   },
   {
+    label: 'Defects',
+    to: '/master-data/defects',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Warehouses',
     to: '/master-data/warehouses',
     onSelect: () => {
@@ -95,8 +102,29 @@ const links = [[{
     }
   },
   {
+    label: 'Stations',
+    to: '/master-data/stations',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Suppliers',
     to: '/master-data/suppliers',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Jobs',
+    to: '/master-data/jobs',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Calendar',
+    to: '/master-data/calendar',
     onSelect: () => {
       open.value = false
     }

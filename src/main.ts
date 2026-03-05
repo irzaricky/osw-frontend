@@ -71,6 +71,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/master-data/defects', 
+      component: () => import('./pages/master-data/defects/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/master-data/warehouses', 
       component: () => import('./pages/master-data/warehouses/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
@@ -120,6 +125,27 @@ const router = createRouter({
       component: () => import('./pages/master-data/suppliers/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/calendar', 
+      component: () => import('./pages/master-data/calendar/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/stations', 
+      component: () => import('./pages/master-data/stations/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/stations/:id/jobs', 
+      component: () => import('./pages/master-data/stations/[id]/jobs/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/jobs', 
+      component: () => import('./pages/master-data/jobs/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    
     // error
     {
       path: '/error',

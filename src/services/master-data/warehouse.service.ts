@@ -13,10 +13,10 @@ export interface WarehouseParams {
 const warehouseService = {
   // Dropdown
   getWarehouseCategoriesDropdown() {
-    return api.get('/master-data/warehouses/dd-warehouse-categories')
+    return api.get('/master-data/warehouses/categories/dropdown')
   },
-  getLinesDropdown() {
-    return api.get('/master-data/warehouses/dd-lines')
+  getDropdown() {
+    return api.get('/master-data/warehouses/dropdown')
   },
 
   // Warehouses

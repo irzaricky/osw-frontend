@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://be-osw.splatza.my.id}
+    container_name: osw-frontend-app
+    restart: always
+    ports:
+      - "3002:80"
+    networks:
+      - osw-network
+
+networks:
+  osw-network:
+    external: true
+    name: osw-network
