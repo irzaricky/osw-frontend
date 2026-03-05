@@ -95,8 +95,22 @@ const links = [[{
     }
   },
   {
+    label: 'Parts',
+    to: '/master-data/parts',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Stations',
     to: '/master-data/stations',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Suppliers',
+    to: '/master-data/suppliers',
     onSelect: () => {
       open.value = false
     }
