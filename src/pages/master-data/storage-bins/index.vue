@@ -15,44 +15,40 @@ import { useWarehouseStore } from '../../../stores/master-data/warehouse.store'
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import { usePartStore } from '../../../stores/master-data/part.store'
 
-import warehouseBinService, { type WarehouseBin } from '../../../services/master-data/warehouse-bin.service'
+import warehouseBinService, {
+  type WarehouseBin
+} from '../../../services/master-data/warehouse-bin.service'
+
 import type { WarehouseArea } from '../../../types'
 
 type Option = { label: string; value: number | undefined }
 
-// Toast
 const { toastSuccess, toastError } = useAppToast()
 
-// Stores
 const warehouseStore = useWarehouseStore()
 const areaStore = useWarehouseAreaStore()
 const partStore = usePartStore()
 
 const { warehouses } = storeToRefs(warehouseStore)
 const { areas, loading: areaLoading } = storeToRefs(areaStore)
-const { parts, loading: partLoading } = storeToRefs(partStore)
+const { dropdown: partDropdown, loading: partLoading } = storeToRefs(partStore)
 
-// Breadcrumbs
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Master Data' },
   { label: 'Storage Bins' }
 ]
 
-// Filter states
 const selectedWarehouse = ref<Option | undefined>(undefined)
 const selectedArea = ref<Option | undefined>(undefined)
 
-// Data bins
 const bins = ref<WarehouseBin[]>([])
 const binsLoading = ref(false)
 
-// Modal assign
 const isAssignOpen = ref(false)
 const activeBin = ref<WarehouseBin | null>(null)
 const assignLoading = ref(false)
 
-// Confirm
 const confirmDialog = ref({
   open: false,
   title: '',
@@ -60,23 +56,14 @@ const confirmDialog = ref({
   action: null as null | (() => Promise<void>)
 })
 
-const selectedWarehouseObj = computed(() => {
-  const id = selectedWarehouse.value?.value
-  if (!id) return undefined
-  return (warehouses.value || []).find((w: any) => w.id === id)
-})
-
-const partTypeCodeFromWarehouse = computed(() => {
-  const categoryName = selectedWarehouseObj.value?.category?.name
-  return mapWarehouseCategoryToPartType(categoryName)
-})
-
-// Warehouse dropdown items
 const warehouseItems = computed<Option[]>(() => [
-  ...(warehouses.value || []).map((w: any) => ({ label: w.name, value: w.id }))
+  { label: 'Select Warehouse', value: undefined },
+  ...(warehouses.value || []).map((w: any) => ({
+    label: w.name,
+    value: w.id
+  }))
 ])
 
-// Area dropdown items (from store areas)
 const areaItems = computed<Option[]>(() => [
   { label: 'Select Area', value: undefined },
   ...(areas.value || []).map((a: any) => ({
@@ -85,20 +72,21 @@ const areaItems = computed<Option[]>(() => [
   }))
 ])
 
-// Selected area object
-const selectedAreaObj = computed<WarehouseArea | undefined>(() => {
-  if (!selectedArea.value?.value) return undefined
-  return (areas.value || []).find((a: any) => a.id === selectedArea.value!.value)
-})
-
-// Category auto from warehouse selected
-const warehouseCategoryName = computed(() => {
+const selectedWarehouseObj = computed(() => {
   const id = selectedWarehouse.value?.value
-  if (!id) return '-'
-  const found = (warehouses.value || []).find((w: any) => w.id === id)
-  return found?.category?.name || '-'
+  if (!id) return undefined
+  return warehouses.value.find((w: any) => w.id === id)
 })
 
+const selectedAreaObj = computed<WarehouseArea | undefined>(() => {
+  const id = selectedArea.value?.value
+  if (!id) return undefined
+  return areas.value.find((a: any) => a.id === id)
+})
+
+const warehouseCategoryName = computed(() => {
+  return selectedWarehouseObj.value?.category?.name || '-'
+})
 
 function mapWarehouseCategoryToPartType(categoryName?: string) {
   const name = (categoryName || '').toLowerCase()
@@ -110,15 +98,32 @@ function mapWarehouseCategoryToPartType(categoryName?: string) {
   return undefined
 }
 
+const partTypeCodeFromWarehouse = computed(() => {
+  return mapWarehouseCategoryToPartType(
+    selectedWarehouseObj.value?.category?.name
+  )
+})
+
 async function fetchAreasByWarehouse() {
   const warehouseId = selectedWarehouse.value?.value
-  // reset area selection
+
   selectedArea.value = undefined
   bins.value = []
 
-  if (!warehouseId) return
+  if (!warehouseId) {
+    areaStore.areas = [] as any
+    return
+  }
 
-  await areaStore.fetchDropdown
+  try {
+    await areaStore.fetchAreas({
+      page: 1,
+      limit: 200,
+      warehouse_id: warehouseId
+    })
+  } catch (err: any) {
+    toastError(err?.response?.data?.message || err?.message || err)
+  }
 }
 
 async function fetchBinsByArea() {
@@ -153,8 +158,10 @@ function onClickBin(bin: WarehouseBin) {
   isAssignOpen.value = true
 }
 
-// Save assign (set part + capacity)
-async function handleSaveAssign(payload: { dedicated_part_number: string; capacity: number }) {
+async function handleSaveAssign(payload: {
+  dedicated_part_number: string
+  capacity: number
+}) {
   if (!activeBin.value) return
 
   confirmDialog.value = {
@@ -164,6 +171,7 @@ async function handleSaveAssign(payload: { dedicated_part_number: string; capaci
     action: async () => {
       try {
         assignLoading.value = true
+
         const res = await warehouseBinService.update(activeBin.value!.id, {
           is_dedicated: true,
           dedicated_part_number: payload.dedicated_part_number,
@@ -172,6 +180,7 @@ async function handleSaveAssign(payload: { dedicated_part_number: string; capaci
 
         toastSuccess(res.data?.message || 'Bin updated')
         isAssignOpen.value = false
+
         await fetchBinsByArea()
       } catch (err: any) {
         toastError(err?.response?.data?.message || err?.message || err)
@@ -183,7 +192,6 @@ async function handleSaveAssign(payload: { dedicated_part_number: string; capaci
   }
 }
 
-// Clear bin (delete assignment)
 async function handleClearAssign() {
   if (!activeBin.value) return
 
@@ -194,6 +202,7 @@ async function handleClearAssign() {
     action: async () => {
       try {
         assignLoading.value = true
+
         const res = await warehouseBinService.update(activeBin.value!.id, {
           is_dedicated: false,
           dedicated_part_number: null,
@@ -202,6 +211,7 @@ async function handleClearAssign() {
 
         toastSuccess(res.data?.message || 'Bin cleared')
         isAssignOpen.value = false
+
         await fetchBinsByArea()
       } catch (err: any) {
         toastError(err?.response?.data?.message || err?.message || err)
@@ -213,11 +223,21 @@ async function handleClearAssign() {
   }
 }
 
-// Watchers
 watch(
   () => selectedWarehouse.value?.value,
-  () => {
-    fetchAreasByWarehouse()
+  async () => {
+    await fetchAreasByWarehouse()
+
+    const code = partTypeCodeFromWarehouse.value
+    if (!code) return
+
+    try {
+      await partStore.fetchDropdown({
+        part_type_code: code
+      })
+    } catch (err: any) {
+      toastError(err?.response?.data?.message || err?.message || err)
+    }
   }
 )
 
@@ -230,26 +250,12 @@ watch(
   () => debouncedAreaFetch()
 )
 
-watch(
-  () => partTypeCodeFromWarehouse.value,
-  async (code) => {
-    try {
-      const params: any = {}
-      if (code) params.part_type_code = code
-
-      await partStore.fetchPartsDropdown(params)
-    } catch (err: any) {
-      toastError(err?.response?.data?.message || err?.message || err)
-    }
-  },
-  { immediate: true }
-)
-
-// Lifecycle
 onMounted(async () => {
-  await warehouseStore.fetchDropdown
+  await warehouseStore.fetchWarehouses({
+    page: 1,
+    limit: 200
+  })
 })
-
 </script>
 
 <template>
@@ -260,9 +266,15 @@ onMounted(async () => {
       <h1 class="text-2xl font-bold">Storage Bin</h1>
     </div>
 
-    <StorageBinFilters :warehouse-items="warehouseItems" :area-items="areaItems" :selected-warehouse="selectedWarehouse"
-      :selected-area="selectedArea" :warehouse-category-name="warehouseCategoryName"
-      @update:warehouse="selectedWarehouse = $event" @update:area="selectedArea = $event" />
+    <StorageBinFilters
+      :warehouse-items="warehouseItems"
+      :area-items="areaItems"
+      :selected-warehouse="selectedWarehouse"
+      :selected-area="selectedArea"
+      :warehouse-category-name="warehouseCategoryName"
+      @update:warehouse="selectedWarehouse = $event"
+      @update:area="selectedArea = $event"
+    />
 
     <div v-if="!selectedWarehouse?.value" class="text-sm text-muted">
       Select warehouse first.
@@ -277,16 +289,31 @@ onMounted(async () => {
     </div>
 
     <div v-else>
-      <StorageBinGrid :total-cols="Number(selectedAreaObj?.total_cols || 0)"
-        :total-rows="Number(selectedAreaObj?.total_rows || 0)" :bins="bins" :loading="binsLoading"
-        @click-bin="onClickBin" />
+      <StorageBinGrid
+        :total-cols="Number(selectedAreaObj?.total_cols || 0)"
+        :total-rows="Number(selectedAreaObj?.total_rows || 0)"
+        :bins="bins"
+        :loading="binsLoading"
+        @click-bin="onClickBin"
+      />
     </div>
 
-    <StorageBinAssignModal v-model:open="isAssignOpen" :bin="activeBin" :parts="parts"
-      :loading="assignLoading || partLoading" @save="handleSaveAssign" @clear="handleClearAssign" />
+    <StorageBinAssignModal
+      v-model:open="isAssignOpen"
+      :bin="activeBin"
+      :parts="partDropdown"
+      :loading="assignLoading || partLoading"
+      @save="handleSaveAssign"
+      @clear="handleClearAssign"
+    />
 
-    <ConfirmDialog v-model:open="confirmDialog.open" :title="confirmDialog.title"
-      :description="confirmDialog.description" confirm-label="Yes" :loading="assignLoading"
-      @confirm="confirmDialog.action?.()" />
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Yes"
+      :loading="assignLoading"
+      @confirm="confirmDialog.action?.()"
+    />
   </div>
 </template>

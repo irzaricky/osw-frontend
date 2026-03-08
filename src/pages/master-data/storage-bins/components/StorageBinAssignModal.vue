@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch, computed } from 'vue'
 import type { WarehouseBin } from '../../../../services/master-data/warehouse-bin.service'
-import type { PartDropdown } from '../../../../services/master-data/part.service'
+import type { PartDropdown } from '../../../../types'
 
 const props = defineProps<{
   open: boolean
