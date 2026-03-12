@@ -123,6 +123,20 @@ const links = [[{
     }
   },
   {
+    label: 'Shifts',
+    to: '/master-data/shifts',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Calendar Workdays',
+    to: '/master-data/shift-calendars',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Calendar',
     to: '/master-data/calendar',
     onSelect: () => {

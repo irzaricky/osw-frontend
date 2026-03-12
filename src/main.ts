@@ -145,6 +145,16 @@ const router = createRouter({
       component: () => import('./pages/master-data/jobs/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/master-data/shifts', 
+      component: () => import('./pages/master-data/shifts/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/master-data/shift-calendars', 
+      component: () => import('./pages/master-data/shift-calendars/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     
     // error
     {
