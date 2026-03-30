@@ -25,6 +25,13 @@ const links = [[{
     }
   },
   {
+    label: 'Customers',
+    to: '/master-data/customers',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Vehicles',
     to: '/master-data/vehicles',
     onSelect: () => {
@@ -32,8 +39,36 @@ const links = [[{
     }
   },
   {
+    label: 'Suppliers',
+    to: '/master-data/suppliers',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Parts',
+    to: '/master-data/parts',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
     label: 'Defects',
     to: '/master-data/defects',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Factories',
+    to: '/master-data/factories',
+    onSelect: () => {
+      open.value = false
+    }
+  },
+  {
+    label: 'Lines',
+    to: '/master-data/lines',
     onSelect: () => {
       open.value = false
     }
@@ -67,50 +102,8 @@ const links = [[{
     }
   },
   {
-    label: 'Audit Logs',
-    to: '/master-data/audit-logs',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
-    label: 'Customers',
-    to: '/master-data/customers',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
-    label: 'Factories',
-    to: '/master-data/factories',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
-    label: 'Lines',
-    to: '/master-data/lines',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
-    label: 'Parts',
-    to: '/master-data/parts',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
     label: 'Stations',
     to: '/master-data/stations',
-    onSelect: () => {
-      open.value = false
-    }
-  },
-  {
-    label: 'Suppliers',
-    to: '/master-data/suppliers',
     onSelect: () => {
       open.value = false
     }
@@ -142,7 +135,14 @@ const links = [[{
     onSelect: () => {
       open.value = false
     }
-  }
+  },
+  {
+    label: 'Audit Logs',
+    to: '/master-data/audit-logs',
+    onSelect: () => {
+      open.value = false
+    }
+  },  
 ]
 }, {
   label: 'Sales',
