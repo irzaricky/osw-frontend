@@ -161,10 +161,33 @@ const links = [[{
 }, {
   label: 'Warehouse',
   icon: 'i-lucide-box',
-  to: '/warehouse',
-  onSelect: () => {
-    open.value = false
-  }
+  defaultOpen: route.path.startsWith('/warehouse'),
+  children: [
+    {
+      label: 'Work Order Storing',
+      icon: 'i-lucide-clipboard-list',
+      to: '/warehouse/work-order-storing',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Placement',
+      icon: 'i-lucide-package-check',
+      to: '/warehouse/placement',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Take Out',
+      icon: 'i-lucide-package-x',
+      to: '/warehouse/take-out',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+  ]
 }], []] satisfies NavigationMenuItem[][]
 
 const groups = computed(() => [{

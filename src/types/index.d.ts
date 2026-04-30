@@ -6,6 +6,29 @@ import type { WarehouseBin, WarehouseBinUpdatePayload } from './master-data/ware
 import type { PartDropdown } from './master-data/parts'
 import type { Factory } from './master-data/factory'
 import type { Line } from './master-data/line'
+import type {
+  Placement,
+  PlacementType,
+  PlacementStatus,
+  PlacementArea,
+  PlacementPart,
+  PlacementLabel,
+  PlacementItem,
+  PlacementDetail,
+  PlacementScanResult,
+  PlacementBin
+} from './warehouse/placement'
+import type {
+  TakeOut,
+  TakeOutDetail,
+  TakeOutItem,
+  TakeOutLabel,
+  TakeOutRecommendation,
+  TakeOutRecommendationStock,
+  TakeOutRecommendationBin,
+  TakeOutRecommendationBinStock
+} from './warehouse/take-out'
+
 
 
 export type {
@@ -19,8 +42,27 @@ export type {
   WarehouseAreaPayload,
   WarehouseBin,
   WarehouseBinUpdatePayload,
-  PartDropdown
+  PartDropdown,
+  Placement,
+  PlacementType,
+  PlacementStatus,
+  PlacementArea,
+  PlacementPart,
+  PlacementLabel,
+  PlacementItem,
+  PlacementDetail,
+  PlacementScanResult,
+  PlacementBin,
+  TakeOut,
+  TakeOutDetail,
+  TakeOutItem,
+  TakeOutLabel,
+  TakeOutRecommendation,
+  TakeOutRecommendationStock,
+  TakeOutRecommendationBin,
+  TakeOutRecommendationBinStock
 }
+
 
 export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'

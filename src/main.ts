@@ -58,6 +58,26 @@ const router = createRouter({
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/warehouse/placement', 
+      component: () => import('./pages/warehouse/placement/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/placement/:id',
+      component: () => import('./pages/warehouse/placement/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/take-out',
+      component: () => import('./pages/warehouse/take-out/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/take-out/:id',
+      component: () => import('./pages/warehouse/take-out/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
 
     // master data
     { 
