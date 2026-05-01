@@ -78,6 +78,11 @@ const router = createRouter({
       component: () => import('./pages/warehouse/take-out/detail.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    {
+      path: '/warehouse/transaction-activity',
+      component: () => import('./pages/warehouse/transaction-activity/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
 
     // master data
     { 

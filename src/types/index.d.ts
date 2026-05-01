@@ -28,6 +28,10 @@ import type {
   TakeOutRecommendationBin,
   TakeOutRecommendationBinStock
 } from './warehouse/take-out'
+import type {
+  TransactionActivity,
+  TransactionActivityType
+} from './warehouse/transaction-activity'
 
 
 
@@ -60,7 +64,9 @@ export type {
   TakeOutRecommendation,
   TakeOutRecommendationStock,
   TakeOutRecommendationBin,
-  TakeOutRecommendationBinStock
+  TakeOutRecommendationBinStock,
+  TransactionActivity,
+  TransactionActivityType
 }
 
 

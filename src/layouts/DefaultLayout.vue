@@ -16,7 +16,7 @@ const links = [[{
 }, {
   label: 'Master Data',
   icon: 'i-lucide-database',
-  defaultOpen: true,
+  // defaultOpen: true,
   children: [{
     label: 'Users',
     to: '/master-data/users',
@@ -183,6 +183,14 @@ const links = [[{
       label: 'Take Out',
       icon: 'i-lucide-package-x',
       to: '/warehouse/take-out',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Transaction Activity',
+      icon: 'i-lucide-history',
+      to: '/warehouse/transaction-activity',
       onSelect: () => {
         open.value = false
       }
