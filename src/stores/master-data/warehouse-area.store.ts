@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { WarehouseArea, WarehouseAreaPayload } from '../../types'
+import type { WarehouseAreaDropdown } from '../../types/master-data/warehouse-area'
 import warehouseAreaService from '../../services/master-data/warehouse-area.service'
 
 interface Meta {
@@ -11,7 +12,7 @@ interface Meta {
 export const useWarehouseAreaStore = defineStore('warehouseArea', {
   state: () => ({
     areas: [] as WarehouseArea[],
-    dropdown: [] as Pick<WarehouseArea, 'id' | 'area_code' | 'name' | 'warehouse_id'>[],
+    dropdown: [] as WarehouseAreaDropdown[],
     meta: {
       page: 1,
       limit: 10,

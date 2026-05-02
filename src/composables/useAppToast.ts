@@ -12,7 +12,18 @@ export function useAppToast() {
   }
 
   function toastError(error: any) {
-    const message = error.response?.data?.message || error.response?.data?.error || error.message || 'An unknown error occurred'
+    let message = 'An unknown error occurred'
+
+    if (typeof error === 'string') {
+      message = error
+    } else {
+      message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        message
+    }
+
     toast.add({
       title: 'Error',
       description: message,

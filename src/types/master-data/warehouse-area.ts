@@ -25,3 +25,12 @@ export interface WarehouseAreaPayload {
   total_rows: number
   
 }
+
+export interface WarehouseAreaDropdown {
+  id: number
+  area_code: string
+  name: string
+  warehouse: {
+    name: string
+  }
+}
