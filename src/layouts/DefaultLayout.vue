@@ -161,10 +161,15 @@ const links = [[{
 }, {
   label: 'Warehouse',
   icon: 'i-lucide-box',
-  to: '/warehouse',
-  onSelect: () => {
-    open.value = false
+  defaultOpen: true,
+  children: [{
+    label: 'Work Order Storing',
+    to: '/warehouse/work-order-storing',
+    onSelect: () => {
+      open.value = false
+    }
   }
+]
 }], []] satisfies NavigationMenuItem[][]
 
 const groups = computed(() => [{

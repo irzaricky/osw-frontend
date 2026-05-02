@@ -155,6 +155,23 @@ const router = createRouter({
       component: () => import('./pages/master-data/shift-calendars/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+
+    // warehouse
+    { 
+      path: '/warehouse/work-order-storing', 
+      component: () => import('./pages/warehouse/work-order-storing/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/work-order-storing/create', 
+      component: () => import('./pages/warehouse/work-order-storing/create.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/work-order-storing/edit/:id', 
+      component: () => import('./pages/warehouse/work-order-storing/edit.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     
     // error
     {
