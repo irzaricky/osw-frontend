@@ -35,13 +35,17 @@ const forecastService = {
     return api.get(`${BASE}/dropdown/parts`, { params })
   },
 
-  downloadTemplateDetail() {
-    return api.get(`${BASE}/template-detail`, { responseType: 'blob' })
+  downloadTemplateDetail(forecastType: string) {
+    return api.get(`${BASE}/template-detail`, {
+      params: { forecast_type: forecastType },
+      responseType: 'blob'
+    })
   },
 
-  uploadTemplateDetail(file: File) {
+  uploadTemplateDetail(file: File, forecastType: string) {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('forecast_type', forecastType)
     return api.post(`${BASE}/upload-detail`, formData, {
       headers: { 'Content-Type': null }
     })
@@ -55,12 +59,20 @@ const forecastService = {
     return api.put(`${BASE}/${id}`, data)
   },
 
+  updateForecastDetail(id: number | string, data: any) {
+    return api.put(`${BASE}/${id}/detail`, data)
+  },
+
   deleteForecast(id: number | string) {
     return api.delete(`${BASE}/${id}`)
   },
 
-  approveForecast(id: number | string) {
-    return api.put(`${BASE}/${id}/approve`)
+  submitForecast(id: number | string) {
+    return api.put(`${BASE}/${id}/submit`)
+  },
+
+  reviewForecast(id: number | string, data: { status: string, remarks?: string }) {
+    return api.put(`${BASE}/${id}/review`, data)
   }
 }
 

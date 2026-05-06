@@ -54,11 +54,6 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
-      path: '/sales/forecast/:id', 
-      component: () => import('./pages/sales/forecast/[id].vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    { 
       path: '/production-plan', 
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }
@@ -223,9 +218,14 @@ const router = createRouter({
   history: createWebHistory()
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   
+  // If token exists but user is not loaded, fetch it first
+  if (authStore.token && !authStore.user) {
+    await authStore.fetchProfile()
+  }
+
   if (!authStore.isAuthenticated && !to.meta.isPublic) {
     next('/login')
   } else if (authStore.isAuthenticated && to.path === '/login') {

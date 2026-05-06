@@ -137,6 +137,20 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
+  async function updateForecastDetail(id: number | string, data: any) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await forecastService.updateForecastDetail(id, data)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function deleteForecast(id: number | string) {
     loading.value = true
     error.value = null
@@ -151,11 +165,11 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
-  async function approveForecast(id: number | string) {
+  async function submitForecast(id: number | string) {
     loading.value = true
     error.value = null
     try {
-      const response = await forecastService.approveForecast(id)
+      const response = await forecastService.submitForecast(id)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -165,11 +179,11 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
-  async function downloadTemplateDetail() {
+  async function reviewForecast(id: number | string, data: { status: string; remarks?: string }) {
     loading.value = true
     error.value = null
     try {
-      const response = await forecastService.downloadTemplateDetail()
+      const response = await forecastService.reviewForecast(id, data)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -179,11 +193,25 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
-  async function uploadTemplateDetail(file: File) {
+  async function downloadTemplateDetail(forecastType: string) {
     loading.value = true
     error.value = null
     try {
-      const response = await forecastService.uploadTemplateDetail(file)
+      const response = await forecastService.downloadTemplateDetail(forecastType)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function uploadTemplateDetail(file: File, forecastType: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await forecastService.uploadTemplateDetail(file, forecastType)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -211,8 +239,10 @@ export const useForecastStore = defineStore('forecast', () => {
     fetchDropdownParts,
     createForecast,
     updateForecast,
+    updateForecastDetail,
     deleteForecast,
-    approveForecast,
+    submitForecast,
+    reviewForecast,
     downloadTemplateDetail,
     uploadTemplateDetail
   }
