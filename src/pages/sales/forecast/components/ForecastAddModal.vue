@@ -106,23 +106,30 @@ const periodPreview = computed(() => {
     d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 
   if (state.forecast_type === 'Yearly') {
-    // Next full year: 1 Jan next year — 31 Dec next year
-    const nextYear = year + 1
+    //full year: 1 Jan — 31 Dec
     return {
-      start: fmt(new Date(nextYear, 0, 1)),
-      end: fmt(new Date(nextYear, 11, 31)),
-      label: `${nextYear} (12 months)`
+      start: fmt(new Date(year, 0, 1)),
+      end: fmt(new Date(year, 11, 31)),
+      label: `${year} (12 months)`
     }
   }
 
   if (state.forecast_type === 'Half-Year') {
-    // Next 6 months starting next month
-    const startDate = new Date(year, month + 1, 1)
-    const endDate = new Date(year, month + 7, 0) // last day of 6th month ahead
+    // Current Semester: H1 (Jan-Jun) or H2 (Jul-Dec) of current year
+    let startDate, endDate, label
+    if (month <= 5) { // Jan - Jun
+      startDate = new Date(year, 0, 1)
+      endDate = new Date(year, 5, 30)
+      label = `H1 ${year} (Jan-Jun)`
+    } else { // Jul - Dec
+      startDate = new Date(year, 6, 1)
+      endDate = new Date(year, 11, 31)
+      label = `H2 ${year} (Jul-Dec)`
+    }
     return {
       start: fmt(startDate),
       end: fmt(endDate),
-      label: '6 months'
+      label
     }
   }
 
