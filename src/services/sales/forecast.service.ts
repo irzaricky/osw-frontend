@@ -77,6 +77,13 @@ const forecastService = {
 
   getForecastLogs(id: number | string) {
     return api.get(`${BASE}/${id}/logs`)
+  },
+
+  exportForecastExcel(id: number | string, logId?: number | string) {
+    return api.get(`${BASE}/${id}/export`, { 
+      params: { log_id: logId },
+      responseType: 'blob' 
+    })
   }
 }
 

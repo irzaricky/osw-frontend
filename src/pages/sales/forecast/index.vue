@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, reactive } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, reactive } from 'vue'
+import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useForecastStore } from '../../../stores/sales/forecast.store'
 import type { Forecast } from '../../../types/sales/forecast'
 import ForecastAddModal from './components/ForecastAddModal.vue'
@@ -12,6 +13,7 @@ import { useDebounceFn } from '@vueuse/core'
 
 // Store
 const store = useForecastStore()
+const router = useRouter()
 const { loading, meta, forecasts } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
 
@@ -150,6 +152,60 @@ const groupedForecasts = computed<GroupedForecast[]>(() => {
   return Array.from(map.values())
 })
 
+// ─── Navigation Guards ───────────────────────────────────────────────────────
+const isLeavingPage = ref(false)
+const leaveToPath = ref('')
+
+onBeforeRouteLeave((to, _from, next) => {
+  if (isLeavingPage.value) {
+    next()
+    return
+  }
+
+  if (detailPanelRef.value?.isDirty) {
+    leaveToPath.value = to.fullPath
+    confirmDialog.value = {
+      open: true,
+      title: 'Unsaved Changes',
+      description: 'You have unsaved changes. Are you sure you want to leave this page? Changes will be lost.',
+      id: 0,
+      action: 'leave'
+    }
+    next(false)
+  } else {
+    next()
+  }
+})
+
+// Browser refresh/close guard
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (detailPanelRef.value?.isDirty) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+})
+
+// ─── Collapse State ──────────────────────────────────────────────────────────
+const collapsedCustomers = reactive<Record<number, boolean>>({})
+const collapsedStatuses = reactive<Record<string, boolean>>({})
+
+function toggleCustomerCollapse(customerId: number) {
+  collapsedCustomers[customerId] = !collapsedCustomers[customerId]
+}
+
+function toggleStatusCollapse(customerId: number, status: string) {
+  const key = `${customerId}-${status}`
+  collapsedStatuses[key] = !collapsedStatuses[key]
+}
+
 // ─── Modal: Add / Edit ───────────────────────────────────────────────────────
 const isModalOpen = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
@@ -200,7 +256,7 @@ const confirmDialog = ref({
   title: '',
   description: '',
   id: 0,
-  action: 'delete' as 'delete' | 'switch'
+  action: 'delete' as 'delete' | 'switch' | 'leave'
 })
 
 function handleDelete(id: number) {
@@ -216,6 +272,10 @@ function handleDelete(id: number) {
 function handleConfirm() {
   if (confirmDialog.value.action === 'delete') {
     executeDelete()
+  } else if (confirmDialog.value.action === 'leave') {
+    isLeavingPage.value = true
+    confirmDialog.value.open = false
+    router.push(leaveToPath.value)
   } else {
     // Discard & Switch
     detailPanelRef.value?.resetDirty()
@@ -310,41 +370,59 @@ onMounted(() => {
 
           <template v-for="customerGroup in groupedForecasts" :key="customerGroup.customer_id">
             <!-- Customer Group Header -->
-            <div class="sticky top-0 z-10 px-3 py-2 bg-default/95 backdrop-blur border-b border-default flex items-center gap-2">
+            <div
+              class="sticky top-0 z-10 px-3 py-2 bg-default/95 backdrop-blur border-b border-default flex items-center gap-2 cursor-pointer hover:bg-default/80 transition-colors"
+              @click="toggleCustomerCollapse(customerGroup.customer_id)"
+            >
+              <UIcon
+                :name="collapsedCustomers[customerGroup.customer_id] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+                class="w-4 h-4 text-muted transition-transform"
+              />
               <UIcon name="i-lucide-building-2" class="w-3.5 h-3.5 text-muted shrink-0" />
               <span class="text-xs font-bold text-highlighted truncate">{{ customerGroup.customer }}</span>
               <span class="ml-auto text-xs text-muted shrink-0">{{ customerGroup.statuses.reduce((n, s) => n + s.items.length, 0) }}</span>
             </div>
 
-            <template v-for="statusGroup in customerGroup.statuses" :key="statusGroup.status">
-              <!-- Status Sub-Header -->
-              <div class="px-3 py-1.5 border-b border-default/60 flex items-center gap-2 bg-elevated/30">
-                <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
-                  {{ statusGroup.status }}
-                </UBadge>
-                <span class="text-xs text-muted ml-auto">{{ statusGroup.items.length }} item(s)</span>
-              </div>
-
-              <!-- Forecast Items -->
-              <button
-                v-for="forecast in statusGroup.items"
-                :key="forecast.id"
-                class="w-full text-left px-4 py-2.5 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
-                :class="{ 'bg-primary/10 border-l-2 border-l-primary': selectedForecastId === forecast.id }"
-                @click="selectForecast(forecast)"
-              >
-                <div class="flex items-start justify-between gap-2">
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium truncate">{{ forecast.forecast_number }}</p>
-                    <p class="text-xs text-muted">
-                      <UIcon name="i-lucide-calendar" class="w-3 h-3 inline" />
-                      {{ formatPeriodDate(forecast.start_period) }} — {{ formatPeriodDate(forecast.end_period) }}
-                    </p>
-                  </div>
-                  <span class="text-xs text-muted shrink-0">{{ forecast.forecast_type }}</span>
+            <div v-show="!collapsedCustomers[customerGroup.customer_id]">
+              <template v-for="statusGroup in customerGroup.statuses" :key="statusGroup.status">
+                <!-- Status Sub-Header -->
+                <div
+                  class="px-3 py-1.5 border-b border-default/60 flex items-center gap-2 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition-colors"
+                  @click="toggleStatusCollapse(customerGroup.customer_id, statusGroup.status)"
+                >
+                  <UIcon
+                    :name="collapsedStatuses[`${customerGroup.customer_id}-${statusGroup.status}`] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+                    class="w-3.5 h-3.5 text-muted transition-transform"
+                  />
+                  <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
+                    {{ statusGroup.status }}
+                  </UBadge>
+                  <span class="text-xs text-muted ml-auto">{{ statusGroup.items.length }} item(s)</span>
                 </div>
-              </button>
-            </template>
+
+                <!-- Forecast Items -->
+                <div v-show="!collapsedStatuses[`${customerGroup.customer_id}-${statusGroup.status}`]">
+                  <button
+                    v-for="forecast in statusGroup.items"
+                    :key="forecast.id"
+                    class="w-full text-left px-4 py-2.5 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
+                    :class="{ 'bg-primary/10 border-l-2 border-l-primary': selectedForecastId === forecast.id }"
+                    @click="selectForecast(forecast)"
+                  >
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate">{{ forecast.forecast_number }}</p>
+                        <p class="text-xs text-muted">
+                          <UIcon name="i-lucide-calendar" class="w-3 h-3 inline" />
+                          {{ formatPeriodDate(forecast.start_period) }} — {{ formatPeriodDate(forecast.end_period) }}
+                        </p>
+                      </div>
+                      <span class="text-xs text-muted shrink-0">{{ forecast.forecast_type }}</span>
+                    </div>
+                  </button>
+                </div>
+              </template>
+            </div>
           </template>
         </div>
 

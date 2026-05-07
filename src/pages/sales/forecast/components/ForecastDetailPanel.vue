@@ -69,6 +69,9 @@ function getPeriodKey(year: number, month: number): string {
 }
 
 function getAutoQtyStatus(periodDate: string): 'Fix' | 'Temporary' {
+  if (forecastType.value === 'Yearly' || forecastType.value === 'Half-Year') {
+    return 'Temporary'
+  }
   const today = new Date()
   const currentMonthKey = getPeriodKey(today.getFullYear(), today.getMonth() + 1)
   // current month or past → Fix; future → Temporary
@@ -356,6 +359,30 @@ async function downloadTemplate() {
   }
 }
 
+// ─── Export Excel ─────────────────────────────────────────────────────────────
+async function handleExportExcel(logId?: any) {
+  try {
+    const validLogId = typeof logId === 'number' ? logId : undefined
+    const blob = await store.exportForecastExcel(props.forecastId, validLogId)
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    
+    let filename = `Forecast_${store.detail?.forecast_number || props.forecastId}.xlsx`
+    if (validLogId) {
+      const log = store.logs.find(l => l.id === validLogId)
+      filename = `Forecast_${store.detail?.forecast_number}_${log?.version || 'Hist'}_${validLogId}.xlsx`
+    }
+    
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+    toastSuccess(logId ? 'Historical export successful' : 'Export successful')
+  } catch (e: any) {
+    toastError(e)
+  }
+}
+
 // ─── Upload Template ──────────────────────────────────────────────────────────
 const isUploadOpen = ref(false)
 const uploadFile = ref<File | null>(null)
@@ -364,15 +391,65 @@ async function handleUpload() {
   if (!uploadFile.value) return
   try {
     const res = await store.uploadTemplateDetail(uploadFile.value, forecastType.value)
-    toastSuccess(res.message || 'Upload successful')
+    const importedData = res.data || []
+    
+    // 1. Process imported data to update grid state
+    importedData.forEach((item: any) => {
+      // Add part if not exists
+      if (!parts.value.find(p => p.id === item.part_id)) {
+        parts.value.push({
+          id: item.part_id,
+          part_number: item.part_number,
+          part_name: item.part_name
+        })
+        dataEntry.value[item.part_id] = {}
+      }
+
+      // Set quantity
+      const effectivePeriod = is4Month.value ? item.period_date : store.detail?.start_period
+      if (effectivePeriod) {
+        if (!dataEntry.value[item.part_id]) dataEntry.value[item.part_id] = {}
+        
+        dataEntry.value[item.part_id][effectivePeriod] = {
+          forecast_qty: item.forecast_qty,
+          qty_status: getAutoQtyStatus(effectivePeriod),
+          isNew: true
+        }
+      }
+    })
+
+    toastSuccess(res.message || 'Data imported to grid. Click Save to persist.')
     isUploadOpen.value = false
     uploadFile.value = null
-    loadDetail()
-    emit('refreshList')
+    isDirty.value = true // Mark as unsaved
   } catch (e: any) {
     toastError(e)
   }
 }
+
+// ─── Excel Actions ────────────────────────────────────────────────────────────
+const excelActions = computed(() => [
+  [
+    {
+      label: 'Export',
+      icon: 'i-lucide-file-spreadsheet',
+      onSelect: () => handleExportExcel()
+    },
+  ],
+  [
+    {
+      label: 'Upload',
+      icon: 'i-lucide-upload',
+      disabled: !isEditable.value,
+      onSelect: () => { isUploadOpen.value = true }
+    },
+    {
+      label: 'Template',
+      icon: 'i-lucide-download',
+      onSelect: () => downloadTemplate()
+    }
+  ]
+])
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 watch(() => props.forecastId, () => {
@@ -426,23 +503,20 @@ onMounted(() => {
         <!-- Row 2: Action Buttons -->
         <div class="flex items-center gap-1">
           <!-- Data Actions -->
-          <UButton
-            icon="i-lucide-download"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            label="Template"
-            @click="downloadTemplate"
-          />
-          <UButton
-            icon="i-lucide-upload"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            label="Import"
-            @click="isUploadOpen = true"
-            :disabled="!isEditable"
-          />
+          <UDropdownMenu
+            :items="excelActions"
+            :content="{ align: 'start' }"
+          >
+            <UButton
+              label="Excel"
+              icon="i-lucide-file-spreadsheet"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              trailing-icon="i-lucide-chevron-down"
+            />
+          </UDropdownMenu>
+
           <UButton
             icon="i-lucide-history"
             color="neutral"
@@ -471,7 +545,7 @@ onMounted(() => {
             size="sm"
             label="Delete"
             @click="emit('delete', forecastId)"
-            :disabled="!isEditable"
+            :disabled="store.detail?.status !== 'Draft'"
           />
 
           <div class="flex-1" />
@@ -750,7 +824,7 @@ onMounted(() => {
     </div>
 
     <!-- Upload Modal (simple inline) -->
-    <UModal v-model:open="isUploadOpen" title="Import from Excel" description="Upload template file to import forecast details">
+    <UModal v-model:open="isUploadOpen" title="Upload from Excel" description="Upload template file to upload forecast details">
       <template #body>
         <div class="space-y-4">
           <div class="flex items-center gap-2 p-3 rounded-lg bg-elevated/50 border border-default text-sm text-muted">
@@ -847,8 +921,20 @@ onMounted(() => {
                     <span class="font-medium text-success-600 font-mono">{{ log.total_qty?.toLocaleString() }}</span>
                   </div>
                 </div>
-                <div v-if="log.remarks" class="mt-1 p-2 rounded bg-elevated/50 border border-default text-xs italic text-muted">
-                  {{ log.remarks }}
+                <div v-if="log.remarks || log.details_snapshot" class="mt-1 flex flex-col gap-2">
+                  <div v-if="log.remarks" class="p-2 rounded bg-elevated/50 border border-default text-xs italic text-muted">
+                    {{ log.remarks }}
+                  </div>
+                  <div v-if="log.details_snapshot" class="flex justify-end">
+                    <UButton
+                      icon="i-lucide-download"
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      label="Download Snapshot"
+                      @click="handleExportExcel(log.id)"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

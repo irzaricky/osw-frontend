@@ -222,6 +222,20 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
+  async function exportForecastExcel(id: number | string, logId?: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await forecastService.exportForecastExcel(id, logId)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchForecastLogs(id: number | string) {
     loading.value = true
     error.value = null
@@ -265,6 +279,7 @@ export const useForecastStore = defineStore('forecast', () => {
     submitForecast,
     reviewForecast,
     downloadTemplateDetail,
-    uploadTemplateDetail
+    uploadTemplateDetail,
+    exportForecastExcel
   }
 })
