@@ -32,12 +32,12 @@ export function useWorkOrderStoringItemColumns(
     const items = [
       {
         label: 'Detail & Edit',
-        icon: 'i-lucide-pencil',
+        icon: 'i-lucide-edit',
         onSelect: () => actions.onEdit(rowIndex)
       },
       {
         label: 'Delete',
-        icon: 'i-lucide-trash',
+        icon: 'i-lucide-trash-2',
         disabled: !editableRef.value,
         onSelect: () => actions.onDelete(rowIndex)
       }

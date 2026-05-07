@@ -4,6 +4,7 @@ import * as z from 'zod'
 import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { WorkOrderStoring } from '../../../../types/warehouse/work-order-storing'
+import type { PartDropdown } from '../../../../types/master-data/parts'
 
 import WorkOrderStoringItemFormModal from './WorkOrderStoringItemFormModal.vue'
 import { useWorkOrderStoringItemColumns } from '../composables/useWorkOrderStoringItemColumns'
@@ -58,7 +59,7 @@ const props = defineProps<{
       name: string
     }
   }[]
-  parts: { id: number; part_number: string; part_name: string }[]
+  parts: PartDropdown[]
   loading: boolean
 }>()
 
@@ -69,7 +70,20 @@ const emit = defineEmits<{
 // schema
 const schema = z.object({
   wo_category: z.enum(['Placement', 'Take Out'], { message: 'Work Order Category is required' }),
-  wo_date: z.string().min(1, 'Work Order Date is required'),
+  wo_date: z
+    .string()
+    .min(1, 'Work Order Date is required')
+    .refine((value) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const selected = new Date(value)
+      selected.setHours(0, 0, 0, 0)
+
+      return selected >= today
+    }, {
+      message: 'Work Order date cannot be earlier than today'
+    }),
 
   wo_type_id: z.number({ message: 'Work Order Type is required' }),
   warehouse_area_id: z.number({ message: 'Warehouse Area is required' }),
@@ -171,12 +185,60 @@ watch(
   async (typeId) => {
     if (!typeId) return
 
-    await partStore.fetchDropdown({
-      part_type_code: mapTypeToPartCode(typeId)
-    })
+    const isTakeOut = state.wo_category === 'Take Out'
 
     await warehouseAreaStore.fetchDropdown({
-      category_id: typeId
+      category_id: typeId,
+      ...(isTakeOut && { wo_category: 'take_out' })
+    })
+
+    await partStore.fetchDropdown({
+      part_type_code: mapTypeToPartCode(typeId),
+      ...(isTakeOut && {
+        wo_category: 'take_out',
+        area_id: state.warehouse_area_id
+      })
+    })
+
+    state.items = []
+  }
+)
+
+watch(
+  () => state.warehouse_area_id,
+  async (areaId) => {
+    if (!areaId || !state.wo_type_id) return
+
+    const isTakeOut = state.wo_category === 'Take Out'
+
+    if (isTakeOut) {
+      await partStore.fetchDropdown({
+        part_type_code: mapTypeToPartCode(state.wo_type_id),
+        wo_category: 'take_out',
+        area_id: areaId
+      })
+    }
+  }
+)
+
+watch(
+  () => state.wo_category,
+  async (category) => {
+    if (!state.wo_type_id) return
+
+    const isTakeOut = category === 'Take Out'
+
+    await warehouseAreaStore.fetchDropdown({
+      category_id: state.wo_type_id,
+      ...(isTakeOut && { wo_category: 'take_out' })
+    })
+
+    await partStore.fetchDropdown({
+      part_type_code: mapTypeToPartCode(state.wo_type_id),
+      ...(isTakeOut && {
+        wo_category: 'take_out',
+        area_id: state.warehouse_area_id
+      })
     })
 
     state.items = []
@@ -244,7 +306,21 @@ async function handlePrintLabel(index: number) {
 }
 
 function handleAddItem(item: { part_id: number; total_kanban: number }) {
-  if (itemModalMode.value === 'edit' && selectedItemIndex.value !== null) {
+  const duplicateIndex = state.items.findIndex(
+    (i, index) =>
+      i.part_id === item.part_id &&
+      index !== selectedItemIndex.value
+  )
+
+  if (duplicateIndex !== -1) {
+    toastError('Part already exists in the item list.')
+    return
+  }
+
+  if (
+    itemModalMode.value === 'edit' &&
+    selectedItemIndex.value !== null
+  ) {
     state.items[selectedItemIndex.value] = item
   } else {
     state.items.push(item)
@@ -325,9 +401,26 @@ function onSubmit(event: FormSubmitEvent<any>) {
         <UInputDate v-model="dateModel" :disabled="!isEditable">
           <template #trailing>
             <UPopover>
-              <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+              <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" :disabled="!isEditable" />
               <template #content>
-                <UCalendar v-model="dateModel" class="p-2" />
+                <UCalendar
+                  v-model="dateModel"
+                  class="p-2"
+                  :is-date-disabled="(date) => {
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+
+                    const current = new Date(
+                      date.year,
+                      date.month - 1,
+                      date.day
+                    )
+
+                    current.setHours(0, 0, 0, 0)
+
+                    return current < today
+                  }"
+                />
               </template>
             </UPopover>
           </template>
@@ -394,8 +487,9 @@ function onSubmit(event: FormSubmitEvent<any>) {
       :mode="itemModalMode"
       :parts="parts"
       :loading="loading"
-      :part-disabled="!isEditable || !state.wo_type_id"
+      :part-disabled="!isEditable || !state.wo_type_id || (state.wo_category === 'Take Out' && !state.warehouse_area_id)"
       :kanban-disabled="!isEditable"
+      :show-stock-field="state.wo_category === 'Take Out'"
       :item="selectedItemIndex !== null ? state.items[selectedItemIndex] : null"
       @save="handleAddItem"
     />

@@ -5,6 +5,7 @@ export interface PartDropdown {
   part_number: string
   part_name: string
   part_type_code?: string | null
+  available_stock?: number
 }
 
 export interface Parts {

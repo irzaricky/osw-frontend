@@ -9,6 +9,7 @@ import { useWorkOrderStoringColumns } from './composables/useWorkOrderStoringCol
 import { useAppToast } from '../../../composables/useAppToast'
 
 import type { WorkOrderStoring, WorkOrderStoringCategory } from '../../../types/warehouse/work-order-storing'
+import type { Range } from '../../../types'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
@@ -44,7 +45,8 @@ const breadcrumbItems = [
 const search = ref('')
 const filters = reactive({
   wo_category: undefined as WorkOrderStoringCategory | undefined,
-  wo_status_id: undefined as number | undefined
+  wo_status_id: undefined as number | undefined,
+  date_range: undefined as Range | undefined
 })
 
 const categories: WorkOrderStoringCategory[] = ['Placement', 'Take Out']
@@ -59,6 +61,13 @@ const confirmDialog = reactive({
 
 // Table state
 const rowSelection = ref({})
+
+function formatLocalDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 // Columns
 const { columns } = useWorkOrderStoringColumns({
@@ -75,6 +84,8 @@ async function fetchData() {
   }
   if (filters.wo_category) params.wo_category = filters.wo_category
   if (filters.wo_status_id) params.wo_status_id = filters.wo_status_id
+  if (filters.date_range?.start) params.start_date = formatLocalDate(filters.date_range.start)
+  if (filters.date_range?.end) params.end_date = formatLocalDate(filters.date_range.end)
 
   await workOrderStoringStore.fetchWorkOrders(params)
 }
