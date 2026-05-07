@@ -327,7 +327,7 @@ function getLogActionColor(action: string): string {
 // ─── Forecast type helper ─────────────────────────────────────────────────────
 const forecastType = computed(() => store.detail?.forecast_type || '')
 const is4Month = computed(() => forecastType.value === '4-Month')
-const isEditable = computed(() => store.detail?.status === 'Draft')
+const isEditable = computed(() => store.detail?.status === 'Draft' || store.detail?.status === 'Rejected')
 
 const isLogsOpen = ref(false)
 
@@ -478,7 +478,7 @@ onMounted(() => {
 
           <!-- Primary Actions (right-aligned) -->
           <UButton
-            v-if="store.detail.status === 'Draft' && fillStats.pct === 100 && parts.length > 0"
+            v-if="(store.detail.status === 'Draft' || store.detail.status === 'Rejected') && fillStats.pct === 100 && parts.length > 0"
             icon="i-lucide-send"
             color="warning"
             variant="subtle"
@@ -497,7 +497,7 @@ onMounted(() => {
             @click="openReviewModal"
           />
           <UButton
-            v-if="store.detail.status === 'Draft'"
+            v-if="store.detail.status === 'Draft' || store.detail.status === 'Rejected'"
             icon="i-lucide-save"
             color="primary"
             size="sm"
@@ -536,6 +536,20 @@ onMounted(() => {
             <div class="text-xs text-muted mb-1">Version</div>
             <div class="text-sm font-semibold">{{ store.detail.version || '-' }}</div>
           </div>
+        </div>
+
+        <!-- Rejected info box -->
+        <div
+          v-if="store.detail.status === 'Rejected'"
+          class="flex flex-col gap-2 p-4 rounded-xl border border-error-200 dark:border-error-800 bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-300"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-alert-octagon" class="w-5 h-5 shrink-0" />
+            <p class="text-sm font-bold uppercase tracking-wide">Forecast Rejected</p>
+          </div>
+          <p class="text-sm ml-8 opacity-90">
+            This forecast version was rejected. Modify the quantities before you can resubmit it for review.
+          </p>
         </div>
 
         <!-- Unfilled warning banner -->
