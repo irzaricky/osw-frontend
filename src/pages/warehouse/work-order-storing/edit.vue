@@ -100,7 +100,7 @@ onMounted(async () => {
   <div v-if="isTypesLoaded && workOrderTypes.length && !isLoadingData">
     <div class="p-6 space-y-6">
       <Breadcrumbs :items="breadcrumbItems" />
-
+      
       <div class="flex items-center gap-4">
         <UButton
           icon="i-lucide-arrow-left"
@@ -109,9 +109,14 @@ onMounted(async () => {
           @click="router.back()"
         />
 
-        <h1 class="text-2xl font-bold">
-          Edit Work Order
-        </h1>
+        <div>
+          <h1 class="text-2xl font-bold">
+            Detail & Edit Work Order
+          </h1>
+          <p class="text-sm text-muted">
+            Only work orders with Draft status can be edited.
+          </p>
+        </div>
       </div>
 
       <WorkOrderStoringForm
