@@ -7,6 +7,7 @@ export const useForecastStore = defineStore('forecast', () => {
   // State
   const forecasts = ref<Forecast[]>([])
   const detail = ref<Forecast | null>(null)
+  const logs = ref<any[]>([])
   
   // Dropdowns
   const customersDropdown = ref<{ id: number; customer_code: string; name: string }[]>([])
@@ -221,9 +222,28 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
+  async function fetchForecastLogs(id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await forecastService.getForecastLogs(id)
+      const data = response.data
+      if (data.status) {
+        logs.value = data.data
+      }
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     forecasts,
     detail,
+    logs,
     customersDropdown,
     forecastTypesDropdown,
     statusDropdown,
@@ -233,6 +253,7 @@ export const useForecastStore = defineStore('forecast', () => {
     error,
     fetchForecasts,
     fetchForecastById,
+    fetchForecastLogs,
     fetchDropdownCustomers,
     fetchDropdownForecastTypes,
     fetchDropdownStatus,

@@ -314,10 +314,31 @@ function getQtyStatusColor(status: string): any {
   return status === 'Fix' ? 'success' : 'warning'
 }
 
+function getLogActionColor(action: string): string {
+  const a = action.toLowerCase()
+  if (a.includes('approve')) return 'text-success-600 dark:text-success-400'
+  if (a.includes('reject')) return 'text-error-600 dark:text-error-400'
+  if (a.includes('submit')) return 'text-warning-600 dark:text-warning-400'
+  if (a.includes('create')) return 'text-blue-600 dark:text-blue-400'
+  if (a.includes('update')) return 'text-primary-600 dark:text-primary-400'
+  return 'text-primary'
+}
+
 // ─── Forecast type helper ─────────────────────────────────────────────────────
 const forecastType = computed(() => store.detail?.forecast_type || '')
 const is4Month = computed(() => forecastType.value === '4-Month')
 const isEditable = computed(() => store.detail?.status === 'Draft')
+
+const isLogsOpen = ref(false)
+
+async function handleViewLogs() {
+  try {
+    await store.fetchForecastLogs(props.forecastId)
+    isLogsOpen.value = true
+  } catch (e: any) {
+    toastError(e)
+  }
+}
 
 // ─── Download Template ────────────────────────────────────────────────────────
 async function downloadTemplate() {
@@ -421,6 +442,14 @@ onMounted(() => {
             label="Import"
             @click="isUploadOpen = true"
             :disabled="!isEditable"
+          />
+          <UButton
+            icon="i-lucide-history"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            label="Logs"
+            @click="handleViewLogs"
           />
 
           <div class="w-px h-5 bg-default mx-1" />
@@ -767,6 +796,54 @@ onMounted(() => {
             :loading="store.loading"
             @click="confirmReview"
           />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Logs Modal -->
+    <UModal v-model:open="isLogsOpen" title="Forecast Logs" description="Historical changes of this forecast" class="sm:max-w-3xl">
+      <template #body>
+        <div class="max-h-[60vh] overflow-y-auto pr-2">
+          <div v-if="store.logs.length === 0" class="text-center py-8 text-muted">
+            No logs found for this forecast.
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="log in store.logs"
+              :key="log.id"
+              class="relative pl-6 pb-4 border-l border-default last:pb-0"
+            >
+              <div class="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary" />
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold" :class="getLogActionColor(log.action)">{{ log.action }}</span>
+                  <span class="text-xs text-muted">{{ new Date(log.createdAt).toLocaleString() }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div class="flex gap-2">
+                    <span class="text-muted">By:</span>
+                    <span class="font-medium">{{ log.user?.user_detail?.full_name || log.user?.email }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span class="text-muted">Version:</span>
+                    <span class="font-medium">{{ log.version }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span class="text-muted">Total Qty:</span>
+                    <span class="font-medium text-success-600 font-mono">{{ log.total_qty?.toLocaleString() }}</span>
+                  </div>
+                </div>
+                <div v-if="log.remarks" class="mt-1 p-2 rounded bg-elevated/50 border border-default text-xs italic text-muted">
+                  {{ log.remarks }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end w-full">
+          <UButton color="neutral" variant="ghost" label="Close" @click="isLogsOpen = false" />
         </div>
       </template>
     </UModal>

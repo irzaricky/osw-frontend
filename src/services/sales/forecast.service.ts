@@ -73,6 +73,10 @@ const forecastService = {
 
   reviewForecast(id: number | string, data: { status: string, remarks?: string }) {
     return api.put(`${BASE}/${id}/review`, data)
+  },
+
+  getForecastLogs(id: number | string) {
+    return api.get(`${BASE}/${id}/logs`)
   }
 }
 
