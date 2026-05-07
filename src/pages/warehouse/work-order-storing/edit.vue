@@ -69,7 +69,7 @@ const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Warehouse' },
   { label: 'Work Order Storing', to: '/warehouse/work-order-storing' },
-  { label: 'Edit Work Order' }
+  { label: 'Detail & Edit Work Order' }
 ]
 
 // save
