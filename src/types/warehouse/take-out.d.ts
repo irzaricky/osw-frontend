@@ -105,6 +105,8 @@ export interface TakeOutRecommendationBinStock {
   part_number: string
   part_name: string
   is_target_part: boolean
+  placement_at?: string | null
+  qty_per_kanban?: number
 }
 
 export interface TakeOutRecommendationBin {
