@@ -49,6 +49,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/sales/forecast', 
+      component: () => import('./pages/sales/forecast/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/production-plan', 
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }

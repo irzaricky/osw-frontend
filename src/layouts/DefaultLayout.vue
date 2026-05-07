@@ -147,10 +147,16 @@ const links = [[{
 }, {
   label: 'Sales',
   icon: 'i-lucide-shopping-cart',
-  to: '/sales',
-  onSelect: () => {
-    open.value = false
-  }
+  defaultOpen: route.path.startsWith('/sales'),
+  children: [
+    {
+      label: 'Forecast',
+      to: '/sales/forecast',
+      onSelect: () => {
+        open.value = false
+      }
+    }
+  ]
 }, {
   label: 'Production Plan',
   icon: 'i-lucide-calendar',
@@ -257,7 +263,7 @@ const groups = computed(() => [{
 
     <UDashboardSearch :groups="groups" />
 
-    <main class="flex-1 min-w-0 w-full h-full overflow-y-auto">
+    <main class="flex-1 min-w-0 w-full h-full overflow-hidden flex flex-col">
       <slot />
     </main>
   </UDashboardGroup>
