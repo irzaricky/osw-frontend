@@ -1,4 +1,7 @@
 <script setup lang="ts">
+
+import { CalendarDate } from '@internationalized/date'
+
 defineProps<{
   search: string
   filters: {
@@ -15,6 +18,19 @@ const emit = defineEmits<{
   'update:filters': [value: Record<string, any>]
   reset: []
 }>()
+
+function parseCalendarDate(value?: string) {
+  if (!value) return undefined
+
+  const [year, month, day] = value.split('-').map(Number)
+  return new CalendarDate(year, month, day)
+}
+
+function formatCalendarDate(value: any) {
+  if (!value) return undefined
+
+  return `${value.year}-${String(value.month).padStart(2, '0')}-${String(value.day).padStart(2, '0')}`
+}
 </script>
 
 <template>
@@ -23,8 +39,18 @@ const emit = defineEmits<{
       <UInput :model-value="search" icon="i-lucide-search" placeholder="Search Work Order"
         @update:model-value="emit('update:search', String($event))" />
 
-      <UInput :model-value="filters.wo_date" type="date" placeholder="WO Date"
-        @update:model-value="emit('update:filters', { wo_date: $event })" />
+      <UPopover>
+        <UButton color="neutral" variant="outline" icon="i-lucide-calendar"
+          :label="filters.wo_date || 'WO Date'" />
+
+        <template #content>
+          <div class="p-2">
+            <UCalendar :model-value="parseCalendarDate(filters.wo_date)" @update:model-value="(value) => {
+              emit('update:filters', { wo_date: formatCalendarDate(value) })
+            }" />
+          </div>
+        </template>
+      </UPopover>
 
       <USelect :model-value="filters.warehouse_area_id" placeholder="Warehouse Area" :items="warehouseAreas.map(area => ({
         label: area.name,

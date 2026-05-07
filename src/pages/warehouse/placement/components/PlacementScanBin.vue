@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PlacementBin, PlacementScanResult } from '../../../../types/warehouse/placement'
 
 const props = defineProps<{
@@ -22,24 +23,23 @@ function isBinDisabled(bin: PlacementBin) {
 
   const scannedPartNumber = props.scannedLabel?.part?.part_number
 
-  if (bin.is_dedicated && bin.dedicated_part_number && bin.dedicated_part_number !== scannedPartNumber) {
+  if (
+    bin.is_dedicated &&
+    bin.dedicated_part_number &&
+    bin.dedicated_part_number !== scannedPartNumber
+  ) {
     return true
   }
 
   return false
 }
 
-function getBinDisabledReason(bin: PlacementBin) {
-  if (bin.status === 'Full') return 'Bin is full'
 
-  const scannedPartNumber = props.scannedLabel?.part?.part_number
+const selectableBins = computed(() => {
+  return props.availableBins.filter(bin => !isBinDisabled(bin))
+})
 
-  if (bin.is_dedicated && bin.dedicated_part_number && bin.dedicated_part_number !== scannedPartNumber) {
-    return `Dedicated for ${bin.dedicated_part_number}`
-  }
 
-  return ''
-}
 </script>
 
 <template>
@@ -51,7 +51,7 @@ function getBinDisabledReason(bin: PlacementBin) {
     </template>
 
     <div class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-[1fr_120px_auto] gap-2">
+      <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
         <UInput
           :model-value="binCode"
           icon="i-lucide-warehouse"
@@ -60,15 +60,6 @@ function getBinDisabledReason(bin: PlacementBin) {
           @update:model-value="emit('update:binCode', String($event))"
           @keyup.enter="emit('place')"
         />
-
-        <!-- <UInput
-          :model-value="qtyPerKanban"
-          type="number"
-          min="1"
-          placeholder="Qty"
-          :disabled="!scannedLabel"
-          @update:model-value="emit('update:qtyPerKanban', Number($event || 1))"
-        /> -->
 
         <UButton
           icon="i-lucide-qr-code"
@@ -90,21 +81,23 @@ function getBinDisabledReason(bin: PlacementBin) {
         @click="emit('place')"
       />
 
-      <div v-if="availableBins.length" class="space-y-2">
-        <p class="text-sm font-medium">
-          Available Bins
-        </p>
+      <div v-if="selectableBins.length" class="space-y-2">
+        <div class="flex items-center justify-between">
+          <p class="text-sm font-medium">
+            Available Bins
+          </p>
+
+          <UBadge size="sm" color="success" variant="soft">
+            {{ selectableBins.length }} selectable
+          </UBadge>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
           <button
-            v-for="bin in availableBins"
+            v-for="bin in selectableBins"
             :key="bin.id"
             type="button"
-            class="text-left rounded-xl border border-default p-3 transition"
-            :class="isBinDisabled(bin)
-              ? 'opacity-50 cursor-not-allowed'
-              : 'hover:bg-elevated'"
-            :disabled="isBinDisabled(bin)"
+            class="text-left rounded-xl border border-primary/30 bg-primary/5 p-3 transition hover:bg-primary/10"
             @click="emit('selectBin', bin.bin_code)"
           >
             <div class="flex items-center justify-between gap-2">
@@ -113,7 +106,7 @@ function getBinDisabledReason(bin: PlacementBin) {
               <UBadge
                 size="sm"
                 variant="soft"
-                :color="bin.status === 'Full' ? 'error' : bin.status === 'Empty' ? 'neutral' : 'success'"
+                :color="bin.status === 'Empty' ? 'neutral' : 'success'"
               >
                 {{ bin.status }}
               </UBadge>
@@ -126,13 +119,20 @@ function getBinDisabledReason(bin: PlacementBin) {
             <p v-if="bin.dedicated_part_number" class="text-xs text-muted">
               Dedicated: {{ bin.dedicated_part_number }}
             </p>
-
-            <p v-if="isBinDisabled(bin)" class="text-xs text-error mt-1">
-              {{ getBinDisabledReason(bin) }}
-            </p>
           </button>
         </div>
       </div>
-    </div>
+
+      <UAlert
+        v-else-if="scannedLabel"
+        color="warning"
+        variant="soft"
+        icon="i-lucide-alert-triangle"
+        title="No Available Bin"
+        description="No selectable bin is available for this part in the selected warehouse area."
+      />
+
+      
+      </div>
   </UCard>
 </template>

@@ -2,16 +2,18 @@
 import { reactive, watch, computed, ref } from 'vue'
 import * as z from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
+import type { PartDropdown } from '../../../../types/master-data/parts'
 
 const formRef = ref()
 
 const props = defineProps<{
   open: boolean
   mode: 'add' | 'edit'
-  parts: { id: number; part_number: string; part_name: string }[]
+  parts: PartDropdown[]
   loading: boolean
   partDisabled?: boolean
   kanbanDisabled?: boolean
+  showStockField?: boolean
   item?: { part_id: number; total_kanban: number } | null
 }>()
 
@@ -20,16 +22,29 @@ const emit = defineEmits<{
   save: [data: { part_id: number; total_kanban: number }]
 }>()
 
-const schema = z.object({
-  part_id: z.number({ message: 'Part is required' }),
-  total_kanban: z.number().min(1, 'Total Kanban must be at least 1')
+const state = reactive({
+  part_id: undefined as number | undefined,
+  total_kanban: 1
 })
 
-type Schema = z.output<typeof schema>
+const selectedPartData = computed(() =>
+  props.parts.find(p => p.id === state.part_id)
+)
 
-const state = reactive<Partial<Schema>>({
-  part_id: undefined,
-  total_kanban: 1
+const selectedPartStock = computed(() => selectedPartData.value?.available_stock)
+
+const schema = z.object({
+  part_id: z.number({ message: 'Part is required' }),
+  total_kanban: z.number().min(1, 'Total Kanban must be at least 1').refine(
+    (value) => {
+      if (!props.showStockField) return true
+      const currentStock = selectedPartStock.value
+      return currentStock === undefined || value <= currentStock
+    },
+    {
+      message: 'Total Kanban must be less than or equal to available stock',
+    }
+  )
 })
 
 // Reset when open in add mode
@@ -109,6 +124,14 @@ function close() {
             class="w-full"
             clear
             :disabled="props.partDisabled"
+          />
+        </UFormField>
+
+        <UFormField label="Available Stock (Kanban)" v-if="props.showStockField">
+          <UInput
+            :model-value="selectedPartStock ?? '-'"
+            disabled
+            class="w-full"
           />
         </UFormField>
 

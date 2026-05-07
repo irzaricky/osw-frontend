@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { WorkOrderStoringStatus, WorkOrderStoringCategory } from '../../../../types/warehouse/work-order-storing'
+import type { Range } from '../../../../types'
+import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
 
 interface Filters {
   wo_category: WorkOrderStoringCategory | undefined
   wo_status_id: number | undefined
+  date_range: Range | undefined
 }
 
 const props = defineProps<{
@@ -59,6 +62,15 @@ const selectedCategory = computed({
   }
 })
 
+const selectedDateRange = computed({
+  get() {
+    return props.filters.date_range
+  },
+  set(value: Range | undefined) {
+    updateFilter('date_range', value)
+  }
+})
+
 function updateFilter(key: keyof Filters, value: any) {
   emit('update:filters', { [key]: value })
 }
@@ -66,6 +78,11 @@ function updateFilter(key: keyof Filters, value: any) {
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
+    <HomeDateRangePicker
+      v-model="selectedDateRange"
+      class="w-full md:w-70"
+      clear
+    />
     <USelectMenu
       v-model="selectedCategory"
       :items="categoryItems"

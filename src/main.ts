@@ -88,6 +88,11 @@ const router = createRouter({
       component: () => import('./pages/warehouse/transaction-activity/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    {
+    path: '/warehouse/stock-monitoring',
+    component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
+    meta: { layout: 'default', requiresAuth: true }
+    },
 
     // master data
     { 

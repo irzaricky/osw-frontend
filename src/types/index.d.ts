@@ -32,6 +32,13 @@ import type {
   TransactionActivity,
   TransactionActivityType
 } from './warehouse/transaction-activity'
+import type {
+  StockMonitoringSummary,
+  StockByPart,
+  StockPartLabel,
+  StockByBin,
+  StockBinItem
+} from './warehouse/stock-monitoring'
 
 
 
@@ -66,7 +73,12 @@ export type {
   TakeOutRecommendationBin,
   TakeOutRecommendationBinStock,
   TransactionActivity,
-  TransactionActivityType
+  TransactionActivityType,
+  StockMonitoringSummary,
+  StockByPart,
+  StockPartLabel,
+  StockByBin,
+  StockBinItem
 }
 
 

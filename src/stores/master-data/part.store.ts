@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import partService, { type PartsParams } from '../../services/master-data/part.service'
-import type { Parts } from '../../types/master-data/parts'
+import type { Parts, PartDropdown } from '../../types/master-data/parts'
 
 export const usePartStore = defineStore('part', () => {
   // State
   const parts = ref<Parts[]>([])
-  const dropdown = ref<Pick<Parts, 'id' | 'part_number' | 'part_name'>[]>([])
+  const dropdown = ref<PartDropdown[]>([])
   const meta = ref({
     page: 1,
     limit: 10,

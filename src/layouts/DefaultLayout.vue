@@ -201,6 +201,14 @@ const links = [[{
         open.value = false
       }
     },
+    {
+      label: 'Stock Monitoring',
+      icon: 'i-lucide-chart-no-axes-combined',
+      to: '/warehouse/stock-monitoring',
+      onSelect: () => {
+        open.value = false
+      }
+    },
   ]
 }], []] satisfies NavigationMenuItem[][]
 
