@@ -14,6 +14,7 @@ export const useTakeOutStore = defineStore('take-out', () => {
   const takeOuts = ref<TakeOut[]>([])
   const takeOutDetail = ref<TakeOutDetail | null>(null)
   const recommendations = ref<TakeOutRecommendation[]>([])
+  const workOrderTypes = ref<any[]>([])
 
   const meta = ref({
     page: 1,
@@ -49,6 +50,22 @@ export const useTakeOutStore = defineStore('take-out', () => {
       throw e
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchWorkOrderTypes() {
+    try {
+      const response = await takeOutService.getWorkOrderTypes()
+      const data = response.data
+
+      if (data.status) {
+        workOrderTypes.value = data.data
+      }
+
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
     }
   }
 
@@ -118,6 +135,7 @@ export const useTakeOutStore = defineStore('take-out', () => {
     takeOuts,
     takeOutDetail,
     recommendations,
+    workOrderTypes,
     meta,
     loading,
     error,
@@ -125,6 +143,7 @@ export const useTakeOutStore = defineStore('take-out', () => {
     fetchTakeOuts,
     fetchTakeOutDetail,
     fetchRecommendations,
+    fetchWorkOrderTypes,
     scanLabelOut,
     resetTakeOutState
   }

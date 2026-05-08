@@ -15,7 +15,7 @@ const router = useRouter()
 const takeOutStore = useTakeOutStore()
 const warehouseAreaStore = useWarehouseAreaStore()
 
-const { takeOuts, meta, loading } = storeToRefs(takeOutStore)
+const { takeOuts, meta, loading, workOrderTypes } = storeToRefs(takeOutStore)
 const { dropdown: warehouseAreas } = storeToRefs(warehouseAreaStore)
 
 const search = ref('')
@@ -24,7 +24,8 @@ const filters = reactive({
   warehouse_area_id: undefined as number | undefined,
   wo_status_id: undefined as number | undefined,
   wo_type_id: undefined as number | undefined,
-  wo_date: undefined as string | undefined
+  wo_date_start: undefined as string | undefined,
+  wo_date_end: undefined as string | undefined
 })
 
 const breadcrumbItems = [
@@ -43,7 +44,8 @@ async function fetchData() {
   if (filters.warehouse_area_id) params.warehouse_area_id = filters.warehouse_area_id
   if (filters.wo_status_id) params.wo_status_id = filters.wo_status_id
   if (filters.wo_type_id) params.wo_type_id = filters.wo_type_id
-  if (filters.wo_date) params.wo_date = filters.wo_date
+  if (filters.wo_date_start) params.wo_date_start = filters.wo_date_start
+  if (filters.wo_date_end) params.wo_date_end = filters.wo_date_end
 
   await takeOutStore.fetchTakeOuts(params)
 }
@@ -54,16 +56,6 @@ function onUpdateSearch(value: string) {
 
 function onUpdateFilters(partial: Record<string, any>) {
   Object.assign(filters, partial)
-}
-
-function resetFilters() {
-  search.value = ''
-  filters.warehouse_area_id = undefined
-  filters.wo_status_id = undefined
-  filters.wo_type_id = undefined
-  filters.wo_date = undefined
-  meta.value.page = 1
-  fetchData()
 }
 
 function openDetail(id: number) {
@@ -85,6 +77,7 @@ watch(filters, () => {
 onMounted(() => {
   fetchData()
   warehouseAreaStore.fetchDropdown()
+  takeOutStore.fetchWorkOrderTypes()
 })
 </script>
 
@@ -97,7 +90,7 @@ onMounted(() => {
         Stock Out Take Out
       </h1>
       <p class="text-sm text-muted">
-        Search work order and take out stock using FIFO recommendation.
+        Search work order and take out stock.
       </p>
     </div>
 
@@ -105,9 +98,9 @@ onMounted(() => {
       :search="search"
       :filters="filters"
       :warehouse-areas="warehouseAreas"
+      :work-order-types="workOrderTypes"
       @update:search="onUpdateSearch"
       @update:filters="onUpdateFilters"
-      @reset="resetFilters"
     />
 
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

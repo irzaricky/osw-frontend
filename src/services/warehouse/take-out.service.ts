@@ -30,6 +30,9 @@ const takeOutService = {
 
   scanLabelOut(id: number | string, data: ScanLabelOutPayload) {
     return api.post(`/warehouse/take-out/${id}/scan-label`, data)
+  },
+  getWorkOrderTypes() {
+  return api.get('/warehouse/placement/dropdown/work-order-types')
   }
 }
 

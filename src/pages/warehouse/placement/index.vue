@@ -10,11 +10,15 @@ import PlacementFilters from './components/PlacementFilters.vue'
 import PlacementCard from './components/PlacementCard.vue'
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 
+
+const router = useRouter()
+
+const placementStore = usePlacementStore()
+
 const warehouseAreaStore = useWarehouseAreaStore()
 const { dropdown: warehouseAreas } = storeToRefs(warehouseAreaStore)
-const router = useRouter()
-const placementStore = usePlacementStore()
-const { placements, meta, loading } = storeToRefs(placementStore)
+
+const { placements, meta, loading, workOrderTypes } = storeToRefs(placementStore)
 
 const search = ref('')
 
@@ -22,7 +26,8 @@ const filters = reactive({
   warehouse_area_id: undefined as number | undefined,
   wo_status_id: undefined as number | undefined,
   wo_type_id: undefined as number | undefined,
-  wo_date: undefined as string | undefined
+  wo_date_start: undefined as string | undefined,
+  wo_date_end: undefined as string | undefined
 })
 
 const breadcrumbItems = [
@@ -41,7 +46,8 @@ async function fetchData() {
   if (filters.warehouse_area_id) params.warehouse_area_id = filters.warehouse_area_id
   if (filters.wo_status_id) params.wo_status_id = filters.wo_status_id
   if (filters.wo_type_id) params.wo_type_id = filters.wo_type_id
-  if (filters.wo_date) params.wo_date = filters.wo_date
+  if (filters.wo_date_start) params.wo_date_start = filters.wo_date_start
+  if (filters.wo_date_end) params.wo_date_end = filters.wo_date_end
 
   await placementStore.fetchPlacements(params)
 }
@@ -59,7 +65,8 @@ function resetFilters() {
   filters.warehouse_area_id = undefined
   filters.wo_status_id = undefined
   filters.wo_type_id = undefined
-  filters.wo_date = undefined
+  filters.wo_date_start = undefined
+  filters.wo_date_end = undefined
   meta.value.page = 1
   fetchData()
 }
@@ -83,6 +90,7 @@ watch(filters, () => {
 onMounted(() => {
   fetchData()
   warehouseAreaStore.fetchDropdown()
+  placementStore.fetchWorkOrderTypes()
 })
 </script>
 
@@ -99,16 +107,27 @@ onMounted(() => {
       </p>
     </div>
 
-    <PlacementFilters :search="search" :filters="filters" :warehouse-areas="warehouseAreas"
-      @update:search="onUpdateSearch" @update:filters="onUpdateFilters" @reset="resetFilters" />
+    <PlacementFilters
+      :search="search"
+      :filters="filters"
+      :warehouse-areas="warehouseAreas"
+      :work-order-types="workOrderTypes"
+      @update:search="onUpdateSearch"
+      @update:filters="onUpdateFilters"
+      @reset="resetFilters"
+    />
 
     <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <USkeleton v-for="i in 6" :key="i" class="h-64 rounded-xl" />
     </div>
 
     <div v-else-if="placements.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-      <PlacementCard v-for="placement in placements" :key="placement.wo_id" :placement="placement"
-        @detail="openDetail" />
+      <PlacementCard
+        v-for="placement in placements"
+        :key="placement.wo_id"
+        :placement="placement"
+        @detail="openDetail"
+      />
     </div>
 
     <UCard v-else>
@@ -122,7 +141,12 @@ onMounted(() => {
         Total {{ meta.total }} work order(s)
       </div>
 
-      <UPagination v-model:page="meta.page" :total="meta.total" :items-per-page="meta.limit" @update:page="fetchData" />
+      <UPagination
+        v-model:page="meta.page"
+        :total="meta.total"
+        :items-per-page="meta.limit"
+        @update:page="fetchData"
+      />
     </div>
   </div>
 </template>
