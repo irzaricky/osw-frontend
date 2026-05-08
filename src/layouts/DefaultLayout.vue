@@ -263,7 +263,7 @@ const groups = computed(() => [{
 
     <UDashboardSearch :groups="groups" />
 
-    <main class="flex-1 min-w-0 w-full h-full overflow-hidden flex flex-col">
+    <main class="flex-1 min-w-0 w-full h-full overflow-auto">
       <slot />
     </main>
   </UDashboardGroup>
