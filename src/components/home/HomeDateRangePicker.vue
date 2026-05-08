@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import { DateFormatter, getLocalTimeZone, CalendarDate, today } from '@internationalized/date'
 import type { Range } from '../../types'
 
+const props = defineProps<{
+  clear?: boolean
+}>()
+
 const df = new DateFormatter('en-US', {
   dateStyle: 'medium'
 })
@@ -28,19 +32,19 @@ const toCalendarDate = (date: Date) => {
 
 const calendarRange = computed({
   get: () => ({
-    start: selected.value.start ? toCalendarDate(selected.value.start) : undefined,
-    end: selected.value.end ? toCalendarDate(selected.value.end) : undefined
+    start: selected.value?.start ? toCalendarDate(selected.value.start) : undefined,
+    end: selected.value?.end ? toCalendarDate(selected.value.end) : undefined
   }),
   set: (newValue: { start: CalendarDate | undefined, end: CalendarDate | undefined }) => {
     selected.value = {
-      start: newValue.start ? newValue.start.toDate(getLocalTimeZone()) : new Date(),
-      end: newValue.end ? newValue.end.toDate(getLocalTimeZone()) : new Date()
+      start: newValue.start ? newValue.start.toDate(getLocalTimeZone()) : undefined as any,
+      end: newValue.end ? newValue.end.toDate(getLocalTimeZone()) : undefined as any
     }
   }
 })
 
 const isRangeSelected = (range: { days?: number, months?: number, years?: number }) => {
-  if (!selected.value.start || !selected.value.end) return false
+  if (!selected.value?.start || !selected.value?.end) return false
 
   const currentDate = today(getLocalTimeZone())
   let startDate = currentDate.copy()
@@ -76,19 +80,26 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
     end: endDate.toDate(getLocalTimeZone())
   }
 }
+
+function clearSelection() {
+  selected.value = {
+    start: undefined as any,
+    end: undefined as any
+  }
+}
 </script>
 
 <template>
   <UPopover :content="{ align: 'start' }" :modal="true">
     <UButton
       color="neutral"
-      variant="ghost"
+      variant="outline"
       icon="i-lucide-calendar"
-      class="data-[state=open]:bg-elevated group"
+      class="group w-full h-9 justify-between rounded-md font-normal text-sm text-muted bg-default hover:bg-default active:bg-default"
     >
       <span class="truncate">
-        <template v-if="selected.start">
-          <template v-if="selected.end">
+        <template v-if="selected?.start">
+          <template v-if="selected?.end">
             {{ df.format(selected.start) }} - {{ df.format(selected.end) }}
           </template>
           <template v-else>
@@ -101,7 +112,19 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
       </span>
 
       <template #trailing>
-        <UIcon name="i-lucide-chevron-down" class="shrink-0 text-dimmed size-5 group-data-[state=open]:rotate-180 transition-transform duration-200" />
+        <div class="flex items-center gap-2">
+          <UIcon
+            v-if="props.clear && selected?.start"
+            name="i-lucide-x"
+            class="cursor-pointer text-dimmed size-4 hover:text-muted"
+            @click.stop.prevent="clearSelection"
+          />
+
+          <UIcon
+            name="i-lucide-chevron-down"
+            class="shrink-0 text-dimmed size-5 group-data-[state=open]:rotate-180 transition-transform duration-200"
+          />
+        </div>
       </template>
     </UButton>
 

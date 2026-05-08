@@ -40,7 +40,10 @@ const placementService = {
 
   placeBin(id: number | string, data: PlaceBinPayload) {
     return api.post(`/warehouse/placement/${id}/place-bin`, data)
-  }
+  },
+  getWorkOrderTypes() {
+  return api.get('/warehouse/placement/dropdown/work-order-types')
+}
 }
 
 export default placementService

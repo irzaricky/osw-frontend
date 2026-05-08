@@ -1,25 +1,114 @@
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
+
+type DateRangeValue = {
+  start?: Date
+  end?: Date
+}
+
+const props = defineProps<{
   search: string
   filters: {
     warehouse_area_id?: number
     wo_status_id?: number
     wo_type_id?: number
-    wo_date?: string
+    wo_date_start?: string
+    wo_date_end?: string
   }
   warehouseAreas: { id: number, name: string }[]
+  workOrderTypes: { id: number, name: string }[]
 }>()
 
 const emit = defineEmits<{
   'update:search': [value: string]
   'update:filters': [value: Record<string, any>]
-  reset: []
 }>()
+
+function formatDate(date?: Date) {
+  if (!date) return undefined
+
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+function parseDate(value?: string) {
+  if (!value) return undefined
+
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+const woDateRange = computed<DateRangeValue>({
+  get() {
+    return {
+      start: parseDate(props.filters.wo_date_start),
+      end: parseDate(props.filters.wo_date_end)
+    }
+  },
+  set(value) {
+    emit('update:filters', {
+      wo_date_start: formatDate(value?.start),
+      wo_date_end: formatDate(value?.end)
+    })
+  }
+})
+
+const statuses = [
+  { id: 2, name: 'Submitted' },
+  { id: 3, name: 'In Progress' },
+  { id: 4, name: 'Completed' }
+]
+
+const selectedWarehouseArea = computed({
+  get() {
+    if (props.filters.warehouse_area_id == null) return undefined
+    return props.warehouseAreas.find(area => area.id === props.filters.warehouse_area_id)?.name
+  },
+  set(value: string | undefined) {
+    emit('update:filters', {
+      warehouse_area_id: value
+        ? props.warehouseAreas.find(area => area.name === value)?.id
+        : undefined
+    })
+  }
+})
+
+const selectedWorkOrderType = computed({
+  get() {
+    if (props.filters.wo_type_id == null) return undefined
+    return props.workOrderTypes.find(type => type.id === props.filters.wo_type_id)?.name
+  },
+  set(value: string | undefined) {
+    emit('update:filters', {
+      wo_type_id: value
+        ? props.workOrderTypes.find(type => type.name === value)?.id
+        : undefined
+    })
+  }
+})
+
+const selectedStatus = computed({
+  get() {
+    if (props.filters.wo_status_id == null) return undefined
+    return statuses.find(status => status.id === props.filters.wo_status_id)?.name
+  },
+  set(value: string | undefined) {
+    emit('update:filters', {
+      wo_status_id: value
+        ? statuses.find(status => status.name === value)?.id
+        : undefined
+    })
+  }
+})
 </script>
 
 <template>
   <UCard>
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
       <UInput
         :model-value="search"
         icon="i-lucide-search"
@@ -27,40 +116,36 @@ const emit = defineEmits<{
         @update:model-value="emit('update:search', String($event))"
       />
 
-      <UInput
-        :model-value="filters.wo_date"
-        type="date"
-        placeholder="WO Date"
-        @update:model-value="emit('update:filters', { wo_date: $event })"
+      <HomeDateRangePicker
+        v-model="woDateRange as any"
+        clear
       />
 
-      <USelect
-        :model-value="filters.warehouse_area_id"
+      <USelectMenu
+        v-model="selectedWarehouseArea"
+        :items="warehouseAreas.map(area => area.name)"
         placeholder="Warehouse Area"
-        :items="warehouseAreas.map(area => ({
-          label: area.name,
-          value: area.id
-        }))"
-        @update:model-value="emit('update:filters', { warehouse_area_id: $event ? Number($event) : undefined })"
+        class="w-full"
+        searchable
+        clear
       />
 
-      <USelect
-        :model-value="filters.wo_status_id"
+      <USelectMenu
+        v-model="selectedWorkOrderType"
+        :items="workOrderTypes.map(type => type.name)"
+        placeholder="Work Order Type"
+        class="w-full"
+        searchable
+        clear
+      />
+
+      <USelectMenu
+        v-model="selectedStatus"
+        :items="statuses.map(status => status.name)"
         placeholder="Status"
-        :items="[
-          { label: 'Submitted', value: 2 },
-          { label: 'In Progress', value: 3 },
-          { label: 'Completed', value: 4 }
-        ]"
-        @update:model-value="emit('update:filters', { wo_status_id: $event ? Number($event) : undefined })"
-      />
-
-      <UButton
-        icon="i-lucide-rotate-ccw"
-        variant="soft"
-        color="neutral"
-        label="Reset"
-        @click="emit('reset')"
+        class="w-full"
+        searchable
+        clear
       />
     </div>
   </UCard>

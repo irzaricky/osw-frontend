@@ -11,6 +11,7 @@ export const usePlacementStore = defineStore('placement', () => {
   const placementDetail = ref<any | null>(null)
   const availableBins = ref<any[]>([])
   const scannedLabel = ref<any | null>(null)
+  const workOrderTypes = ref<any[]>([])
 
   const meta = ref({
     page: 1,
@@ -132,6 +133,22 @@ export const usePlacementStore = defineStore('placement', () => {
     }
   }
 
+  async function fetchWorkOrderTypes() {
+    try {
+      const response = await placementService.getWorkOrderTypes()
+      const data = response.data
+
+      if (data.status) {
+        workOrderTypes.value = data.data
+      }
+
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    }
+  }
+
   function resetScanState() {
     scannedLabel.value = null
     availableBins.value = []
@@ -142,6 +159,7 @@ export const usePlacementStore = defineStore('placement', () => {
     placementDetail,
     availableBins,
     scannedLabel,
+    workOrderTypes,
     meta,
     loading,
     error,
@@ -151,6 +169,7 @@ export const usePlacementStore = defineStore('placement', () => {
     validateLabel,
     fetchAvailableBins,
     placeBin,
+    fetchWorkOrderTypes,
     resetScanState
   }
 })

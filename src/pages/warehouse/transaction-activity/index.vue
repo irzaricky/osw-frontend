@@ -99,7 +99,7 @@ onMounted(() => {
         </div>
 
         <TransactionActivityFilters :search="search" :filters="filters" :warehouse-areas="warehouseAreas"
-            @update:search="onUpdateSearch" @update:filters="onUpdateFilters" @reset="resetFilters" />
+            @update:search="onUpdateSearch" @update:filters="onUpdateFilters" @reset="resetFilters"/>
 
         <TransactionActivityTable :data="transactionActivities" :loading="loading" :page="meta.page"
             :limit="meta.limit" />
