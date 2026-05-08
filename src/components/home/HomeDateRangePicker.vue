@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, type Ref } from 'vue'
-import { DateFormatter, getLocalTimeZone, CalendarDate, today } from '@internationalized/date'
+import {
+  DateFormatter,
+  getLocalTimeZone,
+  CalendarDate,
+  today
+} from '@internationalized/date'
+
 import type { Range } from '../../types'
+
+const props = defineProps<{
+  clear?: boolean
+}>()
 
 const df = new DateFormatter('en-US', {
   dateStyle: 'medium'
@@ -28,21 +38,42 @@ const toCalendarDate = (date: Date) => {
 
 const calendarRange = computed({
   get: () => ({
-    start: selected.value?.start ? toCalendarDate(selected.value.start) : undefined,
-    end: selected.value?.end ? toCalendarDate(selected.value.end) : undefined
+    start: selected.value?.start
+      ? toCalendarDate(selected.value.start)
+      : undefined,
+
+    end: selected.value?.end
+      ? toCalendarDate(selected.value.end)
+      : undefined
   }),
-  set: (newValue: { start: CalendarDate | undefined, end: CalendarDate | undefined }) => {
-    selected.value = {
-      start: newValue.start ? newValue.start.toDate(getLocalTimeZone()) : new Date(),
-      end: newValue.end ? newValue.end.toDate(getLocalTimeZone()) : new Date()
-    }
+
+  set: (newValue: {
+    start: CalendarDate | undefined
+    end: CalendarDate | undefined
+  }) => {
+    selected.value =
+      newValue.start && newValue.end
+        ? {
+            start: newValue.start.toDate(getLocalTimeZone()),
+            end: newValue.end.toDate(getLocalTimeZone())
+          }
+        : undefined
   }
 })
 
-const isRangeSelected = (range: { days?: number, months?: number, years?: number }) => {
-  if (!selected.value?.start || !selected.value?.end) return false
+const isRangeSelected = (
+  range: {
+    days?: number
+    months?: number
+    years?: number
+  }
+) => {
+  if (!selected.value?.start || !selected.value?.end) {
+    return false
+  }
 
   const currentDate = today(getLocalTimeZone())
+
   let startDate = currentDate.copy()
 
   if (range.days) {
@@ -56,11 +87,21 @@ const isRangeSelected = (range: { days?: number, months?: number, years?: number
   const selectedStart = toCalendarDate(selected.value.start)
   const selectedEnd = toCalendarDate(selected.value.end)
 
-  return selectedStart.compare(startDate) === 0 && selectedEnd.compare(currentDate) === 0
+  return (
+    selectedStart.compare(startDate) === 0 &&
+    selectedEnd.compare(currentDate) === 0
+  )
 }
 
-const selectRange = (range: { days?: number, months?: number, years?: number }) => {
+const selectRange = (
+  range: {
+    days?: number
+    months?: number
+    years?: number
+  }
+) => {
   const endDate = today(getLocalTimeZone())
+
   let startDate = endDate.copy()
 
   if (range.days) {
@@ -76,6 +117,10 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
     end: endDate.toDate(getLocalTimeZone())
   }
 }
+
+function clearSelection() {
+  selected.value = undefined
+}
 </script>
 
 <template>
@@ -84,24 +129,38 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
       color="neutral"
       variant="outline"
       icon="i-lucide-calendar"
-      class="data-[state=open]:bg-elevated group"
+      class="group w-full h-9 justify-between rounded-md font-normal text-sm"
     >
       <span class="truncate">
         <template v-if="selected?.start">
           <template v-if="selected?.end">
             {{ df.format(selected.start) }} - {{ df.format(selected.end) }}
           </template>
+
           <template v-else>
             {{ df.format(selected.start) }}
           </template>
         </template>
+
         <template v-else>
           Select a date range
         </template>
       </span>
 
       <template #trailing>
-        <UIcon name="i-lucide-chevron-down" class="shrink-0 text-dimmed size-5 group-data-[state=open]:rotate-180 transition-transform duration-200" />
+        <div class="flex items-center gap-2">
+          <UIcon
+            v-if="props.clear && selected?.start"
+            name="i-lucide-x"
+            class="cursor-pointer text-dimmed size-4 hover:text-muted"
+            @click.stop.prevent="clearSelection"
+          />
+
+          <UIcon
+            name="i-lucide-chevron-down"
+            class="shrink-0 text-dimmed size-5 group-data-[state=open]:rotate-180 transition-transform duration-200"
+          />
+        </div>
       </template>
     </UButton>
 
@@ -115,7 +174,11 @@ const selectRange = (range: { days?: number, months?: number, years?: number }) 
             color="neutral"
             variant="ghost"
             class="rounded-none px-4"
-            :class="[isRangeSelected(range) ? 'bg-elevated' : 'hover:bg-elevated/50']"
+            :class="[
+              isRangeSelected(range)
+                ? 'bg-elevated'
+                : 'hover:bg-elevated/50'
+            ]"
             truncate
             @click="selectRange(range)"
           />

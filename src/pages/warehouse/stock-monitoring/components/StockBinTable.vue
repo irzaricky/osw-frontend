@@ -28,19 +28,7 @@ function getStatusColor(status?: string) {
 }
 
 const columns = [
-  {
-    id: 'expand',
-    cell: ({ row }: any) =>
-      h(UButton, {
-        color: 'neutral',
-        variant: 'ghost',
-        icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
-        onClick: () => {
-          row.toggleExpanded()
-          emit('expandBin', row.original.bin_id)
-        }
-      })
-  },
+
   {
     accessorKey: 'bin_code',
     header: 'Bin Code'
@@ -82,7 +70,20 @@ const columns = [
   {
     accessorKey: 'total_pcs',
     header: 'PCS'
-  }
+  },
+  {
+    id: 'expand',
+    cell: ({ row }: any) =>
+      h(UButton, {
+        color: 'neutral',
+        variant: 'ghost',
+        icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
+        onClick: () => {
+          row.toggleExpanded()
+          emit('expandBin', row.original.bin_id)
+        }
+      })
+  },
 ]
 </script>
 
@@ -105,13 +106,8 @@ const columns = [
       </div>
     </template>
 
-    <UTable
-      v-model:expanded="expanded"
-      :data="loading ? [] : props.bins"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    >
+    <UTable v-model:expanded="expanded" :data="loading ? [] : props.bins" :columns="columns" :loading="loading"
+      class="w-full">
       <template #expanded="{ row }">
         <div class="p-4 bg-elevated/50 border-b border-default">
           <div class="mb-3">
@@ -137,17 +133,10 @@ const columns = [
               </thead>
 
               <tbody>
-                <tr
-                  v-for="(stock, index) in stocksMap[String(row.original.bin_id)] || []"
-                  :key="stock.stock_id"
-                  class="border-b border-default"
-                >
+                <tr v-for="(stock, index) in stocksMap[String(row.original.bin_id)] || []" :key="stock.stock_id"
+                  class="border-b border-default">
                   <td class="p-2">
-                    <UBadge
-                      size="sm"
-                      variant="soft"
-                      :color="index === 0 ? 'success' : 'neutral'"
-                    >
+                    <UBadge size="sm" variant="soft" :color="index === 0 ? 'success' : 'neutral'">
                       #{{ index + 1 }}
                     </UBadge>
                   </td>

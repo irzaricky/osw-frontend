@@ -21,23 +21,21 @@ function formatDate(value?: string | null) {
   return new Date(value).toLocaleString()
 }
 
+function getStockStatusColor(status?: string) {
+  if (status === 'Critical') return 'error'
+  if (status === 'Warning') return 'warning'
+  return 'success'
+}
+
 const columns = [
-  {
-    id: 'expand',
-    cell: ({ row }: any) =>
-      h(UButton, {
-        color: 'neutral',
-        variant: 'ghost',
-        icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
-        onClick: () => {
-          row.toggleExpanded()
-          emit('expandPart', row.original.part_number)
-        }
-      })
-  },
+
   {
     accessorKey: 'part_number',
-    header: 'Part Number'
+    header: 'Part Number',
+    cell: ({ row }: any) =>
+      h('div', { class: 'flex items-center gap-2' }, [
+        h('span', row.original.part_number),
+      ])
   },
   {
     accessorKey: 'part_name',
@@ -62,6 +60,65 @@ const columns = [
     header: 'PCS'
   },
   {
+    accessorKey: 'safety_stock',
+    header: 'Safety Stock (box)',
+    cell: ({ row }: any) => row.original.safety_stock ?? 0
+  },
+  {
+    accessorKey: 'coverage_percentage',
+    header: 'Coverage',
+    cell: ({ row }: any) => {
+      const value = Number(row.original.coverage_percentage || 0)
+
+      return h(
+        'div',
+        { class: 'flex items-center gap-2' },
+        [
+          h('span', `${value.toFixed(0)}%`),
+          h('div', { class: 'w-16 h-1.5 rounded-full bg-muted overflow-hidden' }, [
+            h('div', {
+              class: [
+                'h-full rounded-full',
+                value <= 50 ? 'bg-error' : value <= 100 ? 'bg-warning' : 'bg-success'
+              ].join(' '),
+              style: {
+                width: `${Math.min(value, 100)}%`
+              }
+            })
+          ])
+        ]
+      )
+    }
+  },
+  {
+    accessorKey: 'stock_status',
+    header: 'Status',
+    cell: ({ row }: any) =>
+      h('div', { class: 'flex items-center gap-1 flex-wrap' }, [
+        h(
+          UBadge,
+          {
+            color: getStockStatusColor(row.original.stock_status),
+            variant: 'soft',
+            size: 'sm'
+          },
+          () => row.original.stock_status || 'Safe'
+        ),
+
+        row.original.aging_7_days > 0
+          ? h(
+            UBadge,
+            {
+              color: 'warning',
+              variant: 'soft',
+              size: 'sm'
+            },
+            () => 'Aging'
+          )
+          : null
+      ])
+  },
+  {
     accessorKey: 'total_bins',
     header: 'Bins'
   },
@@ -69,7 +126,20 @@ const columns = [
     accessorKey: 'oldest_stock_at',
     header: 'Oldest Stock',
     cell: ({ row }: any) => formatDate(row.original.oldest_stock_at)
-  }
+  },
+  {
+    id: 'expand',
+    cell: ({ row }: any) =>
+      h(UButton, {
+        color: 'neutral',
+        variant: 'ghost',
+        icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
+        onClick: () => {
+          row.toggleExpanded()
+          emit('expandPart', row.original.part_number)
+        }
+      })
+  },
 ]
 </script>
 
@@ -92,13 +162,10 @@ const columns = [
       </div>
     </template>
 
-    <UTable
-      v-model:expanded="expanded"
-      :data="loading ? [] : props.parts"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    >
+    <UTable v-model:expanded="expanded" :data="loading ? [] : props.parts" :columns="columns" :loading="loading"
+      class="w-full" :ui="{
+        tbody: '[&>tr[data-low-stock=true]]:bg-error/10 [&>tr[data-aging=true]]:bg-warning/10'
+      }">
       <template #expanded="{ row }">
         <div class="p-4 bg-elevated/50 border-b border-default">
           <div class="mb-3">
@@ -124,17 +191,10 @@ const columns = [
               </thead>
 
               <tbody>
-                <tr
-                  v-for="(label, index) in labelsMap[row.original.part_number] || []"
-                  :key="label.stock_id"
-                  class="border-b border-default"
-                >
+                <tr v-for="(label, index) in labelsMap[row.original.part_number] || []" :key="label.stock_id"
+                  class="border-b border-default">
                   <td class="p-2">
-                    <UBadge
-                      size="sm"
-                      variant="soft"
-                      :color="index === 0 ? 'success' : 'neutral'"
-                    >
+                    <UBadge size="sm" variant="soft" :color="index === 0 ? 'success' : 'neutral'">
                       #{{ index + 1 }}
                     </UBadge>
                   </td>

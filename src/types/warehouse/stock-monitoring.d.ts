@@ -7,6 +7,42 @@ export interface StockMonitoringSummary {
   full_bins: number
   empty_bins: number
   low_capacity_bins: number
+
+  low_stock_parts: number
+  stock_aging_7_days: number
+  stock_aging_30_days: number
+  oldest_stock_at?: string | null
+
+  low_stock_preview?: {
+    part_number: string
+    part_name: string
+    total_kanban: number
+    safety_stock: number
+  }[]
+
+  aging_preview?: {
+    label_number: string
+    part_number: string
+    part_name: string
+    bin_code: string
+    placement_at: string
+    aging_days: number
+  }[]
+
+  full_bin_preview?: {
+    bin_code: string
+    warehouse_area: string
+    capacity: number
+    used_capacity: number
+  }[]
+
+  low_capacity_preview?: {
+    bin_code: string
+    warehouse_area: string
+    capacity: number
+    used_capacity: number
+    remaining_capacity: number
+  }[]
 }
 
 export interface StockByPart {
@@ -18,9 +54,15 @@ export interface StockByPart {
   package_code?: string | null
   package_name?: string | null
   capacity_per_kanban: number
+  safety_stock: number
+  coverage_percentage: number | string
+  stock_status: 'Critical' | 'Warning' | 'Safe'
   total_kanban: number
   total_pcs: number
   total_bins: number
+  is_low_stock?: boolean
+  aging_7_days?: number
+  aging_30_days?: number
   oldest_stock_at?: string | null
   latest_stock_at?: string | null
 }
