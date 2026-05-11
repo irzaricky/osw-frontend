@@ -151,6 +151,7 @@ const links = [[{
   children: [
     {
       label: 'Forecast',
+      icon: 'i-lucide-badge-dollar-sign',
       to: '/sales/forecast',
       onSelect: () => {
         open.value = false

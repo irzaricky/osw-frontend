@@ -350,7 +350,7 @@ async function downloadTemplate() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `ForecastTemplate_${forecastType.value}_${Date.now()}.xlsx`
+    a.download = `ForecastTemplate_${forecastType.value}}.xlsx`
     a.click()
     URL.revokeObjectURL(url)
     toastSuccess('Template downloaded')
