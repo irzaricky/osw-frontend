@@ -158,7 +158,7 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     loading,
     error,
 
-    //Actions
+    // Actions
     fetchWorkOrders,
     fetchWorkOrder,
     createWorkOrder,

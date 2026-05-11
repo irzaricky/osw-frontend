@@ -209,6 +209,14 @@ const links = [[{
         open.value = false
       }
     },
+    {
+      label: 'Warehouse Layout',
+      icon: 'i-lucide-warehouse',
+      to: '/warehouse/warehouse-layout',
+      onSelect: () => {
+        open.value = false
+      }
+    },
   ]
 }], []] satisfies NavigationMenuItem[][]
 
@@ -263,7 +271,7 @@ const groups = computed(() => [{
 
     <UDashboardSearch :groups="groups" />
 
-    <main class="flex-1 min-w-0 w-full h-full overflow-hidden flex flex-col">
+    <main class="flex-1 min-w-0 w-full h-full overflow-auto flex flex-col">
       <slot />
     </main>
   </UDashboardGroup>

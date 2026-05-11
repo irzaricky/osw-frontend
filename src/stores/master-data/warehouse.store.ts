@@ -7,7 +7,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   // State
   const warehouses = ref<Warehouse[]>([])
   const warehouseCategories = ref<WarehouseCategory[]>([])
-  const dropdown = ref<Pick<Warehouse, 'id' | 'name'>[]>([])
+  const dropdown = ref<Pick<Warehouse, 'id' | 'warehouse_code' | 'name'>[]>([])
 
   const meta = ref({
     page: 1,

@@ -185,7 +185,7 @@ onMounted(() => {
 
     <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
       <div class="text-sm text-muted">
-        {{ meta.total }} total data.
+        Total {{ meta.total }} work order(s).
       </div>
       <UPagination
         v-model:page="meta.page"
