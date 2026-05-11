@@ -41,7 +41,7 @@ if (cookie.value !== 'accepted') {
 
 <template>
   <Suspense>
-    <UApp :toaster="{ position: 'bottom-right', duration: 4000 }">
+    <UApp :toaster="{ position: 'bottom-right', duration: 3000, max:3 }">
       <component :is="layout">
         <RouterView />
       </component>
