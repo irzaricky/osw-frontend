@@ -54,6 +54,16 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/sales/spr', 
+      component: () => import('./pages/sales/spr/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/sales/spr-ppic', 
+      component: () => import('./pages/sales/spr-ppic/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/production-plan', 
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }

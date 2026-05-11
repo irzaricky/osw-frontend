@@ -257,6 +257,14 @@ async function saveChanges() {
 
 // ─── Review & Submit ─────────────────────────────────────────────────────────
 async function submitForecast() {
+  if (isDirty.value) {
+    try {
+      await saveChanges()
+    } catch (e: any) {
+      return
+    }
+  }
+
   try {
     await store.submitForecast(props.forecastId)
     toastSuccess('Forecast submitted successfully')
@@ -331,6 +339,13 @@ function getLogActionColor(action: string): string {
 const forecastType = computed(() => store.detail?.forecast_type || '')
 const is4Month = computed(() => forecastType.value === '4-Month')
 const isEditable = computed(() => store.detail?.status === 'Draft' || store.detail?.status === 'Rejected')
+
+const latestRejectionRemarks = computed(() => {
+  if (!store.detail?.logs) return ''
+  // Find the most recent "Rejected" log
+  const rejectionLog = store.detail.logs.find((l: any) => l.action === 'Rejected')
+  return rejectionLog?.remarks || ''
+})
 
 const isLogsOpen = ref(false)
 
@@ -612,6 +627,12 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Description Card -->
+        <div v-if="store.detail.description" class="bg-elevated/50 rounded-xl border border-default p-4">
+          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">Description</div>
+          <div class="text-sm text-highlighted whitespace-pre-wrap leading-relaxed">{{ store.detail.description }}</div>
+        </div>
+
         <!-- Rejected info box -->
         <div
           v-if="store.detail.status === 'Rejected'"
@@ -621,9 +642,12 @@ onMounted(() => {
             <UIcon name="i-lucide-alert-octagon" class="w-5 h-5 shrink-0" />
             <p class="text-sm font-bold uppercase tracking-wide">Forecast Rejected</p>
           </div>
-          <p class="text-sm ml-8 opacity-90">
-            This forecast version was rejected. Modify the quantities before you can resubmit it for review.
-          </p>
+          <div class="text-sm ml-8 space-y-2">
+            <p v-if="latestRejectionRemarks" class="font-medium italic">"{{ latestRejectionRemarks }}"</p>
+            <p class="opacity-90">
+              Please modify the quantities or details as requested before you resubmit it for review.
+            </p>
+          </div>
         </div>
 
         <!-- Unfilled warning banner -->

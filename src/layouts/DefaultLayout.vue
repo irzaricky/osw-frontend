@@ -156,6 +156,22 @@ const links = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'SPR',
+      icon: 'i-lucide-file-text',
+      to: '/sales/spr',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'SPR PPIC Review',
+      icon: 'i-lucide-clipboard-check',
+      to: '/sales/spr-ppic',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, {

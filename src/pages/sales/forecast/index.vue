@@ -111,12 +111,12 @@ function getStatusColor(status: string): any {
   return map[status] || 'neutral'
 }
 
-// ─── Grouped List (Customer → Status) ───────────────────────────────────────
+// ─── Grouped List (status → customer) ───────────────────────────────────────
 interface GroupedForecast {
-  customer: string
-  customer_id: number
-  statuses: {
-    status: string
+  status: string
+  customers: {
+    customer: string
+    customer_id: number
     items: Forecast[]
   }[]
 }
@@ -124,32 +124,39 @@ interface GroupedForecast {
 const STATUS_ORDER = ['Draft', 'Submitted', 'Approved', 'Rejected']
 
 const groupedForecasts = computed<GroupedForecast[]>(() => {
-  const map = new Map<number, GroupedForecast>()
+  const map = new Map<string, GroupedForecast>()
 
   forecasts.value.forEach(f => {
-    const cid = f.customer_id
-    if (!map.has(cid)) {
-      map.set(cid, {
-        customer: f.customer?.name || `Customer #${cid}`,
-        customer_id: cid,
-        statuses: []
+    const status = f.status
+    if (!map.has(status)) {
+      map.set(status, {
+        status: status,
+        customers: []
       })
     }
-    const group = map.get(cid)!
-    let statusGroup = group.statuses.find(s => s.status === f.status)
-    if (!statusGroup) {
-      statusGroup = { status: f.status, items: [] }
-      group.statuses.push(statusGroup)
+    const group = map.get(status)!
+    const cid = f.customer_id
+    let customerGroup = group.customers.find(c => c.customer_id === cid)
+    if (!customerGroup) {
+      customerGroup = {
+        customer: f.customer?.name || `Customer #${cid}`,
+        customer_id: cid,
+        items: []
+      }
+      group.customers.push(customerGroup)
     }
-    statusGroup.items.push(f)
+    customerGroup.items.push(f)
   })
 
-  // Sort status groups by STATUS_ORDER
-  map.forEach(g => {
-    g.statuses.sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
+  // Sort groups by STATUS_ORDER
+  const result = Array.from(map.values()).sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
+
+  // Sort customers within each status group
+  result.forEach(g => {
+    g.customers.sort((a, b) => a.customer.localeCompare(b.customer))
   })
 
-  return Array.from(map.values())
+  return result
 })
 
 // ─── Navigation Guards ───────────────────────────────────────────────────────
@@ -194,16 +201,16 @@ onUnmounted(() => {
 })
 
 // ─── Collapse State ──────────────────────────────────────────────────────────
-const collapsedCustomers = reactive<Record<number, boolean>>({})
 const collapsedStatuses = reactive<Record<string, boolean>>({})
+const collapsedCustomers = reactive<Record<string, boolean>>({})
 
-function toggleCustomerCollapse(customerId: number) {
-  collapsedCustomers[customerId] = !collapsedCustomers[customerId]
+function toggleStatusCollapse(status: string) {
+  collapsedStatuses[status] = !collapsedStatuses[status]
 }
 
-function toggleStatusCollapse(customerId: number, status: string) {
-  const key = `${customerId}-${status}`
-  collapsedStatuses[key] = !collapsedStatuses[key]
+function toggleCustomerCollapse(status: string, customerId: number) {
+  const key = `${status}-${customerId}`
+  collapsedCustomers[key] = !collapsedCustomers[key]
 }
 
 // ─── Modal: Add / Edit ───────────────────────────────────────────────────────
@@ -368,42 +375,42 @@ onMounted(() => {
             </div>
           </template>
 
-          <template v-for="customerGroup in groupedForecasts" :key="customerGroup.customer_id">
-            <!-- Customer Group Header -->
+          <template v-for="statusGroup in groupedForecasts" :key="statusGroup.status">
+            <!-- Status Group Header -->
             <div
               class="sticky top-0 z-10 px-3 py-2 bg-default/95 backdrop-blur border-b border-default flex items-center gap-2 cursor-pointer hover:bg-default/80 transition-colors"
-              @click="toggleCustomerCollapse(customerGroup.customer_id)"
+              @click="toggleStatusCollapse(statusGroup.status)"
             >
               <UIcon
-                :name="collapsedCustomers[customerGroup.customer_id] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+                :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                 class="w-4 h-4 text-muted transition-transform"
               />
-              <UIcon name="i-lucide-building-2" class="w-3.5 h-3.5 text-muted shrink-0" />
-              <span class="text-xs font-bold text-highlighted truncate">{{ customerGroup.customer }}</span>
-              <span class="ml-auto text-xs text-muted shrink-0">{{ customerGroup.statuses.reduce((n, s) => n + s.items.length, 0) }}</span>
+              <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
+                {{ statusGroup.status }}
+              </UBadge>
+              <span class="ml-auto text-xs text-muted shrink-0">{{ statusGroup.customers.reduce((n, c) => n + c.items.length, 0) }}</span>
             </div>
 
-            <div v-show="!collapsedCustomers[customerGroup.customer_id]">
-              <template v-for="statusGroup in customerGroup.statuses" :key="statusGroup.status">
-                <!-- Status Sub-Header -->
+            <div v-show="!collapsedStatuses[statusGroup.status]">
+              <template v-for="customerGroup in statusGroup.customers" :key="customerGroup.customer_id">
+                <!-- Customer Sub-Header -->
                 <div
                   class="px-3 py-1.5 border-b border-default/60 flex items-center gap-2 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition-colors"
-                  @click="toggleStatusCollapse(customerGroup.customer_id, statusGroup.status)"
+                  @click="toggleCustomerCollapse(statusGroup.status, customerGroup.customer_id)"
                 >
                   <UIcon
-                    :name="collapsedStatuses[`${customerGroup.customer_id}-${statusGroup.status}`] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
+                    :name="collapsedCustomers[`${statusGroup.status}-${customerGroup.customer_id}`] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                     class="w-3.5 h-3.5 text-muted transition-transform"
                   />
-                  <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
-                    {{ statusGroup.status }}
-                  </UBadge>
-                  <span class="text-xs text-muted ml-auto">{{ statusGroup.items.length }} item(s)</span>
+                  <UIcon name="i-lucide-building-2" class="w-3.5 h-3.5 text-muted shrink-0" />
+                  <span class="text-xs font-bold text-highlighted truncate">{{ customerGroup.customer }}</span>
+                  <span class="text-xs text-muted ml-auto">{{ customerGroup.items.length }} item(s)</span>
                 </div>
 
                 <!-- Forecast Items -->
-                <div v-show="!collapsedStatuses[`${customerGroup.customer_id}-${statusGroup.status}`]">
+                <div v-show="!collapsedCustomers[`${statusGroup.status}-${customerGroup.customer_id}`]">
                   <button
-                    v-for="forecast in statusGroup.items"
+                    v-for="forecast in customerGroup.items"
                     :key="forecast.id"
                     class="w-full text-left px-4 py-2.5 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
                     :class="{ 'bg-primary/10 border-l-2 border-l-primary': selectedForecastId === forecast.id }"
