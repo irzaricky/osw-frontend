@@ -242,11 +242,9 @@ watch(
 /**
  * BIN DETAIL
  */
-function openBinDetail(
-  binId: number
-) {
+function openBinDetail(layoutId: number, binId: number) {
   router.push(
-    `/warehouse/bin/${binId}`
+    `/warehouse/warehouse-layout/${layoutId}/storage-bin/${binId}`
   )
 }
 
@@ -677,11 +675,7 @@ function getAreaColor(areaId: number) {
 
                         top: `${(row - 1) * scaledCellHeight + BIN_GAP}px`
                       }"
-                      @click.stop="
-                        openBinDetail(
-                          bin.id
-                        )
-                      "
+                      @click.stop="openBinDetail(layout.id, bin.id)"
                     >
                       <p
                         class="

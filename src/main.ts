@@ -217,6 +217,11 @@ const router = createRouter({
       component: () => import('./pages/warehouse/warehouse-layout/[id].vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    {
+      path: '/warehouse/warehouse-layout/:layoutId/storage-bin/:id',
+      component: () => import('./pages/warehouse/warehouse-layout/storage-bin/[id].vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
     
     // error
     {

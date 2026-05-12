@@ -1,8 +1,14 @@
 import { api } from '../../plugins/axios'
 import type { AreaLayoutPayload } from '../../types/warehouse/warehouse-layout'
 
-
 export interface WarehouseLayoutParams {
+  page?: number
+  limit?: number
+  search?: string
+  [key: string]: any
+}
+
+export interface StorageBinDetailParams {
   page?: number
   limit?: number
   search?: string
@@ -33,6 +39,11 @@ const warehouseLayoutService = {
   },
   deleteAreaLayout(id: number | string) {
     return api.delete(`/warehouse/warehouse-layout/area-layout/${id}`)
+  },
+
+  // Storage Bin Detail
+  getStorageBinDetail(id: number | string, params?: StorageBinDetailParams) {
+    return api.get(`/warehouse/warehouse-layout/storage-bin/${id}`, { params })
   }
 }
 

@@ -14,7 +14,7 @@ export interface WarehouseLayout {
 
 export interface WarehouseLayoutDetail {
   id: number
-  warehouse: Pick<Warehouse, 'id' | 'warehouse_code' | 'name' | 'category_id' | 'category'> | null
+  warehouse: Pick<Warehouse, 'id' | 'warehouse_code' | 'name' | 'category_id' | 'category'>
   area_layouts: AreaLayout[]
 
   createdAt?: string
@@ -65,4 +65,43 @@ interface AreaLayoutPayload {
     col_index: number
     col_spacing: number
   }[]
+}
+
+export interface StorageBinDetail {
+  bin: StorageBinInfo
+  stocks: StorageBinStockPagination
+}
+
+export interface StorageBinInfo {
+  id: number
+  bin_code: string
+  capacity: number
+  dedicated_part_number: string
+  area: {
+    id: number
+    area_code: string
+    name: string
+    warehouse: {
+      id: number
+      warehouse_code: string
+      name: string
+    }
+  }
+}
+
+export interface StorageBinStock {
+  id: number
+  created_at: string
+  label_number: string
+  part_number: string
+  part_name: string
+  package_capacity: number
+}
+
+export interface StorageBinStockPagination {
+  rows: StorageBinStock[]
+  count: number
+  page: number
+  limit: number
+  totalPages: number
 }

@@ -222,7 +222,7 @@ function deleteArea() {
         </h3>
 
         <p class="text-sm text-muted">
-          Warehouse details and statistics
+          Warehouse information and layout overview
         </p>
       </div>
     </template>
@@ -253,7 +253,7 @@ function deleteArea() {
       <!-- CATEGORY -->
       <div>
         <p class="text-sm text-muted">
-          Category
+          Warehouse Category
         </p>
 
         <p class="font-semibold">
@@ -264,7 +264,7 @@ function deleteArea() {
         </p>
       </div>
 
-      <!-- TOTAL AREA -->
+      <!-- TOTAL AREA PLACED -->
       <div>
         <p class="text-sm text-muted">
           Total Area Placed

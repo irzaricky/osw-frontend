@@ -15,8 +15,8 @@ const warehouseService = {
   getWarehouseCategoriesDropdown() {
     return api.get('/master-data/warehouses/categories/dropdown')
   },
-  getDropdown() {
-    return api.get('/master-data/warehouses/dropdown')
+  getDropdown(params?: Record<string, any>) {
+    return api.get('/master-data/warehouses/dropdown', { params })
   },
 
   // Warehouses

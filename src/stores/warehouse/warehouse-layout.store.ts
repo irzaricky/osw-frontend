@@ -1,15 +1,22 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import warehouseLayoutService, { type WarehouseLayoutParams } from '../../services/warehouse/warehouse-layout.service'
-import type { WarehouseLayout, WarehouseLayoutDetail, AreaLayout, AreaLayoutPayload } from '../../types/warehouse/warehouse-layout'
+import warehouseLayoutService, { type WarehouseLayoutParams, type StorageBinDetailParams } from '../../services/warehouse/warehouse-layout.service'
+import type { WarehouseLayout, WarehouseLayoutDetail, AreaLayout, AreaLayoutPayload, StorageBinDetail } from '../../types/warehouse/warehouse-layout'
 
 export const useWarehouseLayoutStore = defineStore('warehouse-layout', () => {
   // State
   const layouts = ref<WarehouseLayout[]>([])
   const layoutDetail = ref<WarehouseLayoutDetail | null>(null)
   const areaLayoutDetail = ref<AreaLayout | null>(null)
+  const storageBinDetail = ref<StorageBinDetail | null>(null)
 
   const meta = ref({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  })
+  const storageBinMeta = ref({
     page: 1,
     limit: 10,
     total: 0,
@@ -135,12 +142,42 @@ export const useWarehouseLayoutStore = defineStore('warehouse-layout', () => {
     }
   }
 
+  // Actions - Storage Bin Detail
+  async function fetchStorageBinDetail(id: number | string, params: StorageBinDetailParams = {}) {
+    storageBinDetail.value = null
+    loading.value = true
+    error.value = null
+    try {
+      const response = await warehouseLayoutService.getStorageBinDetail(id, params)
+      const data = response.data
+      if (data.status) {
+        storageBinDetail.value = data.data
+        storageBinMeta.value = {
+          page: data.data.stocks.page,
+          limit: data.data.stocks.limit,
+          total: data.data.stocks.count,
+          totalPages: data.data.stocks.totalPages
+        }
+      }
+      return data.data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching storage bin detail:', e)
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     layouts,
     layoutDetail,
     areaLayoutDetail,
+    storageBinDetail,
     meta,
+    storageBinMeta,
     loading,
     error,
 
@@ -151,6 +188,7 @@ export const useWarehouseLayoutStore = defineStore('warehouse-layout', () => {
     fetchAreaLayout,
     addAreaLayout,
     updateAreaLayout,
-    deleteAreaLayout
+    deleteAreaLayout,
+    fetchStorageBinDetail
   }
 })

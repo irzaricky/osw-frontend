@@ -86,9 +86,9 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   // Actions - Dropdown
-  async function fetchDropdown() {
+  async function fetchDropdown(params?: Record<string, any>) {
     try {
-      const response = await warehouseService.getDropdown()
+      const response = await warehouseService.getDropdown(params)
       const data = response.data
       if (data.status) {
         dropdown.value = data.data

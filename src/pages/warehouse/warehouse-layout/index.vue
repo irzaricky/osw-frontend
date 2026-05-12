@@ -94,7 +94,9 @@ async function fetchData() {
 onMounted(async () => {
   await Promise.all([
     fetchData(),
-    warehouseStore.fetchDropdown(),
+    warehouseStore.fetchDropdown({
+      exclude_has_layout: true
+    }),
   ])
 })
 </script>

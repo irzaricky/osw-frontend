@@ -61,12 +61,22 @@ const previewArea = ref<{
 } | null>(null)
 
 // Breadcrumb
-const breadcrumbItems = computed(() => [
-  { label: 'Home', to: '/' },
-  { label: 'Warehouse' },
-  { label: 'Warehouse Layout', to: '/warehouse/warehouse-layout' },
-  { label: layoutDetail.value?.warehouse?.name || `Layout #${layoutId.value}` }
-])
+const breadcrumbItems = computed(() => {
+  if (!layoutDetail.value) {
+    return [
+      { label: 'Home', to: '/' },
+      { label: 'Warehouse' },
+      { label: 'Warehouse Layout', to: '/warehouse/warehouse-layout' },
+    ]
+  }
+
+  return [
+    { label: 'Home', to: '/' },
+    { label: 'Warehouse' },
+    { label: 'Warehouse Layout', to: '/warehouse/warehouse-layout' },
+    { label: layoutDetail.value.warehouse.warehouse_code }
+  ]
+})
 
 // Fetch warehouse layout detail
 async function fetchDetail() {
@@ -75,15 +85,40 @@ async function fetchDetail() {
   )
 }
 
+async function fetchAreaDropdown(excludeHasLayout = false) {
+  const warehouseId = layoutDetail.value?.warehouse?.id
+
+  if (!warehouseId) {
+    return
+  }
+
+  const params: Record<string, any> = {
+    warehouse_id: warehouseId,
+  }
+
+  if (excludeHasLayout) {
+    params.exclude_has_layout = true
+  }
+
+  await warehouseAreaStore.fetchDropdown(
+    params
+  )
+}
+
 // Sidebar area
-function openAddArea() {
+async function openAddArea() {
   selectedAreaLayoutId.value = null
   previewArea.value = null
+  await fetchAreaDropdown(
+    true
+  )
   panelMode.value = 'add-area'
 }
 
 async function openEditArea(areaLayoutId: number) {
   try {
+    await fetchAreaDropdown()
+
     selectedAreaLayoutId.value = areaLayoutId
 
     const found =
@@ -243,12 +278,6 @@ async function handleDeleteArea(areaLayoutId: number) {
 // Lifecycle
 onMounted(async () => {
   await fetchDetail()
-  const warehouseId = layoutDetail.value?.warehouse?.id
-  if (warehouseId) {
-    await warehouseAreaStore.fetchDropdown({
-      warehouse_id: warehouseId
-    })
-  }
 })
 </script>
 
