@@ -234,6 +234,23 @@ const links = [[{
         open.value = false
       }
     },
+    {
+      label: 'Critical Stock',
+      icon: 'i-lucide-triangle-alert',
+      to: '/warehouse/critical-stock',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Warehouse Analytics',
+      icon: 'i-lucide-chart-column-big',
+      to: '/warehouse/analytics',
+
+      onSelect: () => {
+        open.value = false
+      }
+    },
   ]
 }], []] satisfies NavigationMenuItem[][]
 
