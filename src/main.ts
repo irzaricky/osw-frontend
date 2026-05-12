@@ -73,36 +73,6 @@ const router = createRouter({
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/placement', 
-      component: () => import('./pages/warehouse/placement/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/placement/:id',
-      component: () => import('./pages/warehouse/placement/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/take-out',
-      component: () => import('./pages/warehouse/take-out/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/take-out/:id',
-      component: () => import('./pages/warehouse/take-out/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/transaction-activity',
-      component: () => import('./pages/warehouse/transaction-activity/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-    path: '/warehouse/stock-monitoring',
-    component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
-    meta: { layout: 'default', requiresAuth: true }
-    },
 
     // master data
     { 
@@ -215,6 +185,51 @@ const router = createRouter({
     { 
       path: '/warehouse/work-order-storing/edit/:id', 
       component: () => import('./pages/warehouse/work-order-storing/edit.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/placement', 
+      component: () => import('./pages/warehouse/placement/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/placement/:id',
+      component: () => import('./pages/warehouse/placement/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/take-out',
+      component: () => import('./pages/warehouse/take-out/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/take-out/:id',
+      component: () => import('./pages/warehouse/take-out/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/transaction-activity',
+      component: () => import('./pages/warehouse/transaction-activity/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/stock-monitoring',
+      component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/warehouse-layout',
+      component: () => import('./pages/warehouse/warehouse-layout/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/warehouse-layout/:id',
+      component: () => import('./pages/warehouse/warehouse-layout/[id].vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/warehouse-layout/:layoutId/storage-bin/:id',
+      component: () => import('./pages/warehouse/warehouse-layout/storage-bin/[id].vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     

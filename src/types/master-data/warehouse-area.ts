@@ -33,4 +33,6 @@ export interface WarehouseAreaDropdown {
   warehouse: {
     name: string
   }
+  total_cols: number
+  total_rows: number
 }

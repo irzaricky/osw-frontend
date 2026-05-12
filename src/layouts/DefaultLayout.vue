@@ -226,6 +226,14 @@ const links = [[{
         open.value = false
       }
     },
+    {
+      label: 'Warehouse Layout',
+      icon: 'i-lucide-warehouse',
+      to: '/warehouse/warehouse-layout',
+      onSelect: () => {
+        open.value = false
+      }
+    },
   ]
 }], []] satisfies NavigationMenuItem[][]
 

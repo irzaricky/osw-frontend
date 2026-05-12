@@ -7,7 +7,7 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   // State
   const warehouses = ref<Warehouse[]>([])
   const warehouseCategories = ref<WarehouseCategory[]>([])
-  const dropdown = ref<Pick<Warehouse, 'id' | 'name'>[]>([])
+  const dropdown = ref<Pick<Warehouse, 'id' | 'warehouse_code' | 'name'>[]>([])
 
   const meta = ref({
     page: 1,
@@ -86,9 +86,9 @@ export const useWarehouseStore = defineStore('warehouse', () => {
   }
 
   // Actions - Dropdown
-  async function fetchDropdown() {
+  async function fetchDropdown(params?: Record<string, any>) {
     try {
-      const response = await warehouseService.getDropdown()
+      const response = await warehouseService.getDropdown(params)
       const data = response.data
       if (data.status) {
         dropdown.value = data.data
