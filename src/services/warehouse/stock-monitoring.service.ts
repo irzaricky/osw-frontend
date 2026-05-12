@@ -8,6 +8,7 @@ export interface StockMonitoringParams {
   low_stock_only?: boolean
   aging_only?: boolean
   low_capacity_only?: boolean
+  stock_status?: 'Critical' | 'Warning' | 'Safe'
 }
 
 const stockMonitoringService = {

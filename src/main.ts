@@ -11,12 +11,17 @@ import lucideIcons from '@iconify-json/lucide/icons.json'
 import App from './App.vue'
 import { useAuthStore } from './stores/auth.store'
 
+import VueApexCharts from 'vue3-apexcharts'
+
+
+
 addCollection(lucideIcons)
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
+app.use(VueApexCharts)
 
 const router = createRouter({
   routes: [
@@ -92,6 +97,16 @@ const router = createRouter({
     path: '/warehouse/stock-monitoring',
     component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
     meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/critical-stock',
+      component: () => import('./pages/warehouse/critical-stock/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/warehouse/analytics',
+      component: () => import('./pages/warehouse/analytics/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
     },
 
     // master data
