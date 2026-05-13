@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-
-import Breadcrumbs from '../../../components/Breadcrumbs.vue'
+import { useDebounceFn } from '@vueuse/core'
 
 import AnalyticsFilters from './components/AnalyticsFilters.vue'
+import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ExecutiveSummaryCards from './components/ExecutiveSummaryCards.vue'
 import InventoryHealthSection from './components/InventoryHealthSection.vue'
 import CriticalPartsTable from './components/CriticalPartsTable.vue'
@@ -12,6 +12,7 @@ import FifoAnalyticsSection from './components/FifoAnalyticsSection.vue'
 import MovementCharts from './components/MovementCharts.vue'
 import InventoryValueCharts from './components/InventoryValueCharts.vue'
 import BehaviorCharts from './components/BehaviorCharts.vue'
+
 
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import warehouseAnalyticsService from '../../../services/warehouse/analytics.service'
@@ -25,6 +26,15 @@ const breadcrumbItems = [
   { label: 'Warehouse' },
   { label: 'Analytics' }
 ]
+
+const debouncedFetchAll = useDebounceFn(() => {
+  fetchAll()
+}, 300)
+
+function onUpdateFilters(partial: Record<string, any>) {
+  Object.assign(filters, partial)
+  debouncedFetchAll()
+}
 
 const filters = reactive({
   date_from: '',
@@ -396,6 +406,7 @@ const inventoryHealthChartSeries = computed(() => [
   inventoryHealth.value.overstock || 0
 ])
 
+
 async function fetchExecutiveSummary() {
   loading.summary = true
 
@@ -558,16 +569,6 @@ async function fetchAll() {
   ])
 }
 
-function resetFilters() {
-  filters.date_from = ''
-  filters.date_to = ''
-  filters.warehouse_area_id = undefined
-  filters.part_category = undefined
-  filters.movement_type = undefined
-  filters.part_number = ''
-
-  fetchAll()
-}
 
 onMounted(async () => {
   await warehouseAreaStore.fetchDropdown()
@@ -589,55 +590,29 @@ onMounted(async () => {
       </p>
     </div>
 
-    <AnalyticsFilters
-      :filters="filters"
-      :warehouse-areas="warehouseAreas"
-      @apply="fetchAll"
-      @reset="resetFilters"
-    />
+    <AnalyticsFilters :filters="filters" :warehouse-areas="warehouseAreas" @update:filters="onUpdateFilters" />
 
-    <ExecutiveSummaryCards
-      :executive-summary="executiveSummary"
-      :inventory-value="inventoryValue"
-      :utilization-percentage="utilizationPercentage"
-    />
+    <ExecutiveSummaryCards :executive-summary="executiveSummary" :inventory-value="inventoryValue"
+      :utilization-percentage="utilizationPercentage" />
 
-    <InventoryHealthSection
-      :inventory-health="inventoryHealth"
-      :chart-options="inventoryHealthChartOptions"
-      :chart-series="inventoryHealthChartSeries"
-    />
+    <InventoryHealthSection :inventory-health="inventoryHealth" :chart-options="inventoryHealthChartOptions"
+      :chart-series="inventoryHealthChartSeries" />
 
-    <CriticalPartsTable
-      :parts="criticalParts"
-      :loading="loading.criticalParts"
-    />
+    <CriticalPartsTable :parts="criticalParts" :loading="loading.criticalParts" />
 
-    <FifoAnalyticsSection
-      :fifo-compliance="fifoCompliance"
-      :aging-chart-options="agingChartOptions"
-      :aging-chart-series="agingChartSeries"
-    />
+    <FifoAnalyticsSection :fifo-compliance="fifoCompliance" :aging-chart-options="agingChartOptions"
+      :aging-chart-series="agingChartSeries" />
 
-    <MovementCharts
-      :movement-chart-options="movementChartOptions"
-      :movement-chart-series="movementChartSeries"
-      :utilization-chart-options="utilizationChartOptions"
-      :utilization-chart-series="utilizationChartSeries"
-    />
+    <MovementCharts :movement-chart-options="movementChartOptions" :movement-chart-series="movementChartSeries"
+      :utilization-chart-options="utilizationChartOptions" :utilization-chart-series="utilizationChartSeries" />
 
-    <InventoryValueCharts
-      :inventory-value-by-area-chart-options="inventoryValueByAreaChartOptions"
+    <InventoryValueCharts :inventory-value-by-area-chart-options="inventoryValueByAreaChartOptions"
       :inventory-value-by-area-chart-series="inventoryValueByAreaChartSeries"
       :top-inventory-value-chart-options="topInventoryValueChartOptions"
-      :top-inventory-value-chart-series="topInventoryValueChartSeries"
-    />
+      :top-inventory-value-chart-series="topInventoryValueChartSeries" />
 
-    <BehaviorCharts
-      :fast-moving-chart-options="fastMovingChartOptions"
-      :fast-moving-chart-series="fastMovingChartSeries"
-      :slow-moving-chart-options="slowMovingChartOptions"
-      :slow-moving-chart-series="slowMovingChartSeries"
-    />
+    <BehaviorCharts :fast-moving-chart-options="fastMovingChartOptions"
+      :fast-moving-chart-series="fastMovingChartSeries" :slow-moving-chart-options="slowMovingChartOptions"
+      :slow-moving-chart-series="slowMovingChartSeries" />
   </div>
 </template>
