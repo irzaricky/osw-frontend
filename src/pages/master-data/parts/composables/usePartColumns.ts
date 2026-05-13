@@ -70,14 +70,14 @@ export function usePartColumns(actions: Actions, ui: UIComponents) {
       cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.part_type_code ?? '-')
     },
     {
-      accessorKey: 'part_category',
+      accessorKey: 'category',
       header: 'Category',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.part_category ?? '-')
+      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.category?.name ?? '-')
     },
     {
       accessorKey: 'supplier',
       header: 'Supplier',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.suppliers?.name ?? '-')
+      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.supplier?.name ?? '-')
     },
     {
       accessorKey: 'price',
@@ -87,7 +87,7 @@ export function usePartColumns(actions: Actions, ui: UIComponents) {
     {
       accessorKey: 'uom',
       header: 'UOM',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.uom ?? '-')
+      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.uom?.code ?? '-')
     },
     {
       id: 'actions',

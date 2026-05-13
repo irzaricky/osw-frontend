@@ -28,6 +28,14 @@ const partService = {
     return api.get(`${BASE}/dd-types`)
   },
 
+  ddCategories() {
+    return api.get(`${BASE}/dd-category`)
+  },
+
+  ddPackages() {
+    return api.get(`${BASE}/dd-package`)
+  },
+  
   ddSuppliers(params?: Record<string, any>) {
     return api.get(`${SUPPLIER_BASE}/dropdown`, { params })
   },

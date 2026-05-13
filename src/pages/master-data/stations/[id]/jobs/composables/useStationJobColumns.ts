@@ -48,7 +48,7 @@ export function useStationJobColumns(actions: Actions, ui: UIComponents) {
     },
     {
       accessorKey: 'standard_time',
-      header: 'Std. Time (min)',
+      header: 'Std. Time (s)',
       cell: ({ row }) => h('div', { class: 'text-center text-muted' }, row.original.job?.standard_time ?? '-'),
     },
     {
