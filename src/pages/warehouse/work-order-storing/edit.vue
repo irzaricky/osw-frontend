@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import { usePartStore } from '../../../stores/master-data/part.store'
 import { useWorkOrderStoringStore } from '../../../stores/warehouse/work-order-storing.store'
+import { useMaterialReceivingStore } from '../../../stores/warehouse/material-receiving.store'
 import { useAppToast } from '../../../composables/useAppToast'
 
 import WorkOrderStoringForm from './components/WorkOrderStoringForm.vue'
@@ -17,11 +18,13 @@ const route = useRoute()
 const workOrderStore = useWorkOrderStoringStore()
 const warehouseAreaStore = useWarehouseAreaStore()
 const partStore = usePartStore()
+const materialReceivingStore = useMaterialReceivingStore()
 
 const { workOrderTypes, loading } = storeToRefs(workOrderStore)
 const { dropdown } = storeToRefs(warehouseAreaStore)
 const areas = computed(() => dropdown.value)
 const parts = computed(() => partStore.dropdown)
+const refDocs = computed(() => materialReceivingStore.dropdown)
 const isTypesLoaded = ref(false)
 const { toastSuccess, toastError } = useAppToast()
 
@@ -38,13 +41,43 @@ async function fetchWorkOrderData() {
     const data = await workOrderStore.fetchWorkOrder(woId.value)
     workOrderData.value = data
     
-    // After fetching work order, fetch related data based on type
+    // After fetching work order, fetch related data
     if (data?.type?.id) {
-      await partStore.fetchDropdown({
-        part_type_code: mapTypeToPartCode(data.type.id)
-      })
+      const isTakeOut = data.wo_category === 'Take Out'
+      const isDeliveryOrder = !!data.ref_doc_id
+
+      const isEditable = data.wo_status_id === 1 || data.status?.id === 1
+
+      if (!isEditable) {
+        await partStore.fetchDropdown()
+      } else {
+        // Part Dropdown
+        // DELIVERY ORDER
+        if (isDeliveryOrder) {
+          await partStore.fetchDropdown({
+            ref_doc_id: data.ref_doc_id
+          })
+        } else {
+          // MANUAL / NORMAL
+          await partStore.fetchDropdown({
+            part_type_code: mapTypeToPartCode(
+              data.type.id
+            ),
+            ...(isTakeOut && {
+              wo_category: 'take_out',
+              area_id: data.area?.id
+            })
+          })
+        }
+      }
+
+      // Area Dropdown
       await warehouseAreaStore.fetchDropdown({
-        category_id: data.type.id
+        category_id: data.type.id,
+
+        ...(isTakeOut && {
+          wo_category: 'take_out'
+        })
       })
     }
   } catch (err) {
@@ -88,6 +121,7 @@ async function handleSave(data: any) {
 // fetch dropdown
 onMounted(async () => {
   await workOrderStore.fetchWorkOrderTypesDropdown()
+  await materialReceivingStore.fetchDropdown()
   isTypesLoaded.value = true
   warehouseAreaStore.fetchDropdown()
   partStore.fetchDropdown()
@@ -125,6 +159,7 @@ onMounted(async () => {
         :types="workOrderTypes"
         :areas="areas"
         :parts="parts"
+        :ref-docs="refDocs"
         :loading="loading"
         @save="handleSave"
       />

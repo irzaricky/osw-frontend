@@ -6,6 +6,7 @@ import { storeToRefs } from 'pinia'
 import { useWarehouseAreaStore } from '../../../stores/master-data/warehouse-area.store'
 import { usePartStore } from '../../../stores/master-data/part.store'
 import { useWorkOrderStoringStore } from '../../../stores/warehouse/work-order-storing.store'
+import { useMaterialReceivingStore } from '../../../stores/warehouse/material-receiving.store'
 import { useAppToast } from '../../../composables/useAppToast'
 
 import WorkOrderStoringForm from './components/WorkOrderStoringForm.vue'
@@ -16,11 +17,13 @@ const router = useRouter()
 const workOrderStore = useWorkOrderStoringStore()
 const warehouseAreaStore = useWarehouseAreaStore()
 const partStore = usePartStore()
+const materialReceivingStore = useMaterialReceivingStore()
 
 const { workOrderTypes, loading } = storeToRefs(workOrderStore)
 const { dropdown } = storeToRefs(warehouseAreaStore)
 const areas = computed(() => dropdown.value)
 const parts = computed(() => partStore.dropdown)
+const refDocs = computed(() => materialReceivingStore.dropdown)
 const isTypesLoaded = ref(false)
 const { toastSuccess, toastError } = useAppToast()
 
@@ -48,6 +51,7 @@ async function handleSave(data: any) {
 // fetch dropdown
 onMounted(async () => {
   await workOrderStore.fetchWorkOrderTypesDropdown()
+  await materialReceivingStore.fetchDropdown()
   isTypesLoaded.value = true
   warehouseAreaStore.fetchDropdown()
   partStore.fetchDropdown()
@@ -78,6 +82,7 @@ onMounted(async () => {
         :types="workOrderTypes"
         :areas="areas"
         :parts="parts"
+        :ref-docs="refDocs"
         :loading="loading"
         @save="handleSave"
       />

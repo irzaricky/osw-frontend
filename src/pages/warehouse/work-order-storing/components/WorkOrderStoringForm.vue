@@ -5,6 +5,7 @@ import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import type { WorkOrderStoring } from '../../../../types/warehouse/work-order-storing'
 import type { PartDropdown } from '../../../../types/master-data/parts'
+import type { MaterialReceivingDropdown } from '../../../../types/warehouse/material-receiving'
 
 import WorkOrderStoringItemFormModal from './WorkOrderStoringItemFormModal.vue'
 import { useWorkOrderStoringItemColumns } from '../composables/useWorkOrderStoringItemColumns'
@@ -60,6 +61,7 @@ const props = defineProps<{
     }
   }[]
   parts: PartDropdown[]
+  refDocs: MaterialReceivingDropdown[]
   loading: boolean
 }>()
 
@@ -88,6 +90,9 @@ const schema = z.object({
   wo_type_id: z.number({ message: 'Work Order Type is required' }),
   warehouse_area_id: z.number({ message: 'Warehouse Area is required' }),
 
+  ref_source: z.enum(['manual', 'delivery_order']).optional(),
+
+  ref_doc_id: z.number().optional(),
   ref_doc_number: z.string().optional(),
   ref_doc_name: z.string().optional(),
   wo_description: z.string().optional(),
@@ -98,6 +103,24 @@ const schema = z.object({
       total_kanban: z.number().min(1)
     })
   ).min(1, 'At least one item is required')
+}).superRefine((data, ctx) => {
+  const isPlacementRaw = data.wo_category === 'Placement' && data.wo_type_id === 1
+
+  if (isPlacementRaw && !data.ref_source) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['ref_source'],
+      message: 'Reference Source is required'
+    })
+  }
+
+  if (data.ref_source === 'delivery_order' && !data.ref_doc_id) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['ref_doc_id'],
+      message: 'Delivery Order is required'
+    })
+  }
 })
 
 // state
@@ -107,6 +130,9 @@ const state = reactive({
   wo_type_id: undefined as number | undefined,
   warehouse_area_id: undefined as number | undefined,
 
+  ref_source: 'manual' as 'manual' | 'delivery_order',
+
+  ref_doc_id: undefined as number | undefined,
   ref_doc_number: '',
   ref_doc_name: '',
   wo_description: '',
@@ -125,6 +151,8 @@ watch(
     state.wo_type_id = val.type?.id ?? undefined
     state.warehouse_area_id = val.area?.id ?? undefined
 
+    state.ref_source = val.ref_doc_id ? 'delivery_order' : 'manual'
+    state.ref_doc_id = val.ref_doc_id ?? undefined
     state.ref_doc_number = val.ref_doc_number ?? ''
     state.ref_doc_name = val.ref_doc_name ?? ''
     state.wo_description = val.wo_description ?? ''
@@ -155,6 +183,16 @@ const woCategory = computed(() =>
   state.wo_category
 )
 
+const refDocId = computed(() =>
+  state.ref_doc_id
+)
+
+const showReferenceSource = computed(() => {
+  return (
+    state.wo_category === 'Placement' && state.wo_type_id === 1
+  )
+})
+
 const displayRefDocNumber = computed(() => {
   if (isEditable.value) return state.ref_doc_number
   return state.ref_doc_number || '-'
@@ -184,6 +222,7 @@ watch(
   () => state.wo_type_id,
   async (typeId) => {
     if (!typeId) return
+    if (state.ref_source === 'delivery_order' && state.ref_doc_id) return
 
     const isTakeOut = state.wo_category === 'Take Out'
 
@@ -208,6 +247,7 @@ watch(
   () => state.warehouse_area_id,
   async (areaId) => {
     if (!areaId || !state.wo_type_id) return
+    if (state.ref_source === 'delivery_order' && state.ref_doc_id) return
 
     const isTakeOut = state.wo_category === 'Take Out'
 
@@ -225,6 +265,7 @@ watch(
   () => state.wo_category,
   async (category) => {
     if (!state.wo_type_id) return
+    if (state.ref_source === 'delivery_order' && state.ref_doc_id) return
 
     const isTakeOut = category === 'Take Out'
 
@@ -245,6 +286,73 @@ watch(
   }
 )
 
+watch(
+  () => state.ref_doc_id,
+  async (refDocId) => {
+    state.items = []
+
+    if (!refDocId) {
+      if (state.ref_source !== 'delivery_order') return
+      state.ref_doc_number = ''
+      state.ref_doc_name = ''
+
+      // default dropdown
+      if (state.wo_type_id) {
+        const isTakeOut = state.wo_category === 'Take Out'
+
+        await partStore.fetchDropdown({
+          part_type_code: mapTypeToPartCode(
+            state.wo_type_id
+          ),
+
+          ...(isTakeOut && {
+            wo_category: 'take_out',
+            area_id: state.warehouse_area_id
+          })
+        })
+      }
+
+      return
+    }
+
+    const selectedDoc = props.refDocs.find(
+      doc => doc.id === refDocId
+    )
+
+    if (!selectedDoc) return
+
+    state.ref_doc_number = selectedDoc.number || ''
+    state.ref_doc_name = 'Material Delivery Order'
+
+    // fetch parts by ref doc only
+    await partStore.fetchDropdown({
+      ref_doc_id: refDocId
+    })
+  }
+)
+
+watch(
+  () => state.ref_source,
+  async (source) => {
+    state.items = []
+
+    if (source === 'manual') {
+      state.ref_doc_id = undefined
+
+      state.ref_doc_number = ''
+      state.ref_doc_name = ''
+
+      if (state.wo_type_id) {
+        await partStore.fetchDropdown({
+          part_type_code: mapTypeToPartCode(
+            state.wo_type_id
+          )
+        })
+      }
+    }
+  }
+)
+
 // dropdown
 const categoryItems = ['Placement', 'Take Out']
 const typeItems = computed(() => props.types.map(t => t.name))
@@ -252,6 +360,12 @@ const areaItems = computed(() =>
   props.areas.map(a => ({
     ...a,
     label: `${a.warehouse?.name ?? '-'} - ${a.name}`
+  }))
+)
+const refDocItems = computed(() =>
+  props.refDocs.map(doc => ({
+    ...doc,
+    label: `${doc.number} - ${doc.supplier_name ?? '-'}`
   }))
 )
 
@@ -267,6 +381,11 @@ const selectedType = computed({
 const selectedArea = computed({
   get: () => areaItems.value.find(a => a.id === state.warehouse_area_id),
   set: (val) => state.warehouse_area_id = val?.id
+})
+
+const selectedRefDoc = computed({
+  get: () => refDocItems.value.find(doc => doc.id === state.ref_doc_id),
+  set: (val) => { state.ref_doc_id = val?.id }
 })
 
 // modal
@@ -342,7 +461,8 @@ const { columns } = useWorkOrderStoringItemColumns(
   props.mode,
   isEditable,
   woStatusId,
-  woCategory
+  woCategory,
+  refDocId
 )
 
 // submit
@@ -375,8 +495,12 @@ function onSubmit(event: FormSubmitEvent<any>) {
     return
   }
 
+  const { ref_source, ref_doc_id, ref_doc_number, ref_doc_name, ...formData } = event.data
+  const isDeliveryOrder = ref_source === 'delivery_order'
+
   const payload = {
-    ...event.data,
+    ...formData,
+    ...(isDeliveryOrder ? { ref_doc_id } : { ref_doc_number, ref_doc_name }),
     wo_status_id: submitType.value === 'draft' ? 1 : 2
   }
 
@@ -431,12 +555,46 @@ function onSubmit(event: FormSubmitEvent<any>) {
         <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Select Work Order Type" class="w-full" clear :disabled="!isEditable" />
       </UFormField>
 
+      <UFormField v-if="showReferenceSource" label="Reference Source" name="ref_source" required class="md:col-span-3">
+        <URadioGroup 
+          v-model="state.ref_source" 
+          orientation="horizontal" 
+          variant="list"
+          :items="[
+            {
+              label: 'Manual',
+              value: 'manual'
+            },
+            {
+              label: 'Delivery Order',
+              value: 'delivery_order'
+            }
+          ]"
+          :disabled="!isEditable"
+        />
+      </UFormField>
+
+      <UFormField label="Delivery Order" :required="showReferenceSource && state.ref_source === 'delivery_order'">
+        <USelectMenu
+          v-if="isEditable"
+          v-model="selectedRefDoc"
+          :items="refDocItems"
+          option-attribute="label"
+          placeholder="Select Delivery Order"
+          class="w-full"
+          clear
+          :disabled="!isEditable || !showReferenceSource || state.ref_source !== 'delivery_order'"
+        />
+
+        <UInput v-else :model-value="selectedRefDoc?.label || '-'" disabled class="w-full" />
+      </UFormField>
+
       <UFormField label="Reff Doc Number">
-        <UInput :model-value="displayRefDocNumber" @update:model-value="val => state.ref_doc_number = val" placeholder="e.g. DO-2024-001" class="w-full" :disabled="!isEditable" />
+        <UInput :model-value="displayRefDocNumber" @update:model-value="val => state.ref_doc_number = val" placeholder="e.g. DO-2024-001" class="w-full" :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')" />
       </UFormField>
 
       <UFormField label="Reff Doc Name">
-        <UInput :model-value="displayRefDocName" @update:model-value="val => state.ref_doc_name = val" placeholder="e.g. Delivery Order" class="w-full" :disabled="!isEditable" />
+        <UInput :model-value="displayRefDocName" @update:model-value="val => state.ref_doc_name = val" placeholder="e.g. Delivery Order" class="w-full" :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')" />
       </UFormField>
 
       <UFormField label="Warehouse Area" name="warehouse_area_id" class="md:col-span-3" required>
@@ -487,9 +645,10 @@ function onSubmit(event: FormSubmitEvent<any>) {
       :mode="itemModalMode"
       :parts="parts"
       :loading="loading"
-      :part-disabled="!isEditable || !state.wo_type_id || (state.wo_category === 'Take Out' && !state.warehouse_area_id)"
+      :part-disabled="!isEditable || !state.wo_type_id || (state.wo_category === 'Take Out' && !state.warehouse_area_id) || (state.ref_source === 'delivery_order' && !state.ref_doc_id)"
       :kanban-disabled="!isEditable"
       :show-stock-field="state.wo_category === 'Take Out'"
+      :show-remaining-qty-field="state.ref_source === 'delivery_order'"
       :item="selectedItemIndex !== null ? state.items[selectedItemIndex] : null"
       @save="handleAddItem"
     />
