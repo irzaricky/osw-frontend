@@ -49,7 +49,8 @@ const executiveSummary = reactive<any>({})
 
 const inventoryValue = reactive<any>({
   summary: {},
-  by_area: []
+  by_area: [],
+  by_category: []
 })
 
 const inventoryHealth = ref({
@@ -67,6 +68,15 @@ const fastMoving = reactive<any[]>([])
 const slowMoving = reactive<any[]>([])
 const utilization = reactive<any[]>([])
 const topInventoryValue = reactive<any[]>([])
+const fifoViolationDetails = ref<any[]>([])
+
+const fifoViolationMeta = ref({
+  page: 1,
+  limit: 5,
+  total: 0,
+  total_pages: 0
+})
+
 
 const fifoCompliance = ref({
   fifo_compliant: 0,
@@ -486,6 +496,12 @@ async function fetchInventoryValue() {
     inventoryValue.by_area.push(
       ...(res.data.data?.by_area || [])
     )
+
+    inventoryValue.by_category.splice(0)
+    inventoryValue.by_category.push(
+      ...(res.data.data?.by_category || [])
+    )
+
   } finally {
     loading.inventoryValue = false
   }
@@ -545,12 +561,36 @@ async function fetchFifoCompliance() {
   }
 }
 
+async function fetchFifoViolationDetails() {
+  const response = await warehouseAnalyticsService.getFifoViolationDetails({
+    ...filters,
+    page: fifoViolationMeta.value.page,
+    limit: fifoViolationMeta.value.limit
+  } as any)
+
+  if (response.data.status) {
+    fifoViolationDetails.value = response.data.data || []
+
+    fifoViolationMeta.value = {
+      page: response.data.pagination?.page || 1,
+      limit: response.data.pagination?.limit || 5,
+      total: response.data.pagination?.total || 0,
+      total_pages: response.data.pagination?.total_pages || 0
+    }
+  }
+}
+
 async function fetchAgingDistribution() {
   const response = await warehouseAnalyticsService.getAgingDistribution(filters)
 
   if (response.data.status) {
     agingDistribution.value = response.data.data
   }
+}
+
+function onUpdateFifoViolationPage(page: number) {
+  fifoViolationMeta.value.page = page
+  fetchFifoViolationDetails()
 }
 
 async function fetchAll() {
@@ -565,7 +605,8 @@ async function fetchAll() {
     fetchInventoryHealth(),
     fetchCriticalParts(),
     fetchFifoCompliance(),
-    fetchAgingDistribution()
+    fetchAgingDistribution(),
+    fetchFifoViolationDetails()
   ])
 }
 
@@ -600,8 +641,9 @@ onMounted(async () => {
 
     <CriticalPartsTable :parts="criticalParts" :loading="loading.criticalParts" />
 
-    <FifoAnalyticsSection :fifo-compliance="fifoCompliance" :aging-chart-options="agingChartOptions"
-      :aging-chart-series="agingChartSeries" />
+    <FifoAnalyticsSection :fifo-compliance="fifoCompliance" :fifo-violation-details="fifoViolationDetails"
+      :fifo-violation-meta="fifoViolationMeta" @update:fifo-violation-page="onUpdateFifoViolationPage"
+      :aging-chart-options="agingChartOptions" :aging-chart-series="agingChartSeries" />
 
     <MovementCharts :movement-chart-options="movementChartOptions" :movement-chart-series="movementChartSeries"
       :utilization-chart-options="utilizationChartOptions" :utilization-chart-series="utilizationChartSeries" />

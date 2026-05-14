@@ -32,25 +32,26 @@ const warehouseAnalyticsService = {
   getFifoCompliance(params?: WarehouseAnalyticsParams) {
     return api.get('/warehouse/analytics/fifo-compliance', { params })
   },
+  getFifoViolationDetails(params?: WarehouseAnalyticsParams) {
+    return api.get('/warehouse/analytics/fifo-violation-details', { params })
+  },
 
-getAgingDistribution(params?: WarehouseAnalyticsParams) {
+  getAgingDistribution(params?: WarehouseAnalyticsParams) {
     return api.get('/warehouse/analytics/aging-distribution', { params })
   },
   getInventoryValue(params?: WarehouseAnalyticsParams) {
-  return api.get('/warehouse/analytics/inventory-value', { params })
-},
+    return api.get('/warehouse/analytics/inventory-value', { params })
+  },
 
-getTopInventoryValue(params?: WarehouseAnalyticsParams) {
-  return api.get('/warehouse/analytics/top-inventory-value', { params })
-},
-getInventoryHealth(params?: WarehouseAnalyticsParams) {
-  return api.get('/warehouse/analytics/inventory-health', { params })
-},
-getCriticalParts(params?: WarehouseAnalyticsParams) {
-  return api.get('/warehouse/analytics/critical-parts', { params })
-},
-
-
+  getTopInventoryValue(params?: WarehouseAnalyticsParams) {
+    return api.get('/warehouse/analytics/top-inventory-value', { params })
+  },
+  getInventoryHealth(params?: WarehouseAnalyticsParams) {
+    return api.get('/warehouse/analytics/inventory-health', { params })
+  },
+  getCriticalParts(params?: WarehouseAnalyticsParams) {
+    return api.get('/warehouse/analytics/critical-parts', { params })
+  },
 }
 
 export default warehouseAnalyticsService

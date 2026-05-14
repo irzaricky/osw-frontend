@@ -23,8 +23,6 @@ const emit = defineEmits<{
   'update:filters': [value: Record<string, any>]
 }>()
 
-const movementItems = ['Placement', 'Take Out']
-
 function formatDate(date?: Date) {
   if (!date) return undefined
 
@@ -73,24 +71,6 @@ const selectedWarehouseArea = computed({
     })
   }
 })
-
-const selectedMovement = computed({
-  get() {
-    if (props.filters.movement_type === 'IN') return 'Placement'
-    if (props.filters.movement_type === 'OUT') return 'Take Out'
-    return undefined
-  },
-  set(value: string | undefined) {
-    emit('update:filters', {
-      movement_type:
-        value === 'Placement'
-          ? 'IN'
-          : value === 'Take Out'
-            ? 'OUT'
-            : undefined
-    })
-  }
-})
 </script>
 
 <template>
@@ -105,15 +85,6 @@ const selectedMovement = computed({
         v-model="selectedWarehouseArea"
         placeholder="Warehouse Area"
         :items="warehouseAreas.map(area => area.name)"
-        class="w-full"
-        searchable
-        clear
-      />
-
-      <USelectMenu
-        v-model="selectedMovement"
-        placeholder="Movement Type"
-        :items="movementItems"
         class="w-full"
         searchable
         clear

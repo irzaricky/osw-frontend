@@ -7,7 +7,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  selectLabel: [labelNumber: string]
+  selectLabel: [{
+    labelNumber: string
+    fifoOverride: boolean
+  }]
 }>()
 
 const confirmOpen = ref(false)
@@ -28,14 +31,20 @@ function isRecommendedLabel(labelNumber?: string | null) {
 
 function useRecommendedLabel() {
   if (!recommendedLabelNumber.value) return
-  emit('selectLabel', recommendedLabelNumber.value)
+  emit('selectLabel', {
+  labelNumber: recommendedLabelNumber.value,
+  fifoOverride: false
+})
 }
 
 function requestUseLabel(labelNumber?: string | null) {
   if (!labelNumber) return
 
   if (isRecommendedLabel(labelNumber)) {
-    emit('selectLabel', labelNumber)
+    emit('selectLabel', {
+      labelNumber,
+      fifoOverride: false
+    })
     return
   }
 
@@ -46,7 +55,10 @@ function requestUseLabel(labelNumber?: string | null) {
 function confirmUseNonFifoLabel() {
   if (!selectedNonFifoLabel.value) return
 
-  emit('selectLabel', selectedNonFifoLabel.value)
+  emit('selectLabel', {
+    labelNumber: selectedNonFifoLabel.value,
+    fifoOverride: true
+  })
   confirmOpen.value = false
   selectedNonFifoLabel.value = null
 }

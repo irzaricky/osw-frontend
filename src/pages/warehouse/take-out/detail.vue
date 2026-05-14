@@ -21,6 +21,7 @@ const { toastSuccess, toastError } = useAppToast()
 const woId = computed(() => route.params.id as string)
 
 const labelNumber = ref('')
+const fifoOverride = ref(false)
 const scannerOpen = ref(false)
 
 const fifoWarning = ref<{
@@ -67,11 +68,13 @@ async function handleScanLabel() {
     fifoWarning.value = null
 
     const res = await takeOutStore.scanLabelOut(woId.value, {
-      label_number: labelNumber.value
+      label_number: labelNumber.value,
+      fifo_override: fifoOverride.value
     })
 
     toastSuccess(res.message || 'Label successfully taken out')
 
+    fifoOverride.value = false
     labelNumber.value = ''
 
     await fetchData()
@@ -102,8 +105,15 @@ async function onQrScanned(value: string) {
   await handleScanLabel()
 }
 
-function selectRecommendedLabel(label: string) {
-  labelNumber.value = label
+function selectRecommendedLabel(payload: string | { labelNumber: string, fifoOverride?: boolean }) {
+  if (typeof payload === 'string') {
+    labelNumber.value = payload
+    fifoOverride.value = false
+  } else {
+    labelNumber.value = payload.labelNumber
+    fifoOverride.value = !!payload.fifoOverride
+  }
+
   fifoWarning.value = null
 }
 

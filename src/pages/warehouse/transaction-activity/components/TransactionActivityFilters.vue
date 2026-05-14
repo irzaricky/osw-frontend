@@ -62,7 +62,6 @@ const dateRange = computed<DateRangeValue>({
 
 const activityItems = ['IN', 'OUT']
 
-const categoryItems = ['Placement', 'Take Out']
 
 const selectedActivity = computed({
   get() {
@@ -71,17 +70,6 @@ const selectedActivity = computed({
   set(value: ActivityType | undefined) {
     emit('update:filters', {
       activity_type: value || undefined
-    })
-  }
-})
-
-const selectedCategory = computed({
-  get() {
-    return props.filters.wo_category || undefined
-  },
-  set(value: string | undefined) {
-    emit('update:filters', {
-      wo_category: value || undefined
     })
   }
 })
@@ -135,15 +123,6 @@ const selectedWarehouseArea = computed({
         v-model="selectedActivity"
         :items="activityItems"
         placeholder="Activity"
-        class="w-full"
-        searchable
-        clear
-      />
-
-      <USelectMenu
-        v-model="selectedCategory"
-        :items="categoryItems"
-        placeholder="WO Category"
         class="w-full"
         searchable
         clear
