@@ -31,11 +31,12 @@ const fifoWarning = ref<{
 } | null>(null)
 
 const isCompleted = computed(() => {
-  const total = takeOutDetail.value?.total_label || 0
-  const remaining = takeOutDetail.value?.remaining ?? 0
+  const total = Number(takeOutDetail.value?.total_label || 0)
+  const scanned = Number(takeOutDetail.value?.total_scanned_out || 0)
+  const remaining = Number(takeOutDetail.value?.remaining ?? total - scanned)
   const status = takeOutDetail.value?.status?.name
 
-  return status === 'Completed' || (total > 0 && remaining === 0)
+  return status === 'Completed' || (total > 0 && scanned >= total) || remaining === 0
 })
 
 const breadcrumbItems = computed(() => [
@@ -263,6 +264,7 @@ onMounted(() => {
           v-for="recommendation in recommendations"
           :key="recommendation.wo_item_id"
           :recommendation="recommendation"
+          :completed="isCompleted"
           @select-label="selectRecommendedLabel"
         />
 

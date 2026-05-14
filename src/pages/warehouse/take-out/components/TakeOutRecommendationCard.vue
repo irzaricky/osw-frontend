@@ -4,7 +4,12 @@ import type { TakeOutRecommendation } from '../../../../types/warehouse/take-out
 
 const props = defineProps<{
   recommendation: TakeOutRecommendation
+  completed?: boolean
 }>()
+
+const cardTitle = computed(() => {
+  return props.completed ? 'FIFO Execution Result' : 'FIFO Recommendation'
+})
 
 const emit = defineEmits<{
   selectLabel: [{
@@ -32,9 +37,9 @@ function isRecommendedLabel(labelNumber?: string | null) {
 function useRecommendedLabel() {
   if (!recommendedLabelNumber.value) return
   emit('selectLabel', {
-  labelNumber: recommendedLabelNumber.value,
-  fifoOverride: false
-})
+    labelNumber: recommendedLabelNumber.value,
+    fifoOverride: false
+  })
 }
 
 function requestUseLabel(labelNumber?: string | null) {
@@ -70,18 +75,14 @@ function confirmUseNonFifoLabel() {
       <div class="flex items-center justify-between gap-3">
         <div>
           <p class="font-semibold">
-            FIFO Recommendation
+            {{ cardTitle }}
           </p>
           <p class="text-xs text-muted">
             {{ recommendation.part_number }} - {{ recommendation.part_name }}
           </p>
         </div>
 
-        <UBadge
-          v-if="recommendation.recommended_label"
-          color="success"
-          variant="soft"
-        >
+        <UBadge v-if="recommendation.recommended_label" color="success" variant="soft">
           Recommended
         </UBadge>
       </div>
@@ -108,48 +109,34 @@ function confirmUseNonFifoLabel() {
             </p>
           </div>
 
-          <UButton
-            size="sm"
-            icon="i-lucide-arrow-right"
-            label="Use"
-            @click="useRecommendedLabel"
-          />
+          <UButton v-if="!completed" size="sm" icon="i-lucide-arrow-right" label="Use" @click="useRecommendedLabel" />
         </div>
       </div>
 
-      <div class="space-y-3">
+      <UAlert v-if="completed" color="success" variant="soft" icon="i-lucide-check-circle" title="Take Out Completed"
+        description="FIFO recommendation is now shown as reference only. Actual taken out labels are recorded in transaction activity." />
+
+      <div v-if="!completed" class="space-y-3">
         <p class="text-sm font-medium">
           Available Stock Labels
         </p>
 
-        <div
-          v-for="bin in recommendation.bins"
-          :key="bin.bin_id"
-          class="rounded-xl border border-default p-4 space-y-3"
-          :class="bin.is_recommended_bin ? 'ring-1 ring-primary/40' : ''"
-        >
+        <div v-for="bin in recommendation.bins" :key="bin.bin_id" class="rounded-xl border border-default p-4 space-y-3"
+          :class="bin.is_recommended_bin ? 'ring-1 ring-primary/40' : ''">
           <div class="flex items-center justify-between">
             <p class="font-semibold">
               {{ bin.bin_code }}
             </p>
 
-            <UBadge
-              v-if="bin.is_recommended_bin"
-              size="sm"
-              color="success"
-              variant="soft"
-            >
+            <UBadge v-if="bin.is_recommended_bin" size="sm" color="success" variant="soft">
               FIFO Bin
             </UBadge>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div
-              v-for="stock in bin.stocks.filter(stock => stock.is_target_part)"
-              :key="stock.stock_id"
+            <div v-for="stock in bin.stocks.filter(stock => stock.is_target_part)" :key="stock.stock_id"
               class="rounded-lg border border-default p-3 text-sm"
-              :class="stock.is_target_part ? 'bg-primary/5' : 'opacity-70'"
-            >
+              :class="stock.is_target_part ? 'bg-primary/5' : 'opacity-70'">
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
                   <p class="font-medium truncate">
@@ -166,22 +153,14 @@ function confirmUseNonFifoLabel() {
                 </div>
 
                 <div class="flex flex-col items-end gap-2 shrink-0">
-                  <UBadge
-                    size="sm"
-                    variant="soft"
-                    :color="isRecommendedLabel(stock.label_number) ? 'success' : stock.is_target_part ? 'primary' : 'neutral'"
-                  >
-                    {{ isRecommendedLabel(stock.label_number) ? 'Recommended' : stock.is_target_part ? 'Target' : 'Other' }}
+                  <UBadge size="sm" variant="soft"
+                    :color="isRecommendedLabel(stock.label_number) ? 'success' : stock.is_target_part ? 'primary' : 'neutral'">
+                    {{ isRecommendedLabel(stock.label_number) ? 'Recommended' : stock.is_target_part ? 'Target' :
+                    'Other' }}
                   </UBadge>
 
-                  <UButton
-                    v-if="stock.is_target_part"
-                    size="xs"
-                    variant="soft"
-                    icon="i-lucide-arrow-right"
-                    label="Use"
-                    @click="requestUseLabel(stock.label_number)"
-                  />
+                  <UButton v-if="stock.is_target_part" size="xs" variant="soft" icon="i-lucide-arrow-right" label="Use"
+                    @click="requestUseLabel(stock.label_number)" />
                 </div>
               </div>
             </div>
@@ -190,14 +169,8 @@ function confirmUseNonFifoLabel() {
       </div>
     </div>
 
-    <UAlert
-      v-else
-      color="warning"
-      variant="soft"
-      icon="i-lucide-alert-triangle"
-      title="No Stock Available"
-      description="No active stock found for this requested part."
-    />
+    <UAlert v-else color="warning" variant="soft" icon="i-lucide-alert-triangle" title="No Stock Available"
+      description="No active stock found for this requested part." />
 
     <UModal v-model:open="confirmOpen">
       <template #content>
@@ -227,30 +200,15 @@ function confirmUseNonFifoLabel() {
               </p>
             </div>
 
-            <UAlert
-              color="warning"
-              variant="soft"
-              icon="i-lucide-info"
-              title="FIFO Warning"
-              description="Apakah kamu yakin ingin mengambil part yang tidak mengikuti urutan FIFO?"
-            />
+            <UAlert color="warning" variant="soft" icon="i-lucide-info" title="FIFO Warning"
+              description="Apakah kamu yakin ingin mengambil part yang tidak mengikuti urutan FIFO?" />
           </div>
 
           <template #footer>
             <div class="flex justify-end gap-2">
-              <UButton
-                color="neutral"
-                variant="soft"
-                label="Cancel"
-                @click="confirmOpen = false"
-              />
+              <UButton color="neutral" variant="soft" label="Cancel" @click="confirmOpen = false" />
 
-              <UButton
-                color="warning"
-                icon="i-lucide-check"
-                label="Yes, Continue"
-                @click="confirmUseNonFifoLabel"
-              />
+              <UButton color="warning" icon="i-lucide-check" label="Yes, Continue" @click="confirmUseNonFifoLabel" />
             </div>
           </template>
         </UCard>
