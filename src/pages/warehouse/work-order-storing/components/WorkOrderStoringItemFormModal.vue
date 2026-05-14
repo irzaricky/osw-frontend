@@ -14,6 +14,7 @@ const props = defineProps<{
   partDisabled?: boolean
   kanbanDisabled?: boolean
   showStockField?: boolean
+  showRemainingQtyField?: boolean
   item?: { part_id: number; total_kanban: number } | null
 }>()
 
@@ -32,18 +33,30 @@ const selectedPartData = computed(() =>
 )
 
 const selectedPartStock = computed(() => selectedPartData.value?.available_stock)
+const selectedPartRemainingQty = computed(() => selectedPartData.value?.remaining_qty)
 
 const schema = z.object({
   part_id: z.number({ message: 'Part is required' }),
   total_kanban: z.number().min(1, 'Total Kanban must be at least 1').refine(
     (value) => {
-      if (!props.showStockField) return true
-      const currentStock = selectedPartStock.value
-      return currentStock === undefined || value <= currentStock
+      // TAKE OUT VALIDATION
+      if (props.showStockField) {
+        const stock = selectedPartStock.value
+        if (stock !== undefined && value > stock) {
+          return false
+        }
+      }
+
+      // DELIVERY ORDER VALIDATION
+      if (props.showRemainingQtyField) {
+        const remainingQty = selectedPartRemainingQty.value
+        if (remainingQty !== undefined && value > remainingQty) {
+          return false
+        }
+      }
+      return true
     },
-    {
-      message: 'Total Kanban must be less than or equal to available stock',
-    }
+    { message: 'Total Kanban exceeds available quantity' }
   )
 })
 
@@ -130,6 +143,14 @@ function close() {
         <UFormField label="Available Stock (Kanban)" v-if="props.showStockField">
           <UInput
             :model-value="selectedPartStock ?? '-'"
+            disabled
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Remaining Qty (Kanban)" v-if="props.showRemainingQtyField">
+          <UInput
+            :model-value="selectedPartRemainingQty ?? '-'"
             disabled
             class="w-full"
           />

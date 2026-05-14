@@ -20,6 +20,7 @@ export interface WorkOrderStoring {
   wo_number: string
   wo_category: WorkOrderCategory
 
+  ref_doc_id?: number | null
   ref_doc_number?: string | null
   ref_doc_name?: string | null
 

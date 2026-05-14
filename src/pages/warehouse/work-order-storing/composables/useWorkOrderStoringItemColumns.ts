@@ -19,12 +19,14 @@ export function useWorkOrderStoringItemColumns(
   mode: 'add' | 'edit' = 'add',
   isEditable: Ref<boolean> | boolean = true,
   woStatusId: Ref<number | undefined> | number | undefined,
-  woCategory: Ref<string | undefined> | string | undefined
+  woCategory: Ref<string | undefined> | string | undefined,
+  refDocId: Ref<number | string | undefined> | number | string | undefined
 ) {
   const partsRef = isRef(parts) ? parts : computed(() => parts)
   const editableRef = isRef(isEditable) ? isEditable : computed(() => isEditable)
   const statusRef = isRef(woStatusId) ? woStatusId : computed(() => woStatusId)
   const categoryRef = isRef(woCategory) ? woCategory : computed(() => woCategory)
+  const refDocIdRef = isRef(refDocId) ? refDocId : computed(() => refDocId)
   
   const { UButton, UDropdownMenu } = components
 
@@ -43,7 +45,7 @@ export function useWorkOrderStoringItemColumns(
       }
     ]
 
-    if (mode === 'edit' && statusRef.value !== 1 && categoryRef.value === 'Placement') {
+    if (mode === 'edit' && statusRef.value !== 1 && categoryRef.value === 'Placement' && !refDocIdRef.value) {
       items.push({
         label: 'Print Label',
         icon: 'i-lucide-tag',
