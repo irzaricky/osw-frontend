@@ -12,7 +12,8 @@ export interface TakeOutParams {
 }
 
 export interface ScanLabelOutPayload {
-  label_number: string
+  label_number: string,
+  fifo_override?: boolean
 }
 
 const takeOutService = {
