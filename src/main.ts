@@ -69,6 +69,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/sales/spo', 
+      component: () => import('./pages/sales/spo/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/production-plan', 
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }

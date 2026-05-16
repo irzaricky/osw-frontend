@@ -172,6 +172,14 @@ const links = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'SPO',
+      icon: 'i-lucide-file-plus',
+      to: '/sales/spo',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, {

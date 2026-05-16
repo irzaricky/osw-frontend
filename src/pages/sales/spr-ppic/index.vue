@@ -204,7 +204,7 @@ function cellIntensity(partId: number, month: string): string {
         <!-- Empty state -->
         <div v-if="pendingCount === 0" class="flex flex-col items-center justify-center py-20 gap-4 text-muted">
           <UIcon name="i-lucide-inbox" class="w-14 h-14 opacity-30" />
-          <p class="text-sm">Tidak ada SPR dengan status <strong>Waiting Supervisor PPIC</strong> untuk bulan <strong>{{ fmtMonth(selectedMonth) }}</strong></p>
+          <p class="text-sm">Tidak ada SPR dengan status <strong>Waiting Review PPIC</strong> untuk bulan <strong>{{ fmtMonth(selectedMonth) }}</strong></p>
         </div>
 
         <template v-else>
@@ -425,7 +425,7 @@ function cellIntensity(partId: number, month: string): string {
     <UModal
       v-model:open="confirmApprove.open"
       title="Batch Approve SPR"
-      :description="`Semua ${pendingCount} SPR dengan status 'Waiting Supervisor PPIC' untuk bulan ${fmtMonth(selectedMonth)} akan disetujui.`"
+      :description="`Semua ${pendingCount} SPR dengan status 'Waiting Review PPIC' untuk bulan ${fmtMonth(selectedMonth)} akan disetujui.`"
     >
       <template #body>
         <div class="space-y-4">
@@ -441,7 +441,7 @@ function cellIntensity(partId: number, month: string): string {
               v-model="approveRemarks"
               placeholder="Catatan persetujuan batch PPIC..."
               class="w-full"
-              rows="2"
+              :rows="2"
             />
           </UFormField>
 

@@ -36,7 +36,7 @@ export interface Spr {
   required_date: string
   confirmed_date: string | null
   description: string
-  status: 'Draft' | 'Submitted' | 'Waiting Supervisor' | 'Waiting PPIC' | 'Approved' | 'Rejected'
+  status: 'Draft' | 'Submitted' | 'Waiting Review Supervisor Sales' | 'Waiting Review PPIC' | 'Approved' | 'Rejected'
   remarks: string | null
   created_by: number
   approved_by: number | null

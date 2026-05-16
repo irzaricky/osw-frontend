@@ -53,12 +53,16 @@ function getStatusIcon(status: string): string {
   const map: Record<string, string> = {
     'Draft': 'i-lucide-file-edit',
     'Submitted': 'i-lucide-user-check',
-    'Waiting Supervisor': 'i-lucide-users',
-    'Waiting PPIC': 'i-lucide-clipboard-check',
+    'Waiting Review PPIC': 'i-lucide-clipboard-check',
     'Approved': 'i-lucide-check-circle',
     'Rejected': 'i-lucide-x-circle'
   }
   return map[status] || 'i-lucide-circle'
+}
+
+function getStatusLabel(status: string): string {
+  if (status === 'Submitted') return 'Waiting Review Supervisor Sales'
+  return status
 }
 
 function getSourceColor(source: string): any {
@@ -75,11 +79,6 @@ const isSupervisorSales = computed(() => {
   return role === 'Superadmin' || role === 'Supervisor Sales Order'
 })
 
-const isSupervisorPpic = computed(() => {
-  const role = authStore.user?.role
-  return role === 'Superadmin' || role === 'Supervisor PPIC'
-})
-
 // ─── Computed State Guards ────────────────────────────────────────────────────
 const isEditable = computed(() => store.detail?.status === 'Draft')
 
@@ -90,10 +89,6 @@ const canSubmit = computed(() =>
 
 const canReviewSales = computed(() =>
   store.detail?.status === 'Submitted' && isSupervisorSales.value
-)
-
-const canReviewPpic = computed(() =>
-  (store.detail?.status === 'Waiting Supervisor' || store.detail?.status === 'Waiting PPIC') && isSupervisorPpic.value
 )
 
 // ─── Workflow: Submit ─────────────────────────────────────────────────────────
@@ -198,9 +193,8 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
   const status = store.detail?.status
   const order: Record<string, number> = {
     'Draft': 0,
-    'Submitted': 1,
-    'Waiting Supervisor': 2,
-    'Waiting PPIC': 3,
+    'Submitted': 2, // Skip Step 1 'Submitted' (Completed) and go to Step 2 'Waiting Review Sales'
+    'Waiting Review PPIC': 3,
     'Approved': 4,
     'Rejected': -1
   }
@@ -245,14 +239,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             :class="{
               'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
               'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
-              'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300': store.detail.status === 'Waiting Supervisor',
-              'bg-info-100 text-info-700 dark:bg-info-900/40 dark:text-info-300': store.detail.status === 'Waiting PPIC',
+              'bg-info-100 text-info-700 dark:bg-info-900/40 dark:text-info-300': store.detail.status === 'Waiting Review PPIC',
               'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300': store.detail.status === 'Approved',
               'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300': store.detail.status === 'Rejected',
             }"
           >
             <UIcon :name="getStatusIcon(store.detail.status)" class="w-3.5 h-3.5" />
-            {{ store.detail.status }}
+            {{ getStatusLabel(store.detail.status) }}
           </div>
         </div>
 
@@ -370,22 +363,22 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Connector -->
           <div class="h-0.5 flex-1 mt-4 self-start" :class="getStepState(2) !== 'pending' ? 'bg-success-500' : 'bg-default'" />
 
-          <!-- Step 2: Waiting Supervisor -->
+          <!-- Step 2: Waiting Review Supervisor Sales -->
           <div class="flex flex-col items-center flex-1 min-w-[100px]">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-              :class="getStepState(2) === 'complete' ? 'bg-success-500 text-white' : getStepState(2) === 'current' ? 'bg-purple-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
+              :class="getStepState(2) === 'complete' ? 'bg-success-500 text-white' : getStepState(2) === 'current' ? 'bg-warning-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="getStepState(2) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>3</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-purple-600 dark:text-purple-400' : 'text-muted'">Waiting<br>Supervisor</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">Waiting Review<br>Sales</p>
           </div>
 
           <!-- Connector -->
           <div class="h-0.5 flex-1 mt-4 self-start" :class="getStepState(3) !== 'pending' ? 'bg-success-500' : 'bg-default'" />
 
-          <!-- Step 3: Waiting PPIC -->
+          <!-- Step 3: Waiting Review PPIC -->
           <div class="flex flex-col items-center flex-1 min-w-[80px]">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
@@ -394,7 +387,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="getStepState(3) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>4</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(3) === 'current' ? 'text-info-600 dark:text-info-400' : 'text-muted'">Waiting<br>PPIC</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(3) === 'current' ? 'text-info-600 dark:text-info-400' : 'text-muted'">Waiting Review<br>PPIC</p>
           </div>
 
           <!-- Connector -->
