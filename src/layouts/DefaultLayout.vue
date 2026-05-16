@@ -187,6 +187,14 @@ const links = [[{
   defaultOpen: route.path.startsWith('/warehouse'),
   children: [
     {
+      label: 'Material Receiving',
+      icon: 'i-lucide-truck',
+      to: '/warehouse/material-receiving',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
       label: 'Work Order Storing',
       icon: 'i-lucide-clipboard-list',
       to: '/warehouse/work-order-storing',
