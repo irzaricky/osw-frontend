@@ -185,8 +185,10 @@ const columns = [
                   <th class="p-2">Label Number</th>
                   <th class="p-2">Bin</th>
                   <th class="p-2">Area</th>
+                  <th class="p-2">Placed By</th>
                   <th class="p-2">Qty / Kanban</th>
                   <th class="p-2">Placement Date</th>
+
                 </tr>
               </thead>
 
@@ -201,6 +203,9 @@ const columns = [
                   <td class="p-2">{{ label.label_number }}</td>
                   <td class="p-2">{{ label.bin_code }}</td>
                   <td class="p-2">{{ label.warehouse_area || '-' }}</td>
+                  <td class="p-2">
+                    {{ label.placed_by || '-' }}
+                  </td>
                   <td class="p-2">{{ label.qty_per_kanban }}</td>
                   <td class="p-2">{{ formatDate(label.placement_date) }}</td>
                 </tr>

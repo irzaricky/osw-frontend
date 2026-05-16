@@ -127,6 +127,7 @@ const columns = [
                   <th class="p-2">Part Number</th>
                   <th class="p-2">Part Name</th>
                   <th class="p-2">Label Number</th>
+                  <th class="p-2">Placed By</th>
                   <th class="p-2">Qty / Kanban</th>
                   <th class="p-2">Placement Date</th>
                 </tr>
@@ -143,6 +144,7 @@ const columns = [
                   <td class="p-2">{{ stock.part_number }}</td>
                   <td class="p-2">{{ stock.part_name }}</td>
                   <td class="p-2">{{ stock.label_number }}</td>
+                  <td class="p-2">{{ stock.placed_by || '-' }}</td>
                   <td class="p-2">{{ stock.qty_per_kanban }}</td>
                   <td class="p-2">{{ formatDate(stock.placement_date) }}</td>
                 </tr>
