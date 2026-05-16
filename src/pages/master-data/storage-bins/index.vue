@@ -159,9 +159,11 @@ function onClickBin(bin: WarehouseBin) {
 }
 
 async function handleSaveAssign(payload: {
-  dedicated_part_number: string
+  is_dedicated: boolean
+  dedicated_part_number: string | null
   capacity: number
 }) {
+
   if (!activeBin.value) return
 
   confirmDialog.value = {
@@ -173,10 +175,10 @@ async function handleSaveAssign(payload: {
         assignLoading.value = true
 
         const res = await warehouseBinService.update(activeBin.value!.id, {
-          is_dedicated: true,
-          dedicated_part_number: payload.dedicated_part_number,
-          capacity: payload.capacity
-        })
+        is_dedicated: payload.is_dedicated,
+        dedicated_part_number: payload.dedicated_part_number,
+        capacity: payload.capacity
+      })
 
         toastSuccess(res.data?.message || 'Bin updated')
         isAssignOpen.value = false

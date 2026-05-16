@@ -23,7 +23,8 @@ function formatDate(value?: string | null) {
 
 function getStatusColor(status?: string) {
   if (status === 'Full') return 'error'
-  if (status === 'Empty') return 'neutral'
+  if (status === 'Unconfigured') return 'warning'
+  if (status === 'Free') return 'neutral'
   return 'success'
 }
 
@@ -52,8 +53,25 @@ const columns = [
       )
   },
   {
+    id: 'restriction',
+    header: 'Restriction',
+    cell: ({ row }: any) => {
+      const bin = row.original
+
+      if (bin.is_dedicated && bin.dedicated_part_number) {
+        return `Dedicated: ${bin.dedicated_part_number}`
+      }
+
+      if (bin.allowed_part_category) {
+        return `${bin.allowed_part_category} Only`
+      }
+
+      return 'Free Bin'
+    }
+  },
+  {
     accessorKey: 'capacity',
-    header: 'Capacity'
+    header: 'Safe Capacity'
   },
   {
     accessorKey: 'used_capacity',

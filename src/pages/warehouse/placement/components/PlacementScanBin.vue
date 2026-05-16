@@ -18,28 +18,139 @@ const emit = defineEmits<{
   scanQr: []
 }>()
 
-function isBinDisabled(bin: PlacementBin) {
-  if (bin.status === 'Full') return true
+const scannedPartNumber = computed(() =>
+  props.scannedLabel?.part?.part_number || ''
+)
 
-  const scannedPartNumber = props.scannedLabel?.part?.part_number
+const scannedPartCategory = computed(() =>
+  String(props.scannedLabel?.part?.part_category || '').trim().toUpperCase()
+)
+
+function getBinRestriction(bin: PlacementBin) {
+  if (bin.is_dedicated && bin.dedicated_part_number) {
+    return `Dedicated: ${bin.dedicated_part_number}`
+  }
+
+  if (bin.allowed_part_category) {
+    return `${bin.allowed_part_category} Only`
+  }
+
+  return 'Free Bin'
+}
+
+function getDisabledReason(bin: PlacementBin) {
+  if (bin.status === 'Unconfigured') {
+    return 'Safe capacity not configured'
+  }
+
+  if (bin.status === 'Full') {
+    return 'Bin is full'
+  }
 
   if (
     bin.is_dedicated &&
     bin.dedicated_part_number &&
-    bin.dedicated_part_number !== scannedPartNumber
+    bin.dedicated_part_number !== scannedPartNumber.value
   ) {
-    return true
+    return `Dedicated to ${bin.dedicated_part_number}`
   }
 
-  return false
+  const allowedCategory = String(bin.allowed_part_category || '').trim().toUpperCase()
+
+  if (
+    allowedCategory &&
+    scannedPartCategory.value &&
+    allowedCategory !== scannedPartCategory.value
+  ) {
+    return `${allowedCategory} only`
+  }
+
+  return ''
 }
 
+function isBinDisabled(bin: PlacementBin) {
+  return Boolean(getDisabledReason(bin))
+}
+
+// function getBinPriority(bin: PlacementBin) {
+//   const scannedPartNumber =
+//     props.scannedLabel?.part?.part_number || ''
+
+//   const scannedPartCategory =
+//     String(props.scannedLabel?.part?.part_category || '')
+//       .trim()
+//       .toUpperCase()
+
+//   // exact dedicated match
+//   if (
+//     bin.is_dedicated &&
+//     bin.dedicated_part_number === scannedPartNumber
+//   ) {
+//     return 100
+//   }
+
+//   // same category
+//   if (
+//     bin.allowed_part_category &&
+//     String(bin.allowed_part_category)
+//       .trim()
+//       .toUpperCase() === scannedPartCategory
+//   ) {
+//     return 70
+//   }
+
+//   // free bin
+//   if (
+//     !bin.is_dedicated &&
+//     !bin.allowed_part_category
+//   ) {
+//     return 50
+//   }
+
+//   return 0
+// }
 
 const selectableBins = computed(() => {
-  return props.availableBins.filter(bin => !isBinDisabled(bin))
+  const bins = uniqueBins.value.filter(bin => !isBinDisabled(bin))
+
+  const exactDedicatedBins = bins.filter(bin =>
+    bin.is_dedicated &&
+    bin.dedicated_part_number === scannedPartNumber.value
+  )
+
+  if (exactDedicatedBins.length) {
+    return exactDedicatedBins
+  }
+
+  const categoryBins = bins.filter(bin =>
+    !bin.is_dedicated &&
+    bin.allowed_part_category &&
+    String(bin.allowed_part_category).trim().toUpperCase() === scannedPartCategory.value
+  )
+
+  if (categoryBins.length) {
+    return categoryBins
+  }
+
+  const freeBins = bins.filter(bin =>
+    !bin.is_dedicated &&
+    !bin.allowed_part_category
+  )
+
+  return freeBins.slice(0, 1)
 })
 
+const uniqueBins = computed(() => {
+  const map = new Map<string, PlacementBin>()
 
+  for (const bin of props.availableBins || []) {
+    if (!map.has(bin.bin_code)) {
+      map.set(bin.bin_code, bin)
+    }
+  }
+
+  return Array.from(map.values())
+})
 </script>
 
 <template>
@@ -101,23 +212,33 @@ const selectableBins = computed(() => {
             @click="emit('selectBin', bin.bin_code)"
           >
             <div class="flex items-center justify-between gap-2">
-              <p class="font-semibold">{{ bin.bin_code }}</p>
+              <p class="font-semibold">
+                {{ bin.bin_code }}
+              </p>
 
               <UBadge
                 size="sm"
                 variant="soft"
-                :color="bin.status === 'Empty' ? 'neutral' : 'success'"
+                :color="bin.status === 'Free' ? 'neutral' : 'success'"
               >
                 {{ bin.status }}
               </UBadge>
             </div>
 
             <p class="text-xs text-muted mt-1">
-              Capacity: {{ bin.used_capacity }} / {{ bin.capacity }}
+              Safe Capacity:
+              {{ bin.used_capacity }} / {{ bin.capacity }}
             </p>
 
-            <p v-if="bin.dedicated_part_number" class="text-xs text-muted">
-              Dedicated: {{ bin.dedicated_part_number }}
+            <p class="text-xs text-muted">
+              {{ getBinRestriction(bin) }}
+            </p>
+
+            <p
+              v-if="bin.remaining_capacity !== null && bin.remaining_capacity !== undefined"
+              class="text-xs text-muted"
+            >
+              Remaining: {{ bin.remaining_capacity }} label(s)
             </p>
           </button>
         </div>
@@ -131,8 +252,6 @@ const selectableBins = computed(() => {
         title="No Available Bin"
         description="No selectable bin is available for this part in the selected warehouse area."
       />
-
-      
-      </div>
+    </div>
   </UCard>
 </template>

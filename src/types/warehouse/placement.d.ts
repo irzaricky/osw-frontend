@@ -125,5 +125,8 @@ export interface PlacementBin {
   remaining_capacity: number | null
   is_dedicated: boolean
   dedicated_part_number?: string | null
-  status: 'Empty' | 'Available' | 'Full'
+  allowed_part_category?: string | null
+
+  bin_type?: 'FREE' | 'CATEGORY' | 'DEDICATED'
+  status: 'Unconfigured' | 'Free' | 'Empty' | 'Available' | 'Full'
 }

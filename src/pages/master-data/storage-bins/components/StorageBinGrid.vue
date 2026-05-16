@@ -22,6 +22,28 @@ const binMap = computed(() => {
 function getBin(r: number, c: number) {
   return binMap.value.get(`${r}-${c}`)
 }
+
+function getRestriction(bin?: WarehouseBin) {
+  if (!bin) return 'No Bin'
+
+  if (bin.is_dedicated && bin.dedicated_part_number) {
+    return `Dedicated: ${bin.dedicated_part_number}`
+  }
+
+  return 'Free Bin'
+}
+
+function getCapacityLabel(bin?: WarehouseBin) {
+  if (!bin) return ''
+
+  const capacity = Number(bin.capacity || 0)
+
+  if (capacity <= 0) {
+    return 'Unconfigured'
+  }
+
+  return `Safe Cap: ${capacity} labels`
+}
 </script>
 
 <template>
@@ -30,7 +52,11 @@ function getBin(r: number, c: number) {
       <thead>
         <tr class="bg-elevated/50">
           <th class="p-2 border-b border-default w-12"></th>
-          <th v-for="c in props.totalCols" :key="c" class="p-2 border-b border-default text-center min-w-36">
+          <th
+            v-for="c in props.totalCols"
+            :key="c"
+            class="p-2 border-b border-default text-center min-w-44"
+          >
             {{ c }}
           </th>
         </tr>
@@ -48,22 +74,24 @@ function getBin(r: number, c: number) {
             class="p-2 border-b border-default align-top"
           >
             <div
-              class="rounded-md border border-default p-2 min-h-16 cursor-pointer hover:bg-elevated/40"
-              :class="getBin(r, c)?.is_dedicated ? 'bg-primary-50/30 dark:bg-primary-950/30' : ''"
-              @click="getBin(r, c) && emit('clickBin', getBin(r, c)!)"
-            >
+                class="rounded-md border border-default p-2 min-h-20 cursor-pointer hover:bg-elevated/40"
+                :class="getBin(r, c)?.is_dedicated
+                  ? 'bg-primary-50/30 dark:bg-primary-950/30'
+                  : ''"
+                @click="getBin(r, c) && emit('clickBin', getBin(r, c)!)"
+              >
               <div class="font-semibold">
                 {{ getBin(r, c)?.bin_code || 'No Bin' }}
               </div>
 
-              <div class="text-xs text-muted mt-1">
-                <template v-if="getBin(r, c)?.is_dedicated">
-                  {{ getBin(r, c)?.dedicated_part_number || 'No Part' }}
-                  <span v-if="getBin(r, c)?.capacity != null"> • Cap: {{ getBin(r, c)?.capacity }}</span>
-                </template>
-                <template v-else>
-                  No Assigned Part
-                </template>
+              <div class="text-xs text-muted mt-1 space-y-1">
+                <p>
+                  {{ getRestriction(getBin(r, c)) }}
+                </p>
+
+                <p v-if="getBin(r, c)">
+                  {{ getCapacityLabel(getBin(r, c)) }}
+                </p>
               </div>
             </div>
           </td>
