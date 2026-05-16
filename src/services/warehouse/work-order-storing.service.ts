@@ -7,6 +7,8 @@ export interface WorkOrderStoringParams {
   search?: string
   wo_status_id?: number
   wo_category?: string
+  start_date?: string
+  end_date?: string
   [key: string]: any
 }
 
@@ -36,7 +38,7 @@ const workOrderStoringService = {
     return api.delete(`/warehouse/work-order-storing/${id}`)
   },
 
-  // Print
+  // Print Label
   printLabel(wo_item_id: number | string) {
     return api.get(
       `/warehouse/work-order-storing/print-label/${wo_item_id}`,

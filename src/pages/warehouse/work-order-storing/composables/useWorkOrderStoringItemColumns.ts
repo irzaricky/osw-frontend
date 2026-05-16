@@ -48,7 +48,7 @@ export function useWorkOrderStoringItemColumns(
     if (mode === 'edit' && statusRef.value !== 1 && categoryRef.value === 'Placement' && !refDocIdRef.value) {
       items.push({
         label: 'Print Label',
-        icon: 'i-lucide-tag',
+        icon: 'i-lucide-printer',
         onSelect: () => actions.onPrintLabel(rowIndex)
       })
     }
@@ -57,6 +57,10 @@ export function useWorkOrderStoringItemColumns(
   }
 
   const columns = computed<TableColumn<any>[]>(() => [
+    {
+      header: 'No',
+      cell: ({ row }) => row.index + 1
+    },
     {
       header: 'Part Number',
       cell: ({ row }) => {

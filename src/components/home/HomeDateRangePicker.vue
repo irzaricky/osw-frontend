@@ -129,7 +129,7 @@ function clearSelection() {
       color="neutral"
       variant="outline"
       icon="i-lucide-calendar"
-      class="group w-full h-9 justify-between rounded-md font-normal text-sm"
+      class="group w-full h-8 justify-between rounded-md font-normal text-sm"
     >
       <span class="truncate">
         <template v-if="selected?.start">

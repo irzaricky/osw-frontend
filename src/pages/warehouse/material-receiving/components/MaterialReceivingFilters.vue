@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { WorkOrderStoringStatus, WorkOrderStoringCategory } from '../../../../types/warehouse/work-order-storing'
+import type { MaterialReceivingStatus } from '../../../../types/warehouse/material-receiving'
 import type { Range } from '../../../../types'
 import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
 
 interface Filters {
-  wo_category: WorkOrderStoringCategory | undefined
-  wo_status_id: number | undefined
+  status: any
   date_range: Range | undefined
 }
 
 const props = defineProps<{
   search: string
   filters: Filters
-  categories: WorkOrderStoringCategory[]
-  statuses: Pick<WorkOrderStoringStatus, 'id' | 'name'>[]
+  statuses: Pick<MaterialReceivingStatus, 'id' | 'name'>[]
 }>()
 
 const emit = defineEmits<{
@@ -22,26 +20,18 @@ const emit = defineEmits<{
   'update:filters': [value: Partial<Filters>]
 }>()
 
-const statusItems = computed(() => [
+const statusItems = computed(() =>
   props.statuses.map(s => s.name)
-])
-
-const categoryItems = computed(() => [
-  props.categories
-])
+)
 
 const selectedStatus = computed({
   get() {
-    if (props.filters.wo_status_id == null) return undefined
-
-    const found = props.statuses.find(
-      c => c.id === props.filters.wo_status_id
-    )
-    return found?.name
+    return props.filters.status?.name
   },
+
   set(value: string | undefined) {
     if (!value) {
-      updateFilter('wo_status_id', undefined)
+      updateFilter('status', undefined)
       return
     }
 
@@ -49,16 +39,7 @@ const selectedStatus = computed({
       c => c.name === value
     )
 
-    updateFilter('wo_status_id', found?.id)
-  }
-})
-
-const selectedCategory = computed({
-  get() {
-    return props.filters.wo_category || undefined
-  },
-  set(value: WorkOrderStoringCategory | undefined) {
-    updateFilter('wo_category', value)
+    updateFilter('status', found)
   }
 })
 
@@ -84,13 +65,6 @@ function updateFilter(key: keyof Filters, value: any) {
       clear
     />
     <USelectMenu
-      v-model="selectedCategory"
-      :items="categoryItems"
-      placeholder="Filter by Category"
-      class="w-full md:w-48"
-      clear
-    />
-    <USelectMenu
       v-model="selectedStatus"
       :items="statusItems"
       placeholder="Filter by Status"
@@ -101,7 +75,7 @@ function updateFilter(key: keyof Filters, value: any) {
     <UInput
       :model-value="props.search"
       icon="i-lucide-search"
-      placeholder="Search Work Order Number"
+      placeholder="Search MDO Number"
       class="w-full md:w-64 ml-auto"
       @update:model-value="emit('update:search', $event as string)"
     />

@@ -610,7 +610,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
     <div class="space-y-3">
       <div class="flex justify-between items-center">
         <h3 class="font-semibold">Items</h3>
-        <UButton label="Add Item" @click="openItemModal" :disabled="!isEditable" />
+        <UButton v-if="isEditable" label="Add Item" @click="openItemModal" />
       </div>
 
       <UTable
@@ -619,7 +619,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
       />
     </div>
 
-    <div class="flex justify-end gap-2">
+    <div v-if="isEditable" class="flex justify-end gap-2">
       <UButton
         color="neutral"
         variant="outline"

@@ -218,6 +218,16 @@ const router = createRouter({
 
     // warehouse
     { 
+      path: '/warehouse/material-receiving', 
+      component: () => import('./pages/warehouse/material-receiving/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/material-receiving/set-arrived-process/:id', 
+      component: () => import('./pages/warehouse/material-receiving/set-arrived-process.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/warehouse/work-order-storing', 
       component: () => import('./pages/warehouse/work-order-storing/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
@@ -230,36 +240,6 @@ const router = createRouter({
     { 
       path: '/warehouse/work-order-storing/edit/:id', 
       component: () => import('./pages/warehouse/work-order-storing/edit.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    { 
-      path: '/warehouse/placement', 
-      component: () => import('./pages/warehouse/placement/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/placement/:id',
-      component: () => import('./pages/warehouse/placement/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/take-out',
-      component: () => import('./pages/warehouse/take-out/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/take-out/:id',
-      component: () => import('./pages/warehouse/take-out/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/transaction-activity',
-      component: () => import('./pages/warehouse/transaction-activity/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
-    },
-    {
-      path: '/warehouse/stock-monitoring',
-      component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     {
