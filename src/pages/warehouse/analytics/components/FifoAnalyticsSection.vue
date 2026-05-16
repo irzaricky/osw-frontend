@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import dayjs from 'dayjs'
+
 defineProps<{
   fifoCompliance: {
     fifo_compliant: number
@@ -21,11 +23,16 @@ const emit = defineEmits([
   'update:fifo-violation-page'
 ])
 
+const formatDate = (date?: string) => {
+  if (!date) return '-'
+  return dayjs(date).format('DD MMM YYYY HH:mm:ss')
+}
 
 const violationColumns = [
   {
     accessorKey: 'transaction_date',
-    header: 'Date'
+    header: 'Date',
+    cell: ({ row }: any) => formatDate(row.original.transaction_date)
   },
   {
     accessorKey: 'wo_number',

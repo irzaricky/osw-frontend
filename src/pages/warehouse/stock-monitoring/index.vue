@@ -33,6 +33,8 @@ const warehouseAreaStore = useWarehouseAreaStore()
 const { dropdown: warehouseAreas } = storeToRefs(warehouseAreaStore)
 
 const activeTab = ref<'parts' | 'bins'>('parts')
+const page = ref(1)
+const perPage = ref(10)
 const search = ref('')
 
 const breadcrumbItems = [
@@ -45,6 +47,22 @@ const tabItems = [
   { label: 'Stock by Part', value: 'parts', icon: 'i-lucide-package' },
   { label: 'Stock by Storage Bin', value: 'bins', icon: 'i-lucide-warehouse' }
 ]
+
+const paginatedParts = computed(() => {
+  const start = (page.value - 1) * perPage.value
+  return filteredParts.value.slice(start, start + perPage.value)
+})
+
+const paginatedBins = computed(() => {
+  const start = (page.value - 1) * perPage.value
+  return filteredBins.value.slice(start, start + perPage.value)
+})
+
+const currentTotal = computed(() => {
+  return activeTab.value === 'parts'
+    ? filteredParts.value.length
+    : filteredBins.value.length
+})
 
 const filteredParts = computed(() => {
   if (!search.value) return parts.value
@@ -147,16 +165,34 @@ const statusItems = [
   { label: 'Full', value: 'Full' }
 ]
 
-const categoryItems = [
-  { label: 'Small Part', value: 'Small Part' },
-  { label: 'Big Part', value: 'Big Part' }
-]
+const exportItems = computed(() => [
+  [
+    {
+      label: 'Export Current View',
+      icon: 'i-lucide-file-spreadsheet',
+      onSelect: () => exportCurrentView()
+    },
+    {
+      label: 'Export Full Warehouse Report',
+      icon: 'i-lucide-files',
+      onSelect: () => exportFullReport()
+    }
+  ]
+])
 
 const debouncedFetch = useDebounceFn(() => {
   fetchData()
 }, 300)
 
 watch(search, () => debouncedFetch())
+
+watch([search, activeTab], () => {
+  page.value = 1
+})
+
+watch(filters, () => {
+  page.value = 1
+}, { deep: true })
 
 watch(filters, () => {
   fetchData()
@@ -249,17 +285,6 @@ function handleSummaryCardClick(type: string) {
   }
 }
 
-function resetFilters() {
-  search.value = ''
-  filters.warehouse_area_id = undefined
-  filters.status = undefined
-  filters.part_category = undefined
-  filters.low_stock_only = false
-  filters.aging_only = false
-  filters.low_capacity_only = false
-  fetchData()
-}
-
 async function expandPart(partNumber: string) {
   if (!partLabels.value[partNumber]) {
     await stockMonitoringStore.fetchPartLabels(partNumber)
@@ -273,35 +298,212 @@ async function expandBin(binId: number) {
   }
 }
 
-function createSheet(rows: Record<string, any>[]) {
-  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ Info: 'No data' }])
+function getFilterInfo(viewName: string) {
+  return [
+    ['WAREHOUSE STOCK MONITORING REPORT'],
+    [viewName],
+    [],
+    ['Generated At', new Date().toLocaleString()],
+    ['Search', search.value || '-'],
+    ['Date From', filters.date_from || 'All'],
+    ['Date To', filters.date_to || 'All'],
+    ['Warehouse Area', selectedWarehouseArea.value || 'All'],
+    ['Part Category', activeTab.value === 'parts' ? (selectedPartCategory.value || 'All') : '-'],
+    ['Bin Status', activeTab.value === 'bins' ? (selectedStatus.value || 'All') : '-'],
+    []
+  ]
+}
 
-  ws['!cols'] = Object.keys(rows[0] || { Info: 'No data' }).map(key => ({
+function createReportSheet(
+  rows: Record<string, any>[],
+  viewName: string,
+  tableStartRow = 13
+) {
+  const dataRows = rows.length ? rows : [{ Info: 'No data' }]
+  const ws = XLSX.utils.aoa_to_sheet(getFilterInfo(viewName))
+
+  XLSX.utils.sheet_add_json(ws, dataRows, {
+    origin: `A${tableStartRow}`,
+    skipHeader: false
+  })
+
+  const headers = Object.keys(dataRows[0])
+
+  ws['!cols'] = headers.map(header => ({
     wch: Math.max(
-      key.length,
-      ...rows.map(row => String(row[key] ?? '').length)
+      header.length,
+      ...dataRows.map(row => String(row[header] ?? '').length)
     ) + 5
   }))
+
+  ws['!autofilter'] = {
+    ref: `A${tableStartRow}:${XLSX.utils.encode_col(headers.length - 1)}${tableStartRow + dataRows.length}`
+  }
 
   return ws
 }
 
 async function loadAllExportDetails() {
   await Promise.all([
-    ...parts.value.map(part => stockMonitoringStore.fetchPartLabels(part.part_number)),
-    ...bins.value.map(bin => stockMonitoringStore.fetchBinStocks(bin.bin_id))
+    ...parts.value.map(part =>
+      stockMonitoringStore.fetchPartLabels(part.part_number)
+    ),
+    ...bins.value.map(bin =>
+      stockMonitoringStore.fetchBinStocks(bin.bin_id)
+    )
   ])
 }
 
-async function exportStockMonitoring() {
+async function exportCurrentView() {
   exporting.value = true
 
   try {
+    const workbook = XLSX.utils.book_new()
+
+    if (activeTab.value === 'parts') {
+      await Promise.all(
+        filteredParts.value.map(part =>
+          stockMonitoringStore.fetchPartLabels(part.part_number)
+        )
+      )
+
+      const summaryPartRows = filteredParts.value.map((row, index) => ({
+        No: index + 1,
+        'Part Number': row.part_number,
+        'Part Name': row.part_name,
+        Category: row.part_category || '-',
+        Package: row.package_name || row.package_code || '-',
+        'Capacity / Kanban': row.capacity_per_kanban,
+        'Total Kanban': row.total_kanban,
+        'Safety Stock': row.safety_stock,
+        'Coverage (%)': row.coverage_percentage,
+        'Stock Status': row.stock_status,
+        'Total PCS': row.total_pcs,
+        'Total Bin': row.total_bins,
+        'Oldest Stock': row.oldest_stock_at
+          ? new Date(row.oldest_stock_at).toLocaleString()
+          : '-',
+        'Latest Stock': row.latest_stock_at
+          ? new Date(row.latest_stock_at).toLocaleString()
+          : '-'
+      }))
+
+      const filteredPartNumbers = filteredParts.value.map(part => part.part_number)
+
+      const labelDetailRows = Object.values(partLabels.value)
+        .flat()
+        .filter((row: any) => filteredPartNumbers.includes(row.part_number))
+        .map((row: any, index) => ({
+          No: index + 1,
+          FIFO: index + 1,
+          'Label Number': row.label_number,
+          'Part Number': row.part_number,
+          'Part Name': row.part_name,
+          'Bin Code': row.bin_code,
+          'Warehouse Area': row.warehouse_area || '-',
+          'Placed By': row.placed_by || '-',
+          'Qty / Kanban': row.qty_per_kanban,
+          'Placement At': row.placement_date
+            ? new Date(row.placement_date).toLocaleString()
+            : '-'
+        }))
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        createReportSheet(summaryPartRows, 'Current View - Stock by Part'),
+        'Stock by Part'
+      )
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        createReportSheet(labelDetailRows, 'Current View - Label Detail'),
+        'Label Detail'
+      )
+    } else {
+      await Promise.all(
+        filteredBins.value.map(bin =>
+          stockMonitoringStore.fetchBinStocks(bin.bin_id)
+        )
+      )
+
+      const summaryBinRows = filteredBins.value.map((row, index) => ({
+        No: index + 1,
+        'Bin Code': row.bin_code,
+        'Warehouse Area': row.warehouse_area || '-',
+        Status: row.status,
+        Capacity: row.capacity,
+        Used: row.used_capacity,
+        Remaining: row.remaining_capacity,
+        'Part Variant': row.total_part_variant,
+        'Total Kanban': row.total_kanban,
+        'Total PCS': row.total_pcs,
+        Dedicated: row.is_dedicated ? 'Yes' : 'No',
+        'Dedicated Part': row.dedicated_part_number || '-'
+      }))
+
+      const filteredBinIds = filteredBins.value.map(bin => String(bin.bin_id))
+
+      const binContentRows = Object.entries(binStocks.value)
+        .filter(([binId]) => filteredBinIds.includes(String(binId)))
+        .flatMap(([binId, stocks]) => {
+          const bin = bins.value.find(item => String(item.bin_id) === String(binId))
+
+          return stocks.map((stock: any) => ({
+            'Bin Code': bin?.bin_code || '-',
+            'Warehouse Area': bin?.warehouse_area || '-',
+            'Label Number': stock.label_number,
+            'Part Number': stock.part_number,
+            'Part Name': stock.part_name,
+            'Placed By': stock.placed_by || '-',
+            'Qty / Kanban': stock.qty_per_kanban,
+            'Placement At': stock.placement_date
+              ? new Date(stock.placement_date).toLocaleString()
+              : '-'
+          }))
+        })
+        .map((row, index) => ({
+          No: index + 1,
+          ...row
+        }))
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        createReportSheet(summaryBinRows, 'Current View - Stock by Storage Bin'),
+        'Stock by Bin'
+      )
+
+      XLSX.utils.book_append_sheet(
+        workbook,
+        createReportSheet(binContentRows, 'Current View - Bin Content Detail'),
+        'Bin Content'
+      )
+    }
+
+    XLSX.writeFile(
+      workbook,
+      `stock-monitoring-${activeTab.value}-current-view-${Date.now()}.xlsx`
+    )
+  } catch (error) {
+    console.error(error)
+  } finally {
+    exporting.value = false
+  }
+}
+
+async function exportFullReport() {
+  exporting.value = true
+
+  try {
+    await Promise.all([
+      stockMonitoringStore.fetchParts({}),
+      stockMonitoringStore.fetchBins({})
+    ])
+
     await loadAllExportDetails()
 
     const workbook = XLSX.utils.book_new()
 
-    const summaryPartRows = filteredParts.value.map((row, index) => ({
+    const summaryPartRows = parts.value.map((row, index) => ({
       No: index + 1,
       'Part Number': row.part_number,
       'Part Name': row.part_name,
@@ -314,11 +516,15 @@ async function exportStockMonitoring() {
       'Stock Status': row.stock_status,
       'Total PCS': row.total_pcs,
       'Total Bin': row.total_bins,
-      'Oldest Stock': row.oldest_stock_at ? new Date(row.oldest_stock_at).toLocaleString() : '-',
-      'Latest Stock': row.latest_stock_at ? new Date(row.latest_stock_at).toLocaleString() : '-'
+      'Oldest Stock': row.oldest_stock_at
+        ? new Date(row.oldest_stock_at).toLocaleString()
+        : '-',
+      'Latest Stock': row.latest_stock_at
+        ? new Date(row.latest_stock_at).toLocaleString()
+        : '-'
     }))
 
-    const summaryBinRows = filteredBins.value.map((row, index) => ({
+    const summaryBinRows = bins.value.map((row, index) => ({
       No: index + 1,
       'Bin Code': row.bin_code,
       'Warehouse Area': row.warehouse_area || '-',
@@ -335,29 +541,36 @@ async function exportStockMonitoring() {
 
     const labelDetailRows = Object.values(partLabels.value)
       .flat()
-      .map((row, index) => ({
+      .map((row: any, index) => ({
         No: index + 1,
+        FIFO: index + 1,
         'Label Number': row.label_number,
         'Part Number': row.part_number,
         'Part Name': row.part_name,
         'Bin Code': row.bin_code,
         'Warehouse Area': row.warehouse_area || '-',
+        'Placed By': row.placed_by || '-',
         'Qty / Kanban': row.qty_per_kanban,
-        'Placement At': row.placement_date ? new Date(row.placement_date).toLocaleString() : '-'
+        'Placement At': row.placement_date
+          ? new Date(row.placement_date).toLocaleString()
+          : '-'
       }))
 
     const binContentRows = Object.entries(binStocks.value)
       .flatMap(([binId, stocks]) => {
         const bin = bins.value.find(item => String(item.bin_id) === String(binId))
 
-        return stocks.map(stock => ({
+        return stocks.map((stock: any) => ({
           'Bin Code': bin?.bin_code || '-',
           'Warehouse Area': bin?.warehouse_area || '-',
           'Label Number': stock.label_number,
           'Part Number': stock.part_number,
           'Part Name': stock.part_name,
+          'Placed By': stock.placed_by || '-',
           'Qty / Kanban': stock.qty_per_kanban,
-          'Placement At': stock.placement_date ? new Date(stock.placement_date).toLocaleString() : '-'
+          'Placement At': stock.placement_date
+            ? new Date(stock.placement_date).toLocaleString()
+            : '-'
         }))
       })
       .map((row, index) => ({
@@ -365,12 +578,34 @@ async function exportStockMonitoring() {
         ...row
       }))
 
-    XLSX.utils.book_append_sheet(workbook, createSheet(summaryPartRows), 'Summary Part')
-    XLSX.utils.book_append_sheet(workbook, createSheet(summaryBinRows), 'Summary Bin')
-    XLSX.utils.book_append_sheet(workbook, createSheet(labelDetailRows), 'Label Detail')
-    XLSX.utils.book_append_sheet(workbook, createSheet(binContentRows), 'Bin Content')
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createReportSheet(summaryPartRows, 'Full Warehouse Report - Stock by Part'),
+      'Summary Part'
+    )
 
-    XLSX.writeFile(workbook, `stock-monitoring-${Date.now()}.xlsx`)
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createReportSheet(summaryBinRows, 'Full Warehouse Report - Stock by Bin'),
+      'Summary Bin'
+    )
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createReportSheet(labelDetailRows, 'Full Warehouse Report - Label Detail'),
+      'Label Detail'
+    )
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      createReportSheet(binContentRows, 'Full Warehouse Report - Bin Content'),
+      'Bin Content'
+    )
+
+    XLSX.writeFile(
+      workbook,
+      `stock-monitoring-full-report-${Date.now()}.xlsx`
+    )
   } catch (error) {
     console.error(error)
   } finally {
@@ -410,26 +645,33 @@ onMounted(async () => {
             <HomeDateRangePicker v-model="dateRange as any" clear />
           </div>
 
-          <USelectMenu v-model="selectedWarehouseArea" :items="warehouseAreas.map(area => area.name)"
-            placeholder="Warehouse Area" class="w-full md:w-64" searchable clear />
-
-          <USelectMenu v-if="activeTab === 'parts'" v-model="selectedPartCategory" placeholder="Part Category"
-            :items="categoryItems.map(item => item.label)" class="w-full md:w-48" searchable clear />
+          <USelectMenu v-if="activeTab === 'bins'" v-model="selectedWarehouseArea"
+            :items="warehouseAreas.map(area => area.name)" placeholder="Warehouse Area" class="w-full md:w-64"
+            searchable clear />
 
           <USelectMenu v-if="activeTab === 'bins'" v-model="selectedStatus" placeholder="Bin Status"
             :items="statusItems.map(item => item.label)" class="w-full md:w-48" searchable clear />
 
-          <UButton icon="i-lucide-download" color="primary" variant="soft" label="Export Excel" :loading="exporting"
-            @click="exportStockMonitoring" />
+          <UDropdownMenu :items="exportItems">
+            <UButton icon="i-lucide-download" color="primary" variant="soft" label="Export" :loading="exporting" />
+          </UDropdownMenu>
         </div>
 
         <UTabs v-model="activeTab" :items="tabItems" class="w-full" />
       </div>
     </UCard>
 
-    <StockPartTable v-if="activeTab === 'parts'" :parts="filteredParts" :labels-map="partLabels" :loading="loading"
+    <StockPartTable v-if="activeTab === 'parts'" :parts="paginatedParts" :labels-map="partLabels" :loading="loading"
       @expand-part="expandPart" />
 
-    <StockBinTable v-else :bins="filteredBins" :stocks-map="binStocks" :loading="loading" @expand-bin="expandBin" />
+    <StockBinTable v-else :bins="paginatedBins" :stocks-map="binStocks" :loading="loading" @expand-bin="expandBin" />
+
+    <div class="flex items-center justify-between mt-4">
+      <p class="text-sm text-muted">
+        Total {{ currentTotal }} transaction(s)
+      </p>
+
+      <UPagination v-model:page="page" :items-per-page="perPage" :total="currentTotal" />
+    </div>
   </div>
 </template>

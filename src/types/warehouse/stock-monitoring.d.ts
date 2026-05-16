@@ -77,6 +77,7 @@ export interface StockPartLabel {
   warehouse_area: string
   qty_per_kanban: number
   placement_date: string
+  placed_by?: string
 }
 
 export interface StockByBin {
@@ -102,4 +103,5 @@ export interface StockBinItem {
   part_name: string
   qty_per_kanban: number
   placement_date: string
+  placed_by?: string
 }
