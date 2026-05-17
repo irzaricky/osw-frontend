@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { onMounted, ref, computed, watch } from 'vue'
 import { useSdpStore } from '../../../stores/sales/sdp.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
+import SdpAddModal from './components/SdpAddModal.vue'
+import SdpDetailPanel from './components/SdpDetailPanel.vue'
 
 const store = useSdpStore()
 const { loading, plans, meta } = storeToRefs(store)
@@ -13,22 +16,128 @@ const breadcrumbItems = [
   { label: 'Delivery Plan (SDP)' }
 ]
 
+// Modal & Panel state controls
+const openAddModal = ref(false)
+const selectedPlanId = ref<number | null>(null)
+const createLoading = ref(false)
+
+const selectedPlan = computed(() => store.detail)
+
+// Search & filter parameters
+const searchQuery = ref('')
+const selectedStatus = ref('')
+const startDate = ref('')
+const endDate = ref('')
+
+async function loadPlans() {
+  const params: Record<string, any> = {
+    page: meta.value.page,
+    limit: meta.value.limit
+  }
+  if (searchQuery.value) params.search = searchQuery.value
+  if (selectedStatus.value) params.status = selectedStatus.value
+  if (startDate.value) params.start_date = startDate.value
+  if (endDate.value) params.end_date = endDate.value
+
+  await store.fetchSdpPlans(params)
+}
+
+// Watchers for filtering
+watch([searchQuery, selectedStatus, startDate, endDate], () => {
+  meta.value.page = 1 // reset page
+  loadPlans()
+})
+
 onMounted(() => {
-  store.fetchSdpPlans()
+  loadPlans()
+})
+
+// Master-detail click handler
+async function selectPlan(id: number) {
+  selectedPlanId.value = id
+  try {
+    await store.fetchSdpById(id)
+  } catch (e) {
+    console.error('Failed to load plan details', e)
+  }
+}
+
+// Form Submission Save Handler
+async function handleSavePlan(payload: any) {
+  createLoading.value = true
+  try {
+    const res = await store.createSdp(payload)
+    if (res.status) {
+      openAddModal.value = false
+      await loadPlans()
+      alert('Sales Delivery Plan scheduled successfully!')
+    } else {
+      alert(res.message || 'Failed to schedule plan.')
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.message || 'Error occurred while saving.'
+    alert(`Scheduling Failed: ${msg}`)
+  } finally {
+    createLoading.value = false
+  }
+}
+
+// Deletion Handler
+async function handleDeletePlan(id: number) {
+  if (!confirm('Are you sure you want to delete this delivery plan? This action cannot be undone.')) {
+    return
+  }
+  try {
+    const res = await store.deleteSdp(id)
+    if (res.status) {
+      selectedPlanId.value = null
+      store.detail = null
+      await loadPlans()
+      alert('Plan deleted successfully.')
+    } else {
+      alert(res.message || 'Failed to delete plan.')
+    }
+  } catch (e: any) {
+    alert(`Deletion Failed: ${e.response?.data?.message || e.message}`)
+  }
+}
+
+// Dynamic overlap clash checking for visual indicators cards
+const overlapsCount = computed(() => {
+  // Count plans that have overlaps on date and dock
+  let conflicts = 0
+  const len = plans.value.length
+  for (let i = 0; i < len; i++) {
+    for (let j = i + 1; j < len; j++) {
+      const a = plans.value[i]
+      const b = plans.value[j]
+      if (
+        a.scheduled_date === b.scheduled_date &&
+        a.warehouse_id === b.warehouse_id &&
+        a.dock_id === b.dock_id &&
+        a.time_start < b.time_end &&
+        a.time_end > b.time_start
+      ) {
+        conflicts++
+        break
+      }
+    }
+  }
+  return conflicts
 })
 </script>
 
 <template>
   <div class="flex flex-col h-full bg-slate-900/5 backdrop-blur-sm">
     <!-- Breadcrumbs & Header -->
-    <div class="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-800 space-y-3 shrink-0">
+    <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0 bg-elevated/40">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             Sales Delivery Plan (SDP)
           </h1>
-          <p class="text-sm text-gray-500 mt-1">
+          <p class="text-xs text-muted mt-1">
             Schedule logistics plans, consolidate warehouse destinations, and eliminate loading dock conflicts.
           </p>
         </div>
@@ -37,91 +146,210 @@ onMounted(() => {
           color="primary"
           variant="solid"
           label="New Scheduling Plan"
-          disabled
+          @click="openAddModal = true"
         />
       </div>
     </div>
 
     <!-- Active State & Visual Shell -->
-    <div class="flex-1 p-6 overflow-y-auto space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Metric Card 1 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div class="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-blue-500">
-            <UIcon name="i-lucide-calendar" class="w-6 h-6" />
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Left side: List and Metrics -->
+      <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
+        <!-- Top Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+          <!-- Metric Card 1: Total Plans -->
+          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div class="p-3 bg-primary/10 rounded-xl text-primary shrink-0">
+              <UIcon name="i-lucide-calendar-days" class="w-6 h-6" />
+            </div>
+            <div>
+              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
+                Total Plans
+              </p>
+              <h3 class="text-2xl font-black mt-0.5 text-default">
+                {{ meta.total }}
+              </h3>
+            </div>
           </div>
-          <div>
-            <p class="text-sm text-gray-400 font-medium">
-              Total Plans
-            </p>
-            <h3 class="text-2xl font-bold mt-0.5 text-gray-800 dark:text-gray-100">
-              {{ meta.total }}
-            </h3>
+
+          <!-- Metric Card 2: Pending Schedules -->
+          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div class="p-3 bg-amber-500/10 rounded-xl text-amber-500 shrink-0">
+              <UIcon name="i-lucide-hourglass" class="w-6 h-6 animate-pulse" />
+            </div>
+            <div>
+              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
+                Total Parts
+              </p>
+              <h3 class="text-2xl font-black mt-0.5 text-default">
+                {{ plans.reduce((acc, p) => acc + (p.details?.length || 0), 0) }} Items
+              </h3>
+            </div>
+          </div>
+
+          <!-- Metric Card 3: Dock Slot Conflicts -->
+          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div
+              class="p-3 rounded-xl shrink-0"
+              :class="overlapsCount > 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'"
+            >
+              <UIcon :name="overlapsCount > 0 ? 'i-lucide-shield-alert' : 'i-lucide-shield-check'" class="w-6 h-6" />
+            </div>
+            <div>
+              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
+                Dock Overlaps
+              </p>
+              <h3
+                class="text-2xl font-black mt-0.5"
+                :class="overlapsCount > 0 ? 'text-rose-500 animate-bounce' : 'text-emerald-500'"
+              >
+                {{ overlapsCount > 0 ? `${overlapsCount} Conflicts` : '0 Conflicts' }}
+              </h3>
+            </div>
           </div>
         </div>
 
-        <!-- Metric Card 2 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div class="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-amber-500">
-            <UIcon name="i-lucide-clock" class="w-6 h-6" />
+        <!-- Filter bar -->
+        <div class="bg-elevated rounded-xl p-4 border border-default flex flex-wrap gap-3 items-center justify-between shrink-0">
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Search field -->
+            <UInput
+              v-model="searchQuery"
+              placeholder="Search plan code or destination..."
+              icon="i-lucide-search"
+              class="w-64"
+            />
+            
+            <!-- Date Filters -->
+            <UInput
+              v-model="startDate"
+              type="date"
+              class="w-40"
+              placeholder="Start Date"
+            />
+            <span class="text-xs text-muted font-bold">to</span>
+            <UInput
+              v-model="endDate"
+              type="date"
+              class="w-40"
+              placeholder="End Date"
+            />
           </div>
-          <div>
-            <p class="text-sm text-gray-400 font-medium">
-              Pending Schedules
-            </p>
-            <h3 class="text-2xl font-bold mt-0.5 text-gray-800 dark:text-gray-100">
-              0
-            </h3>
-          </div>
+          
+          <UButton
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-rotate-ccw"
+            label="Reset Filters"
+            @click="searchQuery = ''; startDate = ''; endDate = '';"
+          />
         </div>
 
-        <!-- Metric Card 3 -->
-        <div class="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-100 dark:border-gray-800 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg text-emerald-500">
-            <UIcon name="i-lucide-shield-check" class="w-6 h-6" />
+        <!-- Main Workspace List Section -->
+        <div class="flex-1 min-h-[400px] flex flex-col">
+          <div v-if="loading && plans.length === 0" class="flex-1 flex items-center justify-center p-12 text-center">
+            <UIcon name="i-lucide-loader" class="w-8 h-8 animate-spin text-primary" />
           </div>
-          <div>
-            <p class="text-sm text-gray-400 font-medium">
-              Dock Slot Conflicts
-            </p>
-            <h3 class="text-2xl font-bold mt-0.5 text-emerald-500">
-              0 Overlaps
-            </h3>
+
+          <div v-else-if="plans.length === 0" class="flex-1 bg-elevated border border-default rounded-2xl flex flex-col items-center justify-center p-12 text-center gap-3">
+            <div class="w-16 h-16 bg-default rounded-full flex items-center justify-center text-muted mb-2">
+              <UIcon name="i-lucide-calendar-days" class="w-8 h-8 text-default" />
+            </div>
+            <div>
+              <h3 class="font-bold text-default text-lg">
+                No Schedules Scheduled
+              </h3>
+              <p class="text-xs text-muted mt-1 max-w-sm">
+                Get started by clicking the "New Scheduling Plan" button to arrange loading dock times and deliver pending orders.
+              </p>
+            </div>
+          </div>
+
+          <div v-else class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            <div
+              v-for="plan in plans"
+              :key="plan.id"
+              class="bg-elevated rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden p-5 flex flex-col justify-between h-[180px] hover:shadow-lg relative"
+              :class="selectedPlanId === plan.id
+                ? 'border-primary shadow bg-primary-50/5 dark:bg-primary-950/5'
+                : 'border-default'"
+              @click="selectPlan(plan.id)"
+            >
+              <!-- Active Highlight Side bar Indicator -->
+              <div
+                v-if="selectedPlanId === plan.id"
+                class="absolute left-0 top-0 bottom-0 w-1 bg-primary"
+              />
+
+              <!-- Top Row Info -->
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-primary uppercase tracking-wider">
+                    {{ plan.dp_number }}
+                  </span>
+                  
+                  <div class="flex items-center gap-1.5 text-[10px] text-muted font-bold">
+                    <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500" />
+                    <span>{{ plan.time_start.slice(0, 5) }} – {{ plan.time_end.slice(0, 5) }}</span>
+                  </div>
+                </div>
+
+                <h4 class="text-sm font-black text-default mt-1 leading-relaxed truncate">
+                  {{ plan.destination }}
+                </h4>
+              </div>
+
+              <!-- Mid Info -->
+              <div class="grid grid-cols-2 gap-2 mt-4 text-[10px] text-muted border-t border-default/50 pt-3">
+                <div class="flex items-center gap-1.5 font-medium truncate">
+                  <UIcon name="i-lucide-warehouse" class="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span>Whse: {{ plan.warehouse?.name || '-' }}</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-medium truncate">
+                  <UIcon name="i-lucide-navigation" class="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <span>Dock: {{ plan.dock?.name || '-' }}</span>
+                </div>
+              </div>
+
+              <!-- Bottom Row Info -->
+              <div class="flex items-center justify-between mt-4">
+                <div class="flex items-center gap-1.5">
+                  <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span class="text-[10px] font-bold text-default">
+                    {{ new Date(plan.scheduled_date).toLocaleDateString('id-ID') }}
+                  </span>
+                </div>
+
+                <UBadge
+                  color="primary"
+                  variant="subtle"
+                  size="xs"
+                  class="rounded-full"
+                >
+                  {{ plan.details?.length || 0 }} items planned
+                </UBadge>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Main Workspace Section -->
-      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-          <h2 class="font-semibold text-lg text-gray-800 dark:text-gray-100">
-            Plan Board
-          </h2>
-          <UBadge color="primary" variant="subtle" size="xs">
-            Phase 1 Active Store
-          </UBadge>
-        </div>
-
-        <!-- Empty state with Pinia check -->
-        <div class="flex flex-col items-center justify-center p-12 text-center text-gray-500 gap-4">
-          <div class="relative">
-            <div class="absolute inset-0 bg-indigo-500/10 rounded-full blur-xl" />
-            <UIcon name="i-lucide-calendar-days" class="w-16 h-16 text-indigo-500 relative animate-pulse" />
-          </div>
-          <div>
-            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg">
-              Planning Subsystem Foundation Active
-            </h3>
-            <p class="text-sm text-gray-400 mt-1 max-w-md mx-auto">
-              Axios request service layer and Pinia state management loaded successfully. Ready to build scheduler interface.
-            </p>
-          </div>
-          <div class="flex items-center gap-2 mt-2 px-3 py-1.5 bg-gray-50 dark:bg-gray-950/50 rounded-lg border border-gray-100 dark:border-gray-800 text-xs">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-            <span class="font-mono text-gray-400">Store connected (plans: {{ plans.length }} items, loading: {{ loading }})</span>
-          </div>
-        </div>
+      <!-- Right side: Master-Detail Panel Info -->
+      <div class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
+        <SdpDetailPanel
+          :plan="selectedPlan"
+          :loading="loading"
+          @close="selectedPlanId = null; store.detail = null"
+          @delete="handleDeletePlan"
+        />
       </div>
     </div>
+
+    <!-- Modals -->
+    <SdpAddModal
+      v-model:open="openAddModal"
+      :loading="createLoading"
+      @save="handleSavePlan"
+    />
   </div>
 </template>

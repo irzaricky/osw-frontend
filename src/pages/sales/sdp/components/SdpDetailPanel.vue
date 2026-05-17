@@ -1,0 +1,203 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import type { Sdp } from '../../../../types/sales/sdp'
+
+const props = defineProps<{
+  plan: Sdp | null
+  loading: boolean
+}>()
+
+const emit = defineEmits<{
+  close: []
+  delete: [id: number]
+}>()
+
+const planDetails = computed(() => props.plan?.details || [])
+</script>
+
+<template>
+  <div class="h-full flex flex-col bg-elevated border-l border-default shadow-2xl relative overflow-hidden">
+    <!-- Close trigger button -->
+    <div class="p-4 border-b border-default shrink-0 flex items-center justify-between bg-elevated/40">
+      <div class="flex items-center gap-2">
+        <div class="p-1.5 bg-primary/10 rounded-lg text-primary shrink-0">
+          <UIcon name="i-lucide-scroll" class="w-4 h-4" />
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-default">
+            Plan Details
+          </h3>
+          <p class="text-[10px] text-muted">
+            {{ props.plan?.dp_number || 'Select a plan' }}
+          </p>
+        </div>
+      </div>
+      <UButton
+        color="neutral"
+        variant="ghost"
+        icon="i-lucide-x"
+        size="sm"
+        class="rounded-full"
+        @click="emit('close')"
+      />
+    </div>
+
+    <!-- Active Details View -->
+    <div v-if="props.plan" class="flex-1 overflow-y-auto p-6 space-y-6">
+      <!-- Big DP Number Badge Card -->
+      <div class="p-5 rounded-2xl border border-default bg-elevated/20 relative overflow-hidden flex flex-col justify-center">
+        <!-- Premium Radial Glow -->
+        <div class="absolute -right-20 -bottom-20 w-44 h-44 bg-primary/5 rounded-full blur-2xl" />
+        
+        <span class="text-[10px] font-semibold text-muted uppercase tracking-wider block mb-1">
+          Delivery Plan Code
+        </span>
+        <h2 class="text-2xl font-black text-default tracking-tight">
+          {{ props.plan.dp_number }}
+        </h2>
+        
+        <div class="flex items-center gap-2 mt-4">
+          <UBadge
+            color="success"
+            variant="subtle"
+            class="rounded-full font-bold px-2 py-0.5 text-[10px]"
+          >
+            Validated
+          </UBadge>
+          <span class="text-[10px] text-muted font-medium">
+            Created on {{ new Date(props.plan.created_at).toLocaleDateString('id-ID') }}
+          </span>
+        </div>
+      </div>
+
+      <!-- General Slot Metadata Information -->
+      <div class="space-y-4">
+        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+          Slot Allocations
+        </h4>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Source Warehouse -->
+          <div class="p-4 rounded-xl border border-default bg-elevated/40">
+            <span class="text-[10px] text-muted font-semibold block mb-1">Warehouse</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
+              <UIcon name="i-lucide-warehouse" class="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>{{ props.plan.warehouse?.name || '-' }}</span>
+            </div>
+            <span class="text-[9px] text-muted block mt-0.5">Code: {{ props.plan.warehouse?.code || '-' }}</span>
+          </div>
+
+          <!-- Loading Dock -->
+          <div class="p-4 rounded-xl border border-default bg-elevated/40">
+            <span class="text-[10px] text-muted font-semibold block mb-1">Loading Dock</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
+              <UIcon name="i-lucide-navigation" class="w-3.5 h-3.5 text-secondary shrink-0" />
+              <span>{{ props.plan.dock?.name || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Scheduled Date -->
+          <div class="p-4 rounded-xl border border-default bg-elevated/40">
+            <span class="text-[10px] text-muted font-semibold block mb-1">Scheduled Date</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
+              <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span>{{ new Date(props.plan.scheduled_date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }}</span>
+            </div>
+          </div>
+
+          <!-- Time Slot -->
+          <div class="p-4 rounded-xl border border-default bg-elevated/40">
+            <span class="text-[10px] text-muted font-semibold block mb-1">Time Slot</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
+              <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>{{ props.plan.time_start.slice(0, 5) }} – {{ props.plan.time_end.slice(0, 5) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Destination Address -->
+        <div class="p-4 rounded-xl border border-default bg-elevated/40">
+          <span class="text-[10px] text-muted font-semibold block mb-1">Destination Address</span>
+          <div class="flex items-start gap-1.5 font-bold text-default text-xs mt-1">
+            <UIcon name="i-lucide-map-pin" class="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" />
+            <span class="leading-relaxed">{{ props.plan.destination }}</span>
+          </div>
+        </div>
+
+        <!-- Created By -->
+        <div class="p-4 rounded-xl border border-default bg-elevated/40">
+          <span class="text-[10px] text-muted font-semibold block mb-1">Scheduled By</span>
+          <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
+            <UIcon name="i-lucide-user" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            <span>{{ props.plan.creator?.user_detail?.full_name || props.plan.creator?.email || 'System' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scheduled Parts list table -->
+      <div class="space-y-4">
+        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+          Scheduled Delivery Items
+        </h4>
+        
+        <div class="border border-default rounded-xl overflow-hidden">
+          <div class="divide-y divide-default bg-elevated/20">
+            <div
+              v-for="detail in planDetails"
+              :key="detail.id"
+              class="p-4 hover:bg-elevated/40 transition-colors"
+            >
+              <div class="flex justify-between items-start gap-3">
+                <div class="space-y-1">
+                  <span class="text-[9px] font-bold text-muted bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
+                    SPO: {{ detail.spoDetail?.order?.spo_number || '-' }}
+                  </span>
+                  <h5 class="text-xs font-bold text-default mt-1.5">
+                    {{ detail.spoDetail?.part?.part_name || '-' }}
+                  </h5>
+                  <p class="text-[10px] text-muted">
+                    Part No: {{ detail.spoDetail?.part?.part_number || '-' }}
+                  </p>
+                </div>
+
+                <div class="text-right shrink-0">
+                  <span class="text-[9px] font-semibold text-muted block mb-0.5">Planned Qty</span>
+                  <span class="text-sm font-black text-primary">
+                    {{ detail.planned_qty }} pcs
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Button container -->
+      <div class="pt-6 border-t border-default">
+        <UButton
+          color="error"
+          variant="outline"
+          class="w-full font-bold justify-center"
+          icon="i-lucide-trash"
+          label="Delete Plan"
+          @click="emit('delete', props.plan!.id)"
+        />
+      </div>
+    </div>
+
+    <!-- Empty Selection Screen -->
+    <div v-else class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-elevated/10">
+      <div class="w-12 h-12 bg-default rounded-full flex items-center justify-center text-muted mb-4 opacity-50 shadow-inner">
+        <UIcon name="i-lucide-calendar-days" class="w-6 h-6 text-default" />
+      </div>
+      <h3 class="text-sm font-bold text-default">
+        No Plan Selected
+      </h3>
+      <p class="text-xs text-muted max-w-[240px] mt-1.5 leading-relaxed font-medium">
+        Select a scheduled plan from the left workspace list to view its comprehensive slot configuration and allocated items.
+      </p>
+    </div>
+  </div>
+</template>
