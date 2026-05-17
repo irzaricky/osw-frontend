@@ -12,6 +12,7 @@ const store = useSdpStore()
 const props = defineProps<{
   open: boolean
   loading: boolean
+  presetSpoId?: number | null
 }>()
 
 const emit = defineEmits<{
@@ -43,7 +44,7 @@ const schema = z.object({
 // Reset form on open
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (isOpen) {
       state.scheduled_date = ''
       state.time_start = ''
@@ -55,9 +56,29 @@ watch(
       conflictData.value = null
       
       // Load prerequisites
-      store.fetchDropdownWarehouses()
-      store.fetchDropdownDocks()
-      store.fetchAvailableSpoItems()
+      await store.fetchDropdownWarehouses()
+      await store.fetchDropdownDocks()
+      
+      if (props.presetSpoId) {
+        // Fetch only items for this SPO
+        const res = await store.fetchAvailableSpoItems(props.presetSpoId)
+        if (res.status && Array.isArray(res.data)) {
+          state.selectedSpoItems = res.data.map((item: any) => ({
+            spo_detail_id: item.id,
+            planned_qty: item.remaining_qty,
+            remaining_qty: item.remaining_qty,
+            label: `${item.order?.spo_number} - ${item.part?.part_name}`
+          }))
+          
+          // Pre-populate destination from SPO shipping address
+          if (res.data.length > 0 && res.data[0].order) {
+            state.destination = res.data[0].order.shipping_address || ''
+          }
+        }
+      } else {
+        // Load all available items normally
+        await store.fetchAvailableSpoItems()
+      }
     }
   }
 )

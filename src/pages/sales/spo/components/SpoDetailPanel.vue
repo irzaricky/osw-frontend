@@ -157,6 +157,15 @@ async function saveEdit() {
     savingEdit.value = false
   }
 }
+
+const router = useRouter()
+
+function handleCreateDeliveryPlan() {
+  router.push({
+    path: '/sales/sdp',
+    query: { spo_id: props.spoId }
+  })
+}
 </script>
 
 <template>
@@ -241,6 +250,7 @@ async function saveEdit() {
             variant="subtle"
             size="sm"
             label="Create Delivery Plan"
+            @click="handleCreateDeliveryPlan"
           />
 
           <!-- Supervisor: Lock -->
