@@ -123,6 +123,13 @@ function submit() {
   if (!state.spo_date) { formError.value = 'SPO date is required.'; return }
   if (!state.delivery_due_date) { formError.value = 'Due date is required.'; return }
 
+  const spoDate = new Date(state.spo_date);
+  const dueDate = new Date(state.delivery_due_date);
+  if (dueDate >= spoDate) {
+    formError.value = 'Delivery due date must be before SPO date.';
+    return;
+  }
+
   emit('save', {
     spr_id: state.spr_id,
     customer_id: state.customer_id,

@@ -5,6 +5,7 @@ import type { Spo } from '../../../../types/sales/spo'
 import { useAppToast } from '../../../../composables/useAppToast'
 import { useAuthStore } from '../../../../stores/auth.store'
 import SpoSdoHistoryModal from './SpoSdoHistoryModal.vue'
+import LocationPicker from '../../../../components/LocationPicker.vue'
 
 const props = defineProps<{
   spoId: number
@@ -115,6 +116,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 // ─── Edit Mode (Draft Only) ───────────────────────────────────────────────────
 const isEditOpen = ref(false)
 const savingEdit = ref(false)
+const isMapOpen = ref(false)
 const editForm = ref({
   delivery_due_date: '',
   shipping_address: ''
@@ -129,6 +131,15 @@ function handleEditInfo() {
 }
 
 async function saveEdit() {
+  if (store.detail) {
+    const spoDate = new Date(store.detail.spo_date.substring(0, 10))
+    const dueDate = new Date(editForm.value.delivery_due_date)
+    if (dueDate >= spoDate) {
+      toast.add({ title: 'Error', description: 'Delivery due date must be before SPO date', color: 'error' })
+      return
+    }
+  }
+
   savingEdit.value = true
   try {
     await store.updateSpo(props.spoId, {
@@ -389,7 +400,19 @@ async function saveEdit() {
           </UFormField>
           
           <UFormField label="Shipping Address" required>
-            <UTextarea v-model="editForm.shipping_address" :rows="3" class="w-full" />
+            <div class="space-y-2 w-full">
+              <UTextarea v-model="editForm.shipping_address" :rows="3" class="w-full" />
+              <div class="flex justify-end">
+                <UButton
+                  icon="i-lucide-map"
+                  color="neutral"
+                  variant="subtle"
+                  size="xs"
+                  label="Pilih dari Peta"
+                  @click="isMapOpen = true"
+                />
+              </div>
+            </div>
           </UFormField>
         </div>
       </template>
@@ -401,6 +424,12 @@ async function saveEdit() {
         </div>
       </template>
     </UModal>
+
+    <!-- Location Picker Modal -->
+    <LocationPicker
+      v-model="editForm.shipping_address"
+      v-model:open="isMapOpen"
+    />
 
   </div>
 </template>
