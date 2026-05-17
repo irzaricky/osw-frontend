@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import SdoDetailPanel from './components/SdoDetailPanel.vue'
@@ -40,7 +40,7 @@ const stats = ref({
 async function fetchStats() {
   try {
     // Perform a background prefetch of recent SDOs to calculate dashboard metrics
-    const res = await store.fetchSdos({ limit: 100 })
+    await store.fetchSdos({ limit: 100 })
     let inTransit = 0
     let delivered = 0
     let dispatched = 0
