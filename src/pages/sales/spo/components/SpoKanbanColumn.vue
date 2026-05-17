@@ -61,7 +61,7 @@ function getStatusBulletClass(status: string) {
     Submitted: 'bg-warning-500',
     Locked: 'bg-success-500',
     Processing: 'bg-info-500',
-    Completed: 'bg-primary-500'
+    Completed: 'bg-purple-500'
   }
   return map[status] || 'bg-neutral-500'
 }
@@ -106,16 +106,27 @@ function formatDate(dateStr: string | null | undefined) {
               </UFormField>
               
               <UFormField label="Start Date" size="sm">
-                <UInput type="date" v-model="columnFilter.start_date" />
+                <UInput v-model="columnFilter.start_date" type="date" />
               </UFormField>
               
               <UFormField label="End Date" size="sm">
-                <UInput type="date" v-model="columnFilter.end_date" />
+                <UInput v-model="columnFilter.end_date" type="date" />
               </UFormField>
 
               <div class="flex justify-end gap-2 pt-2 border-t border-default/50">
-                <UButton size="xs" color="neutral" variant="ghost" label="Clear" @click="clearFilter(); isFilterOpen = false" />
-                <UButton size="xs" color="primary" label="Apply" @click="applyFilter(); isFilterOpen = false" />
+                <UButton
+                  size="xs"
+                  color="neutral"
+                  variant="ghost"
+                  label="Clear"
+                  @click="clearFilter(); isFilterOpen = false"
+                />
+                <UButton
+                  size="xs"
+                  color="primary"
+                  label="Apply"
+                  @click="applyFilter(); isFilterOpen = false"
+                />
               </div>
             </div>
           </template>
