@@ -167,6 +167,11 @@ function handleCreateDeliveryPlan() {
     query: { spo_id: props.spoId }
   })
 }
+
+function openMap(address: string) {
+  const url = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
+  window.open(url, '_blank')
+}
 </script>
 
 <template>
@@ -344,8 +349,18 @@ function handleCreateDeliveryPlan() {
             <div class="text-xs text-muted mb-1">
               Shipping Address
             </div>
-            <div class="text-sm">
-              {{ store.detail.shipping_address || '-' }}
+            <div class="text-sm flex justify-between items-start gap-2">
+              <span class="flex-1 leading-relaxed">{{ store.detail.shipping_address || '-' }}</span>
+              <UButton
+                v-if="store.detail.shipping_address"
+                icon="i-lucide-map-pin"
+                size="xs"
+                color="primary"
+                variant="subtle"
+                label="Open Map"
+                class="shrink-0 font-bold"
+                @click="openMap(store.detail.shipping_address)"
+              />
             </div>
           </div>
         </div>

@@ -263,15 +263,15 @@ const hasShortages = computed(() => {
               </div>
             </div>
 
-            <!-- Google Maps routing trigger -->
+            <!-- OpenStreetMap routing trigger -->
             <div v-if="detail?.deliveryPlan?.destination" class="pt-2">
               <UButton
                 color="neutral"
                 variant="subtle"
                 class="w-full text-xs font-bold justify-center"
                 icon="i-lucide-navigation"
-                label="Navigate in Google Maps"
-                :to="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(detail.deliveryPlan.destination)}`"
+                label="Navigate in OpenStreetMap"
+                :to="`https://www.openstreetmap.org/search?query=${encodeURIComponent(detail.deliveryPlan.destination)}`"
                 target="_blank"
               />
             </div>
