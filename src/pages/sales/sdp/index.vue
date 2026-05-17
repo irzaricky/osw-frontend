@@ -178,9 +178,6 @@ async function handleDeletePlan(id: number) {
               <h3 class="font-bold text-default text-lg">
                 No Schedules Scheduled
               </h3>
-              <p class="text-xs text-muted mt-1 max-w-sm">
-                Get started by clicking the "New Scheduling Plan" button to arrange loading dock times and deliver pending orders.
-              </p>
             </div>
           </div>
 

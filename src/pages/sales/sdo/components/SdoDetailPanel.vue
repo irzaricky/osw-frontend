@@ -65,9 +65,6 @@ function simulateDriverView() {
           <h3 class="text-sm font-bold text-default">
             Delivery Order Details
           </h3>
-          <p class="text-[10px] text-muted">
-            Inspect dispatch parameters and POD proof attachments
-          </p>
         </div>
       </div>
       

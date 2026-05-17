@@ -207,9 +207,6 @@ function formatDate(dateStr: string | null | undefined) {
                 <h3 class="font-bold text-default text-lg">
                   No Delivery Orders Found
                 </h3>
-                <p class="text-xs text-muted mt-1 max-w-sm">
-                  There are no delivery orders matching your filter criteria. Update active tabs or global search.
-                </p>
               </div>
             </div>
 

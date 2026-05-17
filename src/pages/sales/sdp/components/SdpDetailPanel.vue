@@ -311,9 +311,6 @@ async function handleDownloadPdf() {
       <h3 class="text-sm font-bold text-default">
         No Plan Selected
       </h3>
-      <p class="text-xs text-muted max-w-[240px] mt-1.5 leading-relaxed font-medium">
-        Select a scheduled plan from the left workspace list to view its comprehensive slot configuration and allocated items.
-      </p>
     </div>
 
     <!-- Execution Modal popup -->
