@@ -18,13 +18,12 @@ const breadcrumbItems = [
 
 // Global filters and selection state
 const searchQuery = ref('')
-const activeTab = ref<'all' | 'Draft' | 'Shipped' | 'Delivered'>('all')
+const activeTab = ref<'all' | 'In Transit' | 'Delivered'>('all')
 const sentinel = ref<HTMLElement | null>(null)
 
 const tabs = [
   { label: 'All SDO', value: 'all' },
-  { label: 'Draft', value: 'Draft' },
-  { label: 'Shipped', value: 'Shipped' },
+  { label: 'In Transit', value: 'In Transit' },
   { label: 'Delivered', value: 'Delivered' }
 ] as const
 
@@ -40,8 +39,7 @@ const podFormDetails = ref<Record<number, number>>({}) // detail_id -> received_
 
 // Stats computation properties
 const stats = ref({
-  draftCount: 0,
-  shippedCount: 0,
+  inTransitCount: 0,
   deliveredCount: 0,
   totalDispatched: 0,
   shortagesCount: 0
@@ -51,15 +49,13 @@ async function fetchStats() {
   try {
     // Perform a background prefetch of recent SDOs to calculate dashboard metrics
     await store.fetchSdos({ limit: 100 })
-    let draft = 0
-    let shipped = 0
+    let inTransit = 0
     let delivered = 0
     let dispatched = 0
     let shortages = 0
 
     sdos.value.forEach(sdo => {
-      if (sdo.delivery_status === 'Draft') draft++
-      if (sdo.delivery_status === 'Shipped') shipped++
+      if (sdo.delivery_status === 'In Transit') inTransit++
       if (sdo.delivery_status === 'Delivered') delivered++
 
       if (sdo.details) {
@@ -74,8 +70,7 @@ async function fetchStats() {
     })
 
     stats.value = {
-      draftCount: draft,
-      shippedCount: shipped,
+      inTransitCount: inTransit,
       deliveredCount: delivered,
       totalDispatched: dispatched,
       shortagesCount: shortages
@@ -102,7 +97,7 @@ async function fetchData(append = false) {
   }
 }
 
-function changeTab(tabVal: 'all' | 'Draft' | 'Shipped' | 'Delivered') {
+function changeTab(tabVal: 'all' | 'In Transit' | 'Delivered') {
   activeTab.value = tabVal
   expandedSdoId.value = null
   store.detail = null
@@ -227,9 +222,7 @@ useIntersectionObserver(
 // Helper methods
 function getStatusColor(status: string) {
   switch (status) {
-    case 'Draft':
-      return 'neutral'
-    case 'Shipped':
+    case 'In Transit':
       return 'warning'
     case 'Delivered':
       return 'success'
@@ -261,14 +254,10 @@ function formatDate(dateStr: string | null | undefined) {
     <!-- Active State & Visual Dashboard Grid -->
     <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
       <!-- Mini dashboard stats widgets -->
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
-          <span class="text-xs text-muted-foreground font-semibold">Draft SDO</span>
-          <span class="text-2xl font-black mt-2 text-default">{{ stats.draftCount }}</span>
-        </div>
-        <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
-          <span class="text-xs text-muted-foreground font-semibold">Shipped SDO</span>
-          <span class="text-2xl font-black mt-2 text-warning">{{ stats.shippedCount }}</span>
+          <span class="text-xs text-muted-foreground font-semibold">In Transit SDO</span>
+          <span class="text-2xl font-black mt-2 text-warning">{{ stats.inTransitCount }}</span>
         </div>
         <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
           <span class="text-xs text-muted-foreground font-semibold">Delivered SDO</span>
@@ -442,8 +431,8 @@ function formatDate(dateStr: string | null | undefined) {
                         </div>
                       </div>
 
-                      <!-- POD Confirm Form if SDO status is Shipped -->
-                      <div v-if="store.detail.delivery_status === 'Shipped'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
+                      <!-- POD Confirm Form if SDO status is In Transit -->
+                      <div v-if="store.detail.delivery_status === 'In Transit'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
                         <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
                           <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
                           Proof Of Delivery (POD) Confirmation

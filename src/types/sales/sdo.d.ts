@@ -20,7 +20,7 @@ export interface Sdo {
   vehicle_id: number
   driver_id: number
   shipment_date: string
-  delivery_status: 'Draft' | 'Shipped' | 'In Transit' | 'Delivered'
+  delivery_status: 'In Transit' | 'Delivered'
   notes: string | null
   proof_of_delivery: string | null
   received_at: string | null
@@ -61,6 +61,11 @@ export interface SdoDropdownVehicle {
   id: number
   license_plate: string
   vehicle_type_id: number
+  vehicle_type?: {
+    id: number
+    name: string
+    load_capacity: number
+  }
 }
 
 export interface SdoDropdownDriver {

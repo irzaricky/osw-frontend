@@ -316,6 +316,7 @@ async function handleDownloadPdf() {
     <!-- Execution Modal popup -->
     <SdpExecuteModal
       v-model:open="isExecutingModalOpen"
+      :plan="props.plan"
       :loading="isExecuting"
       @save="onExecuteSave"
     />

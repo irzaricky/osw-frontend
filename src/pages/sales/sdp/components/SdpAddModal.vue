@@ -20,6 +20,20 @@ const emit = defineEmits<{
   save: [data: any]
 }>()
 
+const timeOptions = [
+  '08:00', '08:30',
+  '09:00', '09:30',
+  '10:00', '10:30',
+  '11:00', '11:30',
+  '12:00', '12:30',
+  '13:00', '13:30',
+  '14:00', '14:30',
+  '15:00', '15:30',
+  '16:00', '16:30',
+  '17:00', '17:30',
+  '18:00'
+]
+
 // State parameters for form
 const state = reactive({
   scheduled_date: '',
@@ -172,6 +186,9 @@ function toggleSpoItem(item: any) {
       remaining_qty: item.remaining_qty,
       label: `${item.order?.spo_number} - ${item.part?.part_name}`
     })
+    if (!state.destination && item.order?.shipping_address) {
+      state.destination = item.order.shipping_address
+    }
   }
 }
 
@@ -250,12 +267,11 @@ function close() {
               >
                 <UButton
                   color="neutral"
-                  variant="subtle"
-                  class="w-full justify-between"
-                  :icon="warehouseMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                  trailing
+                  variant="outline"
+                  class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
                 >
-                  {{ selectedWarehouse?.name || 'Select source warehouse' }}
+                  <span class="truncate">{{ selectedWarehouse?.name || 'Select source warehouse' }}</span>
+                  <UIcon :name="warehouseMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
                 </UButton>
               </USelectMenu>
             </UFormField>
@@ -273,13 +289,12 @@ function close() {
               >
                 <UButton
                   color="neutral"
-                  variant="subtle"
-                  class="w-full justify-between"
-                  :icon="dockMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                  trailing
+                  variant="outline"
+                  class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
                   :disabled="!state.warehouse_id"
                 >
-                  {{ selectedDock?.name || (state.warehouse_id ? 'Select dock slot' : 'Choose a warehouse first') }}
+                  <span class="truncate">{{ selectedDock?.name || (state.warehouse_id ? 'Select dock slot' : 'Choose a warehouse first') }}</span>
+                  <UIcon :name="dockMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
                 </UButton>
               </USelectMenu>
             </UFormField>
@@ -292,10 +307,40 @@ function close() {
             <!-- Start / End Times -->
             <div class="grid grid-cols-2 gap-3">
               <UFormField label="Start Time" name="time_start" required>
-                <UInput v-model="state.time_start" type="time" class="w-full" />
+                <USelectMenu
+                  v-slot="{ open: startMenuOpen }"
+                  v-model="state.time_start"
+                  :items="timeOptions"
+                  class="w-full"
+                  placeholder="08:00"
+                >
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
+                  >
+                    <span class="truncate">{{ state.time_start || 'Select start' }}</span>
+                    <UIcon :name="startMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
+                  </UButton>
+                </USelectMenu>
               </UFormField>
               <UFormField label="End Time" name="time_end" required>
-                <UInput v-model="state.time_end" type="time" class="w-full" />
+                <USelectMenu
+                  v-slot="{ open: endMenuOpen }"
+                  v-model="state.time_end"
+                  :items="timeOptions"
+                  class="w-full"
+                  placeholder="18:00"
+                >
+                  <UButton
+                    color="neutral"
+                    variant="outline"
+                    class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
+                  >
+                    <span class="truncate">{{ state.time_end || 'Select end' }}</span>
+                    <UIcon :name="endMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
+                  </UButton>
+                </USelectMenu>
               </UFormField>
             </div>
 

@@ -72,7 +72,18 @@ watch(
 const isAutomatic = computed(() => props.mode === 'edit' && props.spr?.source === 'Automatic')
 
 // ─── Parts dropdown ─────────────────────────────────────────────────────────
-const partItems = computed(() => store.partsDropdown.map(p => p.part_name))
+function getFilteredPartItems(index: number) {
+  const selectedOtherPartIds = state.details
+    .filter((d, idx) => idx !== index && d.part_id !== undefined)
+    .map(d => d.part_id)
+  return store.partsDropdown
+    .filter(p => !selectedOtherPartIds.includes(p.id))
+    .map(p => p.part_name)
+}
+
+const canAddRow = computed(() => {
+  return state.details.length < store.partsDropdown.length
+})
 
 function getPartLabel(partId: number | undefined) {
   if (!partId) return undefined
@@ -84,7 +95,9 @@ function setPartId(index: number, label: string | undefined) {
 }
 
 function addDetailRow() {
-  state.details.push({ part_id: undefined, qty: 0 })
+  if (canAddRow.value) {
+    state.details.push({ part_id: undefined, qty: 0 })
+  }
 }
 
 function removeDetailRow(index: number) {
@@ -169,6 +182,7 @@ function close() {
               size="xs"
               color="neutral"
               variant="outline"
+              :disabled="!canAddRow"
               @click="addDetailRow"
             />
           </div>
@@ -195,7 +209,7 @@ function close() {
                   <td class="p-2">
                     <USelectMenu
                       :model-value="getPartLabel(row.part_id)"
-                      :items="partItems"
+                      :items="getFilteredPartItems(idx)"
                       placeholder="Select part..."
                       searchable
                       clear
