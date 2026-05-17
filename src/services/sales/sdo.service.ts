@@ -1,0 +1,50 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { api } from '../../plugins/axios'
+
+export interface SdoParams {
+  page?: number
+  limit?: number
+  search?: string
+  delivery_status?: string
+  start_date?: string
+  end_date?: string
+  [key: string]: any
+}
+
+const BASE = '/sales/sdo'
+
+const sdoService = {
+  getSdos(params?: SdoParams) {
+    return api.get(`${BASE}/`, { params })
+  },
+
+  getSdoById(id: number | string) {
+    return api.get(`${BASE}/${id}`)
+  },
+
+  getDropdownVehicles() {
+    return api.get(`${BASE}/dd-vehicles`)
+  },
+
+  getDropdownDrivers() {
+    return api.get(`${BASE}/dd-drivers`)
+  },
+
+  createSdo(data: { delivery_plan_id: number; vehicle_id: number; driver_id: number }) {
+    return api.post(`${BASE}/`, data)
+  },
+
+  updateSdoStatus(id: number | string, data: FormData) {
+    return api.put(`${BASE}/${id}/status`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  downloadSdoPdf(id: number | string) {
+    return api.get(`${BASE}/${id}/pdf`, { responseType: 'blob' })
+  }
+}
+
+export default sdoService

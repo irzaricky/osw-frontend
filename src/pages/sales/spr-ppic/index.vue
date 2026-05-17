@@ -118,14 +118,17 @@ function cellIntensity(partId: number, month: string): string {
 
 <template>
   <div class="flex flex-col h-full overflow-hidden">
-
     <!-- Header -->
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold">SPR PPIC Review</h1>
-          <p class="text-sm text-muted mt-0.5">Jumlah kebutuhan material per varian produk</p>
+          <h1 class="text-2xl font-bold">
+            SPR PPIC Review
+          </h1>
+          <p class="text-sm text-muted mt-0.5">
+            Jumlah kebutuhan material per varian produk
+          </p>
         </div>
 
         <!-- <div class="flex items-center gap-1 shrink-0">
@@ -169,59 +172,84 @@ function cellIntensity(partId: number, month: string): string {
 
     <!-- Body: scrollable -->
     <div class="flex-1 overflow-y-auto p-6 space-y-6">
-
       <!-- Loading skeleton -->
       <div v-if="loading && !ppicAggregation" class="flex justify-center py-20">
         <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-primary" />
       </div>
 
       <template v-else>
-
         <!-- ── Summary Cards ──────────────────────────────────────────────── -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="bg-elevated/60 rounded-2xl border border-default p-4 space-y-1">
-            <div class="text-xs text-muted uppercase tracking-wide">Pending SPR</div>
-            <div class="text-3xl font-bold text-warning-500">{{ pendingCount }}</div>
-            <div class="text-xs text-muted">menunggu persetujuan PPIC</div>
+            <div class="text-xs text-muted uppercase tracking-wide">
+              Pending SPR
+            </div>
+            <div class="text-3xl font-bold text-warning-500">
+              {{ pendingCount }}
+            </div>
+            <div class="text-xs text-muted">
+              menunggu persetujuan PPIC
+            </div>
           </div>
           <div class="bg-elevated/60 rounded-2xl border border-default p-4 space-y-1">
-            <div class="text-xs text-muted uppercase tracking-wide">Varian Produk</div>
-            <div class="text-3xl font-bold text-primary">{{ parts.length }}</div>
-            <div class="text-xs text-muted">part unik dalam periode ini</div>
+            <div class="text-xs text-muted uppercase tracking-wide">
+              Varian Produk
+            </div>
+            <div class="text-3xl font-bold text-primary">
+              {{ parts.length }}
+            </div>
+            <div class="text-xs text-muted">
+              part unik dalam periode ini
+            </div>
           </div>
           <div class="bg-elevated/60 rounded-2xl border border-default p-4 space-y-1">
-            <div class="text-xs text-muted uppercase tracking-wide">Total Qty</div>
-            <div class="text-3xl font-bold text-success-500">{{ gTotal.toLocaleString('id-ID') }}</div>
-            <div class="text-xs text-muted">unit dari semua SPR pending</div>
+            <div class="text-xs text-muted uppercase tracking-wide">
+              Total Qty
+            </div>
+            <div class="text-3xl font-bold text-success-500">
+              {{ gTotal.toLocaleString('id-ID') }}
+            </div>
+            <div class="text-xs text-muted">
+              unit dari semua SPR pending
+            </div>
           </div>
           <div class="bg-elevated/60 rounded-2xl border border-default p-4 space-y-1">
-            <div class="text-xs text-muted uppercase tracking-wide">Bulan Target</div>
-            <div class="text-xl font-bold">{{ fmtMonth(selectedMonth) }}</div>
-            <div class="text-xs text-muted">filter periode aktif</div>
+            <div class="text-xs text-muted uppercase tracking-wide">
+              Bulan Target
+            </div>
+            <div class="text-xl font-bold">
+              {{ fmtMonth(selectedMonth) }}
+            </div>
+            <div class="text-xs text-muted">
+              filter periode aktif
+            </div>
           </div>
         </div>
 
         <!-- Empty state -->
         <div v-if="pendingCount === 0" class="flex flex-col items-center justify-center py-20 gap-4 text-muted">
           <UIcon name="i-lucide-inbox" class="w-14 h-14 opacity-30" />
-          <p class="text-sm">Tidak ada SPR dengan status <strong>Waiting Review PPIC</strong> untuk bulan <strong>{{ fmtMonth(selectedMonth) }}</strong></p>
+          <p class="text-sm">
+            Tidak ada SPR dengan status <strong>Waiting Review PPIC</strong> untuk bulan <strong>{{ fmtMonth(selectedMonth) }}</strong>
+          </p>
         </div>
 
         <template v-else>
-
           <!-- ── Pivot Table ─────────────────────────────────────────────── -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <h2 class="text-base font-semibold">Ringkasan Agregasi per Varian Produk</h2>
+              <h2 class="text-base font-semibold">
+                Ringkasan Agregasi per Varian Produk
+              </h2>
               <div class="flex items-center gap-2 text-xs text-muted">
                 <span class="inline-flex items-center gap-1">
-                  <span class="w-3 h-3 rounded bg-primary/30 inline-block"></span> ≥ 40% kolom
+                  <span class="w-3 h-3 rounded bg-primary/30 inline-block" /> ≥ 40% kolom
                 </span>
                 <span class="inline-flex items-center gap-1">
-                  <span class="w-3 h-3 rounded bg-primary/15 inline-block"></span> 20–40%
+                  <span class="w-3 h-3 rounded bg-primary/15 inline-block" /> 20–40%
                 </span>
                 <span class="inline-flex items-center gap-1">
-                  <span class="w-3 h-3 rounded bg-primary/5 inline-block"></span> &lt; 20%
+                  <span class="w-3 h-3 rounded bg-primary/5 inline-block" /> &lt; 20%
                 </span>
               </div>
             </div>
@@ -253,8 +281,12 @@ function cellIntensity(partId: number, month: string): string {
                   >
                     <!-- Part label (sticky left) -->
                     <td class="p-3 border-r border-default sticky left-0 bg-default z-10">
-                      <div class="font-mono text-xs font-semibold text-primary">{{ part.part_number }}</div>
-                      <div class="text-xs text-muted line-clamp-1 mt-0.5">{{ part.part_name }}</div>
+                      <div class="font-mono text-xs font-semibold text-primary">
+                        {{ part.part_number }}
+                      </div>
+                      <div class="text-xs text-muted line-clamp-1 mt-0.5">
+                        {{ part.part_name }}
+                      </div>
                     </td>
 
                     <!-- Data cells -->
@@ -266,8 +298,12 @@ function cellIntensity(partId: number, month: string): string {
                       @click="openCellDetail(part, m)"
                     >
                       <template v-if="cellData(part.part_id, m)">
-                        <div class="font-mono font-semibold">{{ fmt(cellData(part.part_id, m)!.total_qty) }}</div>
-                        <div class="text-xs text-muted mt-0.5">{{ cellData(part.part_id, m)!.spr_count }} SPR</div>
+                        <div class="font-mono font-semibold">
+                          {{ fmt(cellData(part.part_id, m)!.total_qty) }}
+                        </div>
+                        <div class="text-xs text-muted mt-0.5">
+                          {{ cellData(part.part_id, m)!.spr_count }} SPR
+                        </div>
                       </template>
                       <span v-else class="text-xs opacity-40">—</span>
                     </td>
@@ -328,7 +364,14 @@ function cellIntensity(partId: number, month: string): string {
           <div class="space-y-2">
             <h2 class="text-base font-semibold">
               Daftar SPR Pending
-              <UBadge color="warning" variant="subtle" size="sm" class="ml-2">{{ pendingCount }}</UBadge>
+              <UBadge
+                color="warning"
+                variant="subtle"
+                size="sm"
+                class="ml-2"
+              >
+                {{ pendingCount }}
+              </UBadge>
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               <div
@@ -339,8 +382,12 @@ function cellIntensity(partId: number, month: string): string {
                 <!-- Header -->
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
-                    <p class="text-xs font-mono font-semibold text-primary">{{ spr.spr_number }}</p>
-                    <p class="text-sm font-medium mt-0.5 truncate">{{ spr.spr_name }}</p>
+                    <p class="text-xs font-mono font-semibold text-primary">
+                      {{ spr.spr_number }}
+                    </p>
+                    <p class="text-sm font-medium mt-0.5 truncate">
+                      {{ spr.spr_name }}
+                    </p>
                   </div>
                   <UBadge
                     :color="spr.source === 'Automatic' ? 'info' : 'neutral'"
@@ -355,22 +402,33 @@ function cellIntensity(partId: number, month: string): string {
                 <!-- Meta -->
                 <div class="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <div class="text-muted">Required Date</div>
-                    <div class="font-medium text-warning-600 dark:text-warning-400">{{ formatDate(spr.required_date) }}</div>
+                    <div class="text-muted">
+                      Required Date
+                    </div>
+                    <div class="font-medium text-warning-600 dark:text-warning-400">
+                      {{ formatDate(spr.required_date) }}
+                    </div>
                   </div>
                   <div>
-                    <div class="text-muted">Total Qty</div>
-                    <div class="font-bold font-mono text-success-600 dark:text-success-400">{{ spr.total_qty.toLocaleString('id-ID') }}</div>
+                    <div class="text-muted">
+                      Total Qty
+                    </div>
+                    <div class="font-bold font-mono text-success-600 dark:text-success-400">
+                      {{ spr.total_qty.toLocaleString('id-ID') }}
+                    </div>
                   </div>
                   <div>
-                    <div class="text-muted">Varian</div>
-                    <div class="font-medium">{{ spr.part_count }} part</div>
+                    <div class="text-muted">
+                      Varian
+                    </div>
+                    <div class="font-medium">
+                      {{ spr.part_count }} part
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
         </template>
       </template>
     </div>
@@ -390,8 +448,12 @@ function cellIntensity(partId: number, month: string): string {
             class="flex items-center justify-between p-3 rounded-lg border border-default bg-elevated/40 hover:bg-elevated/70 transition-colors"
           >
             <div>
-              <p class="text-xs font-mono font-semibold text-primary">{{ spr.spr_number }}</p>
-              <p class="text-sm mt-0.5">{{ spr.spr_name }}</p>
+              <p class="text-xs font-mono font-semibold text-primary">
+                {{ spr.spr_number }}
+              </p>
+              <p class="text-sm mt-0.5">
+                {{ spr.spr_name }}
+              </p>
               <p class="text-xs text-muted mt-0.5">
                 <UIcon name="i-lucide-calendar" class="w-3 h-3 inline" />
                 {{ formatDate(spr.required_date) }}
@@ -401,7 +463,9 @@ function cellIntensity(partId: number, month: string): string {
               <div class="text-lg font-bold font-mono text-success-600 dark:text-success-400">
                 {{ spr.qty.toLocaleString('id-ID') }}
               </div>
-              <div class="text-xs text-muted">unit</div>
+              <div class="text-xs text-muted">
+                unit
+              </div>
             </div>
           </div>
 
@@ -416,7 +480,12 @@ function cellIntensity(partId: number, month: string): string {
       </template>
       <template #footer>
         <div class="flex justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Tutup" @click="cellDetail = null" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Tutup"
+            @click="cellDetail = null"
+          />
         </div>
       </template>
     </UModal>
@@ -456,7 +525,12 @@ function cellIntensity(partId: number, month: string): string {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Batal" @click="confirmApprove.open = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Batal"
+            @click="confirmApprove.open = false"
+          />
           <UButton
             color="success"
             label="Ya, Setujui Semua"
@@ -467,6 +541,5 @@ function cellIntensity(partId: number, month: string): string {
         </div>
       </template>
     </UModal>
-
   </div>
 </template>

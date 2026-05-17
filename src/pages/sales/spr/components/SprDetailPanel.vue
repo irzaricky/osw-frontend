@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch } from 'vue'
 import { useSprStore } from '../../../../stores/sales/spr.store'
 import type { Spr } from '../../../../types/sales/spr'
@@ -210,7 +211,6 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 
 <template>
   <div class="flex flex-col h-full overflow-hidden">
-
     <!-- Detail Header -->
     <div class="px-6 py-4 border-b border-default shrink-0">
       <!-- Loading -->
@@ -223,12 +223,21 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
         <!-- Row 1: Title + Status -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="min-w-0 flex-1">
-            <h2 class="text-lg font-bold truncate">{{ store.detail.spr_number }}</h2>
-            <p class="text-sm text-muted truncate">{{ store.detail.spr_name }}</p>
+            <h2 class="text-lg font-bold truncate">
+              {{ store.detail.spr_number }}
+            </h2>
+            <p class="text-sm text-muted truncate">
+              {{ store.detail.spr_name }}
+            </p>
           </div>
 
           <!-- Source badge -->
-          <UBadge :color="getSourceColor(store.detail.source)" variant="subtle" size="sm" class="shrink-0">
+          <UBadge
+            :color="getSourceColor(store.detail.source)"
+            variant="subtle"
+            size="sm"
+            class="shrink-0"
+          >
             <UIcon :name="getSourceIcon(store.detail.source)" class="w-3 h-3 mr-1" />
             {{ store.detail.source }}
           </UBadge>
@@ -330,7 +339,6 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
       </div>
 
       <template v-else-if="store.detail">
-
         <!-- Approval Timeline -->
         <div class="flex items-start gap-0 overflow-x-auto pb-1">
           <!-- Step 0: Draft -->
@@ -342,7 +350,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="getStepState(0) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>1</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(0) === 'current' ? 'text-primary' : 'text-muted'">Draft</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(0) === 'current' ? 'text-primary' : 'text-muted'">
+              Draft
+            </p>
           </div>
 
           <!-- Connector -->
@@ -357,7 +367,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="getStepState(1) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>2</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(1) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">Submitted</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(1) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
+              Submitted
+            </p>
           </div>
 
           <!-- Connector -->
@@ -372,7 +384,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="getStepState(2) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>3</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">Waiting Review<br>Sales</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
+              Waiting Review<br>Sales
+            </p>
           </div>
 
           <!-- Connector -->
@@ -387,7 +401,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="getStepState(3) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>4</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(3) === 'current' ? 'text-info-600 dark:text-info-400' : 'text-muted'">Waiting Review<br>PPIC</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(3) === 'current' ? 'text-info-600 dark:text-info-400' : 'text-muted'">
+              Waiting Review<br>PPIC
+            </p>
           </div>
 
           <!-- Connector -->
@@ -402,7 +418,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <UIcon v-if="store.detail.status === 'Approved'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>5</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="store.detail.status === 'Approved' ? 'text-success-600 dark:text-success-400' : 'text-muted'">Approved</p>
+            <p class="text-xs text-center mt-2 font-medium" :class="store.detail.status === 'Approved' ? 'text-success-600 dark:text-success-400' : 'text-muted'">
+              Approved
+            </p>
           </div>
         </div>
 
@@ -413,44 +431,66 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
         >
           <div class="flex items-center gap-3">
             <UIcon name="i-lucide-alert-octagon" class="w-5 h-5 shrink-0" />
-            <p class="text-sm font-bold uppercase tracking-wide">SPR Rejected</p>
+            <p class="text-sm font-bold uppercase tracking-wide">
+              SPR Rejected
+            </p>
           </div>
-          <p v-if="store.detail.remarks" class="text-sm ml-8 opacity-90 italic">"{{ store.detail.remarks }}"</p>
+          <p v-if="store.detail.remarks" class="text-sm ml-8 opacity-90 italic">
+            "{{ store.detail.remarks }}"
+          </p>
         </div>
 
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Request Date</div>
-            <div class="text-sm font-semibold">{{ formatDate(store.detail.request_date) }}</div>
+            <div class="text-xs text-muted mb-1">
+              Request Date
+            </div>
+            <div class="text-sm font-semibold">
+              {{ formatDate(store.detail.request_date) }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Required Date</div>
+            <div class="text-xs text-muted mb-1">
+              Required Date
+            </div>
             <div class="text-sm font-semibold text-warning-600 dark:text-warning-400">
               {{ formatDate(store.detail.required_date) }}
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Created By</div>
-            <div class="text-sm font-semibold">{{ store.detail.creator?.user_detail?.full_name || store.detail.creator?.email || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Created By
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.creator?.user_detail?.full_name || store.detail.creator?.email || '-' }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Source Forecast</div>
-            <div class="text-sm font-semibold">{{ store.detail.forecast?.forecast_number || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Source Forecast
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.forecast?.forecast_number || '-' }}
+            </div>
           </div>
         </div>
 
         <!-- Approver Info Row -->
         <div v-if="store.detail.sales_order_approver || store.detail.ppic_approver" class="grid grid-cols-2 gap-3">
           <div v-if="store.detail.sales_order_approver" class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Sales Approver</div>
+            <div class="text-xs text-muted mb-1">
+              Sales Approver
+            </div>
             <div class="text-sm font-semibold flex items-center gap-1.5">
               <UIcon name="i-lucide-user-check" class="w-3.5 h-3.5 text-success-500" />
               {{ store.detail.sales_order_approver?.user_detail?.full_name || store.detail.sales_order_approver?.email }}
             </div>
           </div>
           <div v-if="store.detail.ppic_approver" class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">PPIC Approver</div>
+            <div class="text-xs text-muted mb-1">
+              PPIC Approver
+            </div>
             <div class="text-sm font-semibold flex items-center gap-1.5">
               <UIcon name="i-lucide-clipboard-check" class="w-3.5 h-3.5 text-success-500" />
               {{ store.detail.ppic_approver?.user_detail?.full_name || store.detail.ppic_approver?.email }}
@@ -469,10 +509,18 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <table class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
               <tr>
-                <th class="p-3 font-medium border-r border-default w-10 text-center">#</th>
-                <th class="p-3 font-medium border-r border-default">Part Number</th>
-                <th class="p-3 font-medium border-r border-default">Part Name</th>
-                <th class="p-3 font-medium text-center w-32">Qty</th>
+                <th class="p-3 font-medium border-r border-default w-10 text-center">
+                  #
+                </th>
+                <th class="p-3 font-medium border-r border-default">
+                  Part Number
+                </th>
+                <th class="p-3 font-medium border-r border-default">
+                  Part Name
+                </th>
+                <th class="p-3 font-medium text-center w-32">
+                  Qty
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -487,15 +535,25 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
                 :key="detail.id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20 transition-colors"
               >
-                <td class="p-3 border-r border-default text-center text-muted text-xs">{{ idx + 1 }}</td>
-                <td class="p-3 border-r border-default font-mono text-xs font-medium">{{ detail.part?.part_number || '-' }}</td>
-                <td class="p-3 border-r border-default text-sm">{{ detail.part?.part_name || '-' }}</td>
-                <td class="p-3 text-center font-semibold font-mono">{{ detail.qty.toLocaleString() }}</td>
+                <td class="p-3 border-r border-default text-center text-muted text-xs">
+                  {{ idx + 1 }}
+                </td>
+                <td class="p-3 border-r border-default font-mono text-xs font-medium">
+                  {{ detail.part?.part_number || '-' }}
+                </td>
+                <td class="p-3 border-r border-default text-sm">
+                  {{ detail.part?.part_name || '-' }}
+                </td>
+                <td class="p-3 text-center font-semibold font-mono">
+                  {{ detail.qty.toLocaleString() }}
+                </td>
               </tr>
             </tbody>
             <tfoot v-if="store.detail.details && store.detail.details.length > 0" class="bg-elevated/30">
               <tr class="border-t border-default">
-                <td colspan="3" class="p-3 text-right text-sm font-bold text-muted">Total</td>
+                <td colspan="3" class="p-3 text-right text-sm font-bold text-muted">
+                  Total
+                </td>
                 <td class="p-3 text-center font-bold font-mono text-primary">
                   {{ store.detail.details.reduce((sum, d) => sum + d.qty, 0).toLocaleString() }}
                 </td>
@@ -503,7 +561,6 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             </tfoot>
           </table>
         </div>
-
       </template>
     </div>
 
@@ -534,7 +591,12 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isReviewOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isReviewOpen = false"
+          />
           <UButton
             :color="reviewForm.status === 'Approved' ? 'success' : 'error'"
             :label="reviewForm.status === 'Approved' ? 'Approve' : 'Reject'"
@@ -547,7 +609,12 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 
 
     <!-- ── Logs Modal ───────────────────────────────────────────────────────── -->
-    <UModal v-model:open="isLogsOpen" title="SPR Logs" description="Historical changes of this SPR" class="sm:max-w-3xl">
+    <UModal
+      v-model:open="isLogsOpen"
+      title="SPR Logs"
+      description="Historical changes of this SPR"
+      class="sm:max-w-3xl"
+    >
       <template #body>
         <div class="max-h-[60vh] overflow-y-auto pr-2">
           <div v-if="store.logs.length === 0" class="text-center py-8 text-muted">
@@ -597,10 +664,14 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
       </template>
       <template #footer>
         <div class="flex justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Close" @click="isLogsOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Close"
+            @click="isLogsOpen = false"
+          />
         </div>
       </template>
     </UModal>
-
   </div>
 </template>

@@ -11,6 +11,7 @@ export interface SpoDetail {
     part_number: string
     part_name: string
   }
+  order?: Spo
 }
 
 export interface Spo {
@@ -79,6 +80,8 @@ export interface SprDropdownItem {
   source: 'Automatic' | 'Manual'
   forecast_id: number | null
   forecast?: { customer_id: number } | null
+  request_date?: string
+  required_date?: string
   details?: {
     part_id: number
     qty: number

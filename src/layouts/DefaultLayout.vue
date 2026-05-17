@@ -180,6 +180,22 @@ const links = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Sales Delivery Plan',
+      icon: 'i-lucide-calendar-days',
+      to: '/sales/sdp',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Sales Delivery Order',
+      icon: 'i-lucide-truck',
+      to: '/sales/sdo',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, {

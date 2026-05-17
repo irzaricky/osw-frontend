@@ -179,7 +179,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <!-- Customer -->
         <UFormField label="Customer" name="customer_id" required>
           <USelectMenu
@@ -193,7 +199,12 @@ function close() {
         </UFormField>
 
         <!-- Forecast Type (Add Mode Only) -->
-        <UFormField v-if="mode === 'add'" label="Forecast Type" name="forecast_type" required>
+        <UFormField
+          v-if="mode === 'add'"
+          label="Forecast Type"
+          name="forecast_type"
+          required
+        >
           <USelectMenu
             v-model="selectedType"
             :items="forecastTypeItems"
@@ -218,7 +229,9 @@ function close() {
           >
             <UIcon name="i-lucide-calendar-check" class="w-4 h-4 text-primary mt-0.5 shrink-0" />
             <div class="text-sm">
-              <p class="font-medium text-primary-700 dark:text-primary-300">Auto-calculated Period</p>
+              <p class="font-medium text-primary-700 dark:text-primary-300">
+                Auto-calculated Period
+              </p>
               <p class="text-primary-600 dark:text-primary-400 mt-0.5">
                 {{ periodPreview.start }} — {{ periodPreview.end }}
                 <span class="ml-1 opacity-70">({{ periodPreview.label }})</span>
@@ -230,11 +243,17 @@ function close() {
         <!-- Forecast info (Edit Mode Only — read-only) -->
         <div v-if="mode === 'edit' && (state.forecast_type || state.start_period)" class="grid grid-cols-2 gap-3">
           <div class="bg-elevated/50 rounded-lg border border-default p-3">
-            <div class="text-xs text-muted mb-1">Forecast Type</div>
-            <div class="text-sm font-semibold">{{ state.forecast_type || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Forecast Type
+            </div>
+            <div class="text-sm font-semibold">
+              {{ state.forecast_type || '-' }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-lg border border-default p-3">
-            <div class="text-xs text-muted mb-1">Period</div>
+            <div class="text-xs text-muted mb-1">
+              Period
+            </div>
             <div class="text-sm font-semibold">
               {{ state.start_period || '-' }} → {{ state.end_period || '-' }}
             </div>
@@ -250,8 +269,18 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>

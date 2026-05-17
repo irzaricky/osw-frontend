@@ -488,10 +488,15 @@ onMounted(() => {
         <!-- Row 1: Title, Status, Fill Indicator -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="min-w-0">
-            <h2 class="text-lg font-bold truncate">{{ store.detail.forecast_number }}</h2>
-            <p class="text-sm text-muted">{{ store.detail.customer?.name }}</p>
+            <h2 class="text-lg font-bold truncate">
+              {{ store.detail.forecast_number }}
+            </h2>
+            <p class="text-sm text-muted">
+              {{ store.detail.customer?.name }}
+            </p>
           </div>
-          <div class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm"
+          <div
+            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm"
             :class="{
               'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
               'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
@@ -550,8 +555,8 @@ onMounted(() => {
             variant="ghost"
             size="sm"
             label="Edit"
-            @click="forecastSummary && emit('edit', forecastSummary)"
             :disabled="!isEditable"
+            @click="forecastSummary && emit('edit', forecastSummary)"
           />
           <UButton
             icon="i-lucide-trash-2"
@@ -559,8 +564,8 @@ onMounted(() => {
             variant="ghost"
             size="sm"
             label="Delete"
-            @click="emit('delete', forecastId)"
             :disabled="store.detail?.status !== 'Draft'"
+            @click="emit('delete', forecastId)"
           />
 
           <div class="flex-1" />
@@ -608,29 +613,47 @@ onMounted(() => {
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Forecast Type</div>
-            <div class="text-sm font-semibold">{{ store.detail.forecast_type }}</div>
+            <div class="text-xs text-muted mb-1">
+              Forecast Type
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.forecast_type }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Period</div>
+            <div class="text-xs text-muted mb-1">
+              Period
+            </div>
             <div class="text-sm font-semibold">
               {{ formatPeriodDate(store.detail.start_period) }} — {{ formatPeriodDate(store.detail.end_period) }}
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Created By</div>
-            <div class="text-sm font-semibold">{{ store.detail.staff?.user_detail?.full_name || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Created By
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.staff?.user_detail?.full_name || '-' }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Version</div>
-            <div class="text-sm font-semibold">{{ store.detail.version || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Version
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.version || '-' }}
+            </div>
           </div>
         </div>
 
         <!-- Description Card -->
         <div v-if="store.detail.description" class="bg-elevated/50 rounded-xl border border-default p-4">
-          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">Description</div>
-          <div class="text-sm text-highlighted whitespace-pre-wrap leading-relaxed">{{ store.detail.description }}</div>
+          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">
+            Description
+          </div>
+          <div class="text-sm text-highlighted whitespace-pre-wrap leading-relaxed">
+            {{ store.detail.description }}
+          </div>
         </div>
 
         <!-- Rejected info box -->
@@ -640,10 +663,14 @@ onMounted(() => {
         >
           <div class="flex items-center gap-3">
             <UIcon name="i-lucide-alert-octagon" class="w-5 h-5 shrink-0" />
-            <p class="text-sm font-bold uppercase tracking-wide">Forecast Rejected</p>
+            <p class="text-sm font-bold uppercase tracking-wide">
+              Forecast Rejected
+            </p>
           </div>
           <div class="text-sm ml-8 space-y-2">
-            <p v-if="latestRejectionRemarks" class="font-medium italic">"{{ latestRejectionRemarks }}"</p>
+            <p v-if="latestRejectionRemarks" class="font-medium italic">
+              "{{ latestRejectionRemarks }}"
+            </p>
             <p class="opacity-90">
               Please modify the quantities or details as requested before you resubmit it for review.
             </p>
@@ -680,8 +707,8 @@ onMounted(() => {
             color="neutral"
             variant="outline"
             icon="i-lucide-plus"
-            @click="addNewPart"
             :disabled="selectedNewParts.length === 0 || !isEditable"
+            @click="addNewPart"
           />
         </div>
 
@@ -692,7 +719,9 @@ onMounted(() => {
           <table v-if="is4Month" class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
               <tr>
-                <th class="p-3 font-medium border-r border-default min-w-[200px] sticky left-0 bg-elevated/80 backdrop-blur z-10">Part</th>
+                <th class="p-3 font-medium border-r border-default min-w-[200px] sticky left-0 bg-elevated/80 backdrop-blur z-10">
+                  Part
+                </th>
                 <th
                   v-for="period in periods"
                   :key="period.date"
@@ -704,11 +733,20 @@ onMounted(() => {
                 >
                   <div class="flex flex-col items-center gap-0.5">
                     <span>{{ period.label }}</span>
-                    <UBadge v-if="period.isCurrent" color="primary" variant="subtle" size="xs">Current</UBadge>
+                    <UBadge
+                      v-if="period.isCurrent"
+                      color="primary"
+                      variant="subtle"
+                      size="xs"
+                    >
+                      Current
+                    </UBadge>
                     <span v-else-if="period.isPast" class="text-xs font-normal opacity-60">Past</span>
                   </div>
                 </th>
-                <th class="p-3 font-medium w-14 text-center">Action</th>
+                <th class="p-3 font-medium w-14 text-center">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -723,8 +761,12 @@ onMounted(() => {
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
                 <td class="p-3 border-r border-default sticky left-0 bg-default z-10">
-                  <div class="font-medium">{{ part.part_number }}</div>
-                  <div class="text-xs text-muted line-clamp-1">{{ part.part_name }}</div>
+                  <div class="font-medium">
+                    {{ part.part_number }}
+                  </div>
+                  <div class="text-xs text-muted line-clamp-1">
+                    {{ part.part_name }}
+                  </div>
                 </td>
                 <td
                   v-for="period in periods"
@@ -737,18 +779,18 @@ onMounted(() => {
                 >
                   <div v-if="dataEntry[part.id]" class="flex flex-col gap-1.5">
                     {{ (() => {
-                        if (!dataEntry[part.id][period.date]) {
-                          dataEntry[part.id][period.date] = {
-                            forecast_qty: 0,
-                            qty_status: getAutoQtyStatus(period.date),
-                            isNew: true
-                          }
+                      if (!dataEntry[part.id][period.date]) {
+                        dataEntry[part.id][period.date] = {
+                          forecast_qty: 0,
+                          qty_status: getAutoQtyStatus(period.date),
+                          isNew: true
                         }
-                        return ''
+                      }
+                      return ''
                     })() }}
                     <UInput
-                      type="number"
                       v-model.number="dataEntry[part.id][period.date].forecast_qty"
+                      type="number"
                       size="sm"
                       placeholder="Qty"
                       min="0"
@@ -767,7 +809,14 @@ onMounted(() => {
                   </div>
                 </td>
                 <td class="p-3 text-center">
-                  <UButton icon="i-lucide-trash" color="error" variant="ghost" size="sm" @click="removePart(part.id)" :disabled="!isEditable" />
+                  <UButton
+                    icon="i-lucide-trash"
+                    color="error"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="!isEditable"
+                    @click="removePart(part.id)"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -777,10 +826,18 @@ onMounted(() => {
           <table v-else class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
               <tr>
-                <th class="p-3 font-medium border-r border-default min-w-[200px]">Part</th>
-                <th class="p-3 font-medium border-r border-default w-40 text-center">Forecast Qty</th>
-                <th class="p-3 font-medium border-r border-default w-32 text-center">Status</th>
-                <th class="p-3 font-medium w-14 text-center">Action</th>
+                <th class="p-3 font-medium border-r border-default min-w-[200px]">
+                  Part
+                </th>
+                <th class="p-3 font-medium border-r border-default w-40 text-center">
+                  Forecast Qty
+                </th>
+                <th class="p-3 font-medium border-r border-default w-32 text-center">
+                  Status
+                </th>
+                <th class="p-3 font-medium w-14 text-center">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -795,8 +852,12 @@ onMounted(() => {
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
                 <td class="p-3 border-r border-default">
-                  <div class="font-medium">{{ part.part_number }}</div>
-                  <div class="text-xs text-muted line-clamp-1">{{ part.part_name }}</div>
+                  <div class="font-medium">
+                    {{ part.part_number }}
+                  </div>
+                  <div class="text-xs text-muted line-clamp-1">
+                    {{ part.part_name }}
+                  </div>
                 </td>
                 <td
                   class="p-2 border-r border-default text-center"
@@ -805,19 +866,19 @@ onMounted(() => {
                   <!-- For Yearly/Half-Year, use the first period as representative key -->
                   <div v-if="dataEntry[part.id] && periods.length > 0">
                     {{ (() => {
-                        const key = periods[0].date
-                        if (!dataEntry[part.id][key]) {
-                          dataEntry[part.id][key] = {
-                            forecast_qty: 0,
-                            qty_status: getAutoQtyStatus(key),
-                            isNew: true
-                          }
+                      const key = periods[0].date
+                      if (!dataEntry[part.id][key]) {
+                        dataEntry[part.id][key] = {
+                          forecast_qty: 0,
+                          qty_status: getAutoQtyStatus(key),
+                          isNew: true
                         }
-                        return ''
+                      }
+                      return ''
                     })() }}
                     <UInput
-                      type="number"
                       v-model.number="dataEntry[part.id][periods[0].date].forecast_qty"
+                      type="number"
                       size="sm"
                       placeholder="Qty"
                       min="0"
@@ -838,7 +899,14 @@ onMounted(() => {
                   </div>
                 </td>
                 <td class="p-3 text-center">
-                  <UButton icon="i-lucide-trash" color="error" variant="ghost" size="sm" @click="removePart(part.id)" :disabled="!isEditable" />
+                  <UButton
+                    icon="i-lucide-trash"
+                    color="error"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="!isEditable"
+                    @click="removePart(part.id)"
+                  />
                 </td>
               </tr>
             </tbody>
@@ -860,12 +928,17 @@ onMounted(() => {
             accept=".xlsx,.xls"
             class="w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-primary file:text-white hover:file:bg-primary/80 cursor-pointer"
             @change="(e: any) => uploadFile = e.target.files?.[0] || null"
-          />
+          >
         </div>
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isUploadOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isUploadOpen = false"
+          />
           <UButton
             color="primary"
             label="Upload"
@@ -901,7 +974,12 @@ onMounted(() => {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isReviewOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isReviewOpen = false"
+          />
           <UButton
             color="primary"
             label="Submit Review"
@@ -913,7 +991,12 @@ onMounted(() => {
     </UModal>
 
     <!-- Logs Modal -->
-    <UModal v-model:open="isLogsOpen" title="Forecast Logs" description="Historical changes of this forecast" class="sm:max-w-3xl">
+    <UModal
+      v-model:open="isLogsOpen"
+      title="Forecast Logs"
+      description="Historical changes of this forecast"
+      class="sm:max-w-3xl"
+    >
       <template #body>
         <div class="max-h-[60vh] overflow-y-auto pr-2">
           <div v-if="store.logs.length === 0" class="text-center py-8 text-muted">
@@ -967,7 +1050,12 @@ onMounted(() => {
       </template>
       <template #footer>
         <div class="flex justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Close" @click="isLogsOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Close"
+            @click="isLogsOpen = false"
+          />
         </div>
       </template>
     </UModal>

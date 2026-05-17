@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch, onMounted } from 'vue'
 import { useSpoStore } from '../../../stores/sales/spo.store'
 import type { Spo } from '../../../types/sales/spo'
@@ -115,18 +116,19 @@ onMounted(() => {
 
 <template>
   <div class="flex flex-col h-full bg-default/40">
-
     <!-- Header -->
     <div class="px-6 pt-6 pb-4 bg-default border-b border-default space-y-4 shrink-0 shadow-sm z-10">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center">
         <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold tracking-tight">Sales Purchase Order</h1>
+          <h1 class="text-2xl font-bold tracking-tight">
+            Sales Purchase Order
+          </h1>
         </div>
         <div class="flex items-center gap-2">
           <!-- Filters integrated in header -->
           <div class="flex items-center gap-2 mr-4">
-             <UInput
+            <UInput
               v-model="searchFilter"
               icon="i-lucide-search"
               placeholder="Search..."
@@ -168,7 +170,6 @@ onMounted(() => {
     >
       <template #body>
         <div class="flex flex-col h-[70vh] bg-default overflow-hidden relative">
-
           <SpoDetailPanel
             v-if="selectedSpoId"
             :spo-id="selectedSpoId"
@@ -196,6 +197,5 @@ onMounted(() => {
       :loading="loading"
       @confirm="handleConfirm"
     />
-
   </div>
 </template>

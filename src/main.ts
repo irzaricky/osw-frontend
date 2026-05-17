@@ -74,6 +74,21 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/sales/sdp', 
+      component: () => import('./pages/sales/sdp/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/sales/sdo', 
+      component: () => import('./pages/sales/sdo/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/sales/sdo/mobile/:id', 
+      component: () => import('./pages/sales/sdo/mobile.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/production-plan', 
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }

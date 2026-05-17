@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch, ref, computed } from 'vue'
 import * as z from 'zod'
+import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useSprStore } from '../../../../stores/sales/spr.store'
 import type { Spr } from '../../../../types/sales/spr'
@@ -71,8 +72,37 @@ watch(
 
 const isAutomatic = computed(() => props.mode === 'edit' && props.spr?.source === 'Automatic')
 
+const dateModel = computed({
+  get() {
+    if (!state.required_date) return null
+    const [y, m, d] = state.required_date.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      state.required_date = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    state.required_date = `${yyyy}-${mm}-${dd}`
+  }
+})
+
 // ─── Parts dropdown ─────────────────────────────────────────────────────────
-const partItems = computed(() => store.partsDropdown.map(p => p.part_name))
+function getFilteredPartItems(index: number) {
+  const selectedOtherPartIds = state.details
+    .filter((d, idx) => idx !== index && d.part_id !== undefined)
+    .map(d => d.part_id)
+  return store.partsDropdown
+    .filter(p => !selectedOtherPartIds.includes(p.id))
+    .map(p => p.part_name)
+}
+
+const canAddRow = computed(() => {
+  return state.details.length < store.partsDropdown.length
+})
 
 function getPartLabel(partId: number | undefined) {
   if (!partId) return undefined
@@ -84,7 +114,9 @@ function setPartId(index: number, label: string | undefined) {
 }
 
 function addDetailRow() {
-  state.details.push({ part_id: undefined, qty: 0 })
+  if (canAddRow.value) {
+    state.details.push({ part_id: undefined, qty: 0 })
+  }
 }
 
 function removeDetailRow(index: number) {
@@ -124,7 +156,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- SPR Name -->
           <UFormField label="SPR Name" name="spr_name" required>
@@ -133,13 +171,31 @@ function close() {
 
           <!-- Required Date -->
           <UFormField label="Required Date" name="required_date" required>
-            <UInput v-model="state.required_date" type="date" class="w-full" :disabled="isAutomatic" />
+            <UInputDate v-model="dateModel" :disabled="isAutomatic">
+              <template #trailing>
+                <UPopover>
+                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" :disabled="isAutomatic" />
+                  <template #content>
+                    <UCalendar
+                      v-model="dateModel"
+                      class="p-2"
+                    />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
           </UFormField>
         </div>
 
         <!-- Description -->
         <UFormField label="Description" name="description">
-          <UTextarea v-model="state.description" placeholder="Additional notes..." class="w-full" rows="2" :disabled="isAutomatic" />
+          <UTextarea
+            v-model="state.description"
+            placeholder="Additional notes..."
+            class="w-full"
+            rows="2"
+            :disabled="isAutomatic"
+          />
         </UFormField>
 
         <!-- Part Details -->
@@ -152,6 +208,7 @@ function close() {
               size="xs"
               color="neutral"
               variant="outline"
+              :disabled="!canAddRow"
               @click="addDetailRow"
             />
           </div>
@@ -160,9 +217,13 @@ function close() {
             <table class="w-full text-sm">
               <thead class="bg-elevated/50">
                 <tr>
-                  <th class="p-2.5 text-left font-medium border-b border-default">Part</th>
-                  <th class="p-2.5 text-center font-medium border-b border-default w-32">Qty</th>
-                  <th class="p-2.5 text-center font-medium border-b border-default w-12"></th>
+                  <th class="p-2.5 text-left font-medium border-b border-default">
+                    Part
+                  </th>
+                  <th class="p-2.5 text-center font-medium border-b border-default w-32">
+                    Qty
+                  </th>
+                  <th class="p-2.5 text-center font-medium border-b border-default w-12" />
                 </tr>
               </thead>
               <tbody>
@@ -174,7 +235,7 @@ function close() {
                   <td class="p-2">
                     <USelectMenu
                       :model-value="getPartLabel(row.part_id)"
-                      :items="partItems"
+                      :items="getFilteredPartItems(idx)"
                       placeholder="Select part..."
                       searchable
                       clear
@@ -205,15 +266,27 @@ function close() {
               </tbody>
             </table>
           </div>
-          <p class="text-xs text-muted">Rows with no part selected or qty = 0 will be ignored.</p>
+          <p class="text-xs text-muted">
+            Rows with no part selected or qty = 0 will be ignored.
+          </p>
         </div>
       </UForm>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>
