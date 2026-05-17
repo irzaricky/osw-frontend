@@ -349,23 +349,26 @@ onMounted(() => {
               <button
                 v-for="spr in group.items"
                 :key="spr.id"
-                class="w-full text-left px-4 py-3 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
+                class="w-full text-left p-4 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
                 :class="{ 'bg-primary/10 border-l-2 border-l-primary': selectedSprId === spr.id }"
                 @click="selectSpr(spr)"
               >
                 <div class="flex items-start justify-between gap-2">
                   <div class="flex-1 min-w-0">
-                    <p class="text-xs font-mono font-semibold text-primary truncate">{{ spr.spr_number }}</p>
-                    <p class="text-sm font-medium truncate mt-0.5">{{ spr.spr_name }}</p>
-                    <div class="flex items-center gap-2 mt-1">
-                      <p class="text-xs text-muted">
-                        <UIcon name="i-lucide-calendar-clock" class="w-3 h-3 inline" />
+                    <span class="text-[10px] font-mono font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded">
+                      {{ spr.spr_number }}
+                    </span>
+                    <p class="text-sm font-bold text-default truncate mt-2">{{ spr.spr_name }}</p>
+                    <div class="flex items-center gap-2 mt-2 text-[11px] text-muted-foreground">
+                      <p class="flex items-center gap-1">
+                        <UIcon name="i-lucide-calendar-clock" class="w-3.5 h-3.5" />
                         {{ formatDate(spr.required_date) }}
                       </p>
                       <UBadge
                         :color="spr.source === 'Automatic' ? 'info' : 'neutral'"
                         variant="subtle"
                         size="xs"
+                        class="rounded-full"
                       >
                         {{ spr.source }}
                       </UBadge>

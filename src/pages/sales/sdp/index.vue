@@ -269,7 +269,7 @@ const overlapsCount = computed(() => {
             <div
               v-for="plan in plans"
               :key="plan.id"
-              class="bg-elevated rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden p-5 flex flex-col justify-between h-[180px] hover:shadow-lg relative"
+              class="bg-elevated rounded-2xl border transition-all duration-300 cursor-pointer overflow-hidden p-4 flex flex-col justify-between h-[160px] hover:shadow-lg relative"
               :class="selectedPlanId === plan.id
                 ? 'border-primary shadow bg-primary-50/5 dark:bg-primary-950/5'
                 : 'border-default'"
@@ -284,7 +284,7 @@ const overlapsCount = computed(() => {
               <!-- Top Row Info -->
               <div class="space-y-1">
                 <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  <span class="text-[10px] font-mono font-bold text-primary px-1.5 py-0.5 bg-primary/10 rounded">
                     {{ plan.dp_number }}
                   </span>
                   
@@ -294,13 +294,13 @@ const overlapsCount = computed(() => {
                   </div>
                 </div>
 
-                <h4 class="text-sm font-black text-default mt-1 leading-relaxed truncate">
+                <h4 class="text-sm font-bold text-default mt-1.5 leading-relaxed truncate">
                   {{ plan.destination }}
                 </h4>
               </div>
 
               <!-- Mid Info -->
-              <div class="grid grid-cols-2 gap-2 mt-4 text-[10px] text-muted border-t border-default/50 pt-3">
+              <div class="grid grid-cols-2 gap-2 mt-2.5 text-[10px] text-muted border-t border-default/50 pt-2.5">
                 <div class="flex items-center gap-1.5 font-medium truncate">
                   <UIcon name="i-lucide-warehouse" class="w-3.5 h-3.5 text-blue-500 shrink-0" />
                   <span>Whse: {{ plan.warehouse?.name || '-' }}</span>
@@ -312,7 +312,7 @@ const overlapsCount = computed(() => {
               </div>
 
               <!-- Bottom Row Info -->
-              <div class="flex items-center justify-between mt-4">
+              <div class="flex items-center justify-between mt-3">
                 <div class="flex items-center gap-1.5">
                   <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-primary shrink-0" />
                   <span class="text-[10px] font-bold text-default">
