@@ -196,6 +196,7 @@ watch(
 // Handle SPO item check state
 function toggleSpoItem(item: any) {
   const idx = state.selectedSpoItems.findIndex(x => x.spo_detail_id === item.id)
+  if (idx === -1 && isAddressMismatch(item)) return
   if (idx > -1) {
     state.selectedSpoItems.splice(idx, 1)
     if (state.selectedSpoItems.length === 0) {
@@ -218,6 +219,11 @@ function toggleSpoItem(item: any) {
       state.destination = item.order.shipping_address
     }
   }
+}
+
+function isAddressMismatch(item: any) {
+  if (state.selectedSpoItems.length === 0) return false
+  return item.order?.shipping_address !== state.destination
 }
 
 function isSelected(itemId: number) {
@@ -382,14 +388,18 @@ function close() {
                 v-for="item in readySpoItems"
                 :key="item.id"
                 class="p-3 rounded-lg border transition-all duration-200"
-                :class="isSelected(item.id)
-                  ? 'border-primary bg-primary-50/10 dark:bg-primary-950/10 shadow-sm'
-                  : 'border-default bg-elevated hover:bg-elevated/50'"
+                :class="[
+                  isSelected(item.id)
+                    ? 'border-primary bg-primary-50/10 dark:bg-primary-950/10 shadow-sm'
+                    : 'border-default bg-elevated hover:bg-elevated/50',
+                  isAddressMismatch(item) ? 'opacity-40 cursor-not-allowed select-none' : ''
+                ]"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex gap-2">
                     <UCheckbox
                       :model-value="isSelected(item.id)"
+                      :disabled="isAddressMismatch(item)"
                       class="mt-1"
                       @update:model-value="toggleSpoItem(item)"
                     />
