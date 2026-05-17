@@ -179,6 +179,15 @@ function toggleSpoItem(item: any) {
   const idx = state.selectedSpoItems.findIndex(x => x.spo_detail_id === item.id)
   if (idx > -1) {
     state.selectedSpoItems.splice(idx, 1)
+    if (state.selectedSpoItems.length === 0) {
+      state.destination = ''
+    } else {
+      const nextItemId = state.selectedSpoItems[0].spo_detail_id
+      const nextItem = readySpoItems.value.find(x => x.id === nextItemId)
+      if (nextItem?.order?.shipping_address) {
+        state.destination = nextItem.order.shipping_address
+      }
+    }
   } else {
     state.selectedSpoItems.push({
       spo_detail_id: item.id,
@@ -186,7 +195,7 @@ function toggleSpoItem(item: any) {
       remaining_qty: item.remaining_qty,
       label: `${item.order?.spo_number} - ${item.part?.part_name}`
     })
-    if (!state.destination && item.order?.shipping_address) {
+    if (item.order?.shipping_address) {
       state.destination = item.order.shipping_address
     }
   }
@@ -305,7 +314,7 @@ function close() {
 
             <!-- Destination -->
             <UFormField label="Destination Address/Location" name="destination" required>
-              <UInput v-model="state.destination" placeholder="Customer main plant/area" class="w-full" />
+              <UInput v-model="state.destination" placeholder="Select SPO item to set destination" class="w-full" :disabled="true" />
             </UFormField>
           </div>
 
