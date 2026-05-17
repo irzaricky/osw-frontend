@@ -101,45 +101,18 @@ async function handleDeletePlan(id: number) {
     alert(`Deletion Failed: ${e.response?.data?.message || e.message}`)
   }
 }
-
-// Dynamic overlap clash checking for visual indicators cards
-const overlapsCount = computed(() => {
-  // Count plans that have overlaps on date and dock
-  let conflicts = 0
-  const len = plans.value.length
-  for (let i = 0; i < len; i++) {
-    for (let j = i + 1; j < len; j++) {
-      const a = plans.value[i]
-      const b = plans.value[j]
-      if (
-        a.scheduled_date === b.scheduled_date &&
-        a.warehouse_id === b.warehouse_id &&
-        a.dock_id === b.dock_id &&
-        a.time_start < b.time_end &&
-        a.time_end > b.time_start
-      ) {
-        conflicts++
-        break
-      }
-    }
-  }
-  return conflicts
-})
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-slate-900/5 backdrop-blur-sm">
+  <div class="flex flex-col h-full">
     <!-- Breadcrumbs & Header -->
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0 bg-elevated/40">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center">
         <div>
-          <h1 class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          <h1 class="text-2xl font-bold">
             Sales Delivery Plan (SDP)
           </h1>
-          <p class="text-xs text-muted mt-1">
-            Schedule logistics plans, consolidate warehouse destinations, and eliminate loading dock conflicts.
-          </p>
         </div>
         <UButton
           icon="i-lucide-plus"
@@ -155,60 +128,6 @@ const overlapsCount = computed(() => {
     <div class="flex-1 flex overflow-hidden">
       <!-- Left side: List and Metrics -->
       <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-        <!-- Top Metrics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
-          <!-- Metric Card 1: Total Plans -->
-          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="p-3 bg-primary/10 rounded-xl text-primary shrink-0">
-              <UIcon name="i-lucide-calendar-days" class="w-6 h-6" />
-            </div>
-            <div>
-              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
-                Total Plans
-              </p>
-              <h3 class="text-2xl font-black mt-0.5 text-default">
-                {{ meta.total }}
-              </h3>
-            </div>
-          </div>
-
-          <!-- Metric Card 2: Pending Schedules -->
-          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div class="p-3 bg-amber-500/10 rounded-xl text-amber-500 shrink-0">
-              <UIcon name="i-lucide-hourglass" class="w-6 h-6 animate-pulse" />
-            </div>
-            <div>
-              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
-                Total Parts
-              </p>
-              <h3 class="text-2xl font-black mt-0.5 text-default">
-                {{ plans.reduce((acc, p) => acc + (p.details?.length || 0), 0) }} Items
-              </h3>
-            </div>
-          </div>
-
-          <!-- Metric Card 3: Dock Slot Conflicts -->
-          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-            <div
-              class="p-3 rounded-xl shrink-0"
-              :class="overlapsCount > 0 ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'"
-            >
-              <UIcon :name="overlapsCount > 0 ? 'i-lucide-shield-alert' : 'i-lucide-shield-check'" class="w-6 h-6" />
-            </div>
-            <div>
-              <p class="text-[10px] text-muted font-bold uppercase tracking-wider">
-                Dock Overlaps
-              </p>
-              <h3
-                class="text-2xl font-black mt-0.5"
-                :class="overlapsCount > 0 ? 'text-rose-500 animate-bounce' : 'text-emerald-500'"
-              >
-                {{ overlapsCount > 0 ? `${overlapsCount} Conflicts` : '0 Conflicts' }}
-              </h3>
-            </div>
-          </div>
-        </div>
-
         <!-- Filter bar -->
         <div class="bg-elevated rounded-xl p-4 border border-default flex flex-wrap gap-3 items-center justify-between shrink-0">
           <div class="flex flex-wrap items-center gap-3">

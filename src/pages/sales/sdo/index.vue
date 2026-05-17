@@ -144,18 +144,15 @@ function formatDate(dateStr: string | null | undefined) {
 </script>
 
 <template>
-  <div class="flex flex-col h-full bg-slate-900/5 backdrop-blur-sm">
+  <div class="flex flex-col h-full">
     <!-- Breadcrumbs & Header -->
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0 bg-elevated/40">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center gap-4">
         <div>
-          <h1 class="text-2xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+          <h1 class="text-2xl font-bold">
             Sales Delivery Order (SDO)
           </h1>
-          <p class="text-xs text-muted mt-1">
-            Dispatch shipments, generate official Surat Jalan PDFs, and track delivery fulfillments in a unified Master-Detail console.
-          </p>
         </div>
       </div>
     </div>
@@ -164,59 +161,6 @@ function formatDate(dateStr: string | null | undefined) {
     <div class="flex-1 flex overflow-hidden">
       <!-- Left side: List and Metrics -->
       <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-        <!-- Metrics Overview Header Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-          <!-- Active Shipments -->
-          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-amber-500/5 rounded-full blur-xl" />
-            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-              <UIcon name="i-lucide-truck" class="w-6 h-6" />
-            </div>
-            <div>
-              <span class="text-[10px] text-muted font-bold uppercase tracking-wider block">In Transit</span>
-              <span class="text-xl font-black text-default leading-none">{{ stats.inTransitCount }} active</span>
-            </div>
-          </div>
-
-          <!-- Confirmed Delivered -->
-          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl" />
-            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
-              <UIcon name="i-lucide-shield-check" class="w-6 h-6" />
-            </div>
-            <div>
-              <span class="text-[10px] text-muted font-bold uppercase tracking-wider block">Delivered</span>
-              <span class="text-xl font-black text-default leading-none">{{ stats.deliveredCount }} complete</span>
-            </div>
-          </div>
-
-          <!-- Total pcs dispatched -->
-          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-sky-500/5 rounded-full blur-xl" />
-            <div class="p-3 bg-sky-500/10 text-sky-400 rounded-xl">
-              <UIcon name="i-lucide-box" class="w-6 h-6" />
-            </div>
-            <div>
-              <span class="text-[10px] text-muted font-bold uppercase tracking-wider block">Dispatched pcs</span>
-              <span class="text-xl font-black text-default leading-none font-mono">{{ stats.totalDispatched.toLocaleString() }}</span>
-            </div>
-          </div>
-
-          <!-- Shortages items count -->
-          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden">
-            <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-500/5 rounded-full blur-xl" />
-            <div class="p-3 bg-rose-500/10 text-rose-400 rounded-xl">
-              <UIcon name="i-lucide-alert-triangle" class="w-6 h-6" />
-            </div>
-            <div>
-              <span class="text-[10px] text-muted font-bold uppercase tracking-wider block">Shortages logged</span>
-              <span class="text-xl font-black font-mono text-default leading-none" :class="stats.shortagesCount > 0 ? 'text-rose-500 font-bold' : ''">
-                {{ stats.shortagesCount.toLocaleString() }} pcs
-              </span>
-            </div>
-          </div>
-        </div>
-
         <!-- Master List Container Panel -->
         <div class="bg-elevated border border-default rounded-2xl flex flex-col flex-1 min-h-[400px] overflow-hidden">
           <!-- Filter bar with tabs and search -->
