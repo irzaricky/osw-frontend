@@ -68,6 +68,13 @@ const selectedSprLabel = computed({
       } else {
         state.customer_id = undefined
       }
+      // Populate dates from SPR
+      if (sprData?.required_date) {
+        state.spo_date = sprData.required_date.substring(0, 10)
+      }
+      if (sprData?.request_date) {
+        state.delivery_due_date = sprData.request_date.substring(0, 10)
+      }
     }
   }
 })
