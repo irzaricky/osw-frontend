@@ -353,20 +353,20 @@ const hasShortages = computed(() => {
                     <UButton
                       color="neutral"
                       variant="ghost"
-                      size="sm"
+                      size="md"
                       icon="i-lucide-minus"
-                      class="rounded-full bg-slate-850 text-slate-200 h-8 w-8 justify-center shrink-0 border border-slate-700"
+                      class="rounded-full bg-slate-850 text-slate-200 h-11 w-11 justify-center shrink-0 border border-slate-700 active:bg-slate-800"
                       @click="adjustQty(item.id, -1, item.sent_qty)"
                     />
-                    <span class="w-12 text-center text-sm font-black font-mono text-gray-100">
+                    <span class="w-12 text-center text-base font-black font-mono text-gray-100">
                       {{ receivedQuantities[item.id] ?? item.sent_qty }}
                     </span>
                     <UButton
                       color="neutral"
                       variant="ghost"
-                      size="sm"
+                      size="md"
                       icon="i-lucide-plus"
-                      class="rounded-full bg-slate-850 text-slate-200 h-8 w-8 justify-center shrink-0 border border-slate-700"
+                      class="rounded-full bg-slate-850 text-slate-200 h-11 w-11 justify-center shrink-0 border border-slate-700 active:bg-slate-800"
                       @click="adjustQty(item.id, 1, item.sent_qty)"
                     />
                   </div>
@@ -415,7 +415,7 @@ const hasShortages = computed(() => {
                   class="hidden"
                   @change="onFileChange"
                 >
-                <div class="w-full bg-primary hover:bg-primary-hover text-white text-center py-2 rounded-xl text-xs font-bold transition-all shadow-md">
+                <div class="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-center py-3 sm:py-3.5 rounded-xl text-sm font-bold transition-all shadow-md">
                   Capture Receipt Camera
                 </div>
               </label>
