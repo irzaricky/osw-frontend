@@ -258,45 +258,24 @@ function close() {
             <!-- Warehouse -->
             <UFormField label="Source Warehouse" name="warehouse_id" required>
               <USelectMenu
-                v-slot="{ open: warehouseMenuOpen }"
                 v-model="selectedWarehouse"
                 :items="warehouseItems"
                 class="w-full"
                 placeholder="Select warehouse"
                 label-key="name"
-              >
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-                >
-                  <span class="truncate">{{ selectedWarehouse?.name || 'Select source warehouse' }}</span>
-                  <UIcon :name="warehouseMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-                </UButton>
-              </USelectMenu>
+              />
             </UFormField>
 
             <!-- Loading Dock -->
             <UFormField label="Loading Dock" name="dock_id" required>
               <USelectMenu
-                v-slot="{ open: dockMenuOpen }"
                 v-model="selectedDock"
                 :items="filteredDocks"
                 class="w-full"
                 placeholder="Select dock slot"
                 label-key="name"
                 :disabled="!state.warehouse_id"
-              >
-                <UButton
-                  color="neutral"
-                  variant="outline"
-                  class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-                  :disabled="!state.warehouse_id"
-                >
-                  <span class="truncate">{{ selectedDock?.name || (state.warehouse_id ? 'Select dock slot' : 'Choose a warehouse first') }}</span>
-                  <UIcon :name="dockMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-                </UButton>
-              </USelectMenu>
+              />
             </UFormField>
 
             <!-- Target Date -->
@@ -308,39 +287,19 @@ function close() {
             <div class="grid grid-cols-2 gap-3">
               <UFormField label="Start Time" name="time_start" required>
                 <USelectMenu
-                  v-slot="{ open: startMenuOpen }"
                   v-model="state.time_start"
                   :items="timeOptions"
                   class="w-full"
-                  placeholder="08:00"
-                >
-                  <UButton
-                    color="neutral"
-                    variant="outline"
-                    class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-                  >
-                    <span class="truncate">{{ state.time_start || 'Select start' }}</span>
-                    <UIcon :name="startMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-                  </UButton>
-                </USelectMenu>
+                  placeholder="Select start"
+                />
               </UFormField>
               <UFormField label="End Time" name="time_end" required>
                 <USelectMenu
-                  v-slot="{ open: endMenuOpen }"
                   v-model="state.time_end"
                   :items="timeOptions"
                   class="w-full"
-                  placeholder="18:00"
-                >
-                  <UButton
-                    color="neutral"
-                    variant="outline"
-                    class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-                  >
-                    <span class="truncate">{{ state.time_end || 'Select end' }}</span>
-                    <UIcon :name="endMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-                  </UButton>
-                </USelectMenu>
+                  placeholder="Select end"
+                />
               </UFormField>
             </div>
 

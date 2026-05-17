@@ -132,43 +132,23 @@ function close() {
         <!-- Driver Selection -->
         <UFormField label="Select Driver" name="driver_id" required>
           <USelectMenu
-            v-slot="{ open: driverMenuOpen }"
             v-model="selectedDriver"
             :items="driverItems"
             class="w-full"
             placeholder="Search and select driver"
             label-key="full_name"
-          >
-            <UButton
-              color="neutral"
-              variant="outline"
-              class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-            >
-              <span class="truncate">{{ selectedDriver?.full_name || 'Select driver' }}</span>
-              <UIcon :name="driverMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-            </UButton>
-          </USelectMenu>
+          />
         </UFormField>
 
         <!-- Vehicle Selection -->
         <UFormField label="Select Vehicle (Plate)" name="vehicle_id" required>
           <USelectMenu
-            v-slot="{ open: vehicleMenuOpen }"
             v-model="selectedVehicle"
             :items="vehicleItems"
             class="w-full"
             placeholder="Search and select license plate"
             label-key="license_plate"
-          >
-            <UButton
-              color="neutral"
-              variant="outline"
-              class="w-full justify-between bg-elevated border border-default hover:bg-default/5 font-normal"
-            >
-              <span class="truncate">{{ selectedVehicle?.license_plate || 'Select vehicle plate' }}</span>
-              <UIcon :name="vehicleMenuOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted-foreground shrink-0" />
-            </UButton>
-          </USelectMenu>
+          />
         </UFormField>
 
         <!-- Load Capacity Indicator -->
