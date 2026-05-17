@@ -125,8 +125,10 @@ function checkLocalConflict() {
 
   // Find any existing slot overlap
   const conflict = store.plans.find(p => {
+    const pDate = p.scheduled_date.split('T')[0]
+    const stateDate = state.scheduled_date
     if (
-      p.scheduled_date !== state.scheduled_date ||
+      pDate !== stateDate ||
       p.warehouse_id !== state.warehouse_id ||
       p.dock_id !== state.dock_id
     ) {

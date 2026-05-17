@@ -29,12 +29,25 @@ const selectedPlan = computed(() => store.detail)
 
 // Search & filter parameters
 const selectedWarehouseId = ref<number | null>(null)
-const selectedDate = ref(new Date().toISOString().substring(0, 10))
+
+function getLocalDateString() {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const selectedDate = ref(getLocalDateString())
 
 async function loadPlans() {
   const params: Record<string, any> = {
     page: 1,
-    limit: 100 // load all active plans for calendar scheduling mapping
+    limit: 100 // load active plans for calendar scheduling mapping
+  }
+  if (selectedDate.value) {
+    params.start_date = selectedDate.value
+    params.end_date = selectedDate.value
   }
   await store.fetchSdpPlans(params)
 }
@@ -411,7 +424,7 @@ function formatDateIndo(dateStr: string) {
       </div>
 
       <!-- Right side: Master-Detail Panel Info -->
-      <div class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
+      <div v-if="selectedPlanId" class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
         <SdpDetailPanel
           :plan="selectedPlan"
           :loading="loading"
