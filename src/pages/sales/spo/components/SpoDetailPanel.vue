@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch } from 'vue'
 import { useSpoStore } from '../../../../stores/sales/spo.store'
 import type { Spo } from '../../../../types/sales/spo'
@@ -160,7 +161,6 @@ async function saveEdit() {
 
 <template>
   <div class="flex flex-col h-full overflow-hidden">
-
     <!-- Header -->
     <div class="px-6 py-4 border-b border-default shrink-0">
       <div v-if="loadingDetail" class="flex items-center gap-3">
@@ -172,7 +172,9 @@ async function saveEdit() {
         <!-- Title Row -->
         <div class="flex items-center gap-3 min-w-0">
           <div class="min-w-0 flex-1">
-            <h2 class="text-lg font-bold truncate">{{ store.detail.spo_number }}</h2>
+            <h2 class="text-lg font-bold truncate">
+              {{ store.detail.spo_number }}
+            </h2>
             <p class="text-xs text-muted">
               Ref: {{ store.detail.spr?.spr_number || '-' }}
             </p>
@@ -273,7 +275,6 @@ async function saveEdit() {
       </div>
 
       <template v-else-if="store.detail">
-
         <!-- Timeline -->
         <div class="flex items-start gap-0 overflow-x-auto pb-1">
           <div v-for="(step, idx) in ['Draft','Submitted','Locked','Processing','Completed']" :key="step" class="flex items-center flex-1 min-w-0">
@@ -302,23 +303,39 @@ async function saveEdit() {
         <!-- Info Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Customer</div>
-            <div class="text-sm font-semibold">{{ store.detail.customer?.name || '-' }}</div>
-            <div class="text-xs text-muted font-mono">{{ store.detail.customer?.customer_code }}</div>
+            <div class="text-xs text-muted mb-1">
+              Customer
+            </div>
+            <div class="text-sm font-semibold">
+              {{ store.detail.customer?.name || '-' }}
+            </div>
+            <div class="text-xs text-muted font-mono">
+              {{ store.detail.customer?.customer_code }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">SPO Date</div>
-            <div class="text-sm font-semibold">{{ formatDate(store.detail.spo_date) }}</div>
+            <div class="text-xs text-muted mb-1">
+              SPO Date
+            </div>
+            <div class="text-sm font-semibold">
+              {{ formatDate(store.detail.spo_date) }}
+            </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">Due Date</div>
+            <div class="text-xs text-muted mb-1">
+              Due Date
+            </div>
             <div class="text-sm font-semibold text-warning-600 dark:text-warning-400">
               {{ formatDate(store.detail.delivery_due_date) }}
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3 col-span-2 lg:col-span-3">
-            <div class="text-xs text-muted mb-1">Shipping Address</div>
-            <div class="text-sm">{{ store.detail.shipping_address || '-' }}</div>
+            <div class="text-xs text-muted mb-1">
+              Shipping Address
+            </div>
+            <div class="text-sm">
+              {{ store.detail.shipping_address || '-' }}
+            </div>
           </div>
         </div>
 
@@ -327,12 +344,24 @@ async function saveEdit() {
           <table class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
               <tr>
-                <th class="p-3 font-medium border-r border-default w-10 text-center">#</th>
-                <th class="p-3 font-medium border-r border-default">Part Number</th>
-                <th class="p-3 font-medium border-r border-default">Part Name</th>
-                <th class="p-3 font-medium text-center w-28">Ordered Qty</th>
-                <th class="p-3 font-medium text-center w-28">Sent Qty</th>
-                <th class="p-3 font-medium text-center w-28">Remaining Qty</th>
+                <th class="p-3 font-medium border-r border-default w-10 text-center">
+                  #
+                </th>
+                <th class="p-3 font-medium border-r border-default">
+                  Part Number
+                </th>
+                <th class="p-3 font-medium border-r border-default">
+                  Part Name
+                </th>
+                <th class="p-3 font-medium text-center w-28">
+                  Ordered Qty
+                </th>
+                <th class="p-3 font-medium text-center w-28">
+                  Sent Qty
+                </th>
+                <th class="p-3 font-medium text-center w-28">
+                  Remaining Qty
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -347,10 +376,18 @@ async function saveEdit() {
                 :key="det.id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20 transition-colors"
               >
-                <td class="p-3 border-r border-default text-center text-muted text-xs">{{ idx + 1 }}</td>
-                <td class="p-3 border-r border-default font-mono text-xs font-medium">{{ det.part?.part_number || '-' }}</td>
-                <td class="p-3 border-r border-default">{{ det.part?.part_name || '-' }}</td>
-                <td class="p-3 text-center font-semibold font-mono border-r border-default">{{ det.ordered_qty.toLocaleString() }}</td>
+                <td class="p-3 border-r border-default text-center text-muted text-xs">
+                  {{ idx + 1 }}
+                </td>
+                <td class="p-3 border-r border-default font-mono text-xs font-medium">
+                  {{ det.part?.part_number || '-' }}
+                </td>
+                <td class="p-3 border-r border-default">
+                  {{ det.part?.part_name || '-' }}
+                </td>
+                <td class="p-3 text-center font-semibold font-mono border-r border-default">
+                  {{ det.ordered_qty.toLocaleString() }}
+                </td>
                 <td class="p-3 text-center font-mono border-r border-default" :class="det.sent_qty > 0 ? 'text-success-600 dark:text-success-400 font-semibold' : 'text-muted'">
                   {{ det.sent_qty.toLocaleString() }}
                 </td>
@@ -361,7 +398,9 @@ async function saveEdit() {
             </tbody>
             <tfoot v-if="store.detail.details && store.detail.details.length > 0" class="bg-elevated/30">
               <tr class="border-t border-default">
-                <td colspan="3" class="p-3 text-right text-sm font-bold text-muted">Total</td>
+                <td colspan="3" class="p-3 text-right text-sm font-bold text-muted">
+                  Total
+                </td>
                 <td class="p-3 text-center font-bold font-mono text-primary border-r border-default">
                   {{ store.detail.details.reduce((s, d) => s + d.ordered_qty, 0).toLocaleString() }}
                 </td>
@@ -375,7 +414,6 @@ async function saveEdit() {
             </tfoot>
           </table>
         </div>
-
       </template>
     </div>
 
@@ -419,8 +457,18 @@ async function saveEdit() {
       
       <template #footer>
         <div class="flex justify-end gap-2 w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isEditOpen = false" />
-          <UButton color="primary" label="Save Changes" :loading="savingEdit" @click="saveEdit" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isEditOpen = false"
+          />
+          <UButton
+            color="primary"
+            label="Save Changes"
+            :loading="savingEdit"
+            @click="saveEdit"
+          />
         </div>
       </template>
     </UModal>
@@ -430,6 +478,5 @@ async function saveEdit() {
       v-model="editForm.shipping_address"
       v-model:open="isMapOpen"
     />
-
   </div>
 </template>

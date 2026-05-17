@@ -154,7 +154,6 @@ function close() {
   >
     <template #body>
       <div class="space-y-5">
-
         <!-- Alert Error -->
         <div v-if="formError" class="flex items-center gap-2 p-3 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 text-error-700 dark:text-error-300 text-sm">
           <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
@@ -186,7 +185,14 @@ function close() {
             <span class="font-medium">
               {{ customerItems.find(c => c.value === state.customer_id)?.label || `Customer #${state.customer_id}` }}
             </span>
-            <UBadge color="info" variant="subtle" size="xs" class="ml-auto">Auto-filled</UBadge>
+            <UBadge
+              color="info"
+              variant="subtle"
+              size="xs"
+              class="ml-auto"
+            >
+              Auto-filled
+            </UBadge>
           </div>
           <!-- Manual SPR: dropdown -->
           <USelectMenu
@@ -250,10 +256,18 @@ function close() {
             <table class="w-full text-sm">
               <thead class="bg-elevated/50 border-b border-default">
                 <tr>
-                  <th class="p-2.5 text-left font-medium">#</th>
-                  <th class="p-2.5 text-left font-medium">Part Number</th>
-                  <th class="p-2.5 text-left font-medium">Part Name</th>
-                  <th class="p-2.5 text-center font-medium w-24">Qty</th>
+                  <th class="p-2.5 text-left font-medium">
+                    #
+                  </th>
+                  <th class="p-2.5 text-left font-medium">
+                    Part Number
+                  </th>
+                  <th class="p-2.5 text-left font-medium">
+                    Part Name
+                  </th>
+                  <th class="p-2.5 text-center font-medium w-24">
+                    Qty
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -262,10 +276,18 @@ function close() {
                   :key="idx"
                   class="border-b border-default last:border-b-0"
                 >
-                  <td class="p-2.5 text-muted text-xs">{{ idx + 1 }}</td>
-                  <td class="p-2.5 font-mono text-xs font-medium">{{ item.part_number }}</td>
-                  <td class="p-2.5 text-sm">{{ item.part_name }}</td>
-                  <td class="p-2.5 text-center font-semibold font-mono">{{ item.qty.toLocaleString() }}</td>
+                  <td class="p-2.5 text-muted text-xs">
+                    {{ idx + 1 }}
+                  </td>
+                  <td class="p-2.5 font-mono text-xs font-medium">
+                    {{ item.part_number }}
+                  </td>
+                  <td class="p-2.5 text-sm">
+                    {{ item.part_name }}
+                  </td>
+                  <td class="p-2.5 text-center font-semibold font-mono">
+                    {{ item.qty.toLocaleString() }}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -276,13 +298,17 @@ function close() {
           <UIcon name="i-lucide-package-open" class="w-4 h-4 shrink-0" />
           No items found in this SPR.
         </div>
-
       </div>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
         <UButton
           color="primary"
           icon="i-lucide-file-plus"

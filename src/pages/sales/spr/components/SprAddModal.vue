@@ -124,7 +124,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- SPR Name -->
           <UFormField label="SPR Name" name="spr_name" required>
@@ -133,13 +139,24 @@ function close() {
 
           <!-- Required Date -->
           <UFormField label="Required Date" name="required_date" required>
-            <UInput v-model="state.required_date" type="date" class="w-full" :disabled="isAutomatic" />
+            <UInput
+              v-model="state.required_date"
+              type="date"
+              class="w-full"
+              :disabled="isAutomatic"
+            />
           </UFormField>
         </div>
 
         <!-- Description -->
         <UFormField label="Description" name="description">
-          <UTextarea v-model="state.description" placeholder="Additional notes..." class="w-full" rows="2" :disabled="isAutomatic" />
+          <UTextarea
+            v-model="state.description"
+            placeholder="Additional notes..."
+            class="w-full"
+            rows="2"
+            :disabled="isAutomatic"
+          />
         </UFormField>
 
         <!-- Part Details -->
@@ -160,9 +177,13 @@ function close() {
             <table class="w-full text-sm">
               <thead class="bg-elevated/50">
                 <tr>
-                  <th class="p-2.5 text-left font-medium border-b border-default">Part</th>
-                  <th class="p-2.5 text-center font-medium border-b border-default w-32">Qty</th>
-                  <th class="p-2.5 text-center font-medium border-b border-default w-12"></th>
+                  <th class="p-2.5 text-left font-medium border-b border-default">
+                    Part
+                  </th>
+                  <th class="p-2.5 text-center font-medium border-b border-default w-32">
+                    Qty
+                  </th>
+                  <th class="p-2.5 text-center font-medium border-b border-default w-12" />
                 </tr>
               </thead>
               <tbody>
@@ -205,15 +226,27 @@ function close() {
               </tbody>
             </table>
           </div>
-          <p class="text-xs text-muted">Rows with no part selected or qty = 0 will be ignored.</p>
+          <p class="text-xs text-muted">
+            Rows with no part selected or qty = 0 will be ignored.
+          </p>
         </div>
       </UForm>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>

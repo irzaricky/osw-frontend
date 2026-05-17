@@ -78,7 +78,9 @@ function formatDate(dateStr: string | null | undefined) {
     <div class="p-4 border-b border-default flex items-center justify-between shrink-0 bg-elevated/20">
       <div class="flex items-center gap-2">
         <div class="w-2 h-2 rounded-full" :class="getStatusBulletClass(status)" />
-        <h3 class="font-bold text-xs uppercase tracking-widest text-muted-foreground">{{ status }}</h3>
+        <h3 class="font-bold text-xs uppercase tracking-widest text-muted-foreground">
+          {{ status }}
+        </h3>
       </div>
       <div class="flex items-center gap-2">
         <UPopover v-model:open="isFilterOpen" :content="{ align: 'end', side: 'bottom' }">
@@ -91,7 +93,9 @@ function formatDate(dateStr: string | null | undefined) {
           />
           <template #content>
             <div class="p-4 space-y-4 w-64 bg-default border border-default rounded-xl shadow-xl z-50">
-              <h4 class="font-bold text-sm">Filter {{ status }}</h4>
+              <h4 class="font-bold text-sm">
+                Filter {{ status }}
+              </h4>
               
               <UFormField label="Customer" size="sm">
                 <USelectMenu
@@ -158,7 +162,9 @@ function formatDate(dateStr: string | null | undefined) {
             <UIcon name="i-lucide-arrow-up-right" class="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           
-          <h4 class="text-sm font-bold mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">{{ spo.customer?.name || '-' }}</h4>
+          <h4 class="text-sm font-bold mb-1.5 line-clamp-1 group-hover:text-primary transition-colors">
+            {{ spo.customer?.name || '-' }}
+          </h4>
           
           <div class="space-y-2">
             <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -173,8 +179,8 @@ function formatDate(dateStr: string | null | undefined) {
 
           <div class="mt-4 pt-3 border-t border-default/50 flex items-center justify-between">
             <div class="flex items-center gap-1">
-               <UIcon name="i-lucide-package" class="w-3 h-3 text-muted" />
-               <span class="text-[10px] font-bold">{{ spo.details?.length || 0 }} items</span>
+              <UIcon name="i-lucide-package" class="w-3 h-3 text-muted" />
+              <span class="text-[10px] font-bold">{{ spo.details?.length || 0 }} items</span>
             </div>
             <div class="text-[10px] text-muted-foreground font-medium">
               {{ formatDate(spo.spo_date) }}
@@ -184,8 +190,8 @@ function formatDate(dateStr: string | null | undefined) {
 
         <!-- Empty State -->
         <div v-if="items.length === 0 && !meta.loading" class="h-full flex flex-col items-center justify-center text-muted-foreground/30 py-16">
-           <UIcon name="i-lucide-inbox" class="w-10 h-10 mb-3 opacity-20" />
-           <span class="text-[11px] font-medium uppercase tracking-tighter">No SPO</span>
+          <UIcon name="i-lucide-inbox" class="w-10 h-10 mb-3 opacity-20" />
+          <span class="text-[11px] font-medium uppercase tracking-tighter">No SPO</span>
         </div>
 
         <!-- Sentinel for Infinite Scroll -->

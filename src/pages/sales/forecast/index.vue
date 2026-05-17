@@ -321,8 +321,15 @@ onMounted(() => {
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold">Sales Forecast</h1>
-        <UButton icon="i-lucide-plus" color="primary" label="Add Forecast" @click="openAddModal" />
+        <h1 class="text-2xl font-bold">
+          Sales Forecast
+        </h1>
+        <UButton
+          icon="i-lucide-plus"
+          color="primary"
+          label="Add Forecast"
+          @click="openAddModal"
+        />
       </div>
     </div>
 
@@ -418,7 +425,9 @@ onMounted(() => {
                   >
                     <div class="flex items-start justify-between gap-2">
                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium truncate">{{ forecast.forecast_number }}</p>
+                        <p class="text-sm font-medium truncate">
+                          {{ forecast.forecast_number }}
+                        </p>
                         <p class="text-xs text-muted">
                           <UIcon name="i-lucide-calendar" class="w-3 h-3 inline" />
                           {{ formatPeriodDate(forecast.start_period) }} — {{ formatPeriodDate(forecast.end_period) }}
@@ -435,7 +444,9 @@ onMounted(() => {
 
         <!-- Pagination -->
         <div class="p-3 border-t border-default shrink-0">
-          <div class="text-xs text-muted mb-2">{{ meta.total }} forecast(s)</div>
+          <div class="text-xs text-muted mb-2">
+            {{ meta.total }} forecast(s)
+          </div>
           <UPagination
             v-model:page="meta.page"
             :items-per-page="meta.limit"
@@ -450,7 +461,9 @@ onMounted(() => {
       <div class="flex-1 overflow-hidden">
         <div v-if="!selectedForecastId" class="flex flex-col items-center justify-center h-full text-muted gap-3">
           <UIcon name="i-lucide-file-search" class="w-12 h-12 opacity-30" />
-          <p class="text-sm">Select a forecast from the list to view its detail</p>
+          <p class="text-sm">
+            Select a forecast from the list to view its detail
+          </p>
         </div>
 
         <ForecastDetailPanel
@@ -460,7 +473,7 @@ onMounted(() => {
           :forecast-summary="selectedForecastData"
           @edit="openEditModal"
           @delete="handleDelete"
-          @refreshList="fetchData"
+          @refresh-list="fetchData"
         />
       </div>
     </div>

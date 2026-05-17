@@ -54,7 +54,6 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
       </div>
 
       <div v-else-if="store.sdoHistory" class="space-y-6">
-
         <!-- Aggregation Table -->
         <div class="space-y-2">
           <h3 class="text-sm font-semibold flex items-center gap-1.5">
@@ -65,11 +64,21 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
             <table class="w-full text-sm">
               <thead class="bg-elevated/50 border-b border-default">
                 <tr>
-                  <th class="p-3 text-left font-medium">Part</th>
-                  <th class="p-3 text-center font-medium w-24">Ordered</th>
-                  <th class="p-3 text-center font-medium w-24">Delivered</th>
-                  <th class="p-3 text-center font-medium w-24">Remaining</th>
-                  <th class="p-3 text-left font-medium w-32">Progress</th>
+                  <th class="p-3 text-left font-medium">
+                    Part
+                  </th>
+                  <th class="p-3 text-center font-medium w-24">
+                    Ordered
+                  </th>
+                  <th class="p-3 text-center font-medium w-24">
+                    Delivered
+                  </th>
+                  <th class="p-3 text-center font-medium w-24">
+                    Remaining
+                  </th>
+                  <th class="p-3 text-left font-medium w-32">
+                    Progress
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -79,10 +88,16 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
                   class="border-b border-default last:border-b-0 hover:bg-elevated/20 transition-colors"
                 >
                   <td class="p-3">
-                    <p class="font-mono text-xs font-semibold text-primary">{{ row.part_number }}</p>
-                    <p class="text-xs text-muted">{{ row.part_name }}</p>
+                    <p class="font-mono text-xs font-semibold text-primary">
+                      {{ row.part_number }}
+                    </p>
+                    <p class="text-xs text-muted">
+                      {{ row.part_name }}
+                    </p>
                   </td>
-                  <td class="p-3 text-center font-mono font-semibold">{{ row.ordered_qty.toLocaleString() }}</td>
+                  <td class="p-3 text-center font-mono font-semibold">
+                    {{ row.ordered_qty.toLocaleString() }}
+                  </td>
                   <td class="p-3 text-center font-mono font-semibold text-success-600 dark:text-success-400">
                     {{ row.delivered_qty.toLocaleString() }}
                   </td>
@@ -105,7 +120,9 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
                   </td>
                 </tr>
                 <tr v-if="!store.sdoHistory.aggregation.length">
-                  <td colspan="5" class="p-8 text-center text-muted text-sm">No items found.</td>
+                  <td colspan="5" class="p-8 text-center text-muted text-sm">
+                    No items found.
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -117,7 +134,9 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
           <h3 class="text-sm font-semibold flex items-center gap-1.5">
             <UIcon name="i-lucide-truck" class="w-4 h-4 text-primary" />
             Delivery Orders
-            <UBadge color="neutral" variant="subtle" size="xs">{{ store.sdoHistory.sdo_history.length }}</UBadge>
+            <UBadge color="neutral" variant="subtle" size="xs">
+              {{ store.sdoHistory.sdo_history.length }}
+            </UBadge>
           </h3>
           <div v-if="!store.sdoHistory.sdo_history.length" class="p-6 text-center text-muted text-sm border border-default rounded-xl">
             <UIcon name="i-lucide-inbox" class="w-6 h-6 mx-auto mb-2 opacity-30" />
@@ -127,10 +146,18 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
             <table class="w-full text-sm">
               <thead class="bg-elevated/50 border-b border-default">
                 <tr>
-                  <th class="p-3 text-left font-medium">DO Number</th>
-                  <th class="p-3 text-left font-medium">DO Date</th>
-                  <th class="p-3 text-left font-medium">Received At</th>
-                  <th class="p-3 text-left font-medium">Status</th>
+                  <th class="p-3 text-left font-medium">
+                    DO Number
+                  </th>
+                  <th class="p-3 text-left font-medium">
+                    DO Date
+                  </th>
+                  <th class="p-3 text-left font-medium">
+                    Received At
+                  </th>
+                  <th class="p-3 text-left font-medium">
+                    Status
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -139,9 +166,15 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
                   :key="sdo.id"
                   class="border-b border-default last:border-b-0 hover:bg-elevated/20 transition-colors"
                 >
-                  <td class="p-3 font-mono text-xs font-semibold text-primary">{{ sdo.do_number }}</td>
-                  <td class="p-3 text-muted text-xs">{{ formatDate(sdo.do_date) }}</td>
-                  <td class="p-3 text-muted text-xs">{{ formatDate(sdo.received_at) }}</td>
+                  <td class="p-3 font-mono text-xs font-semibold text-primary">
+                    {{ sdo.do_number }}
+                  </td>
+                  <td class="p-3 text-muted text-xs">
+                    {{ formatDate(sdo.do_date) }}
+                  </td>
+                  <td class="p-3 text-muted text-xs">
+                    {{ formatDate(sdo.received_at) }}
+                  </td>
                   <td class="p-3">
                     <UBadge :color="getDoStatusColor(sdo.status)" variant="subtle" size="xs">
                       {{ sdo.status }}
@@ -152,7 +185,6 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
             </table>
           </div>
         </div>
-
       </div>
       <div v-else class="py-8 text-center text-muted text-sm">
         No history data available.
@@ -161,7 +193,12 @@ function getFulfillmentPct(delivered: number, ordered: number): number {
 
     <template #footer>
       <div class="flex justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Close" @click="emit('update:open', false)" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Close"
+          @click="emit('update:open', false)"
+        />
       </div>
     </template>
   </UModal>

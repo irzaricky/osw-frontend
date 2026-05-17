@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { computed } from 'vue'
 import { useSdoStore } from '../../../../stores/sales/sdo.store'
 import type { Sdo } from '../../../../types/sales/sdo'
@@ -87,7 +87,6 @@ function simulateDriverView() {
 
     <!-- SDO Details Content -->
     <div v-else-if="props.sdo" class="flex-1 overflow-y-auto p-5 space-y-6">
-      
       <!-- Primary Info Header -->
       <div class="space-y-1.5">
         <div class="flex items-center gap-2">
@@ -145,10 +144,18 @@ function simulateDriverView() {
           <table class="w-full text-xs text-left border-collapse">
             <thead>
               <tr class="bg-default/50 border-b border-default text-[10px] uppercase font-bold text-muted-foreground">
-                <th class="px-3 py-2">Part Info</th>
-                <th class="px-3 py-2 text-right">Sent</th>
-                <th class="px-3 py-2 text-right">Recv</th>
-                <th class="px-3 py-2 text-right">Short</th>
+                <th class="px-3 py-2">
+                  Part Info
+                </th>
+                <th class="px-3 py-2 text-right">
+                  Sent
+                </th>
+                <th class="px-3 py-2 text-right">
+                  Recv
+                </th>
+                <th class="px-3 py-2 text-right">
+                  Short
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -214,7 +221,7 @@ function simulateDriverView() {
             :src="`http://localhost:5000/uploads/pod/${props.sdo.proof_of_delivery}`"
             alt="Proof of Delivery Attachment"
             class="max-h-48 object-contain rounded-lg shadow-sm hover:scale-105 transition-transform cursor-zoom-in"
-          />
+          >
         </div>
       </div>
     </div>
@@ -222,7 +229,9 @@ function simulateDriverView() {
     <!-- Empty State -->
     <div v-else class="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 py-16">
       <UIcon name="i-lucide-file-search" class="w-12 h-12 mb-3 opacity-30" />
-      <p class="text-sm">Select an SDO from the list to view its details</p>
+      <p class="text-sm">
+        Select an SDO from the list to view its details
+      </p>
     </div>
 
     <!-- Action Controls Footer -->

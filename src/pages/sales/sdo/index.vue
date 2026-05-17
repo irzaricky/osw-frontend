@@ -162,10 +162,8 @@ function formatDate(dateStr: string | null | undefined) {
 
     <!-- Active State & Visual Dashboard Grid -->
     <div class="flex-1 flex overflow-hidden">
-      
       <!-- Left side: List and Metrics -->
       <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-        
         <!-- Metrics Overview Header Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
           <!-- Active Shipments -->
@@ -221,7 +219,6 @@ function formatDate(dateStr: string | null | undefined) {
 
         <!-- Master List Container Panel -->
         <div class="bg-elevated border border-default rounded-2xl flex flex-col flex-1 min-h-[400px] overflow-hidden">
-          
           <!-- Filter bar with tabs and search -->
           <div class="p-4 border-b border-default flex flex-wrap gap-4 items-center justify-between bg-elevated/40 shrink-0">
             <!-- Search SDO -->
@@ -252,7 +249,6 @@ function formatDate(dateStr: string | null | undefined) {
 
           <!-- SDO List Elements -->
           <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            
             <!-- Loading Indicator -->
             <div v-if="loading && sdos.length === 0" class="flex-1 flex items-center justify-center p-12 text-center">
               <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-primary" />
@@ -264,7 +260,9 @@ function formatDate(dateStr: string | null | undefined) {
                 <UIcon name="i-lucide-inbox" class="w-8 h-8 text-default" />
               </div>
               <div>
-                <h3 class="font-bold text-default text-lg">No Delivery Orders Found</h3>
+                <h3 class="font-bold text-default text-lg">
+                  No Delivery Orders Found
+                </h3>
                 <p class="text-xs text-muted mt-1 max-w-sm">
                   There are no delivery orders matching your filter criteria. Update active tabs or global search.
                 </p>
