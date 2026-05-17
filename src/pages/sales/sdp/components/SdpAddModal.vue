@@ -35,8 +35,8 @@ const schema = z.object({
   scheduled_date: z.string().min(1, 'Scheduled Date is required'),
   time_start: z.string().min(1, 'Start Time is required'),
   time_end: z.string().min(1, 'End Time is required'),
-  warehouse_id: z.number({ required_error: 'Warehouse is required' }),
-  dock_id: z.number({ required_error: 'Loading Dock is required' }),
+  warehouse_id: z.number({ message: 'Warehouse is required' }),
+  dock_id: z.number({ message: 'Loading Dock is required' }),
   destination: z.string().min(1, 'Destination is required')
 })
 

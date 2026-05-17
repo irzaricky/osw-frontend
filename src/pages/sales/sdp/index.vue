@@ -341,6 +341,7 @@ const overlapsCount = computed(() => {
           :loading="loading"
           @close="selectedPlanId = null; store.detail = null"
           @delete="handleDeletePlan"
+          @refresh="loadPlans(); selectPlan(selectedPlanId!)"
         />
       </div>
     </div>

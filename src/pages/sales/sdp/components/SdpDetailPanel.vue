@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { computed, ref, watch } from 'vue'
 import type { Sdp } from '../../../../types/sales/sdp'
+import { useSdoStore } from '../../../../stores/sales/sdo.store'
+import SdpExecuteModal from './SdpExecuteModal.vue'
 
 const props = defineProps<{
   plan: Sdp | null
@@ -10,9 +13,76 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   delete: [id: number]
+  refresh: []
 }>()
 
+const sdoStore = useSdoStore()
+
+const isExecuting = ref(false)
+const isExecutingModalOpen = ref(false)
+
 const planDetails = computed(() => props.plan?.details || [])
+
+// Watch for changes in active plan to fetch corresponding SDO if not loaded
+watch(
+  () => props.plan,
+  async (newPlan) => {
+    if (newPlan && newPlan.status !== 'Draft') {
+      try {
+        await sdoStore.fetchSdos({ limit: 100 })
+      } catch (err) {
+        console.error('Error pre-fetching SDOs:', err)
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// Computed property to find SDO associated with this plan
+const associatedSdo = computed(() => {
+  if (!props.plan) return null
+  return sdoStore.sdos.find(s => s.delivery_plan_id === props.plan!.id)
+})
+
+async function onExecuteSave(payload: { driver_id: number; vehicle_id: number }) {
+  if (!props.plan) return
+  isExecuting.value = true
+  try {
+    const res = await sdoStore.createSdo({
+      delivery_plan_id: props.plan.id,
+      vehicle_id: payload.vehicle_id,
+      driver_id: payload.driver_id
+    })
+    if (res.status) {
+      isExecutingModalOpen.value = false
+      // Re-fetch SDO list to populate the associated SDO relationship
+      await sdoStore.fetchSdos({ limit: 100 })
+      // Notify parent list to refresh the planner dashboard
+      emit('refresh')
+    }
+  } catch (err: any) {
+    console.error('Error executing SDO:', err)
+  } finally {
+    isExecuting.value = false
+  }
+}
+
+async function handleDownloadPdf() {
+  if (!associatedSdo.value) {
+    // If associatedSdo is not found, fallback to search by plan id
+    try {
+      await sdoStore.fetchSdos({ limit: 100 })
+    } catch (err) {
+      console.error(err)
+    }
+    if (!associatedSdo.value) return
+  }
+  try {
+    await sdoStore.downloadSdoPdf(associatedSdo.value.id)
+  } catch (err) {
+    console.error('Error generating PDF:', err)
+  }
+}
 </script>
 
 <template>
@@ -58,14 +128,14 @@ const planDetails = computed(() => props.plan?.details || [])
         
         <div class="flex items-center gap-2 mt-4">
           <UBadge
-            color="success"
+            :color="props.plan.status === 'Draft' ? 'warning' : props.plan.status === 'Scheduled' ? 'primary' : 'success'"
             variant="subtle"
             class="rounded-full font-bold px-2 py-0.5 text-[10px]"
           >
-            Validated
+            {{ props.plan.status }}
           </UBadge>
           <span class="text-[10px] text-muted font-medium">
-            Created on {{ new Date(props.plan.created_at).toLocaleDateString('id-ID') }}
+            Created on {{ new Date(props.plan.createdAt).toLocaleDateString('id-ID') }}
           </span>
         </div>
       </div>
@@ -126,6 +196,29 @@ const planDetails = computed(() => props.plan?.details || [])
           </div>
         </div>
 
+        <!-- Associated SDO Details if Scheduled -->
+        <div v-if="associatedSdo" class="p-4 rounded-xl border border-primary/20 bg-primary/5">
+          <span class="text-[10px] text-primary font-bold block mb-1">Active SDO Shipment</span>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <div>
+              <span class="text-[9px] text-muted block">DO Number</span>
+              <span class="text-xs font-bold text-default">{{ associatedSdo.do_number }}</span>
+            </div>
+            <div>
+              <span class="text-[9px] text-muted block">Driver</span>
+              <span class="text-xs font-bold text-default">{{ associatedSdo.driver?.full_name || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-[9px] text-muted block">Vehicle Plate</span>
+              <span class="text-xs font-bold text-default">{{ associatedSdo.vehicle?.license_plate || '-' }}</span>
+            </div>
+            <div>
+              <span class="text-[9px] text-muted block">Status</span>
+              <span class="text-xs font-black text-primary">{{ associatedSdo.delivery_status }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Created By -->
         <div class="p-4 rounded-xl border border-default bg-elevated/40">
           <span class="text-[10px] text-muted font-semibold block mb-1">Scheduled By</span>
@@ -174,9 +267,32 @@ const planDetails = computed(() => props.plan?.details || [])
         </div>
       </div>
 
-      <!-- Delete Button container -->
-      <div class="pt-6 border-t border-default">
+      <!-- Actions Container -->
+      <div class="pt-6 border-t border-default flex flex-col gap-3">
+        <!-- Trigger Assignment / execution modal if Draft -->
         <UButton
+          v-if="props.plan.status === 'Draft'"
+          color="success"
+          class="w-full font-bold justify-center"
+          icon="i-lucide-truck"
+          label="Execute Delivery Order"
+          @click="isExecutingModalOpen = true"
+        />
+
+        <!-- Print physical Surat Jalan DO document if Scheduled or Shipped -->
+        <UButton
+          v-else
+          color="primary"
+          class="w-full font-bold justify-center"
+          icon="i-lucide-printer"
+          label="Print Surat Jalan (PDF)"
+          :loading="sdoStore.loading"
+          @click="handleDownloadPdf"
+        />
+
+        <!-- Only allow deletion for Draft status plans -->
+        <UButton
+          v-if="props.plan.status === 'Draft'"
           color="error"
           variant="outline"
           class="w-full font-bold justify-center"
@@ -199,5 +315,12 @@ const planDetails = computed(() => props.plan?.details || [])
         Select a scheduled plan from the left workspace list to view its comprehensive slot configuration and allocated items.
       </p>
     </div>
+
+    <!-- Execution Modal popup -->
+    <SdpExecuteModal
+      v-model:open="isExecutingModalOpen"
+      :loading="isExecuting"
+      @save="onExecuteSave"
+    />
   </div>
 </template>

@@ -11,6 +11,7 @@ export interface SpoDetail {
     part_number: string
     part_name: string
   }
+  order?: Spo
 }
 
 export interface Spo {
