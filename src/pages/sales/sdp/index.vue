@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { CalendarDate } from '@internationalized/date'
 import { useSdpStore } from '../../../stores/sales/sdp.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
@@ -39,6 +40,24 @@ function getLocalDateString() {
 }
 
 const selectedDate = ref(getLocalDateString())
+
+const selectedDateModel = computed({
+  get() {
+    if (!selectedDate.value) return null
+    const [y, m, d] = selectedDate.value.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      selectedDate.value = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    selectedDate.value = `${yyyy}-${mm}-${dd}`
+  }
+})
 
 async function loadPlans() {
   const params: Record<string, any> = {
@@ -263,11 +282,19 @@ function formatDateIndo(dateStr: string) {
             <!-- Date Filter Selector -->
             <div class="flex items-center gap-2">
               <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Tanggal:</span>
-              <UInput
-                v-model="selectedDate"
-                type="date"
-                class="w-44"
-              />
+              <UInputDate v-model="selectedDateModel" class="w-44">
+                <template #trailing>
+                  <UPopover>
+                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <template #content>
+                      <UCalendar
+                        v-model="selectedDateModel"
+                        class="p-2"
+                      />
+                    </template>
+                  </UPopover>
+                </template>
+              </UInputDate>
             </div>
           </div>
           

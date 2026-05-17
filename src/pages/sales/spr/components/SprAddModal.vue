@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch, ref, computed } from 'vue'
 import * as z from 'zod'
+import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useSprStore } from '../../../../stores/sales/spr.store'
 import type { Spr } from '../../../../types/sales/spr'
@@ -70,6 +71,24 @@ watch(
 )
 
 const isAutomatic = computed(() => props.mode === 'edit' && props.spr?.source === 'Automatic')
+
+const dateModel = computed({
+  get() {
+    if (!state.required_date) return null
+    const [y, m, d] = state.required_date.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      state.required_date = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    state.required_date = `${yyyy}-${mm}-${dd}`
+  }
+})
 
 // ─── Parts dropdown ─────────────────────────────────────────────────────────
 function getFilteredPartItems(index: number) {
@@ -152,12 +171,19 @@ function close() {
 
           <!-- Required Date -->
           <UFormField label="Required Date" name="required_date" required>
-            <UInput
-              v-model="state.required_date"
-              type="date"
-              class="w-full"
-              :disabled="isAutomatic"
-            />
+            <UInputDate v-model="dateModel" :disabled="isAutomatic">
+              <template #trailing>
+                <UPopover>
+                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" :disabled="isAutomatic" />
+                  <template #content>
+                    <UCalendar
+                      v-model="dateModel"
+                      class="p-2"
+                    />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
           </UFormField>
         </div>
 

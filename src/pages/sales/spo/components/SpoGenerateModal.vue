@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch, ref, computed } from 'vue'
 import { format } from 'date-fns'
+import { CalendarDate } from '@internationalized/date'
 import { useSpoStore } from '../../../../stores/sales/spo.store'
 import type { SprDropdownItem } from '../../../../types/sales/spo'
 import LocationPicker from '../../../../components/LocationPicker.vue'
@@ -103,6 +104,24 @@ const selectedCustomerLabel = computed({
 
 // ─── Preview Details ──────────────────────────────────────────────────────────
 const previewDetails = ref<{ part_number: string; part_name: string; qty: number }[]>([])
+
+const dueDatePickerModel = computed({
+  get() {
+    if (!state.delivery_due_date) return null
+    const [y, m, d] = state.delivery_due_date.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      state.delivery_due_date = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    state.delivery_due_date = `${yyyy}-${mm}-${dd}`
+  }
+})
 
 // ─── Reset on open ────────────────────────────────────────────────────────────
 watch(() => props.open, (isOpen) => {
@@ -248,7 +267,19 @@ function close() {
             </div>
           </UFormField>
           <UFormField label="Delivery Due Date" required>
-            <UInput v-model="state.delivery_due_date" type="date" class="w-full" />
+            <UInputDate v-model="dueDatePickerModel">
+              <template #trailing>
+                <UPopover>
+                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <template #content>
+                    <UCalendar
+                      v-model="dueDatePickerModel"
+                      class="p-2"
+                    />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
           </UFormField>
         </div>
 

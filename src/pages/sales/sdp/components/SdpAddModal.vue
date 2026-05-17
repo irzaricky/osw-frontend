@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { reactive, watch, computed, ref } from 'vue'
 import * as z from 'zod'
+import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useSdpStore } from '../../../../stores/sales/sdp.store'
 import SdpConflictWarning from './SdpConflictWarning.vue'
@@ -43,6 +44,24 @@ const state = reactive({
   dock_id: undefined as number | undefined,
   destination: '',
   selectedSpoItems: [] as { spo_detail_id: number; planned_qty: number; remaining_qty: number; label: string }[]
+})
+
+const scheduledDateModel = computed({
+  get() {
+    if (!state.scheduled_date) return null
+    const [y, m, d] = state.scheduled_date.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      state.scheduled_date = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    state.scheduled_date = `${yyyy}-${mm}-${dd}`
+  }
 })
 
 // Validation Schema
@@ -289,7 +308,19 @@ function close() {
 
             <!-- Target Date -->
             <UFormField label="Shipment Date" name="scheduled_date" required>
-              <UInput v-model="state.scheduled_date" type="date" class="w-full" />
+              <UInputDate v-model="scheduledDateModel">
+                <template #trailing>
+                  <UPopover>
+                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <template #content>
+                      <UCalendar
+                        v-model="scheduledDateModel"
+                        class="p-2"
+                      />
+                    </template>
+                  </UPopover>
+                </template>
+              </UInputDate>
             </UFormField>
 
             <!-- Start / End Times -->

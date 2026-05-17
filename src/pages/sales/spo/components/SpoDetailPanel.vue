@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { CalendarDate } from '@internationalized/date'
 import { useSpoStore } from '../../../../stores/sales/spo.store'
 import type { Spo } from '../../../../types/sales/spo'
 import { useAppToast } from '../../../../composables/useAppToast'
@@ -122,6 +123,24 @@ const isMapOpen = ref(false)
 const editForm = ref({
   delivery_due_date: '',
   shipping_address: ''
+})
+
+const dueDatePickerModel = computed({
+  get() {
+    if (!editForm.value.delivery_due_date) return null
+    const [y, m, d] = editForm.value.delivery_due_date.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) {
+      editForm.value.delivery_due_date = ''
+      return
+    }
+    const yyyy = val.year
+    const mm = String(val.month).padStart(2, '0')
+    const dd = String(val.day).padStart(2, '0')
+    editForm.value.delivery_due_date = `${yyyy}-${mm}-${dd}`
+  }
 })
 
 function handleEditInfo() {
@@ -460,7 +479,19 @@ function openMap(address: string) {
       <template #body>
         <div class="space-y-4">
           <UFormField label="Delivery Due Date" required>
-            <UInput v-model="editForm.delivery_due_date" type="date" class="w-full" />
+            <UInputDate v-model="dueDatePickerModel">
+              <template #trailing>
+                <UPopover>
+                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <template #content>
+                    <UCalendar
+                      v-model="dueDatePickerModel"
+                      class="p-2"
+                    />
+                  </template>
+                </UPopover>
+              </template>
+            </UInputDate>
           </UFormField>
           
           <UFormField label="Shipping Address" required>
