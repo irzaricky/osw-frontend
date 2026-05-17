@@ -20,7 +20,7 @@ export interface Sdo {
   vehicle_id: number
   driver_id: number
   shipment_date: string
-  delivery_status: 'In Transit' | 'Delivered'
+  delivery_status: 'Draft' | 'Shipped' | 'In Transit' | 'Delivered'
   notes: string | null
   proof_of_delivery: string | null
   received_at: string | null

@@ -364,7 +364,7 @@ function formatDate(dateStr: string | null | undefined) {
                   </td>
                   <td class="p-4 text-xs font-mono">
                     <span class="px-2 py-0.5 bg-default rounded border border-default">
-                      {{ sdo.vehicle?.plate_number || sdo.vehicle?.license_plate || '-' }}
+                      {{ sdo.vehicle?.license_plate || '-' }}
                     </span>
                   </td>
                   <td class="p-4 text-xs">
