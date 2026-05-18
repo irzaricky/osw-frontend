@@ -21,6 +21,7 @@ export interface Sdo {
   driver_id: number
   shipment_date: string
   delivery_status: 'In Transit' | 'Delivered'
+  sla_status?: 'On Time' | 'Near Expiry' | 'Delayed'
   notes: string | null
   proof_of_delivery: string | null
   received_at: string | null
@@ -46,6 +47,7 @@ export interface Sdo {
     id: number
     dp_number: string
     scheduled_date: string
+    time_end?: string
     destination?: string
   }
   creator?: {

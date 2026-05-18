@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
@@ -235,6 +235,20 @@ function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
+
+const delayedSdosCount = computed(() => sdos.value.filter(sdo => sdo.sla_status === 'Delayed').length)
+
+function getSlaBadgeConfig(status?: string) {
+  switch (status) {
+    case 'Delayed':
+      return { color: 'error' as const, icon: 'i-lucide-clock-alert', label: 'Delayed' }
+    case 'Near Expiry':
+      return { color: 'warning' as const, icon: 'i-lucide-alert-triangle', label: 'Near Expiry' }
+    case 'On Time':
+    default:
+      return { color: 'success' as const, icon: 'i-lucide-check-circle', label: 'On Time' }
+  }
+}
 </script>
 
 <template>
@@ -253,6 +267,17 @@ function formatDate(dateStr: string | null | undefined) {
 
     <!-- Active State & Visual Dashboard Grid -->
     <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
+      <!-- SLA Warning Banner Alert -->
+      <UAlert
+        v-if="delayedSdosCount > 0"
+        color="error"
+        variant="soft"
+        icon="i-lucide-clock-alert"
+        title="Peringatan SLA Terlambat"
+        :description="`Terdapat ${delayedSdosCount} Sales Delivery Order (SDO) yang telah melampaui batas waktu pengiriman plan (time_end) dan belum terkonfirmasi terkirim.`"
+        class="border border-error/20 shadow-md font-semibold animate-pulse"
+      />
+
       <!-- Mini dashboard stats widgets -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
@@ -325,6 +350,7 @@ function formatDate(dateStr: string | null | undefined) {
                 <th class="p-4">Vehicle</th>
                 <th class="p-4">Driver</th>
                 <th class="p-4">Status</th>
+                <th class="p-4">SLA Status</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default/40">
@@ -369,11 +395,23 @@ function formatDate(dateStr: string | null | undefined) {
                       {{ sdo.delivery_status }}
                     </UBadge>
                   </td>
+                  <td class="p-4">
+                    <UBadge
+                      :color="getSlaBadgeConfig(sdo.sla_status).color"
+                      variant="subtle"
+                      size="xs"
+                      class="rounded-full font-bold"
+                      :class="sdo.sla_status === 'Delayed' ? 'animate-pulse' : ''"
+                    >
+                      <UIcon :name="getSlaBadgeConfig(sdo.sla_status).icon" class="mr-1 w-3.5 h-3.5" />
+                      {{ getSlaBadgeConfig(sdo.sla_status).label }}
+                    </UBadge>
+                  </td>
                 </tr>
 
                 <!-- Expanded Detail Area (Option A) -->
                 <tr v-if="expandedSdoId === sdo.id">
-                  <td colspan="7" class="p-6 bg-elevated/40 border-l-2 border-primary">
+                  <td colspan="8" class="p-6 bg-elevated/40 border-l-2 border-primary">
                     <!-- Loading Detail Spinner -->
                     <div v-if="loading && (!store.detail || store.detail.id !== sdo.id)" class="flex justify-center p-8">
                       <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin text-primary" />
