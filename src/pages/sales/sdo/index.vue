@@ -380,120 +380,129 @@ function formatDate(dateStr: string | null | undefined) {
                     </div>
 
                     <div v-else-if="store.detail && store.detail.id === sdo.id" class="space-y-6">
-                      <!-- Item Sub-Table inside detailed card -->
-                      <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between border-b border-default pb-3">
-                          <h4 class="text-sm font-bold text-default flex items-center gap-2">
-                            <UIcon name="i-lucide-package-open" class="w-4 h-4 text-primary" />
-                            Shipment Item Details
+                      <!-- Grid container to put Shipment Details on the left and POD on the right if In Transit -->
+                      <div :class="store.detail.delivery_status === 'In Transit' ? 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start' : 'space-y-6'">
+                        <!-- Shipment Item Details (Left / Main side) -->
+                        <div 
+                          class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4"
+                          :class="store.detail.delivery_status === 'In Transit' ? 'lg:col-span-7' : ''"
+                        >
+                          <div class="flex items-center justify-between border-b border-default pb-3">
+                            <h4 class="text-sm font-bold text-default flex items-center gap-2">
+                              <UIcon name="i-lucide-package-open" class="w-4 h-4 text-primary" />
+                              Shipment Item Details
+                            </h4>
+                            <div class="flex items-center gap-3">
+                              <!-- Print PDF Surat Jalan -->
+                              <UButton
+                                icon="i-lucide-printer"
+                                size="xs"
+                                color="primary"
+                                variant="solid"
+                                :loading="printingMap[sdo.id]"
+                                @click.stop="handlePrint(sdo.id)"
+                              >
+                                Print Surat Jalan
+                              </UButton>
+                            </div>
+                          </div>
+
+                          <!-- Sub-table of items -->
+                          <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                              <thead>
+                                <tr class="border-b border-default text-muted-foreground font-semibold">
+                                  <th class="pb-2 pr-4 w-12">No.</th>
+                                  <th class="pb-2 pr-4">Part Number</th>
+                                  <th class="pb-2 pr-4">Part Name</th>
+                                  <th class="pb-2 pr-4 text-right">Planned Qty</th>
+                                  <th class="pb-2 pr-4 text-right">Sent Qty</th>
+                                  <th class="pb-2 text-right">Received Qty</th>
+                                </tr>
+                              </thead>
+                              <tbody class="divide-y divide-default/10">
+                                <tr v-for="(item, idx) in store.detail.details" :key="item.id" class="hover:bg-default/10">
+                                  <td class="py-2 pr-4 text-muted-foreground">{{ idx + 1 }}</td>
+                                  <td class="py-2 pr-4 font-mono font-semibold">{{ item.planDetail?.spoDetail?.part?.part_number || '-' }}</td>
+                                  <td class="py-2 pr-4">{{ item.planDetail?.spoDetail?.part?.part_name || '-' }}</td>
+                                  <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">{{ item.planDetail?.planned_qty || 0 }} pcs</td>
+                                  <td class="py-2 pr-4 text-right font-bold text-primary">{{ item.sent_qty }} pcs</td>
+                                  <td class="py-2 text-right font-bold" :class="item.received_qty !== null ? 'text-success' : 'text-muted-foreground'">
+                                    {{ item.received_qty !== null ? `${item.received_qty} pcs` : '-' }}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <!-- POD Confirm Form if SDO status is In Transit (Right side) -->
+                        <div 
+                          v-if="store.detail.delivery_status === 'In Transit'" 
+                          class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-5"
+                        >
+                          <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                            <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
+                            Proof Of Delivery (POD) Confirmation
                           </h4>
-                          <div class="flex items-center gap-3">
-                            <!-- Print PDF Surat Jalan -->
-                            <UButton
-                              icon="i-lucide-printer"
-                              size="xs"
-                              color="primary"
-                              variant="solid"
-                              :loading="printingMap[sdo.id]"
-                              @click.stop="handlePrint(sdo.id)"
-                            >
-                              Print Surat Jalan
-                            </UButton>
-                          </div>
-                        </div>
 
-                        <!-- Sub-table of items -->
-                        <div class="overflow-x-auto">
-                          <table class="w-full text-left border-collapse text-xs">
-                            <thead>
-                              <tr class="border-b border-default text-muted-foreground font-semibold">
-                                <th class="pb-2 pr-4 w-12">No.</th>
-                                <th class="pb-2 pr-4">Part Number</th>
-                                <th class="pb-2 pr-4">Part Name</th>
-                                <th class="pb-2 pr-4 text-right">Planned Qty</th>
-                                <th class="pb-2 pr-4 text-right">Sent Qty</th>
-                                <th class="pb-2 text-right">Received Qty</th>
-                              </tr>
-                            </thead>
-                            <tbody class="divide-y divide-default/10">
-                              <tr v-for="(item, idx) in store.detail.details" :key="item.id" class="hover:bg-default/10">
-                                <td class="py-2 pr-4 text-muted-foreground">{{ idx + 1 }}</td>
-                                <td class="py-2 pr-4 font-mono font-semibold">{{ item.planDetail?.spoDetail?.part?.part_number || '-' }}</td>
-                                <td class="py-2 pr-4">{{ item.planDetail?.spoDetail?.part?.part_name || '-' }}</td>
-                                <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">{{ item.planDetail?.planned_qty || 0 }} pcs</td>
-                                <td class="py-2 pr-4 text-right font-bold text-primary">{{ item.sent_qty }} pcs</td>
-                                <td class="py-2 text-right font-bold" :class="item.received_qty !== null ? 'text-success' : 'text-muted-foreground'">
-                                  {{ item.received_qty !== null ? `${item.received_qty} pcs` : '-' }}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
+                          <form @submit.prevent="submitPod(store.detail)" class="space-y-4">
+                            <!-- Quantities Input -->
+                            <div class="grid grid-cols-1 gap-4">
+                              <div v-for="item in store.detail.details" :key="item.id" class="space-y-1.5">
+                                <label class="text-xs font-semibold text-default block">
+                                  Received Qty for: {{ item.planDetail?.spoDetail?.part?.part_name }} (Sent: {{ item.sent_qty }} pcs)
+                                </label>
+                                <UInput
+                                  v-model.number="podFormDetails[item.id]"
+                                  type="number"
+                                  size="sm"
+                                  min="0"
+                                  :max="item.sent_qty"
+                                  placeholder="Enter received quantity"
+                                  required
+                                  class="w-full"
+                                />
+                              </div>
+                            </div>
 
-                      <!-- POD Confirm Form if SDO status is In Transit -->
-                      <div v-if="store.detail.delivery_status === 'In Transit'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
-                        <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
-                          <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
-                          Proof Of Delivery (POD) Confirmation
-                        </h4>
+                            <!-- File and Notes Column -->
+                            <div class="grid grid-cols-1 gap-4 pt-2">
+                              <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-default block">Proof of Delivery File (Image/PDF)</label>
+                                <input
+                                  type="file"
+                                  accept="image/*,application/pdf"
+                                  required
+                                  class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
+                                  @change="handlePodFileChange($event)"
+                                />
+                              </div>
+                              <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-default block">Notes</label>
+                                <UInput
+                                  v-model="podNotes"
+                                  placeholder="Optional receipt notes..."
+                                  size="sm"
+                                  class="w-full"
+                                />
+                              </div>
+                            </div>
 
-                        <form @submit.prevent="submitPod(store.detail)" class="space-y-4">
-                          <!-- Quantities Input -->
-                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div v-for="item in store.detail.details" :key="item.id" class="space-y-1.5">
-                              <label class="text-xs font-semibold text-default block">
-                                Received Qty for: {{ item.planDetail?.spoDetail?.part?.part_name }} (Sent: {{ item.sent_qty }} pcs)
-                              </label>
-                              <UInput
-                                v-model.number="podFormDetails[item.id]"
-                                type="number"
+                            <div class="flex justify-end gap-3 pt-3 border-t border-default/50">
+                              <UButton
+                                type="submit"
+                                color="success"
+                                variant="solid"
+                                icon="i-lucide-check-circle"
                                 size="sm"
-                                min="0"
-                                :max="item.sent_qty"
-                                placeholder="Enter received quantity"
-                                required
-                                class="w-full"
-                              />
+                                :loading="submittingPodMap[store.detail.id]"
+                              >
+                                Confirm Delivery
+                              </UButton>
                             </div>
-                          </div>
-
-                          <!-- File and Notes Row -->
-                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                            <div class="space-y-1.5">
-                              <label class="text-xs font-semibold text-default block">Proof of Delivery File (Image/PDF)</label>
-                              <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                required
-                                class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
-                                @change="handlePodFileChange($event)"
-                              />
-                            </div>
-                            <div class="space-y-1.5">
-                              <label class="text-xs font-semibold text-default block">Notes</label>
-                              <UInput
-                                v-model="podNotes"
-                                placeholder="Optional receipt notes..."
-                                size="sm"
-                                class="w-full"
-                              />
-                            </div>
-                          </div>
-
-                          <div class="flex justify-end gap-3 pt-3 border-t border-default/50">
-                            <UButton
-                              type="submit"
-                              color="success"
-                              variant="solid"
-                              icon="i-lucide-check-circle"
-                              size="sm"
-                              :loading="submittingPodMap[store.detail.id]"
-                            >
-                              Confirm Delivery
-                            </UButton>
-                          </div>
-                        </form>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   </td>
