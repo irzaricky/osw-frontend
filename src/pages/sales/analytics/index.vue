@@ -5,10 +5,12 @@ import { useDebounceFn } from '@vueuse/core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import HomeDateRangePicker from '../../../components/home/HomeDateRangePicker.vue'
+import TrendsCharts from './components/TrendsCharts.vue'
+import DockHeatmap from './components/DockHeatmap.vue'
 import { useSalesAnalyticsStore } from '../../../stores/sales/analytics.store'
 
 const salesAnalyticsStore = useSalesAnalyticsStore()
-const { summary, loading, error, filters } = storeToRefs(salesAnalyticsStore)
+const { summary, trends, loading, error, filters } = storeToRefs(salesAnalyticsStore)
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -54,10 +56,16 @@ const debouncedFetch = useDebounceFn(() => {
 }, 300)
 
 async function fetchData() {
-  await salesAnalyticsStore.fetchSummary({
-    start_date: filters.value.start_date,
-    end_date: filters.value.end_date
-  })
+  await Promise.all([
+    salesAnalyticsStore.fetchSummary({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
+    }),
+    salesAnalyticsStore.fetchTrends({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
+    })
+  ])
 }
 
 async function handleDownloadExcel() {
@@ -223,6 +231,20 @@ onMounted(() => {
         </div>
       </UCard>
     </div>
+
+    <!-- Dock Heatmap Section -->
+    <DockHeatmap
+      v-if="summary"
+      :dock-utilization="summary.dock_utilization || []"
+      :loading="loading"
+    />
+
+    <!-- Trends Charts Section -->
+    <TrendsCharts
+      v-if="trends"
+      :trends="trends"
+      :loading="loading"
+    />
 
     <!-- Excel Export Premium Section -->
     <UCard v-if="summary" class="bg-gradient-to-r from-primary/10 via-background to-success/10 border-primary/20">
