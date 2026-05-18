@@ -20,12 +20,22 @@ export interface Kpis {
   sdo_status_counts: SdoStatusCounts
 }
 
+export interface DockPlan {
+  id: number
+  dp_number: string
+  scheduled_date: string
+  time_start: string
+  time_end: string
+  hours: number
+}
+
 export interface DockUtilization {
   id: number
   name: string
   total_hours: number
   avg_daily_hours?: number
   plan_count: number
+  plans?: DockPlan[]
 }
 
 export interface AnalyticsSummary {
