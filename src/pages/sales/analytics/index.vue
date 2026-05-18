@@ -246,29 +246,5 @@ onMounted(() => {
       :loading="loading"
     />
 
-    <!-- Excel Export Premium Section -->
-    <UCard v-if="summary" class="bg-gradient-to-r from-primary/10 via-background to-success/10 border-primary/20">
-      <div class="flex flex-col md:flex-row items-center justify-between gap-6 p-4">
-        <div class="space-y-2">
-          <h3 class="text-lg font-bold flex items-center gap-2">
-            <UIcon name="i-lucide-file-spreadsheet" class="w-6 h-6 text-success animate-pulse" />
-            Ekspor Laporan Pengiriman Sales Delivery Order
-          </h3>
-          <p class="text-sm text-muted">
-            Unduh seluruh log transisi, pengemudi, armada, status, serta kuantitas item terkirim vs diterima dalam format spreadsheet Excel (.xlsx) dengan visualisasi premium.
-          </p>
-        </div>
-        <UButton
-          color="success"
-          size="xl"
-          icon="i-lucide-download"
-          :loading="loading"
-          @click="handleDownloadExcel"
-          class="shadow-lg hover:shadow-success/20 transition-all duration-300 transform hover:scale-105"
-        >
-          Download Laporan (.xlsx)
-        </UButton>
-      </div>
-    </UCard>
   </div>
 </template>
