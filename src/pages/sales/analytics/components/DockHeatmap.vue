@@ -253,7 +253,7 @@ watch(() => props.dockUtilization, (newVal) => {
                   <div class="flex items-center gap-2 text-muted-foreground font-mono">
                     <UIcon name="i-lucide-clock" class="w-3.5 h-3.5" />
                     <span>{{ plan.time_start.slice(0,5) }} - {{ plan.time_end.slice(0,5) }} WIB</span>
-                    <UBadge size="xs" variant="subtle" color="gray" class="ml-1 font-sans">
+                    <UBadge size="xs" variant="subtle" color="neutral" class="ml-1 font-sans">
                       {{ plan.hours }} jam
                     </UBadge>
                   </div>
