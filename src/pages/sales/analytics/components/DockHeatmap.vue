@@ -14,29 +14,29 @@ function getOccupancyPercent(hours: number) {
 function getDockColorClass(hours: number) {
   if (hours === 0) {
     return {
-      bg: 'bg-zinc-800/10 border-zinc-700/20 text-zinc-500',
+      bg: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500',
       label: 'Idle / Kosong',
-      bar: 'bg-zinc-700/30'
+      bar: 'bg-zinc-300 dark:bg-zinc-800'
     }
   }
   if (hours <= 4.0) {
     return {
-      bg: 'bg-emerald-950/20 border-emerald-500/20 text-emerald-400',
+      bg: 'bg-white dark:bg-zinc-900 border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400',
       label: 'Rendah / Optimal',
-      bar: 'bg-emerald-500/40'
+      bar: 'bg-emerald-500'
     }
   }
   if (hours <= 8.0) {
     return {
-      bg: 'bg-indigo-950/20 border-indigo-500/20 text-indigo-400',
+      bg: 'bg-white dark:bg-zinc-900 border-indigo-400 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400',
       label: 'Sedang / Sibuk',
-      bar: 'bg-indigo-500/40'
+      bar: 'bg-indigo-500'
     }
   }
   return {
-    bg: 'bg-amber-950/20 border-amber-500/20 text-amber-400',
+    bg: 'bg-white dark:bg-zinc-900 border-amber-400 dark:border-amber-600 text-amber-600 dark:text-amber-400',
     label: 'Padat / Penuh',
-    bar: 'bg-amber-500/40'
+    bar: 'bg-amber-500'
   }
 }
 </script>
@@ -44,7 +44,7 @@ function getDockColorClass(hours: number) {
 <template>
   <UCard>
     <template #header>
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 class="font-semibold text-base">Utilisasi Loading Dock</h3>
           <p class="text-xs text-muted">
@@ -53,22 +53,22 @@ function getDockColorClass(hours: number) {
         </div>
 
         <!-- Legend -->
-        <div class="flex items-center gap-4 text-[10px] uppercase font-semibold">
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-zinc-700/60" />
-            <span class="text-muted">Idle</span>
+        <div class="flex flex-wrap items-center gap-3 text-[10px] uppercase font-semibold">
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-zinc-400" />
+            <span class="text-zinc-500">Idle (0%)</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/50" />
-            <span class="text-emerald-400">Optimal</span>
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-emerald-400 dark:border-emerald-600 bg-white dark:bg-zinc-900 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-emerald-500" />
+            <span class="text-emerald-600 dark:text-emerald-400">Optimal (&le; 40%)</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-indigo-500/50" />
-            <span class="text-indigo-400">Sibuk</span>
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-indigo-400 dark:border-indigo-600 bg-white dark:bg-zinc-900 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-indigo-500" />
+            <span class="text-indigo-600 dark:text-indigo-400">Sibuk (&le; 80%)</span>
           </div>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-amber-500/50 animate-pulse" />
-            <span class="text-amber-400">Padat</span>
+          <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-400 dark:border-amber-600 bg-white dark:bg-zinc-900 shadow-sm">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span class="text-amber-600 dark:text-amber-400">Padat (&gt; 80%)</span>
           </div>
         </div>
       </div>
@@ -83,13 +83,13 @@ function getDockColorClass(hours: number) {
       <span class="text-sm text-muted">Tidak ada data utilisasi loading dock tersedia.</span>
     </div>
 
-    <div v-else class="space-y-4">
+    <div v-else class="space-y-6">
       <div
         v-for="dock in dockUtilization"
         :key="dock.id"
-        class="border border-default rounded-xl p-4 transition-all duration-300 hover:border-primary/30 hover:bg-default/10"
+        class="border border-default rounded-xl p-5 transition-all duration-300 hover:border-primary/30 hover:bg-default/5 bg-elevated/20"
       >
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
           <div>
             <h4 class="font-bold text-sm text-default-primary flex items-center gap-2">
               <UIcon name="i-lucide-anchor" class="w-4 h-4 text-primary" />
@@ -100,13 +100,13 @@ function getDockColorClass(hours: number) {
             </p>
           </div>
 
-          <div class="flex items-center gap-4 text-right">
+          <div class="flex items-center gap-4 text-right justify-between md:justify-end">
             <div>
-              <p class="text-xs text-muted">Durasi Terisi</p>
-              <p class="text-sm font-bold">{{ dock.total_hours.toFixed(1) }} jam / 10 jam</p>
+              <p class="text-[10px] text-muted uppercase font-bold tracking-wider">Durasi Terisi</p>
+              <p class="text-xs font-semibold mt-0.5">{{ dock.total_hours.toFixed(1) }} jam / 10 jam</p>
             </div>
             <div
-              class="border rounded-lg px-2.5 py-1 text-xs font-semibold uppercase"
+              class="border rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm"
               :class="getDockColorClass(dock.total_hours).bg"
             >
               {{ getDockColorClass(dock.total_hours).label }} ({{ getOccupancyPercent(dock.total_hours).toFixed(0) }}%)
@@ -114,25 +114,32 @@ function getDockColorClass(hours: number) {
           </div>
         </div>
 
-        <!-- Custom Visual occupancy timeline bar -->
-        <div class="relative w-full h-8 bg-zinc-950/40 rounded-lg overflow-hidden border border-zinc-800 flex items-center px-1">
-          <!-- Active Segment -->
+        <!-- Occupancy Progress timeline Bar -->
+        <div class="relative w-full h-8 bg-zinc-100 dark:bg-zinc-950/40 rounded-lg overflow-hidden border border-default flex items-center p-1 select-none shadow-inner">
+          <!-- Active Occupancy Bar segment -->
           <div
-            class="h-6 rounded-md transition-all duration-500 ease-out flex items-center justify-end pr-3 text-[10px] font-bold text-white shadow-inner"
+            class="h-6 rounded-md transition-all duration-500 ease-out flex items-center justify-end pr-3 text-[10px] font-black text-white shadow-md"
             :class="getDockColorClass(dock.total_hours).bar"
             :style="{ width: `${getOccupancyPercent(dock.total_hours)}%` }"
           >
-            <span v-if="getOccupancyPercent(dock.total_hours) > 15">
-              {{ getOccupancyPercent(dock.total_hours).toFixed(0) }}%
+            <span v-if="getOccupancyPercent(dock.total_hours) > 20">
+              {{ getOccupancyPercent(dock.total_hours).toFixed(0) }}% Terisi
             </span>
           </div>
+          <!-- Centered fallback label if occupancy is low -->
+          <div v-if="getOccupancyPercent(dock.total_hours) <= 20" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-muted-foreground/80">
+            {{ getOccupancyPercent(dock.total_hours).toFixed(0) }}% Terisi
+          </div>
+        </div>
 
-          <!-- Working Hours Ticks markers overlays -->
-          <div class="absolute inset-0 flex justify-between pointer-events-none px-4 select-none">
-            <span v-for="h in 11" :key="h" class="h-full w-[1px] bg-zinc-800/60 flex items-end pb-1 text-[8px] text-muted">
-              {{ String(7 + h).padStart(2, '0') }}:00
-            </span>
-          </div>
+        <!-- Interactive Timeline Hour axis guide ruler below -->
+        <div class="flex justify-between text-[10px] text-muted-foreground px-2 pt-2.5 font-mono select-none">
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>08:00</span></div>
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>10:00</span></div>
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>12:00</span></div>
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>14:00</span></div>
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>16:00</span></div>
+          <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>18:00</span></div>
         </div>
       </div>
     </div>

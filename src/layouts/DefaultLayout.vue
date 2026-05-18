@@ -196,6 +196,14 @@ const links = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Sales Analytics',
+      icon: 'i-lucide-chart-column-big',
+      to: '/sales/analytics',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, {
