@@ -61,6 +61,23 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
+  async function fetchTrends(params: AnalyticsFilters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await analyticsService.getTrends(params)
+      const data = response.data
+      if (data.status) {
+        trends.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching analytics trends:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     // State
     summary,
@@ -70,6 +87,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     filters,
     // Actions
     fetchSummary,
+    fetchTrends,
     downloadExcel
   }
 })
