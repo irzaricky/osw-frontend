@@ -43,7 +43,14 @@ function getGroupedPlans(plans?: DockPlan[]) {
   }
   
   // Sort by date ascending
-  return Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+  const sorted = Object.values(groups).sort((a, b) => a.date.localeCompare(b.date))
+  
+  // Sort plans inside each group by time_start ascending
+  for (const group of sorted) {
+    group.plans.sort((a, b) => a.time_start.localeCompare(b.time_start))
+  }
+  
+  return sorted
 }
 
 function getOccupancyPercent(hours: number) {
