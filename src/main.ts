@@ -79,6 +79,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/sales/analytics', 
+      component: () => import('./pages/sales/analytics/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/sales/sdo', 
       component: () => import('./pages/sales/sdo/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
