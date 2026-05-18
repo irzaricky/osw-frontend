@@ -6,12 +6,14 @@ defineProps<{
   loading: boolean
 }>()
 
-function getOccupancyPercent(hours: number) {
+function getOccupancyPercent(dock: DockUtilization) {
+  const hours = dock.avg_daily_hours !== undefined ? dock.avg_daily_hours : dock.total_hours
   const percent = (hours / 10) * 100
   return Math.min(Math.max(percent, 0), 100)
 }
 
-function getDockColorClass(hours: number) {
+function getDockColorClass(dock: DockUtilization) {
+  const hours = dock.avg_daily_hours !== undefined ? dock.avg_daily_hours : dock.total_hours
   if (hours === 0) {
     return {
       bg: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500',
@@ -103,13 +105,18 @@ function getDockColorClass(hours: number) {
           <div class="flex items-center gap-4 text-right justify-between md:justify-end">
             <div>
               <p class="text-[10px] text-muted uppercase font-bold tracking-wider">Durasi Terisi</p>
-              <p class="text-xs font-semibold mt-0.5">{{ dock.total_hours.toFixed(1) }} jam / 10 jam</p>
+              <p class="text-xs font-semibold mt-0.5" v-if="dock.avg_daily_hours !== undefined">
+                {{ dock.avg_daily_hours.toFixed(1) }} jam / 10 jam <span class="text-[10px] text-muted-foreground font-normal lowercase">(rata-rata / hari)</span>
+              </p>
+              <p class="text-xs font-semibold mt-0.5" v-else>
+                {{ dock.total_hours.toFixed(1) }} jam / 10 jam
+              </p>
             </div>
             <div
               class="border rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider shadow-sm"
-              :class="getDockColorClass(dock.total_hours).bg"
+              :class="getDockColorClass(dock).bg"
             >
-              {{ getDockColorClass(dock.total_hours).label }} ({{ getOccupancyPercent(dock.total_hours).toFixed(0) }}%)
+              {{ getDockColorClass(dock).label }} ({{ getOccupancyPercent(dock).toFixed(0) }}%)
             </div>
           </div>
         </div>
@@ -119,16 +126,16 @@ function getDockColorClass(hours: number) {
           <!-- Active Occupancy Bar segment -->
           <div
             class="h-6 rounded-md transition-all duration-500 ease-out flex items-center justify-end pr-3 text-[10px] font-black text-white shadow-md"
-            :class="getDockColorClass(dock.total_hours).bar"
-            :style="{ width: `${getOccupancyPercent(dock.total_hours)}%` }"
+            :class="getDockColorClass(dock).bar"
+            :style="{ width: `${getOccupancyPercent(dock)}%` }"
           >
-            <span v-if="getOccupancyPercent(dock.total_hours) > 20">
-              {{ getOccupancyPercent(dock.total_hours).toFixed(0) }}% Terisi
+            <span v-if="getOccupancyPercent(dock) > 20">
+              {{ getOccupancyPercent(dock).toFixed(0) }}% Terisi
             </span>
           </div>
           <!-- Centered fallback label if occupancy is low -->
-          <div v-if="getOccupancyPercent(dock.total_hours) <= 20" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-muted-foreground/80">
-            {{ getOccupancyPercent(dock.total_hours).toFixed(0) }}% Terisi
+          <div v-if="getOccupancyPercent(dock) <= 20" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-muted-foreground/80">
+            {{ getOccupancyPercent(dock).toFixed(0) }}% Terisi
           </div>
         </div>
 

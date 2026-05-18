@@ -24,6 +24,7 @@ export interface DockUtilization {
   id: number
   name: string
   total_hours: number
+  avg_daily_hours?: number
   plan_count: number
 }
 
