@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
+import { compressImage } from '../../../utils'
 
 const route = useRoute()
 const store = useSdoStore()
@@ -61,12 +62,13 @@ function adjustQty(id: number, delta: number, max: number) {
 }
 
 // Photo File input handler
-function onFileChange(event: Event) {
+async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
     const file = input.files[0]
-    podFile.value = file
-    podPreviewUrl.value = URL.createObjectURL(file)
+    const compressed = await compressImage(file)
+    podFile.value = compressed
+    podPreviewUrl.value = URL.createObjectURL(compressed)
   }
 }
 

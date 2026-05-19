@@ -6,6 +6,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
 import type { Sdo } from '../../../types/sales/sdo'
 import { useIntersectionObserver } from '@vueuse/core'
+import { compressImage } from '../../../utils'
 
 const store = useSdoStore()
 const { sdos, loading, meta } = storeToRefs(store)
@@ -155,10 +156,11 @@ async function handlePrint(sdoId: number) {
   }
 }
 
-function handlePodFileChange(event: Event) {
+async function handlePodFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    podFile.value = target.files[0]
+    const file = target.files[0]
+    podFile.value = await compressImage(file)
   }
 }
 
