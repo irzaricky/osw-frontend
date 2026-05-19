@@ -2,8 +2,11 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { useAuthStore } from '../stores/auth.store'
 
 const route = useRoute()
+const authStore = useAuthStore()
+const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver')
 const open = ref(false)
 
 const links = [[{
@@ -325,7 +328,12 @@ const groups = computed(() => [{
 </script>
 
 <template>
-  <UDashboardGroup unit="rem" storage="local">
+  <div v-if="isDriver" class="h-full w-full bg-slate-900">
+    <main class="h-full w-full overflow-auto">
+      <slot />
+    </main>
+  </div>
+  <UDashboardGroup v-else unit="rem" storage="local">
     <UDashboardSidebar
       id="default"
       v-model:open="open"
