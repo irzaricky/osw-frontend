@@ -117,7 +117,6 @@ export interface CreateBomPayload {
 /** bom_number & parent_part_id tidak bisa diubah setelah create */
 export interface UpdateBomPayload {
   description?: string | null
-  doc_status_id?: number | null
   uom_id?: number | null
   notes?: string | null
   details?: BomDetailItem[]

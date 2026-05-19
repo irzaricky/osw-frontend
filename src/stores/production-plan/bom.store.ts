@@ -206,6 +206,20 @@ export const useBomStore = defineStore('bom', () => {
   }
 
   // ── Workflow ───────────────────────────────────────────────────────────────
+  async function returnToDraft(id: number | string) {
+    saving.value = true
+    error.value = null
+    try {
+      const { data } = await bomService.returnToDraft(id)
+      if (data.status) await fetchBom(id)
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
 
   async function submit(id: number | string) {
     saving.value = true
@@ -309,7 +323,7 @@ export const useBomStore = defineStore('bom', () => {
     fetchDocStatuses, fetchActivationStatuses, fetchDropdown,
     createBom, updateBom, deleteBom,
     addDetail, updateDetail, deleteDetail,
-    submit, approve, reject,
+    returnToDraft, submit, approve, reject,
     activate, deactivate, newVersion,
     clearCurrentBom,
   }

@@ -30,6 +30,13 @@ const ui = {
 
 const { columns } = useBomColumns(
   {
+    onReturnToDraft: async (bom) => {
+      try {
+        const res = await bomStore.returnToDraft(bom.id)
+        toastSuccess(res.message || 'BOM returned to draft')
+        fetchData()
+      } catch (e) { toastError(e) }
+    },
     onSubmitForApproval: async (bom) => {
       try {
         const res = await bomStore.submit(bom.id)

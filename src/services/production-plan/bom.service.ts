@@ -64,6 +64,10 @@ const bomService = {
   },
 
   // ── Approval Workflow ──────────────────────────────────────────────────────
+  returnToDraft(id: number | string) {
+    return api.post(`${BASE}/${id}/return-to-draft`)
+  },
+
   /** DRAFT atau REJECTED → PENDING_APPROVAL. Minimal 1 detail wajib ada. */
   submit(id: number | string) {
     return api.post(`${BASE}/${id}/submit`)

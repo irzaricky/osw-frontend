@@ -13,6 +13,7 @@ interface UIComponents {
 }
 
 interface Actions {
+  onReturnToDraft: (bom: Bom) => void;
   onSubmitForApproval: (bom: Bom) => void;
   onApprove: (bom: Bom) => void;
   onReject: (bom: Bom) => void;
@@ -225,6 +226,12 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
               icon: "i-lucide-x",
               color: "error" as const,
               onSelect: () => actions.onReject(row.original),
+            },
+            {
+              label: "Return to Draft",
+              icon: "i-lucide-rotate-ccw",
+              color: "warning" as const,
+              onSelect: () => actions.onReturnToDraft(row.original),
             },
           ])
         }
