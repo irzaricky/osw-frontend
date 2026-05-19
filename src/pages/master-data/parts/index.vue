@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { usePartStore } from '../../../stores/master-data/part.store'
 import { useSupplierStore } from '../../../stores/master-data/supplier.store'
+import { useUomStore } from '../../../stores/master-data/uom.store'
 import { usePartColumns } from './composables/usePartColumns'
 import { useAppToast } from '../../../composables/useAppToast'
 import type { Parts } from '../../../types/master-data/parts'
@@ -20,8 +21,10 @@ import UploadExcelModal from '../../../components/UploadExcelModal.vue'
 // Stores
 const partStore = usePartStore()
 const supplierStore = useSupplierStore()
+const uomStore = useUomStore()
 const { parts, meta, loading } = storeToRefs(partStore)
 const { dropdown: suppliers } = storeToRefs(supplierStore)
+const { dropdown: uom } = storeToRefs(uomStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef('table')
 
@@ -46,6 +49,8 @@ const filters = reactive({
   part_type_code: undefined as string | undefined
 })
 const partTypes = ref<{ code: string; name: string }[]>([])
+const partCategories = ref<{ id: number; code: string; name: string }[]>([])
+const packages = ref<{ id: number; package_code: string; name: string }[]>([])
 
 // Modal state — Form
 const isModalOpen = ref(false)
@@ -57,8 +62,10 @@ function createEmptyPart(): Partial<Parts> {
     part_number: '',
     part_name: '',
     part_type_code: '',
-    part_category: '',
+    part_category_id: undefined,
     supplier_id: undefined,
+    uom_id: undefined,
+    package_id: undefined,
     price: 0,
     safety_stock: 0,
     lead_time_days: 0,
@@ -67,9 +74,8 @@ function createEmptyPart(): Partial<Parts> {
     generation: '',
     color: '',
     color_code: '',
-    uom: '',
-    package_name: '',
-    package_code: ''
+    // package_name: '',
+    // package_code: ''
   }
 }
 
@@ -123,6 +129,28 @@ async function fetchPartTypes() {
   }
 }
 
+async function fetchPartCategories() {
+  try {
+    const res = await partService.ddCategories()
+    if (res.data.status) {
+      partCategories.value = res.data.data
+    }
+  } catch (e) {
+    console.error('Error fetching part categories:', e)
+  }
+}
+
+async function fetchPackages() {
+  try {
+    const res = await partService.ddPackages()
+    if (res.data.status) {
+      packages.value = res.data.data
+    }
+  } catch (e) {
+    console.error('Error fetching packages:', e)
+  }
+}
+
 // Download
 async function handleDownload() {
   try {
@@ -169,8 +197,10 @@ function openEditModal(part: Parts) {
     part_number: part.part_number,
     part_name: part.part_name,
     part_type_code: part.part_type_code,
-    part_category: part.part_category,
+    part_category_id: part.part_category_id,
     supplier_id: part.supplier_id,
+    uom_id: part.uom_id,
+    package_id: part.package_id,
     price: part.price,
     safety_stock: part.safety_stock,
     lead_time_days: part.lead_time_days,
@@ -179,9 +209,8 @@ function openEditModal(part: Parts) {
     generation: part.generation,
     color: part.color,
     color_code: part.color_code,
-    uom: part.uom,
-    package_name: part.package_name,
-    package_code: part.package_code
+    // package_name: part.package_name,
+    // package_code: part.package_code
   })
   isModalOpen.value = true
 }
@@ -268,104 +297,122 @@ watch(filters, () => {
 onMounted(() => {
   fetchData()
   fetchPartTypes()
+  fetchPartCategories()
+  fetchPackages()
   supplierStore.fetchDropdown()
+  uomStore.fetchDropdown()
 })
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
-    <Breadcrumbs :items="breadcrumbItems" />
+  <UDashboardPanel id="parts">
+    <template #header>
+      <UDashboardNavbar title="Parts">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
+      </UDashboardNavbar>
+    </template>
 
-    <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-        Part Management
-      </h1>
-    </div>
+    <template #body>
+      <div class="space-y-6">
+        <Breadcrumbs :items="breadcrumbItems" />
 
-    <PartFilters
-      :search="search"
-      :filters="filters"
-      :suppliers="suppliers"
-      :part-types="partTypes"
-      @update:search="onUpdateSearch"
-      @update:filters="onUpdateFilters"
-    />
+        <div class="flex justify-between items-center mb-4">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            Part Management
+          </h1>
+        </div>
 
-    <div class="flex gap-2">
-      <UButton
-        icon="i-lucide-download"
-        color="neutral"
-        variant="ghost"
-        label="Export"
-        @click="handleDownload"
-      />
-      <UButton
-        icon="i-lucide-upload"
-        color="neutral"
-        variant="ghost"
-        label="Import"
-        @click="isUploadModalOpen = true"
-      />
-      <UButton
-        icon="i-lucide-plus"
-        color="primary"
-        variant="solid"
-        label="Add Part"
-        @click="openAddModal"
-      />
-    </div>
+        <PartFilters
+          :search="search"
+          :filters="filters"
+          :suppliers="suppliers"
+          :part-types="partTypes"
+          @update:search="onUpdateSearch"
+          @update:filters="onUpdateFilters"
+        />
 
-    <PartBulkActions
-      :count="selectedCount"
-      @delete="handleBulkDelete"
-    />
+        <div class="flex gap-2">
+          <UButton
+            icon="i-lucide-download"
+            color="neutral"
+            variant="ghost"
+            label="Export"
+            @click="handleDownload"
+          />
+          <UButton
+            icon="i-lucide-upload"
+            color="neutral"
+            variant="ghost"
+            label="Import"
+            @click="isUploadModalOpen = true"
+          />
+          <UButton
+            icon="i-lucide-plus"
+            color="primary"
+            variant="solid"
+            label="Add Part"
+            @click="openAddModal"
+          />
+        </div>
 
-    <UTable
-      ref="table"
-      v-model:row-selection="rowSelection"
-      :data="parts"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    />
+        <PartBulkActions
+          :count="selectedCount"
+          @delete="handleBulkDelete"
+        />
 
-    <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
-      <div class="text-sm text-muted">
-        {{ selectedCount }} of {{ meta.total }} row(s) selected.
+        <UTable
+          ref="table"
+          v-model:row-selection="rowSelection"
+          :data="parts"
+          :columns="columns"
+          :loading="loading"
+          class="w-full"
+        />
+
+        <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+          <div class="text-sm text-muted">
+            {{ selectedCount }} of {{ meta.total }} row(s) selected.
+          </div>
+          <UPagination
+            v-model:page="meta.page"
+            :total="meta.total"
+            :items-per-page="meta.limit"
+            @update:page="fetchData"
+          />
+        </div>
+
+        <PartFormModal
+          v-model:open="isModalOpen"
+          :mode="modalMode"
+          :part="currentPart"
+          :suppliers="suppliers"
+          :part-types="partTypes"
+          :part-categories="partCategories"
+          :uoms="uom"
+          :packages="packages"
+          :loading="loading"
+          @save="handleSave"
+        />
+
+        <UploadExcelModal
+          v-model:open="isUploadModalOpen"
+          title="Upload Parts"
+          description="Upload an Excel file to import part data."
+          :loading="loading"
+          @upload="handleUpload"
+        />
+
+        <ConfirmDialog
+          v-model:open="confirmDialog.open"
+          :title="confirmDialog.title"
+          :description="confirmDialog.description"
+          confirm-label="Delete"
+          :loading="loading"
+          @confirm="confirmDialog.action?.()"
+        />
       </div>
-      <UPagination
-        v-model:page="meta.page"
-        :total="meta.total"
-        :items-per-page="meta.limit"
-        @update:page="fetchData"
-      />
-    </div>
-
-    <PartFormModal
-      v-model:open="isModalOpen"
-      :mode="modalMode"
-      :part="currentPart"
-      :suppliers="suppliers"
-      :part-types="partTypes"
-      :loading="loading"
-      @save="handleSave"
-    />
-
-    <UploadExcelModal
-      v-model:open="isUploadModalOpen"
-      title="Upload Parts"
-      description="Upload an Excel file to import part data."
-      :loading="loading"
-      @upload="handleUpload"
-    />
-
-    <ConfirmDialog
-      v-model:open="confirmDialog.open"
-      :title="confirmDialog.title"
-      :description="confirmDialog.description"
-      confirm-label="Delete"
-      :loading="loading"
-      @confirm="confirmDialog.action?.()"
-    />
-  </div>
+    </template>
+  </UDashboardPanel>
 </template>

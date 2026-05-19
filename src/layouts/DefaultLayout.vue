@@ -209,10 +209,33 @@ const links = [[{
 }, {
   label: 'Production Plan',
   icon: 'i-lucide-calendar',
-  to: '/production-plan',
-  onSelect: () => {
-    open.value = false
-  }
+  defaultOpen: route.path.startsWith('/production-plan'),
+  children: [
+    {
+      label: 'Bill of Materials',
+      icon: 'i-lucide-package',
+      to: '/production-plan/bom',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Plan Managements',
+      icon: 'i-lucide-calendar-check',
+      to: '/production-plan/plan',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Order & Schedulling',
+      icon: 'i-lucide-calendar-clock',
+      to: '/production-plan/order-schedule',
+      onSelect: () => {
+        open.value = false
+      }
+    }
+  ]
 }, {
   label: 'Warehouse',
   icon: 'i-lucide-box',

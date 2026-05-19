@@ -235,7 +235,7 @@ function goToDetail() {
       <template v-else>
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium truncate">{{ sj.job?.name ?? '—' }}</p>
-          <p class="text-xs text-muted">{{ sj.job?.job_code }} · {{ sj.job?.standard_time }}m</p>
+          <p class="text-xs text-muted">{{ sj.job?.job_code }} · {{ sj.job?.standard_time }}s</p>
         </div>
         <span class="text-xs text-muted w-14 text-center shrink-0">Seq: {{ sj.sequence }}</span>
         <UBadge

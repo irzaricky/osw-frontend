@@ -14,6 +14,9 @@ interface UIComponents {
 interface Actions {
   onEdit: (line: Line) => void
   onDelete: (line: Line) => void
+  onCalculate: (line: Line) => void
+  hasCapacityParams: (lineId: number) => boolean
+  isCalculating: (lineId: number) => boolean
 }
 
 export function useLineColumns(actions: Actions, ui: UIComponents) {
@@ -23,6 +26,15 @@ export function useLineColumns(actions: Actions, ui: UIComponents) {
         label: 'Edit',
         icon: 'i-lucide-pencil',
         onSelect: () => actions.onEdit(row.original)
+      },
+      {
+        label: actions.hasCapacityParams(row.original.id) ? 'Recalculate Capacity' : 'Calculate Capacity',
+        icon: actions.isCalculating(row.original.id)
+          ? 'i-lucide-loader-circle'
+          : actions.hasCapacityParams(row.original.id)
+            ? 'i-lucide-refresh-cw'
+            : 'i-lucide-calculator',
+        onSelect: () => actions.onCalculate(row.original)
       },
       {
         label: 'Delete',
@@ -49,6 +61,49 @@ export function useLineColumns(actions: Actions, ui: UIComponents) {
       }),
       enableSorting: false,
       enableHiding: false
+    },
+    {
+      id: 'expander',
+      header: '',
+      cell: ({ row }) => {
+        const hasParams = actions.hasCapacityParams(row.original.id)
+        const calculating = actions.isCalculating(row.original.id)
+
+        // Belum ada params & tidak sedang calculating → tombol Calculate
+        if (!hasParams && !calculating) {
+          return h(ui.UButton, {
+            icon: 'i-lucide-calculator',
+            color: 'primary',
+            variant: 'ghost',
+            size: 'xs',
+            class: 'h-8 px-2 gap-1 text-xs font-medium',
+            label: 'Calculate',
+            onClick: () => actions.onCalculate(row.original)
+          })
+        }
+
+        // Sedang calculating → spinner
+        if (calculating) {
+          return h(ui.UButton, {
+            icon: 'i-lucide-loader-circle',
+            color: 'neutral',
+            variant: 'ghost',
+            size: 'xs',
+            class: 'h-8 w-8 p-0 animate-spin',
+            disabled: true
+          })
+        }
+
+        // Sudah ada params → chevron expand / collapse
+        return h(ui.UButton, {
+          icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
+          color: 'neutral',
+          variant: 'ghost',
+          class: 'h-8 w-8 p-0',
+          onClick: () => row.toggleExpanded()
+        })
+      },
+      enableSorting: false
     },
     {
       header: 'No',

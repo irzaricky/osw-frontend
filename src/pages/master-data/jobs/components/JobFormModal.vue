@@ -68,7 +68,7 @@ function handleSave() {
           <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Select type" class="w-full" clear :disabled="loading" />
         </UFormField>
 
-        <UFormField label="Standard Time (minutes)" required>
+        <UFormField label="Standard Time (seconds)" required>
           <UInput v-model.number="standard_time" type="number" min="0" class="w-full" :disabled="loading" />
         </UFormField>
 

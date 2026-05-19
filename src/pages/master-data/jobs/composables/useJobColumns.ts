@@ -53,7 +53,7 @@ export function useJobColumns(actions: Actions, ui: UIComponents) {
     },
     {
       accessorKey: 'standard_time',
-      header: 'Std. Time (m)',
+      header: 'Std. Time (s)',
       cell: ({ row }) => h('div', { class: 'text-center text-muted' }, row.original.standard_time),
     },
     {
