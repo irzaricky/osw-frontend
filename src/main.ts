@@ -99,6 +99,60 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/production-plan/bom', 
+      name: 'bom-list',
+      component: () => import('./pages/production-plan/bom/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/bom/create',
+      name: 'bom-create',
+      component: () => import('./pages/production-plan/bom/BomFormPage.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/bom/:id', 
+      name: 'bom-detail-edit',
+      component: () => import('./pages/production-plan/bom/BomFormPage.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/plan',
+      name: 'production-plan-list',
+      component: () => import('./pages/production-plan/production-plan/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/plan/:id', 
+      name: 'production-plan-detail-edit',
+      component: () => import('./pages/production-plan/production-plan/PlanFormPage.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/plan/create', 
+      name: 'production-plan-create',
+      component: () => import('./pages/production-plan/production-plan/PlanFormPage.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/order-schedule',
+      name: 'order-schedule-list',
+      component: () => import('./pages/production-plan/order-schedule/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/order-schedule/:id', 
+      name: 'order-schedule-detail-edit',
+      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/order-schedule/create', 
+      name: 'order-schedule-create',
+      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/warehouse', 
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
