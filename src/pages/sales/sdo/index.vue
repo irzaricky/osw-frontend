@@ -241,8 +241,6 @@ function formatDate(dateStr: string | null | undefined) {
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const delayedSdosCount = computed(() => sdos.value.filter(sdo => sdo.sla_status === 'Delayed').length)
-
 function getSlaBadgeConfig(status?: string) {
   switch (status) {
     case 'Delayed':

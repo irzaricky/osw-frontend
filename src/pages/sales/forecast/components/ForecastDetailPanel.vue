@@ -987,7 +987,7 @@ onMounted(() => {
               v-model="reviewForm.remarks"
               placeholder="Enter rejection remarks..."
               class="w-full"
-              rows="3"
+              :rows="3"
             />
           </UFormField>
         </div>

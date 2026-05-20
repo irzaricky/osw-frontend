@@ -14,7 +14,7 @@ import { useAppToast } from '../../../composables/useAppToast'
 const { toastSuccess, toastError } = useAppToast()
 
 const store = useSdpStore()
-const { loading, plans, meta } = storeToRefs(store)
+const { loading, plans } = storeToRefs(store)
 const route = useRoute()
 const router = useRouter()
 
@@ -40,7 +40,7 @@ const confirmDialog = ref({
 })
 
 // Search & filter parameters
-const selectedWarehouseId = ref<number | null>(null)
+const selectedWarehouseId = ref<number | undefined>(undefined)
 
 function getLocalDateString() {
   const d = new Date()
@@ -239,14 +239,6 @@ const conflictingDocksNames = computed(() => {
   return Array.from(conflictedDocks)
 })
 
-function formatDateIndo(dateStr: string) {
-  if (!dateStr) return ''
-  const parts = dateStr.split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`
-  }
-  return new Date(dateStr).toLocaleDateString('id-ID')
-}
 </script>
 
 <template>
