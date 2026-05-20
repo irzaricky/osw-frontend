@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
