@@ -26,7 +26,7 @@ const localPart = reactive<Partial<Parts>>({
   part_number:      '',
   part_name:        '',
   part_type_code:   '',
-  part_category_id: undefined,
+  part_category: '',
   supplier_id:      undefined,
   uom_id:           undefined,
   package_id:       undefined,
@@ -48,7 +48,7 @@ watch(
       part_name:        newVal.part_name        || '',
       // Response API kadang kirim via relasi 'type', fallback ke part_type_code langsung
       part_type_code:   newVal.part_type_code   || (newVal as any).type?.code || '',
-      part_category_id: newVal.part_category_id ?? undefined,
+      part_category: newVal.part_category || '',
       supplier_id:      newVal.supplier_id      ?? undefined,
       uom_id:           newVal.uom_id           ?? undefined,
       package_id:       newVal.package_id       ?? undefined,
@@ -82,16 +82,16 @@ const selectedPartType = computed({
 // Computed: Part Category select
 const partCategoryItems = computed(() => props.partCategories.map(c => c.name))
 
-const selectedPartCategory = computed({
-  get() {
-    return props.partCategories.find(c => c.id === localPart.part_category_id)?.name
-  },
-  set(value: string | undefined) {
-    localPart.part_category_id = value
-      ? props.partCategories.find(c => c.name === value)?.id
-      : undefined
-  }
-})
+// const selectedPartCategory = computed({
+//   get() {
+//     return props.partCategories.find(c => c.id === localPart.part_category_id)?.name
+//   },
+//   set(value: string | undefined) {
+//     localPart.part_category_id = value
+//       ? props.partCategories.find(c => c.name === value)?.id
+//       : undefined
+//   }
+// })
 
 const supplierItems = computed(() => props.suppliers.map(s => s.name))
 
@@ -195,10 +195,9 @@ function handleClose() {
           </UFormField>
 
           <UFormField label="Category">
-            <USelectMenu
-              v-model="selectedPartCategory"
-              :items="partCategoryItems"
-              placeholder="Select category"
+            <UInput
+              v-model="localPart.part_category"
+              placeholder="e.g. BIG, MEDIUM"
               class="w-full"
               :disabled="loading"
             />

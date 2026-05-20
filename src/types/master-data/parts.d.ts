@@ -37,7 +37,7 @@ export interface Parts {
   part_number: string
   part_name: string
   part_type_code: string
-  part_category_id: number
+  part_category: string | null
   supplier_id?: number | null
   uom_id?: number | null
   package_id?: number | null
