@@ -72,7 +72,7 @@ export function usePartColumns(actions: Actions, ui: UIComponents) {
     {
       accessorKey: 'category',
       header: 'Category',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.category?.name ?? '-')
+      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.part_category ?? '-')
     },
     {
       accessorKey: 'supplier',
