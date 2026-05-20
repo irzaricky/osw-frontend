@@ -56,7 +56,6 @@ const inventoryValue = reactive<any>({
 const inventoryHealth = ref({
   out_of_stock: 0,
   critical_stock: 0,
-  below_safety: 0,
   safe_stock: 0,
   overstock: 0
 })
@@ -390,7 +389,6 @@ const inventoryHealthChartOptions = computed(() => ({
   labels: [
     'Out of Stock',
     'Critical',
-    'Below Safety',
     'Safe',
     'Overstock'
   ],
@@ -411,7 +409,6 @@ const inventoryHealthChartOptions = computed(() => ({
 const inventoryHealthChartSeries = computed(() => [
   inventoryHealth.value.out_of_stock || 0,
   inventoryHealth.value.critical_stock || 0,
-  inventoryHealth.value.below_safety || 0,
   inventoryHealth.value.safe_stock || 0,
   inventoryHealth.value.overstock || 0
 ])

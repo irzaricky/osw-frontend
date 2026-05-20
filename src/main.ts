@@ -13,8 +13,6 @@ import { useAuthStore } from './stores/auth.store'
 
 import VueApexCharts from 'vue3-apexcharts'
 
-
-
 addCollection(lucideIcons)
 
 const app = createApp(App)
@@ -304,6 +302,16 @@ const router = createRouter({
     { 
       path: '/warehouse/material-receiving/set-arrived-process/:id', 
       component: () => import('./pages/warehouse/material-receiving/set-arrived-process.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/material-receiving/view-progress/:id', 
+      component: () => import('./pages/warehouse/material-receiving/view-progress/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/warehouse/material-receiving/view-progress/:id/quantity-checking/:mdo_detail_id', 
+      component: () => import('./pages/warehouse/material-receiving/view-progress/quantity-checking.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     { 

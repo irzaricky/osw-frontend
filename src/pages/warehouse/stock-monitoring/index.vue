@@ -162,7 +162,8 @@ const selectedStatus = computed({
 const statusItems = [
   { label: 'Empty', value: 'Empty' },
   { label: 'Available', value: 'Available' },
-  { label: 'Full', value: 'Full' }
+  { label: 'Full', value: 'Full' },
+  { label: 'Unconfigured', value: 'Unconfigured' }
 ]
 
 const exportItems = computed(() => [
@@ -479,9 +480,19 @@ async function exportCurrentView() {
       )
     }
 
+    const now = new Date()
+
+    const formatted =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      '_' +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0')
+
     XLSX.writeFile(
       workbook,
-      `stock-monitoring-${activeTab.value}-current-view-${Date.now()}.xlsx`
+      `stock-monitoring-current view report-${formatted}.xlsx`
     )
   } catch (error) {
     console.error(error)
@@ -602,9 +613,19 @@ async function exportFullReport() {
       'Bin Content'
     )
 
+    const now = new Date()
+
+    const formatted =
+      now.getFullYear() +
+      String(now.getMonth() + 1).padStart(2, '0') +
+      String(now.getDate()).padStart(2, '0') +
+      '_' +
+      String(now.getHours()).padStart(2, '0') +
+      String(now.getMinutes()).padStart(2, '0')
+
     XLSX.writeFile(
       workbook,
-      `stock-monitoring-full-report-${Date.now()}.xlsx`
+      `stock-monitoring-full report-${formatted}.xlsx`
     )
   } catch (error) {
     console.error(error)

@@ -73,6 +73,21 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
+  async function fetchProgress(id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.getProgress(id)
+      const data = response.data
+      return data.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching progress material receiving:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function printLabel(mdo_detail_id: number | string, part_number: string) {
     try {
       const response = await materialReceivingService.printLabel(mdo_detail_id)
@@ -92,6 +107,67 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
       error.value = e.response?.data?.message || e.message
       console.error('Error printing label:', e)
       throw e
+    }
+  }
+
+  // Actions - Quantity Checking
+  async function fetchQuantityCheckingDetail(mdo_detail_id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.getQuantityCheckingDetail(mdo_detail_id)
+      const data = response.data
+      return data.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching quantity checking detail:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function scanQuantityLabel(payload: { label_number: string }) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.scanQuantityLabel(payload)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error scanning quantity label:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function markQuantityIncomplete(mr_item_label_id: number | string, payload: { actual_qty: number }) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.markQuantityIncomplete(mr_item_label_id, payload)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error marking quantity incomplete:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function submitQuantityChecking (mdo_detail_id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.submitQuantityChecking(mdo_detail_id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error submitting quantity checking:', e)
+      throw e
+    } finally {
+      loading.value = false
     }
   }
 
@@ -135,7 +211,12 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     fetchMaterialReceivings,
     fetchMaterialReceiving,
     setArrived,
+    fetchProgress,
     printLabel,
+    fetchQuantityCheckingDetail,
+    scanQuantityLabel,
+    markQuantityIncomplete,
+    submitQuantityChecking,
     fetchDropdown,
     fetchMaterialReceivingStatusesDropdown
   }

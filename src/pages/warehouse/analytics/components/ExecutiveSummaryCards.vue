@@ -72,16 +72,6 @@ function formatPartCategory(category?: string) {
 
     <UCard>
       <p class="text-sm text-muted">
-        Low Stock Parts
-      </p>
-
-      <p class="text-3xl font-bold mt-2 text-error">
-        {{ executiveSummary.low_stock_parts || 0 }}
-      </p>
-    </UCard>
-
-    <UCard>
-      <p class="text-sm text-muted">
         Warehouse Utilization
       </p>
 
