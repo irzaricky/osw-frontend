@@ -61,7 +61,7 @@ const columns = [
   },
   {
     accessorKey: 'safety_stock',
-    header: 'Safety Stock (box)',
+    header: 'Safety Stock (kanban)',
     cell: ({ row }: any) => row.original.safety_stock ?? 0
   },
   {

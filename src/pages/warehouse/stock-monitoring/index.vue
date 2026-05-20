@@ -162,7 +162,8 @@ const selectedStatus = computed({
 const statusItems = [
   { label: 'Empty', value: 'Empty' },
   { label: 'Available', value: 'Available' },
-  { label: 'Full', value: 'Full' }
+  { label: 'Full', value: 'Full' },
+  { label: 'Unconfigured', value: 'Unconfigured' }
 ]
 
 const exportItems = computed(() => [

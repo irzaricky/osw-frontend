@@ -3,7 +3,6 @@ defineProps<{
   inventoryHealth: {
     out_of_stock: number
     critical_stock: number
-    below_safety: number
     safe_stock: number
     overstock: number
   }
@@ -50,15 +49,6 @@ defineProps<{
         </p>
         <p class="text-2xl font-bold mt-2 text-error">
           {{ inventoryHealth.critical_stock }}
-        </p>
-      </UCard>
-
-      <UCard>
-        <p class="text-sm text-muted">
-          Below Safety
-        </p>
-        <p class="text-2xl font-bold mt-2 text-warning">
-          {{ inventoryHealth.below_safety }}
         </p>
       </UCard>
 
