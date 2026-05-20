@@ -176,23 +176,43 @@ function setupAdaptableTable(forecast: any) {
 }
 
 // ─── Part Management ─────────────────────────────────────────────────────────
-function addNewPart() {
+async function addNewPart() {
   if (!selectedNewParts.value.length) return
 
-  selectedNewParts.value.forEach(partId => {
+  const newPartIds = selectedNewParts.value.filter(partId => {
+    const partToAdd = store.partsDropdown.find(p => p.id === partId)
+    return partToAdd && !parts.value.find(p => p.id === partToAdd.id)
+  })
+
+  if (!newPartIds.length) {
+    selectedNewParts.value = []
+    return
+  }
+
+  let historicalData: Record<number, Record<string, number>> = {}
+  try {
+    const res = await store.fetchHistoricalQty(props.forecastId, newPartIds)
+    if (res.status && res.data) {
+      historicalData = res.data
+    }
+  } catch (err) {
+    console.error('Error fetching historical qty:', err)
+  }
+
+  newPartIds.forEach(partId => {
     const partToAdd = store.partsDropdown.find(p => p.id === partId)
     if (!partToAdd) return
 
-    if (parts.value.find(p => p.id === partToAdd.id)) return
-
     parts.value.push(partToAdd)
     dataEntry.value[partToAdd.id] = {}
+
+    const partHist = historicalData[partToAdd.id] || {}
 
     // Auto-set qty_status based on period: current/past = Fix, future = Temporary
     if (is4Month.value) {
       periods.value.forEach(p => {
         dataEntry.value[partToAdd.id][p.date] = {
-          forecast_qty: 0,
+          forecast_qty: partHist[p.date] || 0,
           qty_status: getAutoQtyStatus(p.date),
           isNew: true
         }
@@ -200,7 +220,7 @@ function addNewPart() {
     } else if (periods.value.length > 0) {
       const p = periods.value[0]
       dataEntry.value[partToAdd.id][p.date] = {
-        forecast_qty: 0,
+        forecast_qty: partHist[p.date] || 0,
         qty_status: getAutoQtyStatus(p.date),
         isNew: true
       }

@@ -254,6 +254,20 @@ export const useForecastStore = defineStore('forecast', () => {
     }
   }
 
+  async function fetchHistoricalQty(forecastId: number | string, partIds: number[]) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await forecastService.getHistoricalQty(forecastId, partIds)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     forecasts,
     detail,
@@ -280,6 +294,7 @@ export const useForecastStore = defineStore('forecast', () => {
     reviewForecast,
     downloadTemplateDetail,
     uploadTemplateDetail,
-    exportForecastExcel
+    exportForecastExcel,
+    fetchHistoricalQty
   }
 })

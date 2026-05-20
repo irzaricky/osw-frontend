@@ -84,6 +84,12 @@ const forecastService = {
       params: { log_id: logId },
       responseType: 'blob' 
     })
+  },
+
+  getHistoricalQty(forecastId: number | string, partIds: number[]) {
+    const params = new URLSearchParams()
+    partIds.forEach(id => params.append('part_ids[]', String(id)))
+    return api.get(`${BASE}/${forecastId}/historical-qty`, { params })
   }
 }
 
