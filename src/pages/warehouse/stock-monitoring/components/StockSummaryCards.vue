@@ -100,12 +100,12 @@ function formatDate(value?: string | null) {
             <p class="text-2xl font-bold">{{ summary?.full_bins ?? 0 }}</p>
 
             <div class="mt-2 space-y-1">
-              <p v-for="bin in summary?.full_bin_preview || []" :key="bin.bin_code" class="text-xs truncate">
+              <!-- <p v-for="bin in summary?.full_bin_preview || []" :key="bin.bin_code" class="text-xs truncate">
                 <span class="font-medium">{{ bin.bin_code }}</span>
                 <span class="text-muted">
                   — {{ bin.used_capacity }}/{{ bin.capacity }}
                 </span>
-              </p>
+              </p> -->
 
               <p v-if="!(summary?.full_bin_preview || []).length" class="text-xs text-muted">
                 No full bin
