@@ -71,7 +71,7 @@ function formatLocalDate(date: Date) {
 // Columns
 const { columns } = useMaterialReceivingColumns({
   onProcess: handleProcess,
-  onViewProgress: () => {}
+  onViewProgress: handleProgress
 }, uiComponents, pagination)
 
 // Fetch data
@@ -105,6 +105,10 @@ function onUpdateFilters(partial: Record<string, any>) {
 
 function handleProcess(row: MaterialReceiving) {
   router.push(`/warehouse/material-receiving/set-arrived-process/${row.id}`)
+}
+
+function handleProgress(row: MaterialReceiving) {
+  router.push(`/warehouse/material-receiving/view-progress/${row.id}`)
 }
 
 // Watchers
