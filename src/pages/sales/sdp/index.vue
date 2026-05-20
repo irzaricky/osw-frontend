@@ -8,6 +8,10 @@ import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
 import SdpAddModal from './components/SdpAddModal.vue'
 import SdpDetailPanel from './components/SdpDetailPanel.vue'
+import ConfirmDialog from '../../../components/ConfirmDialog.vue'
+import { useAppToast } from '../../../composables/useAppToast'
+
+const { toastSuccess, toastError } = useAppToast()
 
 const store = useSdpStore()
 const { loading, plans, meta } = storeToRefs(store)
@@ -27,6 +31,13 @@ const createLoading = ref(false)
 const presetSpoId = ref<number | null>(null)
 
 const selectedPlan = computed(() => store.detail)
+
+const confirmDialog = ref({
+  open: false,
+  title: 'Delete Delivery Plan',
+  description: 'Are you sure you want to delete this delivery plan? This action cannot be undone.',
+  id: null as number | null
+})
 
 // Search & filter parameters
 const selectedWarehouseId = ref<number | null>(null)
@@ -123,35 +134,40 @@ async function handleSavePlan(payload: any) {
         presetSpoId.value = null
       }
       await loadPlans()
-      alert('Sales Delivery Plan scheduled successfully!')
+      toastSuccess('Sales Delivery Plan scheduled successfully!')
     } else {
-      alert(res.message || 'Failed to schedule plan.')
+      toastError(res.message || 'Failed to schedule plan.')
     }
   } catch (e: any) {
     const msg = e.response?.data?.message || 'Error occurred while saving.'
-    alert(`Scheduling Failed: ${msg}`)
+    toastError(`Scheduling Failed: ${msg}`)
   } finally {
     createLoading.value = false
   }
 }
 
 // Deletion Handler
-async function handleDeletePlan(id: number) {
-  if (!confirm('Are you sure you want to delete this delivery plan? This action cannot be undone.')) {
-    return
-  }
+function handleDeletePlan(id: number) {
+  confirmDialog.value.id = id
+  confirmDialog.value.open = true
+}
+
+async function executeDeletePlan() {
+  const id = confirmDialog.value.id
+  if (!id) return
+  confirmDialog.value.open = false
   try {
     const res = await store.deleteSdp(id)
     if (res.status) {
       selectedPlanId.value = null
       store.detail = null
       await loadPlans()
-      alert('Plan deleted successfully.')
+      toastSuccess('Plan deleted successfully.')
     } else {
-      alert(res.message || 'Failed to delete plan.')
+      toastError(res.message || 'Failed to delete plan.')
     }
   } catch (e: any) {
-    alert(`Deletion Failed: ${e.response?.data?.message || e.message}`)
+    toastError(`Deletion Failed: ${e.response?.data?.message || e.message}`)
   }
 }
 
@@ -268,7 +284,7 @@ function formatDateIndo(dateStr: string) {
           <div class="flex flex-wrap items-center gap-4">
             <!-- Warehouse Selection -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Gudang:</span>
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Warehouse:</span>
               <USelectMenu
                 v-model="selectedWarehouseId"
                 :items="store.warehouses"
@@ -281,7 +297,7 @@ function formatDateIndo(dateStr: string) {
             
             <!-- Date Filter Selector -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Tanggal:</span>
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Date:</span>
               <UInputDate v-model="selectedDateModel" class="w-44">
                 <template #trailing>
                   <UPopover>
@@ -370,7 +386,7 @@ function formatDateIndo(dateStr: string) {
                     {{ dock.name }}
                   </span>
                   <span class="text-[10px] font-medium text-muted mt-0.5">
-                    Gudang: {{ activeWarehouse?.name }}
+                    Warehouse: {{ activeWarehouse?.name }}
                   </span>
                 </div>
 
@@ -468,6 +484,16 @@ function formatDateIndo(dateStr: string) {
       :loading="createLoading"
       :preset-spo-id="presetSpoId"
       @save="handleSavePlan"
+    />
+
+    <!-- Confirm Dialog -->
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Delete"
+      :loading="loading"
+      @confirm="executeDeletePlan"
     />
   </div>
 </template>

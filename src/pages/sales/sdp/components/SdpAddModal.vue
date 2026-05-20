@@ -6,6 +6,9 @@ import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useSdpStore } from '../../../../stores/sales/sdp.store'
 import SdpConflictWarning from './SdpConflictWarning.vue'
+import { useAppToast } from '../../../../composables/useAppToast'
+
+const { toastError } = useAppToast()
 
 const formRef = ref()
 const store = useSdpStore()
@@ -34,6 +37,11 @@ const timeOptions = [
   '17:00', '17:30',
   '18:00'
 ]
+
+const endTimeOptions = computed(() => {
+  if (!state.time_start) return []
+  return timeOptions.filter(t => t > state.time_start)
+})
 
 // State parameters for form
 const state = reactive({
@@ -193,6 +201,15 @@ watch(
   { deep: true }
 )
 
+watch(
+  () => state.time_start,
+  (newStart) => {
+    if (newStart && state.time_end && state.time_end <= newStart) {
+      state.time_end = ''
+    }
+  }
+)
+
 // Handle SPO item check state
 function toggleSpoItem(item: any) {
   const idx = state.selectedSpoItems.findIndex(x => x.spo_detail_id === item.id)
@@ -242,7 +259,7 @@ function submitForm() {
 
 function onSubmit(event: FormSubmitEvent<any>) {
   if (state.selectedSpoItems.length === 0) {
-    alert('Please select at least one SPO item to schedule.')
+    toastError('Please select at least one SPO item to schedule.')
     return
   }
 
@@ -342,9 +359,10 @@ function close() {
               <UFormField label="End Time" name="time_end" required>
                 <USelectMenu
                   v-model="state.time_end"
-                  :items="timeOptions"
+                  :items="endTimeOptions"
                   class="w-full"
                   placeholder="Select end"
+                  :disabled="!state.time_start"
                 />
               </UFormField>
             </div>

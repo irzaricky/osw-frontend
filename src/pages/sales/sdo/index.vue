@@ -7,6 +7,9 @@ import { storeToRefs } from 'pinia'
 import type { Sdo } from '../../../types/sales/sdo'
 import { useIntersectionObserver } from '@vueuse/core'
 import { compressImage } from '../../../utils'
+import { useAppToast } from '../../../composables/useAppToast'
+
+const { toastSuccess, toastError } = useAppToast()
 
 const store = useSdoStore()
 const { sdos, loading, meta } = storeToRefs(store)
@@ -166,7 +169,7 @@ async function handlePodFileChange(event: Event) {
 
 async function submitPod(sdo: any) {
   if (!podFile.value) {
-    alert('Please upload a Proof of Delivery file.')
+    toastError('Please upload a Proof of Delivery file.')
     return
   }
 
@@ -196,13 +199,13 @@ async function submitPod(sdo: any) {
       expandedSdoId.value = null
       store.detail = null
 
-      alert('Proof of Delivery confirmed successfully!')
+      toastSuccess('Proof of Delivery confirmed successfully!')
     } else {
-      alert(res.message || 'Failed to confirm delivery.')
+      toastError(res.message || 'Failed to confirm delivery.')
     }
   } catch (error: any) {
     console.error('Error submitting POD:', error)
-    alert(error.response?.data?.message || 'Error occurred while confirming delivery.')
+    toastError(error.response?.data?.message || 'Error occurred while confirming delivery.')
   } finally {
     submittingPodMap.value[sdo.id] = false
   }
@@ -269,19 +272,8 @@ function getSlaBadgeConfig(status?: string) {
 
     <!-- Active State & Visual Dashboard Grid -->
     <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-      <!-- SLA Warning Banner Alert -->
-      <UAlert
-        v-if="delayedSdosCount > 0"
-        color="error"
-        variant="soft"
-        icon="i-lucide-clock-alert"
-        title="Peringatan SLA Terlambat"
-        :description="`Terdapat ${delayedSdosCount} Sales Delivery Order (SDO) yang telah melampaui batas waktu pengiriman plan (time_end) dan belum terkonfirmasi terkirim.`"
-        class="border border-error/20 shadow-md font-semibold animate-pulse"
-      />
-
       <!-- Mini dashboard stats widgets -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
           <span class="text-xs text-muted-foreground font-semibold">In Transit SDO</span>
           <span class="text-2xl font-black mt-2 text-warning">{{ stats.inTransitCount }}</span>
@@ -293,10 +285,6 @@ function getSlaBadgeConfig(status?: string) {
         <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
           <span class="text-xs text-muted-foreground font-semibold">Total Dispatched</span>
           <span class="text-2xl font-black mt-2 text-primary">{{ stats.totalDispatched }} pcs</span>
-        </div>
-        <div class="bg-elevated border border-default rounded-2xl p-4 shadow-sm flex flex-col justify-between">
-          <span class="text-xs text-muted-foreground font-semibold">Delivery Shortages</span>
-          <span class="text-2xl font-black mt-2 text-error">{{ stats.shortagesCount }} pcs</span>
         </div>
       </div>
 
