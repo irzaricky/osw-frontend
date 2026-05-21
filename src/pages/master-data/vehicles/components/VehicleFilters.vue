@@ -4,6 +4,7 @@ import type { DropdownOption } from '../composables/useVehicleDropdowns'
 interface Filters {
   vehicle_type_id: number | undefined
   status: string | undefined
+  availability_status: string | undefined
 }
 
 const props = defineProps<{
@@ -41,6 +42,18 @@ function updateFilter(key: keyof Filters, value: any) {
       placeholder="Filter by Status" 
       class="w-full md:w-40"
       @update:model-value="updateFilter('status', $event)"
+    />
+    <USelect 
+      :model-value="props.filters.availability_status"
+      :items="[
+        { label: 'All Statuses', value: undefined },
+        { label: 'Available', value: 'Available' },
+        { label: 'In Transit', value: 'In Transit' },
+        { label: 'Maintenance', value: 'Maintenance' }
+      ]" 
+      placeholder="Filter by Availability" 
+      class="w-full md:w-44"
+      @update:model-value="updateFilter('availability_status', $event)"
     />
     
     <UInput 

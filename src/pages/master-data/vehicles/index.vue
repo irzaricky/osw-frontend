@@ -50,7 +50,8 @@ const tabs = [
 const search = ref('')
 const filters = reactive({
   vehicle_type_id: undefined as number | undefined,
-  status: undefined as string | undefined
+  status: undefined as string | undefined,
+  availability_status: undefined as string | undefined
 })
 
 // Dropdowns (shared composable)
@@ -69,7 +70,8 @@ function createEmptyVehicle(): Partial<Vehicle> {
     plate_number: '',
     vehicle_type_id: undefined,
     image: undefined,
-    status: true
+    status: true,
+    availability_status: 'Available'
   }
 }
 
@@ -126,6 +128,7 @@ async function fetchData() {
   }
   if (filters.vehicle_type_id) params.vehicle_type_id = filters.vehicle_type_id
   if (filters.status !== undefined && filters.status !== 'all') params.status = filters.status
+  if (filters.availability_status) params.availability_status = filters.availability_status
 
   await vehicleStore.fetchVehicles(params)
 }
@@ -145,7 +148,8 @@ function openEditModal(vehicle: Vehicle) {
     plate_number: vehicle.plate_number,
     vehicle_type_id: vehicle.vehicle_type?.id,
     image: vehicle.image,
-    status: vehicle.status
+    status: vehicle.status,
+    availability_status: vehicle.availability_status || 'Available'
   })
   isModalOpen.value = true
 }
@@ -375,6 +379,9 @@ onMounted(() => {
                   </p>
                   <p class="text-sm">
                     <span class="text-muted">Type:</span> {{ row.original.vehicle_type?.name || '-' }}
+                  </p>
+                  <p class="text-sm">
+                    <span class="text-muted">Availability:</span> {{ row.original.availability_status || 'Available' }}
                   </p>
                 </div>
                 <div class="space-y-1">

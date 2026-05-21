@@ -32,6 +32,9 @@ watch(() => props.vehicle, (val) => {
   if (!form.vehicle_type_id && val.vehicle_type?.id) {
     form.vehicle_type_id = val.vehicle_type.id
   }
+  if (!form.availability_status) {
+    form.availability_status = 'Available'
+  }
   
   // Clear file input when opening modal
   imageFile.value = null
@@ -47,6 +50,9 @@ watch(() => props.open, (isOpen) => {
     }
     // Reset to empty vehicle
     Object.assign(form, props.vehicle)
+    if (!form.availability_status) {
+      form.availability_status = 'Available'
+    }
     imageFile.value = null
     imageError.value = null
   }
@@ -84,6 +90,7 @@ function handleSave() {
   if (form.vehicle_type_id !== undefined && form.vehicle_type_id !== null) {
     formData.append('vehicle_type_id', form.vehicle_type_id.toString())
   }
+  if (form.availability_status) formData.append('availability_status', form.availability_status)
   
   // Add status only when editing
   if (props.mode === 'edit') {
@@ -128,6 +135,19 @@ function close() {
             v-model="form.vehicle_type_id" 
             :items="vehicleTypes.map((vt: DropdownOption) => ({ label: vt.name, value: vt.id }))" 
             placeholder="Select Vehicle Type" 
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Availability Status" name="availability_status" required>
+          <USelect 
+            v-model="form.availability_status" 
+            :items="[
+              { label: 'Available', value: 'Available' },
+              { label: 'In Transit', value: 'In Transit' },
+              { label: 'Maintenance', value: 'Maintenance' }
+            ]" 
+            placeholder="Select Availability Status" 
             class="w-full"
           />
         </UFormField>

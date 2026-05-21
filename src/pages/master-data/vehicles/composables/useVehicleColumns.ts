@@ -69,6 +69,21 @@ export function useVehicleColumns(actions: ColumnActions, components: ColumnComp
       }
     },
     {
+      accessorKey: 'availability_status',
+      header: 'Availability',
+      cell: ({ row }) => {
+        const availability = row.original.availability_status || 'Available'
+        let color: 'success' | 'primary' | 'warning' = 'success'
+        if (availability === 'In Transit') color = 'primary'
+        else if (availability === 'Maintenance') color = 'warning'
+        return h(
+          UBadge,
+          { color, variant: 'subtle' },
+          () => availability
+        )
+      }
+    },
+    {
       id: 'actions',
       header: '',
       cell: ({ row }) => {

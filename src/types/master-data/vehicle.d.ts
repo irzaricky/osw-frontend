@@ -14,6 +14,7 @@ export interface Vehicle {
   vehicle_type_id: number
   image?: string
   status?: boolean
+  availability_status?: string
   vehicle_type?: VehicleType
   createdAt?: string
   updatedAt?: string
