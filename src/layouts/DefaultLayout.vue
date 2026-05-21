@@ -253,6 +253,22 @@ const links = [[{
       }
     },
     {
+      label: 'Good Receipt',
+      icon: 'i-lucide-clipboard-check',
+      to: '/warehouse/good-receipt',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Warranty & Claim',
+      icon: 'i-lucide-shield-alert',
+      to: '/warehouse/warranty-and-claim',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
       label: 'Work Order Storing',
       icon: 'i-lucide-clipboard-list',
       to: '/warehouse/work-order-storing',
