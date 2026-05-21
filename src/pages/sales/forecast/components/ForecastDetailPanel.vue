@@ -24,8 +24,9 @@ const toast = useToast()
 // ─── Data ────────────────────────────────────────────────────────────────────
 const periods = ref<{ date: string; label: string; isCurrent: boolean; isPast: boolean }[]>([])
 const parts = ref<{ id: number; part_number: string; part_name: string }[]>([])
-const dataEntry = ref<Record<number, Record<string, { forecast_qty: number; qty_status: string; isNew?: boolean }>>>({})
+const dataEntry = ref<Record<number, Record<string, { forecast_qty: number; qty_status: string; isNew?: boolean; isRecommended?: boolean; recommended_qty?: number }>>>({})
 const loadingDetail = ref(false)
+const loadingRecommendation = ref(false)
 const isDirty = ref(false)
 
 // Watch for any changes in dataEntry or parts to set isDirty to true
@@ -121,7 +122,7 @@ async function loadDetail() {
   try {
     const data = await store.fetchForecastById(props.forecastId)
     if (data?.data) {
-      setupAdaptableTable(data.data)
+      await setupAdaptableTable(data.data)
     }
   } catch {
     toast.add({ title: 'Error', description: 'Failed to load forecast details', color: 'error' })
@@ -132,7 +133,7 @@ async function loadDetail() {
   }
 }
 
-function setupAdaptableTable(forecast: any) {
+async function setupAdaptableTable(forecast: any) {
   periods.value = []
   const today = new Date()
   const currentMonthKey = getPeriodKey(today.getFullYear(), today.getMonth() + 1)
@@ -161,10 +162,14 @@ function setupAdaptableTable(forecast: any) {
       if (!dataEntry.value[d.part_id]) {
         dataEntry.value[d.part_id] = {}
       }
-      dataEntry.value[d.part_id][d.period_date] = {
-        forecast_qty: d.forecast_qty,
+      const dDate = new Date(d.period_date)
+      const dKey = getPeriodKey(dDate.getFullYear(), dDate.getMonth() + 1)
+
+      dataEntry.value[d.part_id][dKey] = {
+        forecast_qty: Number(d.forecast_qty),
         qty_status: d.qty_status,
-        isNew: false
+        isNew: false,
+        isRecommended: false
       }
       if (!partsMap.has(d.part_id) && d.part) {
         partsMap.set(d.part_id, d.part)
@@ -173,6 +178,67 @@ function setupAdaptableTable(forecast: any) {
   }
 
   parts.value = Array.from(partsMap.values())
+
+  // Trigger auto-fill for parts that are completely empty (all periods 0)
+  if (isEditable.value && parts.value.length > 0) {
+    await autoFillEmptyParts()
+  }
+}
+
+async function autoFillEmptyParts() {
+  const emptyPartIds: number[] = []
+
+  parts.value.forEach(part => {
+    let totalQty = 0
+    const partEntries = dataEntry.value[part.id]
+    if (partEntries) {
+      Object.values(partEntries).forEach(e => {
+        totalQty += e.forecast_qty
+      })
+    }
+    if (totalQty === 0) {
+      emptyPartIds.push(part.id)
+    }
+  })
+
+  if (emptyPartIds.length === 0) return
+
+  loadingRecommendation.value = true
+  try {
+    const res = await store.fetchHistoricalQty(props.forecastId, emptyPartIds)
+    if (res.status && res.data) {
+      const historicalData = res.data
+      emptyPartIds.forEach(partId => {
+        const partHist = historicalData[partId]
+        if (partHist && dataEntry.value[partId]) {
+          periods.value.forEach((p, index) => {
+            // Ensure entry exists before updating
+            if (!dataEntry.value[partId][p.date]) {
+              dataEntry.value[partId][p.date] = {
+                forecast_qty: 0,
+                qty_status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary',
+                isNew: true,
+                isRecommended: false,
+                recommended_qty: 0
+              }
+            }
+            
+            const entry = dataEntry.value[partId][p.date]
+            const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false }
+
+            entry.qty_status = rec.status
+            entry.forecast_qty = rec.qty
+            entry.recommended_qty = rec.qty
+            entry.isRecommended = rec.isRecommended
+          })
+        }
+      })
+    }
+  } catch (err) {
+    console.error('Error auto-filling recommendations:', err)
+  } finally {
+    loadingRecommendation.value = false
+  }
 }
 
 // ─── Part Management ─────────────────────────────────────────────────────────
@@ -180,7 +246,7 @@ async function addNewPart() {
   if (!selectedNewParts.value.length) return
 
   const newPartIds = selectedNewParts.value.filter(partId => {
-    const partToAdd = store.partsDropdown.find(p => p.id === partId)
+    const partToAdd = (store.partsDropdown as { id: number; part_number: string; part_name: string }[]).find(p => p.id === partId)
     return partToAdd && !parts.value.find(p => p.id === partToAdd.id)
   })
 
@@ -189,7 +255,8 @@ async function addNewPart() {
     return
   }
 
-  let historicalData: Record<number, Record<string, number>> = {}
+  loadingRecommendation.value = true
+  let historicalData: Record<number, Record<string, { qty: number; status: string; isRecommended: boolean }>> = {}
   try {
     const res = await store.fetchHistoricalQty(props.forecastId, newPartIds)
     if (res.status && res.data) {
@@ -197,10 +264,12 @@ async function addNewPart() {
     }
   } catch (err) {
     console.error('Error fetching historical qty:', err)
+  } finally {
+    loadingRecommendation.value = false
   }
 
   newPartIds.forEach(partId => {
-    const partToAdd = store.partsDropdown.find(p => p.id === partId)
+    const partToAdd = (store.partsDropdown as { id: number; part_number: string; part_name: string }[]).find(p => p.id === partId)
     if (!partToAdd) return
 
     parts.value.push(partToAdd)
@@ -208,23 +277,17 @@ async function addNewPart() {
 
     const partHist = historicalData[partToAdd.id] || {}
 
-    // Auto-set qty_status based on period: current/past = Fix, future = Temporary
-    if (is4Month.value) {
-      periods.value.forEach(p => {
-        dataEntry.value[partToAdd.id][p.date] = {
-          forecast_qty: partHist[p.date] || 0,
-          qty_status: getAutoQtyStatus(p.date),
-          isNew: true
-        }
-      })
-    } else if (periods.value.length > 0) {
-      const p = periods.value[0]
+    periods.value.forEach((p, index) => {
+      const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false }
+      
       dataEntry.value[partToAdd.id][p.date] = {
-        forecast_qty: partHist[p.date] || 0,
-        qty_status: getAutoQtyStatus(p.date),
-        isNew: true
+        forecast_qty: rec.qty,
+        qty_status: rec.status,
+        isNew: true,
+        isRecommended: rec.isRecommended,
+        recommended_qty: rec.qty
       }
-    }
+    })
   })
   
   selectedNewParts.value = []
@@ -697,15 +760,26 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Unfilled warning banner -->
-        <div
-          v-if="parts.length > 0 && fillStats.pct < 100"
-          class="flex items-center gap-3 p-3 rounded-xl border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-300"
-        >
-          <UIcon name="i-lucide-triangle-alert" class="w-4 h-4 shrink-0" />
-          <p class="text-sm">
-            <span class="font-semibold">{{ fillStats.total - fillStats.filled }} cell(s) not yet filled.</span>
-          </p>
+        <!-- Unfilled warning banner & Recommendation Legend -->
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div
+            v-if="parts.length > 0 && fillStats.pct < 100"
+            class="flex items-center gap-3 p-3 rounded-xl border border-warning-200 dark:border-warning-800 bg-warning-50 dark:bg-warning-900/20 text-warning-700 dark:text-warning-300 flex-1"
+          >
+            <UIcon name="i-lucide-triangle-alert" class="w-4 h-4 shrink-0" />
+            <p class="text-sm">
+              <span class="font-semibold">{{ fillStats.total - fillStats.filled }} cell(s) not yet filled.</span>
+            </p>
+          </div>
+          <div
+            v-if="parts.length > 0"
+            class="flex items-center gap-2 p-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
+          >
+            <UBadge color="primary" variant="subtle" size="xs">
+              Recommended
+            </UBadge>
+            <span class="text-xs font-medium">System suggested values</span>
+          </div>
         </div>
 
         <!-- Add Part -->
@@ -815,8 +889,21 @@ onMounted(() => {
                       placeholder="Qty"
                       min="0"
                       :disabled="!isEditable"
+                      @update:model-value="(val) => {
+                        const entry = dataEntry[part.id][period.date];
+                        entry.isRecommended = entry.recommended_qty !== undefined && entry.recommended_qty > 0 && Number(val) === entry.recommended_qty;
+                      }"
                     />
-                    <div class="flex justify-center">
+                    <div class="flex flex-col gap-1 items-center">
+                      <UBadge
+                        v-if="dataEntry[part.id][period.date].isRecommended"
+                        color="primary"
+                        variant="subtle"
+                        size="xs"
+                        class="w-full justify-center"
+                      >
+                        Recommended
+                      </UBadge>
                       <UBadge
                         :color="getQtyStatusColor(dataEntry[part.id][period.date].qty_status)"
                         variant="subtle"
@@ -904,7 +991,16 @@ onMounted(() => {
                       min="0"
                       class="max-w-[120px] mx-auto"
                       :disabled="!isEditable"
+                      @update:model-value="(val) => {
+                        const entry = dataEntry[part.id][periods[0].date];
+                        entry.isRecommended = entry.recommended_qty !== undefined && entry.recommended_qty > 0 && Number(val) === entry.recommended_qty;
+                      }"
                     />
+                    <div v-if="dataEntry[part.id][periods[0].date].isRecommended" class="flex justify-center mt-1">
+                      <UBadge color="primary" variant="subtle" size="xs">
+                        Recommended
+                      </UBadge>
+                    </div>
                   </div>
                 </td>
                 <td class="p-2 border-r border-default text-center">
