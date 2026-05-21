@@ -210,6 +210,44 @@ const links = [[{
     }
   ]
 }, {
+  label: 'Material',
+  icon: 'i-lucide-shopping-bag',
+  defaultOpen: route.path.startsWith('/sales'),
+  children: [
+    {
+      label: 'MRP',
+      icon: 'i-lucide-notebook-pen',
+      to: '/material/mrp',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'MPR',
+      icon: 'i-lucide-book-check',
+      to: '/material/mpr',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'MPO',
+      icon: 'i-lucide-book-check',
+      to: '/material/mpo',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'MDO',
+      icon: 'i-lucide-book-check',
+      to: '/material/mdo',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+  ]
+},{
   label: 'Production Plan',
   icon: 'i-lucide-calendar',
   defaultOpen: route.path.startsWith('/production-plan'),
