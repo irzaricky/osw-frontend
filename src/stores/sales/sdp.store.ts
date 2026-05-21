@@ -11,6 +11,7 @@ export const useSdpStore = defineStore('sdp', () => {
   const warehouses = ref<SdpDropdownWarehouse[]>([])
   const docks = ref<SdpDropdownDock[]>([])
   const availableSpoItems = ref<any[]>([])
+  const maxVehicleCapacity = ref<number>(100)
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -89,6 +90,18 @@ export const useSdpStore = defineStore('sdp', () => {
     }
   }
 
+  async function fetchMaxVehicleCapacity() {
+    try {
+      const response = await sdpService.getMaxVehicleCapacity()
+      const data = response.data
+      if (data.status) {
+        maxVehicleCapacity.value = data.data
+      }
+    } catch (e: any) {
+      console.error('Error fetching max vehicle capacity:', e)
+    }
+  }
+
   async function fetchAvailableSpoItems(spoId?: number | string) {
     loading.value = true
     error.value = null
@@ -160,6 +173,7 @@ export const useSdpStore = defineStore('sdp', () => {
     warehouses,
     docks,
     availableSpoItems,
+    maxVehicleCapacity,
     loading,
     error,
     meta,
@@ -169,6 +183,7 @@ export const useSdpStore = defineStore('sdp', () => {
     fetchDropdownWarehouses,
     fetchDropdownDocks,
     fetchAvailableSpoItems,
+    fetchMaxVehicleCapacity,
     createSdp,
     updateSdp,
     deleteSdp

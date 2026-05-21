@@ -99,6 +99,7 @@ watch(
       // Load prerequisites
       await store.fetchDropdownWarehouses()
       await store.fetchDropdownDocks()
+      await store.fetchMaxVehicleCapacity()
       
       if (props.presetSpoId) {
         // Fetch only items for this SPO
@@ -203,10 +204,9 @@ watch(
 
 watch(
   () => state.time_start,
-  (newStart) => {
-    if (newStart && state.time_end && state.time_end <= newStart) {
-      state.time_end = ''
-    }
+  () => {
+    state.time_end = ''
+    conflictData.value = null
   }
 )
 
@@ -251,9 +251,38 @@ function getSelectedRef(itemId: number) {
   return state.selectedSpoItems.find(x => x.spo_detail_id === itemId)
 }
 
+const totalPlannedLoad = computed(() => {
+  return state.selectedSpoItems.reduce((total, selectedItem) => {
+    const originalItem = readySpoItems.value.find(item => item.id === selectedItem.spo_detail_id)
+    const plannedQty = Number(selectedItem.planned_qty) || 0
+    if (originalItem?.part?.package) {
+      const capacity = Number(originalItem.part.package.capacity) || 0
+      const load = Number(originalItem.part.package.load) || 0
+      if (capacity > 0) {
+        const numPackages = Math.ceil(plannedQty / capacity)
+        return total + (numPackages * load)
+      }
+    }
+    return total + plannedQty
+  }, 0)
+})
+
+const isLoadExceeded = computed(() => {
+  return totalPlannedLoad.value > store.maxVehicleCapacity
+})
+
+function isStockInsufficient(item: any) {
+  if (!isSelected(item.id)) return false
+  const selectedItem = getSelectedRef(item.id)
+  if (!selectedItem) return false
+  const planned = Number(selectedItem.planned_qty) || 0
+  const stock = Number(item.stock_qty) || 0
+  return planned > stock
+}
+
 // Form Submit
 function submitForm() {
-  if (conflictData.value) return // Block if conflict exists
+  if (conflictData.value || isLoadExceeded.value) return // Block if conflict or load exceeded exists
   formRef.value?.submit()
 }
 
@@ -302,6 +331,50 @@ function close() {
       >
         <!-- Error Slot Warning -->
         <SdpConflictWarning :conflict="conflictData" class="mb-4" />
+
+        <!-- Load Limit Validation Warning -->
+        <Transition
+          enter-active-class="transition-all duration-300 ease-out"
+          enter-from-class="opacity-0 -translate-y-2 scale-95"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-200 ease-in"
+          leave-from-class="opacity-100 scale-100"
+          leave-to-class="opacity-0 scale-95"
+        >
+          <div
+            v-if="isLoadExceeded"
+            class="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 dark:border-amber-500/30 rounded-xl p-4 shadow-sm flex items-start gap-4 relative overflow-hidden mb-4"
+          >
+            <!-- Premium Background Glow -->
+            <div class="absolute -right-10 -top-10 w-24 h-24 bg-amber-500/10 rounded-full blur-xl" />
+            
+            <!-- Icon Wrapper -->
+            <div class="p-2.5 bg-amber-500/20 dark:bg-amber-500/30 rounded-lg text-amber-600 dark:text-amber-400 shrink-0 shadow-inner">
+              <UIcon name="i-lucide-truck" class="w-5 h-5 animate-bounce" />
+            </div>
+
+            <!-- Warning Message -->
+            <div class="space-y-1">
+              <h4 class="font-bold text-sm text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                <span>Vehicle Load Limit Exceeded</span>
+                <UBadge
+                  color="warning"
+                  variant="subtle"
+                  size="xs"
+                  class="rounded-full"
+                >
+                  Blocked
+                </UBadge>
+              </h4>
+              <p class="text-xs text-amber-700/90 dark:text-amber-400/90 leading-relaxed font-medium">
+                The total planned load ({{ totalPlannedLoad }} items) exceeds the maximum active vehicle capacity of {{ store.maxVehicleCapacity }} items.
+              </p>
+              <p class="text-[10px] text-amber-600/70 dark:text-amber-500/80 mt-2">
+                Please reduce the planned quantity of your items or select fewer parts to comply with active vehicle constraints.
+              </p>
+            </div>
+          </div>
+        </Transition>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Left side: Basic Config -->
@@ -436,12 +509,24 @@ function close() {
                     </div>
                   </div>
 
-                  <div class="text-right">
-                    <span class="text-[10px] font-semibold text-muted block mb-1">
+                  <div class="text-right flex flex-col items-end shrink-0">
+                    <span class="text-[10px] font-semibold text-muted block">
                       Rem: {{ item.remaining_qty }} pcs
                     </span>
+                    <span class="text-[10px] font-semibold text-muted block mt-0.5">
+                      Stock: {{ item.stock_qty || 0 }} pcs
+                    </span>
+                    <UBadge
+                      v-if="isStockInsufficient(item)"
+                      color="warning"
+                      variant="subtle"
+                      size="xs"
+                      class="rounded-full mt-1 font-bold animate-pulse"
+                    >
+                      Exceeds Stock
+                    </UBadge>
                     
-                    <div v-if="isSelected(item.id)" class="w-24 mt-1">
+                    <div v-if="isSelected(item.id)" class="w-24 mt-2">
                       <UInput
                         v-model="getSelectedRef(item.id)!.planned_qty"
                         type="number"
@@ -455,6 +540,17 @@ function close() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- Load summary panel at bottom of the right-side box -->
+            <div class="p-3 bg-elevated border-t border-default shrink-0 flex items-center justify-between text-xs">
+              <span class="text-muted font-medium">Planned Load Capacity:</span>
+              <span 
+                class="font-bold"
+                :class="isLoadExceeded ? 'text-error-500 dark:text-error-400' : 'text-success-500 dark:text-success-400'"
+              >
+                {{ totalPlannedLoad }} / {{ store.maxVehicleCapacity }}
+              </span>
             </div>
           </div>
         </div>
@@ -473,7 +569,7 @@ function close() {
           color="primary"
           label="Schedule Delivery"
           :loading="props.loading"
-          :disabled="!!conflictData"
+          :disabled="!!conflictData || isLoadExceeded"
           @click="submitForm"
         />
       </div>

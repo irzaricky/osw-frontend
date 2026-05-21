@@ -34,6 +34,10 @@ const sdpService = {
     return api.get(`${BASE}/available-spo-items`, { params })
   },
 
+  getMaxVehicleCapacity() {
+    return api.get(`${BASE}/max-vehicle-capacity`)
+  },
+
   createSdp(data: Record<string, any>) {
     return api.post(`${BASE}/`, data)
   },
