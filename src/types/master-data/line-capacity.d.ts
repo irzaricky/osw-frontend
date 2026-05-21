@@ -60,9 +60,27 @@ export interface LineCapacityParamsResponse {
     line_code: string
     name:      string
   }
-  // null jika belum pernah di-calculate
-  saved_params: LineCapitySavedParams | null
-  actual:       LineActualSummary
+  saved_params:    LineCapacitySavedParams | null
+  calendar_params: LineCalendarParams | null  // ← tambah
+  actual:          LineActualSummary
+}
+
+export interface LineCalendarParams {
+  working_days:             number
+  shifts_per_day:           number
+  working_hours_per_shift:  number
+  overtime_hours:           number
+  total_overtime_days:      number
+  date_range: {
+    start: string | null
+    end:   string | null
+  }
+  breakdown: {
+    avg_net_minutes_per_working_day:  number
+    avg_net_minutes_per_overtime_day: number
+    working_day_count:                number
+    overtime_day_count:               number
+  }
 }
 
 // ── Response POST /line-capacity/:line_id/calculate ───────────────────────────
