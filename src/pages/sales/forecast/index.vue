@@ -32,6 +32,8 @@ const statusFilter = ref<string | undefined>(undefined)
 
 const activeTab = ref<'current' | 'archive'>('current')
 const sentinel = ref<HTMLElement | null>(null)
+const scrollContainer = ref<HTMLElement | null>(null)
+const isSentinelIntersecting = ref(false)
 
 const customerItems = computed(() => store.customersDropdown.map(c => c.name))
 const selectedCustomer = computed({
@@ -59,7 +61,7 @@ function fetchData(loadMore = false) {
   }
   store.fetchForecasts({
     page: meta.value.page,
-    limit: activeTab.value === 'current' ? undefined : meta.value.limit,
+    limit: activeTab.value === 'current' ? undefined : 10,
     search: searchFilter.value,
     customer_id: customerFilter.value,
     forecast_type: forecastTypeFilter.value,
@@ -79,12 +81,24 @@ function switchTab(tab: 'current' | 'archive') {
 useIntersectionObserver(
   sentinel,
   ([{ isIntersecting }]) => {
+    isSentinelIntersecting.value = isIntersecting
     if (isIntersecting && activeTab.value === 'archive' && !loading.value && meta.value.page < meta.value.totalPages) {
       meta.value.page++
       fetchData(true)
     }
+  },
+  {
+    root: scrollContainer
   }
 )
+
+// Watch for loading and intersection state to load more if still intersecting after load
+watch([loading, isSentinelIntersecting], ([newLoading, intersecting]) => {
+  if (!newLoading && intersecting && activeTab.value === 'archive' && meta.value.page < meta.value.totalPages) {
+    meta.value.page++
+    fetchData(true)
+  }
+})
 
 function formatPeriodDate(dateStr: string) {
   if (!dateStr) return '-'
@@ -418,7 +432,7 @@ onMounted(() => {
         </div>
 
         <!-- List -->
-        <div class="flex-1 overflow-y-auto">
+        <div ref="scrollContainer" class="flex-1 overflow-y-auto">
           <template v-if="groupedForecasts.length === 0">
             <div class="p-6 text-center text-sm text-muted">
               No forecasts found.
@@ -443,9 +457,9 @@ onMounted(() => {
 
             <div v-show="!collapsedStatuses[statusGroup.status]">
               <template v-for="customerGroup in statusGroup.customers" :key="customerGroup.customer_id">
-                <!-- Customer Sub-Header -->
+                <!-- Customer Sub-Header (Indented) -->
                 <div
-                  class="px-3 py-1.5 border-b border-default/60 flex items-center gap-2 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition-colors"
+                  class="pl-6 pr-3 py-1.5 border-b border-default/60 flex items-center gap-2 bg-elevated/30 cursor-pointer hover:bg-elevated/50 transition-colors"
                   @click="toggleCustomerCollapse(statusGroup.status, customerGroup.customer_id)"
                 >
                   <UIcon
@@ -457,12 +471,12 @@ onMounted(() => {
                   <span class="text-xs text-muted ml-auto">{{ customerGroup.items.length }} item(s)</span>
                 </div>
 
-                <!-- Forecast Items -->
+                <!-- Forecast Items (Indented further) -->
                 <div v-show="!collapsedCustomers[`${statusGroup.status}-${customerGroup.customer_id}`]">
                   <button
                     v-for="forecast in customerGroup.items"
                     :key="forecast.id"
-                    class="w-full text-left px-4 py-2.5 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
+                    class="w-full text-left pl-12 pr-4 py-2.5 border-b border-default/40 hover:bg-elevated/60 transition-colors relative"
                     :class="{ 'bg-primary/10 border-l-2 border-l-primary': selectedForecastId === forecast.id }"
                     @click="selectForecast(forecast)"
                   >
@@ -486,7 +500,7 @@ onMounted(() => {
 
           <!-- Sentinel for Infinite Scroll (Archive only) -->
           <div
-            v-if="activeTab === 'archive'"
+            v-show="activeTab === 'archive'"
             ref="sentinel"
             class="h-12 flex items-center justify-center text-xs text-muted gap-2 border-t border-default/30 bg-default/10"
           >
