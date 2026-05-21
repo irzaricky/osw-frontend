@@ -9,7 +9,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import { useAppToast } from '../../../composables/useAppToast'
 import { storeToRefs } from 'pinia'
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useIntersectionObserver } from '@vueuse/core'
 
 // Store
 const store = useForecastStore()
@@ -29,6 +29,9 @@ const searchFilter = ref('')
 const customerFilter = ref<number | undefined>(undefined)
 const forecastTypeFilter = ref<string | undefined>(undefined)
 const statusFilter = ref<string | undefined>(undefined)
+
+const activeTab = ref<'current' | 'archive'>('current')
+const sentinel = ref<HTMLElement | null>(null)
 
 const customerItems = computed(() => store.customersDropdown.map(c => c.name))
 const selectedCustomer = computed({
@@ -50,16 +53,38 @@ const selectedStatus = computed({
   set: (val) => { statusFilter.value = val }
 })
 
-function fetchData() {
+function fetchData(loadMore = false) {
+  if (!loadMore) {
+    meta.value.page = 1
+  }
   store.fetchForecasts({
     page: meta.value.page,
-    limit: meta.value.limit,
+    limit: activeTab.value === 'current' ? undefined : meta.value.limit,
     search: searchFilter.value,
     customer_id: customerFilter.value,
     forecast_type: forecastTypeFilter.value,
-    status: statusFilter.value
-  })
+    status: statusFilter.value,
+    is_archive: activeTab.value === 'archive' ? 'true' : 'false'
+  }, loadMore)
 }
+
+function switchTab(tab: 'current' | 'archive') {
+  if (activeTab.value === tab) return
+  activeTab.value = tab
+  meta.value.page = 1
+  fetchData()
+}
+
+// Infinite Scroll Observer
+useIntersectionObserver(
+  sentinel,
+  ([{ isIntersecting }]) => {
+    if (isIntersecting && activeTab.value === 'archive' && !loading.value && meta.value.page < meta.value.totalPages) {
+      meta.value.page++
+      fetchData(true)
+    }
+  }
+)
 
 function formatPeriodDate(dateStr: string) {
   if (!dateStr) return '-'
@@ -374,6 +399,24 @@ onMounted(() => {
           />
         </div>
 
+        <!-- Tabs -->
+        <div class="flex border-b border-default shrink-0 bg-elevated/10">
+          <button
+            class="flex-1 py-2 text-center text-xs font-semibold border-b-2 transition-all duration-150"
+            :class="activeTab === 'current' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted hover:text-default hover:bg-elevated/20'"
+            @click="switchTab('current')"
+          >
+            Current Year
+          </button>
+          <button
+            class="flex-1 py-2 text-center text-xs font-semibold border-b-2 transition-all duration-150"
+            :class="activeTab === 'archive' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-muted hover:text-default hover:bg-elevated/20'"
+            @click="switchTab('archive')"
+          >
+            Archive
+          </button>
+        </div>
+
         <!-- List -->
         <div class="flex-1 overflow-y-auto">
           <template v-if="groupedForecasts.length === 0">
@@ -440,20 +483,22 @@ onMounted(() => {
               </template>
             </div>
           </template>
+
+          <!-- Sentinel for Infinite Scroll (Archive only) -->
+          <div
+            v-if="activeTab === 'archive'"
+            ref="sentinel"
+            class="h-12 flex items-center justify-center text-xs text-muted gap-2 border-t border-default/30 bg-default/10"
+          >
+            <UIcon v-if="loading && meta.page < meta.totalPages" name="i-lucide-loader-2" class="w-4 h-4 animate-spin text-primary" />
+            <span v-if="loading && meta.page < meta.totalPages">Loading more...</span>
+            <span v-else-if="forecasts.length > 0 && meta.page >= meta.totalPages" class="text-xs opacity-60">All archived forecasts loaded</span>
+          </div>
         </div>
 
-        <!-- Pagination -->
-        <div class="p-3 border-t border-default shrink-0">
-          <div class="text-xs text-muted mb-2">
-            {{ meta.total }} forecast(s)
-          </div>
-          <UPagination
-            v-model:page="meta.page"
-            :items-per-page="meta.limit"
-            :total="meta.total"
-            size="xs"
-            @update:page="fetchData"
-          />
+        <!-- Footer / Loaded Stats -->
+        <div class="p-3 border-t border-default shrink-0 flex items-center justify-between text-xs text-muted bg-default/40">
+          <span>Loaded {{ forecasts.length }} of {{ meta.total }} forecast(s)</span>
         </div>
       </div>
 

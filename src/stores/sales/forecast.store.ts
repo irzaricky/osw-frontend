@@ -25,14 +25,18 @@ export const useForecastStore = defineStore('forecast', () => {
   const error = ref<string | null>(null)
 
   // Actions
-  async function fetchForecasts(params: ForecastParams = {}) {
+  async function fetchForecasts(params: ForecastParams = {}, loadMore = false) {
     loading.value = true
     error.value = null
     try {
       const response = await forecastService.getForecasts(params)
       const data = response.data
       if (data.status) {
-        forecasts.value = data.data.rows
+        if (loadMore) {
+          forecasts.value = [...forecasts.value, ...data.data.rows]
+        } else {
+          forecasts.value = data.data.rows
+        }
         meta.value = {
           page: data.data.page,
           limit: data.data.limit,
