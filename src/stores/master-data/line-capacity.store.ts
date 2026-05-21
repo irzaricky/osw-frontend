@@ -68,17 +68,10 @@ export const useLineCapacityStore = defineStore('lineCapacity', () => {
       const { data } = await lineCapacityService.calculate(lineId, payload)
       if (data.status) {
         calculateResult.value = data.data
-        // Invalidate cache — fetch ulang saat diperlukan
+        // Hapus mapping manual — langsung fetch ulang getParams
+        // agar dapat struktur lengkap: calendar_params, actual dengan stations/groups
         delete paramsCache.value[lineId]
-        // Update currentParams langsung dari hasil calculate
-        if (data.data) {
-          currentParams.value = {
-            line:        data.data.line,
-            saved_params: data.data.saved_params,
-            actual:      data.data.calculated_from,
-          }
-          paramsCache.value[lineId] = currentParams.value
-        }
+        await fetchParams(lineId, true)  // force = true, bypass cache
       }
       return data
     }

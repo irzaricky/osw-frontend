@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { AdjustmentType } from '../../../../types/production-plan/plan'
+import type { AdjustmentType, PlanDetailLine } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
   currentPlan:    any
   selectedLineId: number | undefined
 	lines: any
-  lineParams:     any       // { saved_params, actual } dari /line-capacity/:id/params
+  lineParams:     any
   loadingParams:  boolean
   adjustmentForm: any
   saving:         boolean
@@ -26,10 +26,6 @@ const emit = defineEmits<{
   deleteAdjustment:   [id: number]
 }>()
 
-// Lines tersedia: ambil dari capacity_params yang sudah disimpan + filter
-// unique lines dari plan context. Untuk selector kita butuh list dari parent,
-// tapi karena sudah dipindah ke store flow, kita tampilkan berdasarkan
-// base params yang sudah ada + opsi untuk pilih line baru.
 const savedBaseParams = computed(() =>
   props.currentPlan?.capacity_params?.filter((p: any) => p.param_type === 'BASE') ?? [],
 )
@@ -55,6 +51,17 @@ const selectedBase = computed(() =>
 
 // Master params tersimpan di line (sebelum di-copy ke plan)
 const masterParams = computed(() => props.lineParams?.saved_params ?? null)
+
+// Detail lines yang melewati line yang dipilih (dari pivot table di setiap detail)
+const lineAssignedDetails = computed(() => {
+  if (!props.selectedLineId) return []
+  const result: Array<{ detail: any; detailLine: PlanDetailLine }> = []
+  for (const detail of (props.currentPlan?.details ?? [])) {
+    const dl = (detail.detail_lines ?? []).find((l: PlanDetailLine) => l.line_id === props.selectedLineId)
+    if (dl) result.push({ detail, detailLine: dl })
+  }
+  return result
+})
 
 // Adjustment type options
 const adjustmentTypeOptions = [
@@ -118,6 +125,9 @@ function utilizationColor(pct?: number | null) {
   if (pct <= 95)  return 'text-warning-600'
   return 'text-error-600'
 }
+
+// Cek apakah line yang dipilih sudah punya detail yang melewatinya
+const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.length > 0)
 </script>
 
 <template>
@@ -131,9 +141,8 @@ function utilizationColor(pct?: number | null) {
       </div>
 
       <div class="px-5 py-4">
-        <!-- Tabs per line yang sudah punya BASE + opsi tambah -->
+        <!-- Tabs per line yang sudah punya BASE param -->
         <div class="flex items-center gap-2 flex-wrap">
-          <!-- Line yang sudah punya BASE param -->
           <button
             v-for="param in savedBaseParams"
             :key="param.line_id"
@@ -159,8 +168,6 @@ function utilizationColor(pct?: number | null) {
           <p class="text-xs text-muted mb-2 font-medium">Add another line to this plan:</p>
           <div class="flex items-end gap-3">
             <UFormField label="Select Line" class="flex-1 max-w-xs">
-              <!-- Line dropdown harus di-inject dari parent via store atau service -->
-              <!-- Gunakan USelectMenu dengan items dari lineService.getDropdown() -->
               <USelectMenu
                 :model-value="selectedLineId"
                 :items="lines"
@@ -254,7 +261,6 @@ function utilizationColor(pct?: number | null) {
 
         <!-- Params grid -->
         <div v-else class="px-5 py-4">
-          <!-- Source: dari savedBase jika sudah ada, fallback ke masterParams preview -->
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             <div
               v-for="item in [
@@ -304,6 +310,32 @@ function utilizationColor(pct?: number | null) {
               <span class="inline-flex items-center gap-1.5 text-xs bg-elevated px-2.5 py-1.5 rounded-md">
                 <UIcon name="i-lucide-timer" class="w-3.5 h-3.5 text-muted" />
                 Bottleneck: <strong class="ml-1">{{ fmtSeconds(lineParams.actual.max_takt_time_seconds) }}</strong>
+              </span>
+            </div>
+          </div>
+
+          <!-- Routed details info untuk line yang dipilih -->
+          <div v-if="hasBaseForSelected" class="mt-4 pt-4 border-t border-default">
+            <p class="text-xs font-medium text-muted mb-1">
+              Products routed through this line:
+              <span
+                class="font-semibold ml-1"
+                :class="hasAssignedDetailsForSelected ? 'text-default' : 'text-warning-600'"
+              >
+                {{ lineAssignedDetails.length }}
+              </span>
+            </p>
+            <p v-if="!hasAssignedDetailsForSelected" class="text-xs text-warning-600">
+              No products are routed through this line. Check part routing configuration.
+            </p>
+            <div v-else class="mt-2 flex flex-wrap gap-1.5">
+              <span
+                v-for="{ detail, detailLine } in lineAssignedDetails"
+                :key="detailLine.id"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border border-default"
+              >
+                <span class="font-medium">{{ detail.part?.part_number ?? `Part #${detail.part_id}` }}</span>
+                <span class="text-muted font-mono">{{ fmtNum(detail.qty_request) }}</span>
               </span>
             </div>
           </div>
@@ -401,7 +433,6 @@ function utilizationColor(pct?: number | null) {
             class="flex items-center gap-4 px-5 py-3 hover:bg-elevated/50 transition-colors"
           >
             <div class="w-6 h-6 rounded-full bg-elevated flex items-center justify-center flex-shrink-0">
-							<!-- No Urut -->
               <span class="text-xs font-mono font-semibold text-muted">{{ idx + 1 }}</span>
             </div>
 
@@ -456,7 +487,7 @@ function utilizationColor(pct?: number | null) {
             icon="i-lucide-play"
             color="primary"
             :loading="calculating"
-            :disabled="!isEditable || !hasBaseForSelected"
+            :disabled="!isEditable || !hasBaseForSelected || !hasAssignedDetailsForSelected"
             @click="emit('calculate')"
           />
         </div>
@@ -480,7 +511,9 @@ function utilizationColor(pct?: number | null) {
                 {{ overallStatusLabel[selectedResult.status] ?? selectedResult.status }}
               </p>
               <p class="text-xs text-muted mt-0.5">
-                Gap:
+                Capacity Units:
+                <span class="font-mono font-semibold text-default">{{ fmtNum(selectedResult.total_capacity_units) }}</span>
+                &nbsp;·&nbsp; Gap:
                 <span class="font-mono font-semibold" :class="Number(selectedResult.capacity_gap_minutes) >= 0 ? 'text-success-600' : 'text-error-600'">
                   {{ Number(selectedResult.capacity_gap_minutes) >= 0 ? '+' : '' }}{{ fmtMinutes(selectedResult.capacity_gap_minutes) }}
                 </span>
@@ -496,12 +529,12 @@ function utilizationColor(pct?: number | null) {
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div
               v-for="metric in [
-                { label: 'Capacity',     value: fmtMinutes(selectedResult.total_capacity_minutes),  icon: 'i-lucide-clock-3',      sub: 'available' },
-                { label: 'Required',     value: fmtMinutes(selectedResult.total_required_minutes),   icon: 'i-lucide-clock-alert',  sub: 'needed' },
-                { label: 'Stations',     value: selectedResult.total_stations ?? '—',                icon: 'i-lucide-layout-grid',  sub: 'active' },
-                { label: 'Jobs',         value: selectedResult.total_jobs ?? '—',                    icon: 'i-lucide-wrench',       sub: 'active' },
-                { label: 'Takt Time',    value: fmtSeconds(selectedResult.max_takt_time),            icon: 'i-lucide-timer',        sub: 'bottleneck' },
-                { label: 'Output/hr',    value: selectedResult.capacity_per_hour ?? '—',             icon: 'i-lucide-zap',          sub: 'units' },
+                { label: 'Capacity',        value: fmtMinutes(selectedResult.total_capacity_minutes),  icon: 'i-lucide-clock-3',      sub: 'available' },
+                { label: 'Required',        value: fmtMinutes(selectedResult.total_required_minutes),   icon: 'i-lucide-clock-alert',  sub: 'needed' },
+                { label: 'Capacity Units',  value: fmtNum(selectedResult.total_capacity_units),         icon: 'i-lucide-package-check', sub: 'units' },
+                { label: 'Stations',        value: selectedResult.total_stations ?? '—',                icon: 'i-lucide-layout-grid',  sub: 'active' },
+                { label: 'Jobs',            value: selectedResult.total_jobs ?? '—',                    icon: 'i-lucide-wrench',       sub: 'active' },
+                { label: 'Takt Time',       value: fmtSeconds(selectedResult.max_takt_time),            icon: 'i-lucide-timer',        sub: 'bottleneck' },
               ]"
               :key="metric.label"
               class="bg-elevated rounded-lg px-3 py-3"
@@ -520,7 +553,11 @@ function utilizationColor(pct?: number | null) {
         <div v-else class="px-5 py-8 text-center">
           <UIcon name="i-lucide-bar-chart-2" class="w-8 h-8 text-muted mx-auto mb-2" />
           <p class="text-sm text-muted">
-            {{ !hasBaseForSelected ? 'Save BASE parameters first, then calculate.' : 'Click Calculate to run capacity analysis.' }}
+            {{ !hasBaseForSelected
+              ? 'Save BASE parameters first, then calculate.'
+              : !hasAssignedDetailsForSelected
+                ? 'No products are routed through this line. Check part routing configuration.'
+                : 'Click Calculate to run capacity analysis.' }}
           </p>
         </div>
       </div>

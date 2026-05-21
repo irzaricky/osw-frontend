@@ -87,25 +87,20 @@ function isCalculating(lineId: number): boolean {
   return calculatingIds.value.has(lineId)
 }
 
-async function handleCalculate(line: Line) {
-  // Tutup expanded dulu kalau terbuka (agar UI tidak stale)
-  expanded.value = {}
+async function handleCalculate(line: Line, efficiencyFactor = 0.85) {
   calculatingIds.value.add(line.id)
   try {
-    const res = await lineCapacityStore.calculate(line.id)
-    if (res?.status && res?.data) {
-      capacityParamsMap.value[line.id] = {
-        line:         res.data.line,
-        saved_params: res.data.saved_params,
-        actual:       res.data.calculated_from
-      }
-      toastSuccess(`Capacity params for "${line.name}" calculated successfully`)
+    await lineCapacityStore.calculate(line.id, { efficiency_factor: efficiencyFactor })
+    // Store sudah fetch ulang dan update paramsCache — ambil dari sana
+    const cached = lineCapacityStore.getCached(line.id)
+    if (cached) {
+      capacityParamsMap.value[line.id] = cached
     }
+    toastSuccess(`Capacity params for "${line.name}" calculated successfully`)
   } catch (err) {
     toastError(err)
   } finally {
     calculatingIds.value.delete(line.id)
-    // Force reaktivitas Set
     calculatingIds.value = new Set(calculatingIds.value)
   }
 }
@@ -289,7 +284,11 @@ onMounted(() => { fetchData(); factoryStore.fetchDropdown() })
       class="w-full"
     >
       <template #expanded="{ row }">
-        <LineCapacityPanel :params="capacityParamsMap[row.original.id]" />
+        <LineCapacityPanel
+          :params="capacityParamsMap[row.original.id]"
+          :calculating="isCalculating(row.original.id)"
+          @calculate="(ef) => handleCalculate(row.original, ef)"
+        />
       </template>
     </UTable>
 

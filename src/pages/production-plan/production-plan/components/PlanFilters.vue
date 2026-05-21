@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { PlanStatus, OverallStatus } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
@@ -23,8 +24,6 @@ const planStatusLabel: Record<string, string> = {
   Approved: 'Approved',
   Rejected: 'Rejected',
 }
-
-import { computed } from 'vue'
 
 const selectedStatus = computed({
   get: () => props.filters.status ?? null,
