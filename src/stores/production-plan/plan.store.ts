@@ -19,10 +19,10 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
 
   // ── State ──────────────────────────────────────────────────────────────────
 
-  const plans       = ref<ProductionPlan[]>([])
-  const currentPlan = ref<ProductionPlan | null>(null)
+  const plans        = ref<ProductionPlan[]>([])
+  const currentPlan  = ref<ProductionPlan | null>(null)
   const availableDOs = ref<AvailableDO[]>([])
-  const dropdown    = ref<Pick<ProductionPlan,
+  const dropdown     = ref<Pick<ProductionPlan,
     'id' | 'plan_number' | 'plan_description' |
     'earliest_delivery_date' | 'latest_delivery_date'
   >[]>([])
@@ -183,7 +183,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     try {
       const { data } = await productionPlanService.saveCapacityParams(id, payload)
       if (data.status) {
-        // Refresh plan agar capacity_params (BASE) langsung muncul di UI
         await fetchPlan(id)
       }
       return data
@@ -199,8 +198,9 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
 
   /**
    * Jalankan kalkulasi kapasitas.
+   * Detail yang dihitung diambil dari SProductionPlanDetailLine (pivot table).
    * Setelah berhasil, refresh currentPlan agar:
-   *   - details (qty_capacity, status) terupdate
+   *   - detail_lines (qty_capacity, capacity_gap, status) terupdate
    *   - capacity_results terupdate
    *   - overall_status terupdate
    */

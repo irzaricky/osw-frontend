@@ -6,7 +6,7 @@ defineProps<{
   currentPlan:      any
   selectedLineId:   number | undefined
 	lines: any
-  lineParams:       any          // preview dari /line-capacity/:id/params
+  lineParams:       any
   loadingParams:    boolean
   adjustmentForm:   any
   loading:          boolean
@@ -41,6 +41,7 @@ const tabs = [
       <DetailsTab
         :loading="loading"
         :current-plan="currentPlan"
+        :is-editable="isEditable"
         :fmt-date="fmtDate"
         :fmt-num="fmtNum"
         :overall-status-label="overallStatusLabel"
@@ -53,7 +54,7 @@ const tabs = [
       <CapacityTab
         :current-plan="currentPlan"
         :selected-line-id="selectedLineId"
-				:lines="lines"
+		  	:lines="lines"
         :line-params="lineParams"
         :loading-params="loadingParams"
         :adjustment-form="adjustmentForm"

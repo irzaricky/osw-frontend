@@ -82,7 +82,7 @@ function handleSelectAll(ids: number[], select: boolean) {
 // lineParams: data dari /line-capacity/:line_id/params (preview master sebelum save BASE)
 // adjustmentForm: form untuk add adjustment setelah BASE tersimpan
 
-const lines = ref<any[]>([])
+const lines          = ref<any[]>([])
 const selectedLineId = ref<number | undefined>(undefined)
 const lineParams     = ref<any>(null)
 const loadingParams  = ref(false)
@@ -163,6 +163,11 @@ const hasImpossible = computed(() =>
   currentPlan.value?.details?.some((d: any) => d.status === 'IMPOSSIBLE'),
 )
 
+// Cek apakah ada detail yang tidak punya detail_lines (tidak ada routing)
+const hasUnrouted = computed(() =>
+  currentPlan.value?.details?.some((d: any) => !d.detail_lines?.length),
+)
+
 // BASE param untuk line yang sedang dipilih
 const activeBaseParam = computed(() =>
   currentPlan.value?.capacity_params?.find(
@@ -194,6 +199,9 @@ async function handleSaveHeader() {
         do_ids:           selectedDOs.value,
         notes:            headerForm.notes || null,
       })
+      if (res.data?.warning) {
+        toastError(res.data.warning)
+      }
       toastSuccess(res.message || 'Plan created successfully')
       await nextTick()
       router.push({ name: 'production-plan-detail-edit', params: { id: res.data.id } })
@@ -203,11 +211,11 @@ async function handleSaveHeader() {
         plan_description: headerForm.plan_description || null,
         notes: headerForm.notes || null,
       })
-      
+
       const currentDoIds = currentPlan.value?.do_references?.map((r: any) => r.do_id) ?? []
       const added   = selectedDOs.value.filter(id => !currentDoIds.includes(id))
       const removed = currentDoIds.filter((id: number) => !selectedDOs.value.includes(id))
-      
+
       if (added.length > 0 || removed.length > 0) {
         await planStore.syncDOs(planId.value, { do_ids: selectedDOs.value })
         await planStore.fetchPlan(planId.value)
@@ -349,6 +357,15 @@ function confirmDeleteAdjustment(adjId: number) {
   })
 }
 
+// Submit can only happen when: overall_status !== Not_Calculated, no IMPOSSIBLE, no unrouted products
+const canSubmit = computed(() =>
+  isEditable.value &&
+  currentPlan.value?.status === 'Draft' &&
+  currentPlan.value?.overall_status !== 'Not_Calculated' &&
+  !hasImpossible.value &&
+  !hasUnrouted.value,
+)
+
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
 onMounted(() => {
@@ -472,7 +489,7 @@ watch(
                 icon="i-lucide-send"
                 color="primary"
                 :loading="saving"
-                :disabled="hasImpossible || currentPlan?.overall_status === 'Not_Calculated'"
+                :disabled="!canSubmit"
                 @click="openSubmitConfirm"
               />
             </template>
@@ -506,6 +523,14 @@ watch(
           icon="i-lucide-alert-triangle"
           title="Status Overall: IMPOSSIBLE"
           description="Capacity is insufficient to meet all requests. Add adjustments in the Capacity tab and recalculate."
+        />
+        <UAlert
+          v-if="!isCreate && hasUnrouted && isEditable"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-alert-circle"
+          title="Products Without Routing"
+          description="Some products have no active routing configured. Capacity cannot be calculated for those products. Please set up part routing first."
         />
         <UAlert
           v-if="!isCreate && currentPlan?.status === 'Rejected' && currentPlan.rejection_reason"

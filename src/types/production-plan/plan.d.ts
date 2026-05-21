@@ -1,7 +1,7 @@
 export type PlanStatus     = 'Draft' | 'Pending_Approval' | 'Approved' | 'Rejected'
 export type OverallStatus  = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
 export type DetailStatus   = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
-export type ParamType      = 'BASE' | 'ADJUSTED'
+export type ParamType      = 'BASE'
 export type AdjustmentType =
   | 'WORKING_DAYS'
   | 'SHIFTS_PER_DAY'
@@ -26,8 +26,6 @@ export interface ProductionPlan {
   overall_status:         OverallStatus
   status:                 PlanStatus
   notes?:                 string | null
-  // created_by, approved_by, rejected_by → INTEGER FK ke s_users
-  // API mengembalikan user object jika di-include, atau id saja
   created_by?:            number | null
   approved_by?:           number | null
   approved_at?:           string | null
@@ -45,6 +43,21 @@ export interface ProductionPlan {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Plan detail line — pivot table: satu detail bisa melewati banyak line
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PlanDetailLine {
+  id:             number
+  plan_detail_id: number
+  line_id:        number
+  sequence:       number
+  qty_capacity?:  number | null
+  capacity_gap?:  number | null
+  status?:        DetailStatus | null
+  line?:          { id: number; name: string }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Plan detail (per part / DO line)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -58,12 +71,10 @@ export interface PlanDetail {
   part_id:       number
   delivery_date: string
   qty_request:   number
-  qty_capacity?: number | null
-  capacity_gap?: number | null
   status?:       DetailStatus | null
-  notes?:        string | null
   customer?:     { id: number; name: string }
-  part?:         { id: number; part_number: string; part_name: string; uom: string }
+  part?:         { id: number; part_number: string; part_name: string; uom?: { id: number; name: string } }
+  detail_lines?: PlanDetailLine[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +94,7 @@ export interface SyncDOsPayload {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Capacity params — snapshot dari s_line_capacity_params saat plan dibuat
+// param_type selalu 'BASE' (ADJUSTED dihapus, sekarang pakai adjustments table)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CapacityParam {
@@ -117,6 +129,7 @@ export interface CapacityResult {
   capacity_gap_minutes?:  number | null
   utilization_pct?:       number | null
   status:                 OverallStatus
+  total_capacity_units:   number
   calculated_at?:         string | null
   calculation_version:    number
   line?:                  { id: number; name: string }
@@ -136,7 +149,6 @@ export interface PlanAdjustment {
   base_value:              number
   adjusted_value:          number
   difference?:             number | null
-  capacity_impact_minutes?: number | null
   created_by?:             number | null
   created_at?:             string
   line?:                   { id: number; name: string }
@@ -147,19 +159,33 @@ export interface PlanAdjustment {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AvailableDO {
-  id:          number
-  do_number:   string
+  id:            number
+  do_number:     string
   shipment_date: string
-  customer_id: number
-  customer?:   { id: number; name: string }
-  details?:    AvailableDODetail[]
+  customer_id:   number
+  customer?:     { id: number; name: string }
+  details?:      AvailableDODetail[]
 }
 
 export interface AvailableDODetail {
-  id:                      number
-  sent_qty:                number
-  received_qty?:           number | null
-  delivery_plan_detail_id: number
+  id:           number
+  sent_qty:     number
+  received_qty?: number | null
+  planDetail?: {
+    id:        number
+    spo_detail_id: number
+    planned_qty:   number
+    spoDetail?: {
+      id:      number
+      part_id: number
+      part?: {
+        id:          number
+        part_number: string
+        part_name:   string
+        uom?: { id: number; name: string }
+      }
+    }
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -191,8 +217,7 @@ export interface UpdatePlanPayload {
  *
  * Hanya kirim line_id — server otomatis copy semua nilai dari
  * s_line_capacity_params (master default line) ke s_production_plan_capacity_params.
- *
- * Jika master belum ada → server return 404 dengan pesan yang jelas.
+ * Hanya param_type 'BASE' yang dibuat; tidak ada ADJUSTED.
  */
 export interface CapacityParamPayload {
   line_id: number
@@ -223,12 +248,15 @@ export interface RejectPayload {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CalculationResult {
-  overall_status:         OverallStatus
-  total_capacity_units:   number
-  total_required_minutes: number
-  total_capacity_minutes: number
-  capacity_gap_minutes:   number
-  utilization_pct:        number
+  line_id:                    number
+  overall_status:             OverallStatus
+  line_status:                OverallStatus
+  total_capacity_units:       number
+  total_qty_request:          number
+  total_required_minutes:     number
+  effective_capacity_minutes: number
+  capacity_gap_minutes:       number
+  utilization_pct:            number
   capacity_info: {
     total_stations:       number
     total_jobs:           number
@@ -238,7 +266,7 @@ export interface CalculationResult {
     overtime_minutes:     number
     available_minutes:    number
   }
-  params_used:            Omit<CapacityParam, 'id' | 'plan_id' | 'line_id' | 'param_type' | 'line'>
-  adjustments_applied:    number
-  details:                PlanDetail[]
+  params_used:         Omit<CapacityParam, 'id' | 'plan_id' | 'line_id' | 'param_type' | 'line'>
+  adjustments_applied: number
+  detail_lines_count:  number
 }

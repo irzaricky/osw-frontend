@@ -55,7 +55,7 @@ const productionPlanService = {
     return api.delete(`/production-plan/plan/${id}`)
   },
 
-  // ── Capacity plan ──────────────────────────────────────────────────────
+  // ── Capacity plan ──────────────────────────────────────────────────────────
 
   /**
    * POST /production-plan/plan/:id/capacity-params
@@ -63,6 +63,7 @@ const productionPlanService = {
    * Hanya kirim { line_id } — server copy semua nilai dari
    * s_line_capacity_params (master default line) ke snapshot plan.
    * Endpoint akan return 404 jika master line belum di-setup.
+   * Hanya bisa membuat BASE param; tidak ada ADJUSTED.
    */
   saveCapacityParams(id: number | string, data: CapacityParamPayload) {
     return api.post(`/production-plan/plan/${id}/capacity-params`, data)
@@ -72,8 +73,8 @@ const productionPlanService = {
    * POST /production-plan/plan/:id/calculate
    *
    * Jalankan kalkulasi kapasitas untuk satu lini.
+   * Detail yang dihitung diambil dari SProductionPlanDetailLine (pivot table).
    * Parameter diambil dari BASE snapshot + adjustments yang ada di DB.
-   * max_takt_time sudah ada di BASE snapshot (dari s_line_capacity_params).
    */
   calculateCapacity(id: number | string, data: CalculateCapacityPayload) {
     return api.post(`/production-plan/plan/${id}/calculate`, data)

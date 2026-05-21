@@ -31,10 +31,7 @@ const filteredDOs = computed(() => {
 
 const allSelected = computed(() => {
   if (filteredDOs.value.length === 0) return false
-
-  return filteredDOs.value.every((d) =>
-    props.selectedDoIds.includes(d.id),
-  )
+  return filteredDOs.value.every((d) => props.selectedDoIds.includes(d.id))
 })
 
 function handleToggleAll() {
