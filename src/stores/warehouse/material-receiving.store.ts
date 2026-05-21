@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import materialReceivingService, { type MaterialReceivingParams } from '../../services/warehouse/material-receiving.service'
-import type { MaterialReceiving, MaterialReceivingDropdown, MaterialReceivingStatus } from '../../types/warehouse/material-receiving'
+import type { MaterialReceiving, MaterialReceivingDropdown, MaterialReceivingStatus, MarkQualityDefectPayload } from '../../types/warehouse/material-receiving'
 
 export const useMaterialReceivingStore = defineStore('material-receiving', () => {
   // State
@@ -171,6 +171,67 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
+  // Actions - Quality Checking
+  async function fetchQualityCheckingDetail(mdo_detail_id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.getQualityCheckingDetail(mdo_detail_id)
+      const data = response.data
+      return data.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching quality checking detail:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function scanQualityLabel(payload: { label_number: string }) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.scanQualityLabel(payload)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error scanning quality label:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.markQualityDefect(mr_item_label_id, payload)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error marking quality defect:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function submitQualityChecking (mdo_detail_id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.submitQualityChecking(mdo_detail_id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error submitting quality checking:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Actions - Dropdown
   async function fetchDropdown() {
     try {
@@ -217,6 +278,10 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     scanQuantityLabel,
     markQuantityIncomplete,
     submitQuantityChecking,
+    fetchQualityCheckingDetail,
+    scanQualityLabel,
+    markQualityDefect,
+    submitQualityChecking,
     fetchDropdown,
     fetchMaterialReceivingStatusesDropdown
   }

@@ -61,7 +61,7 @@ const columns = computed(() => {
     progress.value?.status || '',
     {
       onQuantityCheck: handleQuantityCheck,
-      onQualityCheck: () => {}
+      onQualityCheck: handleQualityCheck
     },
     uiComponents
   ).columns
@@ -70,6 +70,12 @@ const columns = computed(() => {
 function handleQuantityCheck(item: any) {
   router.push(
     `/warehouse/material-receiving/view-progress/${progress.value?.id}/quantity-checking/${item.id}`
+  )
+}
+
+function handleQualityCheck(item: any) {
+  router.push(
+    `/warehouse/material-receiving/view-progress/${progress.value?.id}/quality-checking/${item.id}`
   )
 }
 

@@ -1,4 +1,5 @@
 import { api } from '../../plugins/axios'
+import type { MarkQualityDefectPayload } from '../../types/warehouse/material-receiving'
 
 export interface MaterialReceivingParams {
   page?: number
@@ -46,6 +47,20 @@ const materialReceivingService = {
   },
   submitQuantityChecking(mdo_detail_id: number | string) {
     return api.post(`/warehouse/material-receiving/quantity-checking/submit/${mdo_detail_id}`)
+  },
+
+  // Quality Checking
+  getQualityCheckingDetail(mdo_detail_id: number | string) {
+    return api.get(`/warehouse/material-receiving/quality-checking/${mdo_detail_id}`)
+  },
+  scanQualityLabel(payload: { label_number: string }) {
+    return api.post('/warehouse/material-receiving/quality-checking/scan', payload)
+  },
+  markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload) {
+    return api.patch(`/warehouse/material-receiving/quality-checking/defect/${mr_item_label_id}`, payload)
+  },
+  submitQualityChecking(mdo_detail_id: number | string) {
+    return api.post(`/warehouse/material-receiving/quality-checking/submit/${mdo_detail_id}`)
   },
 
   // Print
