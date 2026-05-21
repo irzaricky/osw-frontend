@@ -1,9 +1,9 @@
 import { h, Ref, type Component } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { QuantityCheckingLabel } from '../../../../types/warehouse/material-receiving'
+import type { QualityCheckingLabel } from '../../../../types/warehouse/material-receiving'
 
 interface ColumnActions {
-  onMarkIncomplete: (label: QuantityCheckingLabel) => void
+  onMarkDefect: (label: QualityCheckingLabel) => void
 }
 
 interface ColumnComponents {
@@ -28,14 +28,14 @@ function getJudgementColor(
   return 'neutral'
 }
 
-export function useQuantityCheckingColumns(
-  actions: ColumnActions, 
-  components: ColumnComponents, 
+export function useQualityCheckingColumns(
+  actions: ColumnActions,
+  components: ColumnComponents,
   isSubmitted: Ref<boolean> | boolean
 ) {
   const { UBadge, UButton, UDropdownMenu } = components
 
-  const columns: TableColumn<QuantityCheckingLabel>[] = [
+  const columns: TableColumn<QualityCheckingLabel>[] = [
     {
       header: 'No',
       cell: ({ row }) => row.index + 1
@@ -59,6 +59,20 @@ export function useQuantityCheckingColumns(
         )
     },
     {
+      accessorKey: 'defects',
+      header: 'Defect',
+      cell: ({ row }) => {
+        const defects = row.original.ng_ticket?.defects || []
+        if (row.original.judgement === 'OK') {
+          return '-'
+        }
+        if (defects.length <= 0) {
+          return '-'
+        }
+        return defects.map(defect => defect.defect_name).join(', ')
+      }
+    },
+    {
       accessorKey: 'scanned_at',
       header: 'Scanned At',
       cell: ({ row }) => row.original.scanned_at ? new Date(row.original.scanned_at).toLocaleString() : '-'
@@ -74,14 +88,14 @@ export function useQuantityCheckingColumns(
         const items = [
           [
             {
-              label: 'Mark as Incomplete',
-              icon: 'i-lucide-circle-off',
+              label: 'Mark as Defect',
+              icon: 'i-lucide-shield-alert',
               disabled: submitted || label.judgement === 'NG',
               onSelect: () => {
                 if (
                   !submitted && label.judgement !== 'NG'
                 ) {
-                  actions.onMarkIncomplete(
+                  actions.onMarkDefect(
                     label
                   )
                 }

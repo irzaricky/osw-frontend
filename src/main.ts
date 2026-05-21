@@ -315,6 +315,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/warehouse/material-receiving/view-progress/:id/quality-checking/:mdo_detail_id', 
+      component: () => import('./pages/warehouse/material-receiving/view-progress/quality-checking.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/warehouse/work-order-storing', 
       component: () => import('./pages/warehouse/work-order-storing/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
