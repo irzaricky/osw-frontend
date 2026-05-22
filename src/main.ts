@@ -24,55 +24,55 @@ app.use(VueApexCharts)
 const router = createRouter({
   routes: [
     //autentikasi
-    { 
-      path: '/login', 
+    {
+      path: '/login',
       component: () => import('./pages/login.vue'),
       meta: { layout: 'auth', isPublic: true }
     },
-    { 
-      path: '/logout', 
+    {
+      path: '/logout',
       component: () => import('./pages/logout.vue'),
       meta: { layout: 'auth' }
     },
-    { 
-      path: '/', 
+    {
+      path: '/',
       component: () => import('./pages/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
 
     //template (belum kepake)
-    { 
-      path: '/users', 
+    {
+      path: '/users',
       component: () => import('./pages/users.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales', 
+    {
+      path: '/sales',
       component: () => import('./pages/sales.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/forecast', 
+    {
+      path: '/sales/forecast',
       component: () => import('./pages/sales/forecast/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/spr', 
+    {
+      path: '/sales/spr',
       component: () => import('./pages/sales/spr/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/spr-ppic', 
+    {
+      path: '/sales/spr-ppic',
       component: () => import('./pages/sales/spr-ppic/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/spo', 
+    {
+      path: '/sales/spo',
       component: () => import('./pages/sales/spo/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/sdp', 
+    {
+      path: '/sales/sdp',
       component: () => import('./pages/sales/sdp/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
@@ -81,18 +81,18 @@ const router = createRouter({
       component: () => import('./pages/sales/analytics/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/sdo', 
+    {
+      path: '/sales/sdo',
       component: () => import('./pages/sales/sdo/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/sales/sdo/mobile/:id', 
+    {
+      path: '/sales/sdo/mobile/:id',
       component: () => import('./pages/sales/sdo/mobile.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/production-plan', 
+    {
+      path: '/production-plan',
       component: () => import('./pages/production-plan.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
@@ -150,13 +150,36 @@ const router = createRouter({
       component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse', 
+    
+    //MATERIAL
+    {
+      path: '/material/mrp',
+      component: () => import('./pages/material/mrp/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/material/mpr',
+      component: () => import('./pages/material/mpr/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/material/mpo',
+      component: () => import('./pages/material/mpo/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/material/mdo',
+      component: () => import('./pages/material/mdo/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    //WAREHOUSE
+    {
+      path: '/warehouse',
       component: () => import('./pages/warehouse.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/placement', 
+    {
+      path: '/warehouse/placement',
       component: () => import('./pages/warehouse/placement/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
@@ -181,9 +204,9 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     {
-    path: '/warehouse/stock-monitoring',
-    component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
-    meta: { layout: 'default', requiresAuth: true }
+      path: '/warehouse/stock-monitoring',
+      component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
     },
     {
       path: '/warehouse/critical-stock',
@@ -197,110 +220,110 @@ const router = createRouter({
     },
 
     // master data
-    { 
-      path: '/master-data/users', 
+    {
+      path: '/master-data/users',
       component: () => import('./pages/master-data/users/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/vehicles', 
+    {
+      path: '/master-data/vehicles',
       component: () => import('./pages/master-data/vehicles/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/defects', 
+    {
+      path: '/master-data/defects',
       component: () => import('./pages/master-data/defects/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/warehouses', 
+    {
+      path: '/master-data/warehouses',
       component: () => import('./pages/master-data/warehouses/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/warehouse-areas', 
+    {
+      path: '/master-data/warehouse-areas',
       component: () => import('./pages/master-data/warehouse-areas/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/storage-bins', 
+    {
+      path: '/master-data/storage-bins',
       component: () => import('./pages/master-data/storage-bins/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/docks', 
+    {
+      path: '/master-data/docks',
       component: () => import('./pages/master-data/docks/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/audit-logs', 
+    {
+      path: '/master-data/audit-logs',
       component: () => import('./pages/master-data/audit-logs/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/customers', 
+    {
+      path: '/master-data/customers',
       component: () => import('./pages/master-data/customers/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/factories', 
+    {
+      path: '/master-data/factories',
       component: () => import('./pages/master-data/factories/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/lines', 
+    {
+      path: '/master-data/lines',
       component: () => import('./pages/master-data/lines/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     {
-      path: '/master-data/parts', 
+      path: '/master-data/parts',
       component: () => import('./pages/master-data/parts/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     {
-      path: '/master-data/suppliers', 
+      path: '/master-data/suppliers',
       component: () => import('./pages/master-data/suppliers/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/calendar', 
+    {
+      path: '/master-data/calendar',
       component: () => import('./pages/master-data/calendar/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/stations', 
+    {
+      path: '/master-data/stations',
       component: () => import('./pages/master-data/stations/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/stations/:id/jobs', 
+    {
+      path: '/master-data/stations/:id/jobs',
       component: () => import('./pages/master-data/stations/[id]/jobs/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/jobs', 
+    {
+      path: '/master-data/jobs',
       component: () => import('./pages/master-data/jobs/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/shifts', 
+    {
+      path: '/master-data/shifts',
       component: () => import('./pages/master-data/shifts/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/master-data/shift-calendars', 
+    {
+      path: '/master-data/shift-calendars',
       component: () => import('./pages/master-data/shift-calendars/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
 
     // warehouse
-    { 
-      path: '/warehouse/material-receiving', 
+    {
+      path: '/warehouse/material-receiving',
       component: () => import('./pages/warehouse/material-receiving/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/material-receiving/set-arrived-process/:id', 
+    {
+      path: '/warehouse/material-receiving/set-arrived-process/:id',
       component: () => import('./pages/warehouse/material-receiving/set-arrived-process.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
@@ -329,18 +352,18 @@ const router = createRouter({
       component: () => import('./pages/warehouse/warranty-and-claim/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/work-order-storing', 
+    {
+      path: '/warehouse/work-order-storing',
       component: () => import('./pages/warehouse/work-order-storing/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/work-order-storing/create', 
+    {
+      path: '/warehouse/work-order-storing/create',
       component: () => import('./pages/warehouse/work-order-storing/create.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    { 
-      path: '/warehouse/work-order-storing/edit/:id', 
+    {
+      path: '/warehouse/work-order-storing/edit/:id',
       component: () => import('./pages/warehouse/work-order-storing/edit.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
@@ -359,7 +382,7 @@ const router = createRouter({
       component: () => import('./pages/warehouse/warehouse-layout/storage-bin/[id].vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
-    
+
     // error
     {
       path: '/error',
@@ -377,7 +400,7 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
-  
+
   // If token exists but user is not loaded, fetch it first
   if (authStore.token && !authStore.user) {
     await authStore.fetchProfile()
