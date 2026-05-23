@@ -120,5 +120,9 @@ export interface SalesPlanLoadData {
       part_name: string
       uom?: { id: number; name: string; code: string }
     }
+    stock_on_hand?: number
+    safety_stock?: number
+    gross_requirement?: number
+    net_requirement?: number
   }[]
 }
