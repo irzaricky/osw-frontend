@@ -20,6 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const simulatedRole = useStorage<string | null>('simulated_role', null)
 
   // Getters
   const isAuthenticated = computed(() => !!token.value)
@@ -61,6 +62,7 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
         token.value = null
         user.value = null
+        simulatedRole.value = null
         router.push('/login')
     }
   }
@@ -75,18 +77,39 @@ export const useAuthStore = defineStore('auth', () => {
       
       if (data.status) {
         user.value = data.data
+        if (user.value && (user.value.role?.toLowerCase() === 'superadmin' || user.value.simulated_from?.toLowerCase() === 'superadmin') && simulatedRole.value) {
+          user.value.simulated_from = 'Superadmin'
+          user.value.role = simulatedRole.value
+        }
       } else {
-        // Token might be invalid
         token.value = null
         user.value = null
+        simulatedRole.value = null
       }
     } catch (e) {
       console.error('Fetch profile error', e)
-      // If error is 401, interceptor handles it, but we should also clear state
       token.value = null
       user.value = null
+      simulatedRole.value = null
     } finally {
       loading.value = false
+    }
+  }
+
+  function simulateRole(roleName: string | null) {
+    simulatedRole.value = roleName
+    if (user.value) {
+      const originalRole = user.value.simulated_from || user.value.role
+      if (originalRole?.toLowerCase() === 'superadmin') {
+        user.value.simulated_from = 'Superadmin'
+        if (roleName) {
+          user.value.role = roleName
+        } else {
+          user.value.role = 'Superadmin'
+          delete user.value.simulated_from
+          simulatedRole.value = null
+        }
+      }
     }
   }
 
@@ -98,6 +121,8 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     login,
     logout,
-    fetchProfile
+    fetchProfile,
+    simulatedRole,
+    simulateRole
   }
 })

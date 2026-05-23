@@ -43,56 +43,7 @@ const confirmDialog = ref({
 // Search & filter parameters
 const selectedWarehouseId = ref<number | undefined>(undefined)
 
-function getLocalDateString() {
-  const d = new Date()
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-<script setup lang="ts">
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { onMounted, ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { CalendarDate } from '@internationalized/date'
-import { useSdpStore } from '../../../stores/sales/sdp.store'
-import Breadcrumbs from '../../../components/Breadcrumbs.vue'
-import { storeToRefs } from 'pinia'
-import SdpAddModal from './components/SdpAddModal.vue'
-import SdpDetailPanel from './components/SdpDetailPanel.vue'
-import ConfirmDialog from '../../../components/ConfirmDialog.vue'
-import { useAppToast } from '../../../composables/useAppToast'
 
-const { toastSuccess, toastError } = useAppToast()
-
-const store = useSdpStore()
-const { loading, plans } = storeToRefs(store)
-const route = useRoute()
-const router = useRouter()
-
-const breadcrumbItems = [
-  { label: 'Home', to: '/' },
-  { label: 'Sales' },
-  { label: 'Delivery Plan (SDP)' }
-]
-
-// Modal & Panel state controls
-const openAddModal = ref(false)
-const selectedPlanId = ref<number | null>(null)
-const createLoading = ref(false)
-const presetSpoId = ref<number | null>(null)
-const isMasterListOpen = ref(false)
-
-const selectedPlan = computed(() => store.detail)
-
-const confirmDialog = ref({
-  open: false,
-  title: 'Delete Delivery Plan',
-  description: 'Are you sure you want to delete this delivery plan? This action cannot be undone.',
-  id: null as number | null
-})
-
-// Search & filter parameters
-const selectedWarehouseId = ref<number | undefined>(undefined)
 
 function getLocalDateString() {
   const d = new Date()
@@ -633,6 +584,35 @@ const conflictingDocksNames = computed(() => {
                     </td>
                     <td class="p-3">
                       {{ plan.destination }}
+                    </td>
+                  </tr>
+                  <tr v-if="filteredMasterList.length === 0">
+                    <td colspan="5" class="p-4 text-center text-muted">
+                      No active plans for this date range/warehouse.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right side: Master-Detail Panel Info -->
+      <div v-if="selectedPlanId" class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
+        <SdpDetailPanel
+          :plan="selectedPlan"
+          :loading="loading"
+          @close="selectedPlanId = null; store.detail = null"
+          @delete="handleDeletePlan"
+          @refresh="loadPlans(); selectPlan(selectedPlanId!)"
+        />
+      </div>
+
+      <!-- Modals -->
+      <SdpAddModal
+        v-model:open="openAddModal"
+        :loading="createLoading"
         :preset-spo-id="presetSpoId"
         @save="handleSavePlan"
       />

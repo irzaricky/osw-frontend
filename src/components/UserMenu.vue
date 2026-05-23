@@ -4,35 +4,27 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
 import { api } from '../plugins/axios'
 
+import { useAuthStore } from '../stores/auth.store'
+
 defineProps<{
   collapsed?: boolean
 }>()
 
 const colorMode = useColorMode()
 const appConfig = useAppConfig()
+const authStore = useAuthStore()
 
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
-const userData = ref({
-  email: 'Loading...',
-  role: ''
+const userData = computed(() => {
+  return authStore.user || { email: 'Loading...', role: '' }
 })
 
-onMounted(async () => {
-  const token = localStorage.getItem('auth_token')
-  if (!token || token === 'null' || token === 'undefined') {
-    return
-  }
-  
-  try {
-    const response = await api.get('auth/me')
-    if (response.data?.status && response.data?.data) {
-      userData.value = response.data.data
-    }
-  } catch (error) {
-    console.error('Failed to fetch user:', error)
-  }
+const isSuperadmin = computed(() => {
+  const role = authStore.user?.role?.toLowerCase()
+  const orig = authStore.user?.simulated_from?.toLowerCase()
+  return role === 'superadmin' || orig === 'superadmin'
 })
 
 const user = computed(() => ({
@@ -43,87 +35,121 @@ const user = computed(() => ({
   }
 }))
 
-const items = computed<DropdownMenuItem[][]>(() => ([[{
-  type: 'label',
-  slot: 'account',
-  label: user.value.name,
-  avatar: user.value.avatar
-}], [{
-  label: 'Theme',
-  icon: 'i-lucide-palette',
-  children: [{
-    label: 'Primary',
-    slot: 'chip',
-    chip: appConfig.ui.colors.primary,
-    content: {
-      align: 'center',
-      collisionPadding: 16
-    },
-    children: colors.map(color => ({
-      label: color,
-      chip: color,
+const items = computed<DropdownMenuItem[][]>(() => {
+  const list: DropdownMenuItem[][] = [[{
+    type: 'label',
+    slot: 'account',
+    label: user.value.name,
+    avatar: user.value.avatar
+  }], [{
+    label: 'Theme',
+    icon: 'i-lucide-palette',
+    children: [{
+      label: 'Primary',
       slot: 'chip',
-      checked: appConfig.ui.colors.primary === color,
+      chip: appConfig.ui.colors.primary,
+      content: {
+        align: 'center',
+        collisionPadding: 16
+      },
+      children: colors.map(color => ({
+        label: color,
+        chip: color,
+        slot: 'chip',
+        checked: appConfig.ui.colors.primary === color,
+        type: 'checkbox',
+        onSelect: (e) => {
+          e.preventDefault()
+
+          appConfig.ui.colors.primary = color
+        }
+      }))
+    }, {
+      label: 'Neutral',
+      slot: 'chip',
+      chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
+      content: {
+        align: 'end',
+        collisionPadding: 16
+      },
+      children: neutrals.map(color => ({
+        label: color,
+        chip: color === 'neutral' ? 'old-neutral' : color,
+        slot: 'chip',
+        type: 'checkbox',
+        checked: appConfig.ui.colors.neutral === color,
+        onSelect: (e) => {
+          e.preventDefault()
+
+          appConfig.ui.colors.neutral = color
+        }
+      }))
+    }]
+  }, {
+    label: 'Appearance',
+    icon: 'i-lucide-sun-moon',
+    children: [{
+      label: 'Light',
+      icon: 'i-lucide-sun',
       type: 'checkbox',
-      onSelect: (e) => {
+      checked: colorMode.value === 'light',
+      onSelect(e: Event) {
         e.preventDefault()
 
-        appConfig.ui.colors.primary = color
+        colorMode.value = 'light'
       }
-    }))
-  }, {
-    label: 'Neutral',
-    slot: 'chip',
-    chip: appConfig.ui.colors.neutral === 'neutral' ? 'old-neutral' : appConfig.ui.colors.neutral,
-    content: {
-      align: 'end',
-      collisionPadding: 16
-    },
-    children: neutrals.map(color => ({
-      label: color,
-      chip: color === 'neutral' ? 'old-neutral' : color,
-      slot: 'chip',
+    }, {
+      label: 'Dark',
+      icon: 'i-lucide-moon',
       type: 'checkbox',
-      checked: appConfig.ui.colors.neutral === color,
-      onSelect: (e) => {
+      checked: colorMode.value === 'dark',
+      onUpdateChecked(checked: boolean) {
+        if (checked) {
+          colorMode.value = 'dark'
+        }
+      },
+      onSelect(e: Event) {
         e.preventDefault()
-
-        appConfig.ui.colors.neutral = color
       }
-    }))
-  }]
-}, {
-  label: 'Appearance',
-  icon: 'i-lucide-sun-moon',
-  children: [{
-    label: 'Light',
-    icon: 'i-lucide-sun',
-    type: 'checkbox',
-    checked: colorMode.value === 'light',
-    onSelect(e: Event) {
-      e.preventDefault()
+    }]
+  }]]
 
-      colorMode.value = 'light'
-    }
-  }, {
-    label: 'Dark',
-    icon: 'i-lucide-moon',
-    type: 'checkbox',
-    checked: colorMode.value === 'dark',
-    onUpdateChecked(checked: boolean) {
-      if (checked) {
-        colorMode.value = 'dark'
-      }
-    },
-    onSelect(e: Event) {
-      e.preventDefault()
-    }
-  }]
-}], [{
-  label: 'Log out',
-  icon: 'i-lucide-log-out',
-  to: '/logout'
-}]]))
+  if (isSuperadmin.value) {
+    const roles = [
+      { label: 'Superadmin (Reset)', value: null },
+      { label: 'Sales Staff', value: 'Sales Staff' },
+      { label: 'Supervisor Sales', value: 'Supervisor Sales' },
+      { label: 'Warehouse Staff', value: 'Warehouse Staff' },
+      { label: 'Production Planner', value: 'Production Planner' },
+      { label: 'Driver', value: 'Driver' }
+    ]
+    const currentRole = authStore.user?.role
+    const currentSimulated = authStore.simulatedRole
+
+    list[1].push({
+      label: 'Simulate Role',
+      icon: 'i-lucide-shield-alert',
+      children: roles.map(r => ({
+        label: r.label,
+        type: 'checkbox',
+        checked: r.value === null ? (!currentSimulated) : (currentRole === r.value),
+        onSelect(e: Event) {
+          e.preventDefault()
+          authStore.simulateRole(r.value)
+          window.location.href = '/'
+        }
+      }))
+    })
+  }
+
+  list.push([{
+    label: 'Log out',
+    icon: 'i-lucide-log-out',
+    to: '/logout'
+  }])
+
+  return list
+})
 </script>
 
 <template>
