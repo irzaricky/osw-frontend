@@ -42,6 +42,22 @@ const sdoService = {
     })
   },
 
+  uploadLoadingPhoto(id: number | string, data: FormData) {
+    return api.put(`${BASE}/${id}/loading-photo`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  approveDispatch(id: number | string) {
+    return api.put(`${BASE}/${id}/approve-dispatch`)
+  },
+
+  startDelivery(id: number | string) {
+    return api.put(`${BASE}/${id}/start-delivery`)
+  },
+
   downloadSdoPdf(id: number | string) {
     return api.get(`${BASE}/${id}/pdf`, { responseType: 'blob' })
   }

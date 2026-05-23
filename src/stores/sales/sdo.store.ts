@@ -123,6 +123,51 @@ export const useSdoStore = defineStore('sdo', () => {
     }
   }
 
+  async function uploadLoadingPhoto(id: number | string, formData: FormData) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await sdoService.uploadLoadingPhoto(id, formData)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error(`Error uploading loading photo ${id}:`, e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function approveDispatch(id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await sdoService.approveDispatch(id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error(`Error approving dispatch ${id}:`, e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function startDelivery(id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await sdoService.startDelivery(id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error(`Error starting delivery ${id}:`, e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadSdoPdf(id: number | string) {
     loading.value = true
     error.value = null
@@ -206,6 +251,9 @@ export const useSdoStore = defineStore('sdo', () => {
     fetchDropdownDrivers,
     createSdo,
     updateSdoStatus,
+    uploadLoadingPhoto,
+    approveDispatch,
+    startDelivery,
     downloadSdoPdf,
     // Kanban
     kanbanSdos,

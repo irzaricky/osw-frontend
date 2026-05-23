@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, onUnmounted, computed } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
+import { useAuthStore } from '../../../stores/auth.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
 import type { Sdo } from '../../../types/sales/sdo'
@@ -12,6 +13,7 @@ import { useAppToast } from '../../../composables/useAppToast'
 const { toastSuccess, toastError } = useAppToast()
 
 const store = useSdoStore()
+const authStore = useAuthStore()
 const { sdos, loading, meta } = storeToRefs(store)
 
 const breadcrumbItems = [
@@ -22,13 +24,16 @@ const breadcrumbItems = [
 
 // Global filters and selection state
 const searchQuery = ref('')
-const activeTab = ref<'all' | 'In Transit' | 'Delivered'>('all')
+const activeTab = ref<'all' | 'Created' | 'Loading' | 'In Transit' | 'Delivered' | 'Delivered (Partial)'>('all')
 const sentinel = ref<HTMLElement | null>(null)
 
 const tabs = [
   { label: 'All SDO', value: 'all' },
+  { label: 'Created', value: 'Created' },
+  { label: 'Loading', value: 'Loading' },
   { label: 'In Transit', value: 'In Transit' },
-  { label: 'Delivered', value: 'Delivered' }
+  { label: 'Delivered', value: 'Delivered' },
+  { label: 'Delivered (Partial)', value: 'Delivered (Partial)' }
 ] as const
 
 // Expanded row state (Option A behavior)
@@ -60,7 +65,7 @@ async function fetchStats() {
 
     sdos.value.forEach(sdo => {
       if (sdo.delivery_status === 'In Transit') inTransit++
-      if (sdo.delivery_status === 'Delivered') delivered++
+      if (sdo.delivery_status === 'Delivered' || sdo.delivery_status === 'Delivered (Partial)') delivered++
 
       if (sdo.details) {
         sdo.details.forEach(item => {
@@ -101,7 +106,7 @@ async function fetchData(append = false) {
   }
 }
 
-function changeTab(tabVal: 'all' | 'In Transit' | 'Delivered') {
+function changeTab(tabVal: 'all' | 'Created' | 'Loading' | 'In Transit' | 'Delivered' | 'Delivered (Partial)') {
   activeTab.value = tabVal
   expandedSdoId.value = null
   store.detail = null
@@ -227,10 +232,16 @@ useIntersectionObserver(
 // Helper methods
 function getStatusColor(status: string) {
   switch (status) {
+    case 'Created':
+      return 'neutral'
+    case 'Loading':
+      return 'primary'
     case 'In Transit':
       return 'warning'
     case 'Delivered':
       return 'success'
+    case 'Delivered (Partial)':
+      return 'error'
     default:
       return 'primary'
   }
@@ -252,6 +263,135 @@ function getSlaBadgeConfig(status?: string) {
       return { color: 'success' as const, icon: 'i-lucide-check-circle', label: 'On Time' }
   }
 }
+
+// Granular logistics handler functions
+const loadingPhotoFile = ref<File | null>(null)
+const uploadingLoadingPhoto = ref(false)
+const approvingDispatch = ref(false)
+const startingDelivery = ref(false)
+const countdownText = ref('')
+let countdownInterval: any = null
+
+async function handleLoadingPhotoChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    loadingPhotoFile.value = await compressImage(file)
+  }
+}
+
+async function submitLoadingPhoto(sdoId: number) {
+  if (!loadingPhotoFile.value) {
+    toastError('Please select a loading photo first.')
+    return
+  }
+  const formData = new FormData()
+  formData.append('loading_photo', loadingPhotoFile.value)
+
+  uploadingLoadingPhoto.value = true
+  try {
+    const res = await store.uploadLoadingPhoto(sdoId, formData)
+    if (res.status) {
+      loadingPhotoFile.value = null
+      toastSuccess('Loading photo uploaded successfully!')
+      await store.fetchSdoById(sdoId)
+      await fetchData(false)
+      await fetchStats()
+    } else {
+      toastError(res.message || 'Failed to upload loading photo.')
+    }
+  } catch (e: any) {
+    console.error('Error uploading loading photo:', e)
+    toastError(e.response?.data?.message || 'Error uploading loading photo.')
+  } finally {
+    uploadingLoadingPhoto.value = false
+  }
+}
+
+async function submitApproveDispatch(sdoId: number) {
+  approvingDispatch.value = true
+  try {
+    const res = await store.approveDispatch(sdoId)
+    if (res.status) {
+      toastSuccess('Dispatch approved successfully!')
+      await store.fetchSdoById(sdoId)
+      await fetchData(false)
+    } else {
+      toastError(res.message || 'Failed to approve dispatch.')
+    }
+  } catch (e: any) {
+    console.error('Error approving dispatch:', e)
+    toastError(e.response?.data?.message || 'Error approving dispatch.')
+  } finally {
+    approvingDispatch.value = false
+  }
+}
+
+async function submitStartDelivery(sdoId: number) {
+  startingDelivery.value = true
+  try {
+    const res = await store.startDelivery(sdoId)
+    if (res.status) {
+      toastSuccess('Delivery started successfully! Status is now In Transit.')
+      await store.fetchSdoById(sdoId)
+      await fetchData(false)
+      await fetchStats()
+    } else {
+      toastError(res.message || 'Failed to start delivery.')
+    }
+  } catch (e: any) {
+    console.error('Error starting delivery:', e)
+    toastError(e.response?.data?.message || 'Error starting delivery.')
+  } finally {
+    startingDelivery.value = false
+  }
+}
+
+const isPodPartial = computed(() => {
+  if (!store.detail || !store.detail.details) return false
+  return store.detail.details.some(item => {
+    const recQty = podFormDetails.value[item.id]
+    return recQty !== undefined && recQty < item.sent_qty
+  })
+})
+
+function updateCountdown() {
+  if (!store.detail || store.detail.delivery_status !== 'In Transit' || !store.detail.deliveryPlan?.time_end) {
+    countdownText.value = ''
+    return
+  }
+  const dateStr = store.detail.deliveryPlan.scheduled_date
+  const timeStr = store.detail.deliveryPlan.time_end
+  const deadline = new Date(`${dateStr}T${timeStr}`)
+  const diffMs = deadline.getTime() - Date.now()
+  if (diffMs <= 0) {
+    countdownText.value = 'SLA expired / Delayed'
+    return
+  }
+  const totalMin = Math.floor(diffMs / 60000)
+  const hrs = Math.floor(totalMin / 60)
+  const mins = totalMin % 60
+  countdownText.value = `${hrs}h ${mins}m remaining`
+}
+
+watch(() => store.detail, (newVal) => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
+  }
+  if (newVal && newVal.delivery_status === 'In Transit' && newVal.deliveryPlan?.time_end) {
+    updateCountdown()
+    countdownInterval = setInterval(updateCountdown, 10000)
+  } else {
+    countdownText.value = ''
+  }
+})
+
+onUnmounted(() => {
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+  }
+})
 </script>
 
 <template>
@@ -303,11 +443,11 @@ function getSlaBadgeConfig(status?: string) {
           </div>
 
           <!-- Custom Tabs Filters -->
-          <div class="flex border border-default rounded-xl p-1 bg-default/40 shrink-0 w-96">
+          <div class="flex flex-wrap border border-default rounded-xl p-1 bg-default/40 shrink-0 gap-1">
             <button
               v-for="tab in tabs"
               :key="tab.value"
-              class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all"
+              class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all"
               :class="activeTab === tab.value ? 'bg-primary text-white shadow' : 'text-muted-foreground hover:bg-default/60 hover:text-default'"
               @click="changeTab(tab.value)"
             >
@@ -324,21 +464,37 @@ function getSlaBadgeConfig(status?: string) {
               <UIcon name="i-lucide-inbox" class="w-8 h-8 text-default" />
             </div>
             <div>
-              <h3 class="font-bold text-default text-lg">No Delivery Orders Found</h3>
+              <h3 class="font-bold text-default text-lg">
+                No Delivery Orders Found
+              </h3>
             </div>
           </div>
 
           <table v-else class="w-full text-left border-collapse">
             <thead>
               <tr class="border-b border-default text-xs font-bold text-muted-foreground bg-default/40">
-                <th class="p-4 w-12 text-center"></th>
-                <th class="p-4">SDO Number</th>
-                <th class="p-4">Customer Name</th>
-                <th class="p-4">Shipment Date</th>
-                <th class="p-4">Vehicle</th>
-                <th class="p-4">Driver</th>
-                <th class="p-4">Status</th>
-                <th class="p-4">SLA Status</th>
+                <th class="p-4 w-12 text-center" />
+                <th class="p-4">
+                  SDO Number
+                </th>
+                <th class="p-4">
+                  Customer Name
+                </th>
+                <th class="p-4">
+                  Shipment Date
+                </th>
+                <th class="p-4">
+                  Vehicle
+                </th>
+                <th class="p-4">
+                  Driver
+                </th>
+                <th class="p-4">
+                  Status
+                </th>
+                <th class="p-4">
+                  SLA Status
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default/40">
@@ -406,13 +562,10 @@ function getSlaBadgeConfig(status?: string) {
                     </div>
 
                     <div v-else-if="store.detail && store.detail.id === sdo.id" class="space-y-6">
-                      <!-- Grid container to put Shipment Details on the left and POD on the right if In Transit -->
-                      <div :class="store.detail.delivery_status === 'In Transit' ? 'grid grid-cols-1 lg:grid-cols-12 gap-6 items-start' : 'space-y-6'">
+                      <!-- Grid container for SDO Details (Left) and Logistics Actions/Forms (Right) -->
+                      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                         <!-- Shipment Item Details (Left / Main side) -->
-                        <div 
-                          class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4"
-                          :class="store.detail.delivery_status === 'In Transit' ? 'lg:col-span-7' : ''"
-                        >
+                        <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-7">
                           <div class="flex items-center justify-between border-b border-default pb-3">
                             <h4 class="text-sm font-bold text-default flex items-center gap-2">
                               <UIcon name="i-lucide-package-open" class="w-4 h-4 text-primary" />
@@ -438,21 +591,43 @@ function getSlaBadgeConfig(status?: string) {
                             <table class="w-full text-left border-collapse text-xs">
                               <thead>
                                 <tr class="border-b border-default text-muted-foreground font-semibold">
-                                  <th class="pb-2 pr-4 w-12">No.</th>
-                                  <th class="pb-2 pr-4">Part Number</th>
-                                  <th class="pb-2 pr-4">Part Name</th>
-                                  <th class="pb-2 pr-4 text-right">Planned Qty</th>
-                                  <th class="pb-2 pr-4 text-right">Sent Qty</th>
-                                  <th class="pb-2 text-right">Received Qty</th>
+                                  <th class="pb-2 pr-4 w-12">
+                                    No.
+                                  </th>
+                                  <th class="pb-2 pr-4">
+                                    Part Number
+                                  </th>
+                                  <th class="pb-2 pr-4">
+                                    Part Name
+                                  </th>
+                                  <th class="pb-2 pr-4 text-right">
+                                    Planned Qty
+                                  </th>
+                                  <th class="pb-2 pr-4 text-right">
+                                    Sent Qty
+                                  </th>
+                                  <th class="pb-2 text-right">
+                                    Received Qty
+                                  </th>
                                 </tr>
                               </thead>
                               <tbody class="divide-y divide-default/10">
                                 <tr v-for="(item, idx) in store.detail.details" :key="item.id" class="hover:bg-default/10">
-                                  <td class="py-2 pr-4 text-muted-foreground">{{ idx + 1 }}</td>
-                                  <td class="py-2 pr-4 font-mono font-semibold">{{ item.planDetail?.spoDetail?.part?.part_number || '-' }}</td>
-                                  <td class="py-2 pr-4">{{ item.planDetail?.spoDetail?.part?.part_name || '-' }}</td>
-                                  <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">{{ item.planDetail?.planned_qty || 0 }} pcs</td>
-                                  <td class="py-2 pr-4 text-right font-bold text-primary">{{ item.sent_qty }} pcs</td>
+                                  <td class="py-2 pr-4 text-muted-foreground">
+                                    {{ idx + 1 }}
+                                  </td>
+                                  <td class="py-2 pr-4 font-mono font-semibold">
+                                    {{ item.planDetail?.spoDetail?.part?.part_number || '-' }}
+                                  </td>
+                                  <td class="py-2 pr-4">
+                                    {{ item.planDetail?.spoDetail?.part?.part_name || '-' }}
+                                  </td>
+                                  <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">
+                                    {{ item.planDetail?.planned_qty || 0 }} pcs
+                                  </td>
+                                  <td class="py-2 pr-4 text-right font-bold text-primary">
+                                    {{ item.sent_qty }} pcs
+                                  </td>
                                   <td class="py-2 text-right font-bold" :class="item.received_qty !== null ? 'text-success' : 'text-muted-foreground'">
                                     {{ item.received_qty !== null ? `${item.received_qty} pcs` : '-' }}
                                   </td>
@@ -462,72 +637,271 @@ function getSlaBadgeConfig(status?: string) {
                           </div>
                         </div>
 
-                        <!-- POD Confirm Form if SDO status is In Transit (Right side) -->
-                        <div 
-                          v-if="store.detail.delivery_status === 'In Transit'" 
-                          class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-5"
-                        >
-                          <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
-                            <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
-                            Proof Of Delivery (POD) Confirmation
-                          </h4>
-
-                          <form @submit.prevent="submitPod(store.detail)" class="space-y-4">
-                            <!-- Quantities Input -->
-                            <div class="grid grid-cols-1 gap-4">
-                              <div v-for="item in store.detail.details" :key="item.id" class="space-y-1.5">
-                                <label class="text-xs font-semibold text-default block">
-                                  Received Qty for: {{ item.planDetail?.spoDetail?.part?.part_name }} (Sent: {{ item.sent_qty }} pcs)
-                                </label>
-                                <UInput
-                                  v-model.number="podFormDetails[item.id]"
-                                  type="number"
-                                  size="sm"
-                                  min="0"
-                                  :max="item.sent_qty"
-                                  placeholder="Enter received quantity"
-                                  required
-                                  class="w-full"
-                                />
-                              </div>
-                            </div>
-
-                            <!-- File and Notes Column -->
-                            <div class="grid grid-cols-1 gap-4 pt-2">
+                        <!-- Right Panel for Actions / Form based on SDO status -->
+                        <div class="lg:col-span-5 space-y-6">
+                          <!-- Case 1: Status is Created (Show loading photo upload form) -->
+                          <div v-if="store.detail.delivery_status === 'Created'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                              <UIcon name="i-lucide-upload" class="w-4 h-4 text-primary" />
+                              Step 1: Upload Loading Photo
+                            </h4>
+                            <p class="text-xs text-muted-foreground">
+                              Before this shipment can be dispatched, upload a photo confirming the items are fully loaded onto the vehicle.
+                            </p>
+                            
+                            <form class="space-y-4" @submit.prevent="submitLoadingPhoto(store.detail.id)">
                               <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-default block">Proof of Delivery File (Image/PDF)</label>
+                                <label class="text-xs font-semibold text-default block">Loading Photo Evidence</label>
                                 <input
                                   type="file"
-                                  accept="image/*,application/pdf"
+                                  accept="image/*"
                                   required
                                   class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
-                                  @change="handlePodFileChange($event)"
-                                />
+                                  @change="handleLoadingPhotoChange($event)"
+                                >
                               </div>
-                              <div class="space-y-1.5">
-                                <label class="text-xs font-semibold text-default block">Notes</label>
-                                <UInput
-                                  v-model="podNotes"
-                                  placeholder="Optional receipt notes..."
+                              
+                              <div class="flex justify-end pt-2">
+                                <UButton
+                                  type="submit"
+                                  color="primary"
+                                  variant="solid"
+                                  icon="i-lucide-check-circle"
                                   size="sm"
-                                  class="w-full"
-                                />
+                                  :loading="uploadingLoadingPhoto"
+                                >
+                                  Upload & Set Loading
+                                </UButton>
+                              </div>
+                            </form>
+                          </div>
+
+                          <!-- Case 2: Status is Loading (Show photo + Supervisor Approval + Start Delivery actions) -->
+                          <div v-if="store.detail.delivery_status === 'Loading'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-6">
+                            <!-- Loading Photo Display -->
+                            <div class="space-y-3">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                                <UIcon name="i-lucide-image" class="w-4 h-4 text-primary" />
+                                Loading Photo Evidence
+                              </h4>
+                              <div v-if="store.detail.loading_photo_url" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
+                                <img :src="store.detail.loading_photo_url" alt="Loading Photo" class="object-cover w-full h-full">
+                              </div>
+                              <div v-else class="text-xs text-muted-foreground py-4 text-center">
+                                No loading photo available
                               </div>
                             </div>
 
-                            <div class="flex justify-end gap-3 pt-3 border-t border-default/50">
-                              <UButton
-                                type="submit"
-                                color="success"
-                                variant="solid"
-                                icon="i-lucide-check-circle"
-                                size="sm"
-                                :loading="submittingPodMap[store.detail.id]"
-                              >
-                                Confirm Delivery
-                              </UButton>
+                            <!-- Step 2: Dispatch Approval (Supervisor) -->
+                            <div class="border-t border-default/50 pt-4 space-y-3">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2">
+                                <UIcon name="i-lucide-shield-check" class="w-4 h-4 text-warning" />
+                                Step 2: Supervisor Approval
+                              </h4>
+                              
+                              <!-- Not Approved Yet -->
+                              <div v-if="!store.detail.dispatch_approved_by" class="space-y-3">
+                                <p class="text-xs text-muted-foreground">
+                                  This shipment is loaded and waiting for a Sales Supervisor to authorize and approve dispatch.
+                                </p>
+                                <div class="flex justify-end">
+                                  <UButton
+                                    v-if="authStore.user?.role === 'Supervisor Sales' || authStore.user?.role === 'Superadmin'"
+                                    color="warning"
+                                    variant="solid"
+                                    icon="i-lucide-lock-keyhole-open"
+                                    size="sm"
+                                    :loading="approvingDispatch"
+                                    @click="submitApproveDispatch(store.detail.id)"
+                                  >
+                                    Approve Dispatch
+                                  </UButton>
+                                  <span v-else class="text-xs font-semibold text-warning bg-warning/10 border border-warning/20 px-3 py-1.5 rounded-lg block w-full text-center">
+                                    Waiting for Sales Supervisor approval
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <!-- Approved -->
+                              <div v-else class="bg-success/5 border border-success/20 rounded-xl p-3 space-y-1.5">
+                                <div class="flex items-center gap-2 text-success text-xs font-bold">
+                                  <UIcon name="i-lucide-check-circle-2" class="w-4 h-4" />
+                                  <span>Approved for Dispatch</span>
+                                </div>
+                                <p class="text-[11px] text-muted-foreground">
+                                  Approved on {{ formatDate(store.detail.dispatch_approved_at) }}
+                                </p>
+                              </div>
                             </div>
-                          </form>
+
+                            <!-- Step 3: Start Delivery (Driver) -->
+                            <div v-if="store.detail.dispatch_approved_by" class="border-t border-default/50 pt-4 space-y-3">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2">
+                                <UIcon name="i-lucide-truck" class="w-4 h-4 text-primary" />
+                                Step 3: Start Delivery
+                              </h4>
+                              <p class="text-xs text-muted-foreground">
+                                The driver can now start the delivery journey. This will move the status to In Transit.
+                              </p>
+                              <div class="flex justify-end">
+                                <UButton
+                                  color="primary"
+                                  variant="solid"
+                                  icon="i-lucide-play"
+                                  size="sm"
+                                  :loading="startingDelivery"
+                                  @click="submitStartDelivery(store.detail.id)"
+                                >
+                                  Start Delivery
+                                </UButton>
+                              </div>
+                            </div>
+                          </div>
+
+                          <!-- Case 3: Status is In Transit (Show SLA countdown + POD form) -->
+                          <div v-if="store.detail.delivery_status === 'In Transit'" class="space-y-4">
+                            <!-- SLA Countdown Card -->
+                            <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-2">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                                <UIcon name="i-lucide-clock" class="w-4 h-4 text-warning" />
+                                SLA Countdown Timer
+                              </h4>
+                              <div class="flex items-center justify-between">
+                                <span class="text-xs text-muted-foreground font-semibold">Time Remaining:</span>
+                                <span class="text-lg font-black text-warning bg-warning/10 px-3 py-1 rounded-xl animate-pulse font-mono">
+                                  {{ countdownText || 'Calculating...' }}
+                                </span>
+                              </div>
+                            </div>
+
+                            <!-- POD Confirmation Form -->
+                            <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                                <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
+                                Proof Of Delivery (POD) Confirmation
+                              </h4>
+
+                              <form class="space-y-4" @submit.prevent="submitPod(store.detail)">
+                                <!-- Quantities Input -->
+                                <div class="grid grid-cols-1 gap-4">
+                                  <div v-for="item in store.detail.details" :key="item.id" class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-default block">
+                                      Received Qty for: {{ item.planDetail?.spoDetail?.part?.part_name }} (Sent: {{ item.sent_qty }} pcs)
+                                    </label>
+                                    <UInput
+                                      v-model.number="podFormDetails[item.id]"
+                                      type="number"
+                                      size="sm"
+                                      min="0"
+                                      :max="item.sent_qty"
+                                      placeholder="Enter received quantity"
+                                      required
+                                      class="w-full"
+                                    />
+                                  </div>
+                                </div>
+
+                                <!-- Real-time Partial warning -->
+                                <div v-if="isPodPartial" class="p-3 bg-warning/10 border border-warning/30 rounded-xl flex items-start gap-2.5 text-warning text-xs font-semibold">
+                                  <UIcon name="i-lucide-alert-triangle" class="w-4 h-4 mt-0.5 shrink-0" />
+                                  <span>Warning: This will be marked as a Partial Delivery (some items have received quantity less than sent quantity).</span>
+                                </div>
+
+                                <!-- File and Notes Column -->
+                                <div class="grid grid-cols-1 gap-4 pt-2">
+                                  <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-default block">Proof of Delivery File (Image/PDF)</label>
+                                    <input
+                                      type="file"
+                                      accept="image/*,application/pdf"
+                                      required
+                                      class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
+                                      @change="handlePodFileChange($event)"
+                                    >
+                                  </div>
+                                  <div class="space-y-1.5">
+                                    <label class="text-xs font-semibold text-default block">Notes</label>
+                                    <UInput
+                                      v-model="podNotes"
+                                      placeholder="Optional receipt notes..."
+                                      size="sm"
+                                      class="w-full"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div class="flex justify-end gap-3 pt-3 border-t border-default/50">
+                                  <UButton
+                                    type="submit"
+                                    color="success"
+                                    variant="solid"
+                                    icon="i-lucide-check-circle"
+                                    size="sm"
+                                    :loading="submittingPodMap[store.detail.id]"
+                                  >
+                                    Confirm Delivery
+                                  </UButton>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+
+                          <!-- Case 4: Status is Delivered or Delivered (Partial) (Show completed info: loading photo + dispatch approval + POD details) -->
+                          <div v-if="store.detail.delivery_status === 'Delivered' || store.detail.delivery_status === 'Delivered (Partial)'" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-6">
+                            <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
+                              <UIcon name="i-lucide-clipboard-check" class="w-4 h-4 text-success" />
+                              Logistics Audit Trail
+                            </h4>
+
+                            <!-- Photo Evidence Grid -->
+                            <div class="grid grid-cols-2 gap-4">
+                              <!-- Loading Photo -->
+                              <div class="space-y-1.5">
+                                <span class="text-xs font-semibold text-muted-foreground">Loading Photo</span>
+                                <div v-if="store.detail.loading_photo_url" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
+                                  <img :src="store.detail.loading_photo_url" alt="Loading Photo" class="object-cover w-full h-full">
+                                </div>
+                                <div v-else class="text-xs text-muted-foreground py-4 text-center bg-muted/10 rounded-xl">
+                                  No photo
+                                </div>
+                              </div>
+
+                              <!-- POD Photo -->
+                              <div class="space-y-1.5">
+                                <span class="text-xs font-semibold text-muted-foreground">POD Photo</span>
+                                <div v-if="store.detail.proof_of_delivery" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
+                                  <img :src="store.detail.proof_of_delivery" alt="POD" class="object-cover w-full h-full">
+                                </div>
+                                <div v-else class="text-xs text-muted-foreground py-4 text-center bg-muted/10 rounded-xl">
+                                  No POD
+                                </div>
+                              </div>
+                            </div>
+
+                            <!-- Dispatch Approval Info -->
+                            <div class="border-t border-default/50 pt-4 space-y-1.5 text-xs">
+                              <div class="flex justify-between">
+                                <span class="text-muted-foreground">Dispatch Approved By:</span>
+                                <span class="font-semibold text-default">{{ store.detail.dispatch_approved_by ? 'Supervisor Sales' : 'System / Auto' }}</span>
+                              </div>
+                              <div class="flex justify-between">
+                                <span class="text-muted-foreground">Approved At:</span>
+                                <span class="font-semibold text-default">{{ formatDate(store.detail.dispatch_approved_at) }}</span>
+                              </div>
+                              <div class="flex justify-between">
+                                <span class="text-muted-foreground">Received At:</span>
+                                <span class="font-semibold text-default">{{ formatDate(store.detail.received_at) }}</span>
+                              </div>
+                            </div>
+
+                            <!-- Delivery Notes -->
+                            <div v-if="store.detail.notes" class="border-t border-default/50 pt-4 space-y-1.5">
+                              <span class="text-xs font-semibold text-muted-foreground">Delivery Notes:</span>
+                              <p class="text-xs text-default italic bg-default/10 p-2.5 rounded-xl border border-default">
+                                "{{ store.detail.notes }}"
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
