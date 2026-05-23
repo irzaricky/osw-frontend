@@ -52,6 +52,8 @@ function getLocalDateString() {
 }
 
 const selectedDate = ref(getLocalDateString())
+const mlStartDate = ref(getLocalDateString())
+const mlEndDate = ref(getLocalDateString())
 
 const selectedDateModel = computed({
   get() {
@@ -76,15 +78,15 @@ async function loadPlans() {
     page: 1,
     limit: 100 // load active plans for calendar scheduling mapping
   }
-  if (selectedDate.value) {
-    params.start_date = selectedDate.value
-    params.end_date = selectedDate.value
+  if (mlStartDate.value && mlEndDate.value) {
+    params.start_date = mlStartDate.value
+    params.end_date = mlEndDate.value
   }
   await store.fetchSdpPlans(params)
 }
 
 // Watchers for filtering and loading
-watch([selectedDate, selectedWarehouseId], () => {
+watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId], () => {
   loadPlans()
 })
 
@@ -189,6 +191,13 @@ const activePlansForDate = computed(() => {
   return plans.value.filter(p => {
     const pDate = p.scheduled_date.split('T')[0]
     return pDate === selectedDate.value && p.warehouse_id === selectedWarehouseId.value
+  })
+})
+
+const filteredMasterList = computed(() => {
+  return plans.value.filter(p => {
+    const pDate = p.scheduled_date.split('T')[0]
+    return pDate >= mlStartDate.value && pDate <= mlEndDate.value && (!selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value)
   })
 })
 
@@ -466,7 +475,7 @@ const conflictingDocksNames = computed(() => {
                 Active Scheduled Plans
               </h3>
               <UBadge color="neutral" variant="subtle" size="xs">
-                {{ activePlansForDate.length }}
+                {{ filteredMasterList.length }}
               </UBadge>
             </div>
             <UIcon
@@ -475,8 +484,14 @@ const conflictingDocksNames = computed(() => {
             />
           </div>
 
-          <div v-show="isMasterListOpen" class="overflow-x-auto border border-default rounded-2xl">
-            <table class="w-full text-left border-collapse text-xs">
+          <div v-show="isMasterListOpen" class="space-y-4">
+            <div class="flex items-center gap-3">
+              <UInput type="date" size="sm" v-model="mlStartDate" />
+              <span class="text-xs text-muted">to</span>
+              <UInput type="date" size="sm" v-model="mlEndDate" />
+            </div>
+            <div class="overflow-x-auto border border-default rounded-2xl">
+              <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="border-b border-default text-muted-foreground bg-default/40 font-bold">
                   <th class="p-3">DP Number</th>
@@ -488,7 +503,7 @@ const conflictingDocksNames = computed(() => {
               </thead>
               <tbody class="divide-y divide-default/40">
                 <tr
-                  v-for="plan in activePlansForDate"
+                  v-for="plan in filteredMasterList"
                   :key="plan.id"
                   class="hover:bg-default/20 transition-colors cursor-pointer"
                   :class="selectedPlanId === plan.id ? 'bg-primary/5 font-semibold text-primary' : ''"
@@ -500,9 +515,9 @@ const conflictingDocksNames = computed(() => {
                   <td class="p-3">{{ plan.time_end.slice(0, 5) }}</td>
                   <td class="p-3">{{ plan.destination }}</td>
                 </tr>
-                <tr v-if="activePlansForDate.length === 0">
+                <tr v-if="filteredMasterList.length === 0">
                   <td colspan="5" class="p-4 text-center text-muted">
-                    No active plans for this date/warehouse.
+                    No active plans for this date range/warehouse.
                   </td>
                 </tr>
               </tbody>

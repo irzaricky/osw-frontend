@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth.store'
 import DriverDashboard from './sales/sdo/DriverDashboard.vue'
+import SalesDashboard from '../components/dashboard/SalesDashboard.vue'
 
 const authStore = useAuthStore()
 const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver')
@@ -20,6 +21,10 @@ const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver'
           </template>
         </UDashboardNavbar>
       </template>
+      <!-- Dashboard Content -->
+      <UDashboardPanelContent class="bg-muted/10 p-0">
+        <SalesDashboard />
+      </UDashboardPanelContent>
     </UDashboardPanel>
   </div>
 </template>

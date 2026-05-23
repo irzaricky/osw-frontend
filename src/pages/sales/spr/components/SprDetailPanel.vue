@@ -75,8 +75,8 @@ function getSourceIcon(source: string): string {
 
 // ─── Auth / Role ──────────────────────────────────────────────────────────────
 const isSupervisorSales = computed(() => {
-  const role = authStore.user?.role
-  return role === 'Superadmin' || role === 'Supervisor Sales'
+  const role = authStore.user?.role?.toLowerCase()
+  return role === 'superadmin' || role === 'supervisor sales'
 })
 
 // ─── Computed State Guards ────────────────────────────────────────────────────

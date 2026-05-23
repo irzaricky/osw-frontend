@@ -9,6 +9,14 @@ import type { Sdo } from '../../../types/sales/sdo'
 import { useIntersectionObserver } from '@vueuse/core'
 import { compressImage } from '../../../utils'
 import { useAppToast } from '../../../composables/useAppToast'
+import sdoService from '../../../services/sales/sdo.service'
+
+const getImageUrl = (path: string) => {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+  return `${base}${path}`
+}
 
 const { toastSuccess, toastError } = useAppToast()
 
@@ -57,18 +65,19 @@ const stats = ref({
 async function fetchStats() {
   try {
     // Perform a background prefetch of recent SDOs to calculate dashboard metrics
-    await store.fetchSdos({ limit: 100 })
+    const res = await sdoService.getSdos({ limit: 100 })
+    const list = res.data?.data || []
     let inTransit = 0
     let delivered = 0
     let dispatched = 0
     let shortages = 0
 
-    sdos.value.forEach(sdo => {
+    list.forEach((sdo: any) => {
       if (sdo.delivery_status === 'In Transit') inTransit++
       if (sdo.delivery_status === 'Delivered' || sdo.delivery_status === 'Delivered (Partial)') delivered++
 
       if (sdo.details) {
-        sdo.details.forEach(item => {
+        sdo.details.forEach((item: any) => {
           dispatched += item.sent_qty
           const rec = item.received_qty ?? item.sent_qty
           if (rec < item.sent_qty) {
@@ -371,7 +380,14 @@ function updateCountdown() {
   const totalMin = Math.floor(diffMs / 60000)
   const hrs = Math.floor(totalMin / 60)
   const mins = totalMin % 60
-  countdownText.value = `${hrs}h ${mins}m remaining`
+  
+  if (hrs >= 24) {
+    const days = Math.floor(hrs / 24)
+    const remHrs = hrs % 24
+    countdownText.value = `${days} Hari ${remHrs} Jam ${mins} Menit`
+  } else {
+    countdownText.value = `${hrs} Jam ${mins} Menit`
+  }
 }
 
 watch(() => store.detail, (newVal) => {
@@ -581,7 +597,7 @@ onUnmounted(() => {
                                 :loading="printingMap[sdo.id]"
                                 @click.stop="handlePrint(sdo.id)"
                               >
-                                Print Surat Jalan
+                                Print Delivery Note
                               </UButton>
                             </div>
                           </div>
@@ -685,7 +701,7 @@ onUnmounted(() => {
                                 Loading Photo Evidence
                               </h4>
                               <div v-if="store.detail.loading_photo_url" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
-                                <img :src="store.detail.loading_photo_url" alt="Loading Photo" class="object-cover w-full h-full">
+                                <img :src="getImageUrl(store.detail.loading_photo_url)" alt="Loading Photo" class="object-cover w-full h-full">
                               </div>
                               <div v-else class="text-xs text-muted-foreground py-4 text-center">
                                 No loading photo available
@@ -859,7 +875,7 @@ onUnmounted(() => {
                               <div class="space-y-1.5">
                                 <span class="text-xs font-semibold text-muted-foreground">Loading Photo</span>
                                 <div v-if="store.detail.loading_photo_url" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
-                                  <img :src="store.detail.loading_photo_url" alt="Loading Photo" class="object-cover w-full h-full">
+                                  <img :src="getImageUrl(store.detail.loading_photo_url)" alt="Loading Photo" class="object-cover w-full h-full">
                                 </div>
                                 <div v-else class="text-xs text-muted-foreground py-4 text-center bg-muted/10 rounded-xl">
                                   No photo
@@ -870,7 +886,7 @@ onUnmounted(() => {
                               <div class="space-y-1.5">
                                 <span class="text-xs font-semibold text-muted-foreground">POD Photo</span>
                                 <div v-if="store.detail.proof_of_delivery" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center">
-                                  <img :src="store.detail.proof_of_delivery" alt="POD" class="object-cover w-full h-full">
+                                  <img :src="getImageUrl(store.detail.proof_of_delivery)" alt="POD" class="object-cover w-full h-full">
                                 </div>
                                 <div v-else class="text-xs text-muted-foreground py-4 text-center bg-muted/10 rounded-xl">
                                   No POD
