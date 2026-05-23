@@ -17,6 +17,18 @@ const analyticsService = {
       params,
       responseType: 'blob'
     })
+  },
+
+  getSlaMetrics(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/sla`, { params })
+  },
+
+  getForecastVsSpo(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/forecast-vs-spo`, { params })
+  },
+
+  getTopCustomers(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/top-customers`, { params })
   }
 }
 

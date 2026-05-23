@@ -4,10 +4,32 @@ import { ref } from 'vue'
 import analyticsService from '../../services/sales/analytics.service'
 import type { AnalyticsFilters, AnalyticsSummary } from '../../types/sales/analytics'
 
+interface SlaMetrics {
+  on_time: number
+  delayed: number
+  total: number
+  on_time_rate: number
+}
+
+interface ForecastVsSpoItem {
+  month: string
+  forecast_target: number
+  spo_actual: number
+}
+
+interface TopCustomerItem {
+  customer_id: number
+  customer_name: string
+  total_ordered_qty: number
+}
+
 export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   // ─── State ──────────────────────────────────────────────────────────────────
   const summary = ref<AnalyticsSummary | null>(null)
   const trends = ref<any[]>([])
+  const slaMetrics = ref<SlaMetrics | null>(null)
+  const forecastVsSpo = ref<ForecastVsSpoItem[]>([])
+  const topCustomers = ref<TopCustomerItem[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -31,6 +53,56 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
       console.error('Error fetching analytics summary:', e)
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchTrends(params: AnalyticsFilters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await analyticsService.getTrends(params)
+      const data = response.data
+      if (data.status) {
+        trends.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching analytics trends:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchSlaMetrics(params: AnalyticsFilters = {}) {
+    try {
+      const response = await analyticsService.getSlaMetrics(params)
+      if (response.data.status) {
+        slaMetrics.value = response.data.data
+      }
+    } catch (e: any) {
+      console.error('Error fetching SLA metrics:', e)
+    }
+  }
+
+  async function fetchForecastVsSpo(params: AnalyticsFilters = {}) {
+    try {
+      const response = await analyticsService.getForecastVsSpo(params)
+      if (response.data.status) {
+        forecastVsSpo.value = response.data.data
+      }
+    } catch (e: any) {
+      console.error('Error fetching forecast vs SPO:', e)
+    }
+  }
+
+  async function fetchTopCustomers(params: AnalyticsFilters = {}) {
+    try {
+      const response = await analyticsService.getTopCustomers(params)
+      if (response.data.status) {
+        topCustomers.value = response.data.data
+      }
+    } catch (e: any) {
+      console.error('Error fetching top customers:', e)
     }
   }
 
@@ -61,33 +133,22 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
-  async function fetchTrends(params: AnalyticsFilters = {}) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await analyticsService.getTrends(params)
-      const data = response.data
-      if (data.status) {
-        trends.value = data.data
-      }
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      console.error('Error fetching analytics trends:', e)
-    } finally {
-      loading.value = false
-    }
-  }
-
   return {
     // State
     summary,
     trends,
+    slaMetrics,
+    forecastVsSpo,
+    topCustomers,
     loading,
     error,
     filters,
     // Actions
     fetchSummary,
     fetchTrends,
+    fetchSlaMetrics,
+    fetchForecastVsSpo,
+    fetchTopCustomers,
     downloadExcel
   }
 })

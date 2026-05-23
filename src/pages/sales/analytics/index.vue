@@ -2,15 +2,18 @@
 import { computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
+import dayjs from 'dayjs'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import HomeDateRangePicker from '../../../components/home/HomeDateRangePicker.vue'
 import TrendsCharts from './components/TrendsCharts.vue'
 import DockHeatmap from './components/DockHeatmap.vue'
+import ForecastVsSpoChart from './components/ForecastVsSpoChart.vue'
+import TopCustomersChart from './components/TopCustomersChart.vue'
 import { useSalesAnalyticsStore } from '../../../stores/sales/analytics.store'
 
 const salesAnalyticsStore = useSalesAnalyticsStore()
-const { summary, trends, loading, error, filters } = storeToRefs(salesAnalyticsStore)
+const { summary, trends, slaMetrics, forecastVsSpo, topCustomers, loading, error, filters } = storeToRefs(salesAnalyticsStore)
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -64,6 +67,18 @@ async function fetchData() {
     salesAnalyticsStore.fetchTrends({
       start_date: filters.value.start_date,
       end_date: filters.value.end_date
+    }),
+    salesAnalyticsStore.fetchSlaMetrics({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
+    }),
+    salesAnalyticsStore.fetchForecastVsSpo({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
+    }),
+    salesAnalyticsStore.fetchTopCustomers({
+      start_date: filters.value.start_date,
+      end_date: filters.value.end_date
     })
   ])
 }
@@ -76,6 +91,11 @@ async function handleDownloadExcel() {
 }
 
 onMounted(() => {
+  // Default to current month if no date set
+  if (!filters.value.start_date) {
+    filters.value.start_date = dayjs().startOf('month').format('YYYY-MM-DD')
+    filters.value.end_date = dayjs().endOf('month').format('YYYY-MM-DD')
+  }
   fetchData()
 })
 </script>
@@ -126,7 +146,7 @@ onMounted(() => {
     />
 
     <!-- KPI Metrics Grid -->
-    <div v-if="loading && !summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-if="loading && !summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <UCard v-for="i in 4" :key="i">
         <div class="space-y-3">
           <USkeleton class="h-4 w-1/2" />
@@ -136,7 +156,7 @@ onMounted(() => {
       </UCard>
     </div>
 
-    <div v-else-if="summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div v-else-if="summary" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <!-- 1. SPO Summary -->
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
@@ -210,12 +230,12 @@ onMounted(() => {
               <span class="text-sm font-bold text-primary">{{ summary.kpis.sdo_status_counts['In Transit'] || 0 }}</span>
             </div>
             <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
-              <span class="text-[10px] text-muted uppercase">Scheduled</span>
-              <span class="text-sm font-bold text-warning">{{ summary.kpis.sdo_status_counts.Scheduled || 0 }}</span>
+              <span class="text-[10px] text-muted uppercase">Loading</span>
+              <span class="text-sm font-bold text-warning">{{ summary.kpis.sdo_status_counts.Loading || 0 }}</span>
             </div>
             <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
-              <span class="text-[10px] text-muted uppercase">Draft</span>
-              <span class="text-sm font-bold text-muted">{{ summary.kpis.sdo_status_counts.Draft || 0 }}</span>
+              <span class="text-[10px] text-muted uppercase">Created</span>
+              <span class="text-sm font-bold text-muted">{{ summary.kpis.sdo_status_counts.Created || 0 }}</span>
             </div>
           </div>
         </div>
@@ -244,6 +264,37 @@ onMounted(() => {
           </div>
         </div>
       </UCard>
+
+      <!-- 5. SLA Performance -->
+      <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+        <div class="space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted">SLA Performance</span>
+            <UIcon name="i-lucide-timer" class="w-5 h-5 text-success" />
+          </div>
+          <div>
+            <p class="text-3xl font-bold">
+              {{ slaMetrics ? (slaMetrics.on_time_rate * 100).toFixed(1) : '—' }}%
+            </p>
+            <p class="text-xs text-muted mt-1">On Time Rate (24h SLA)</p>
+          </div>
+          <div class="border-t border-default pt-3 space-y-2">
+            <div class="flex justify-between text-xs">
+              <span class="text-muted">On Time:</span>
+              <span class="font-semibold text-success">{{ slaMetrics?.on_time ?? '—' }}</span>
+            </div>
+            <div class="flex justify-between text-xs">
+              <span class="text-muted">Delayed:</span>
+              <span class="font-semibold text-error">{{ slaMetrics?.delayed ?? '—' }}</span>
+            </div>
+            <UProgress
+              :model-value="slaMetrics ? slaMetrics.on_time_rate * 100 : 0"
+              color="success"
+              class="mt-2"
+            />
+          </div>
+        </div>
+      </UCard>
     </div>
 
     <!-- Dock Heatmap Section -->
@@ -259,5 +310,19 @@ onMounted(() => {
       :trends="trends"
       :loading="loading"
     />
+
+    <!-- Forecast vs SPO + Top Customers -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <ForecastVsSpoChart
+        v-if="forecastVsSpo.length"
+        :forecast-vs-spo="forecastVsSpo"
+        :loading="loading"
+      />
+      <TopCustomersChart
+        v-if="topCustomers.length"
+        :top-customers="topCustomers"
+        :loading="loading"
+      />
+    </div>
   </div>
 </template>
