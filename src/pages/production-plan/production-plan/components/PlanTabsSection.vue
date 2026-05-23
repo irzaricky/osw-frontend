@@ -5,13 +5,14 @@ import CapacityTab from './PlanCapacityTabs.vue'
 defineProps<{
   currentPlan:      any
   selectedLineId:   number | undefined
-	lines: any
+  lines: any
   lineParams:       any
   loadingParams:    boolean
   adjustmentForm:   any
   loading:          boolean
   saving:           boolean
   calculating:      boolean
+  calculatingAll:   boolean
   isEditable:       boolean
   planId:           number | null
   fmtDate:          (d?: string | null) => string
@@ -26,6 +27,7 @@ const emit = defineEmits<{
   (e: 'save-base'): void
   (e: 'save-adjustment'): void
   (e: 'calculate'): void
+  (e: 'calculate-all'): void
   (e: 'delete-adjustment', adjId: number): void
 }>()
 
@@ -54,12 +56,13 @@ const tabs = [
       <CapacityTab
         :current-plan="currentPlan"
         :selected-line-id="selectedLineId"
-		  	:lines="lines"
+        :lines="lines"
         :line-params="lineParams"
         :loading-params="loadingParams"
         :adjustment-form="adjustmentForm"
         :saving="saving"
         :calculating="calculating"
+        :calculating-all="calculatingAll"
         :is-editable="isEditable"
         :plan-id="planId"
         :fmt-num="fmtNum"
@@ -69,6 +72,7 @@ const tabs = [
         @save-base="emit('save-base')"
         @save-adjustment="emit('save-adjustment')"
         @calculate="emit('calculate')"
+        @calculate-all="emit('calculate-all')"
         @delete-adjustment="(id) => emit('delete-adjustment', id)"
       />
     </template>

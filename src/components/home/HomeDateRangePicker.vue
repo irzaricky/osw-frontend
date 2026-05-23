@@ -4,13 +4,15 @@ import {
   DateFormatter,
   getLocalTimeZone,
   CalendarDate,
-  today
+  today,
+  DateValue
 } from '@internationalized/date'
 
 import type { Range } from '../../types'
 
 const props = defineProps<{
-  clear?: boolean
+  clear?:          boolean
+  isDateDisabled?: (date: DateValue) => boolean
 }>()
 
 const df = new DateFormatter('en-US', {
@@ -188,6 +190,7 @@ function clearSelection() {
           v-model="calendarRange"
           class="p-2"
           :number-of-months="2"
+          :is-date-disabled="props.isDateDisabled"
           range
         />
       </div>

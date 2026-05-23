@@ -1,122 +1,131 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
+import { ref, reactive, computed, onMounted, watch, resolveComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
-import { useRouter } from 'vue-router'
+
 import { useOrderScheduleStore } from '../../../stores/production-plan/order-schedule.store'
 import { useOrderScheduleColumns } from './composables/useOrderScheduleColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { ProductionOrder } from '../../../types/production-plan/order-schedule'
-import type { Row } from '@tanstack/table-core'
+import { poStatusLabel, STATUS_OPTIONS } from './composables/usePOUtils'
 
-import Breadcrumbs   from '../../../components/Breadcrumbs.vue'
+import type { ProductionOrder, POStatus } from '../../../types/production-plan/order-schedule'
+
+import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
-import OrderFilters    from './components/OrderFilters.vue'
-import OrderBulkActions from './components/OrderBulkActions.vue'
+import OrderScheduleFilters from './components/PoFilters.vue'
 
-const router     = useRouter()
-const orderStore = useOrderScheduleStore()
-const { orders, meta, loading } = storeToRefs(orderStore)
+// ── Store ──────────────────────────────────────────────────────────────────────
+const store = useOrderScheduleStore()
+const { orders, meta, loading, saving } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
+const router = useRouter()
 
-const table = useTemplateRef('table')
-
-const ui = {
-  UCheckbox:     resolveComponent('UCheckbox') as any,
-  UButton:       resolveComponent('UButton') as any,
-  UDropdownMenu: resolveComponent('UDropdownMenu') as any,
-  UBadge:        resolveComponent('UBadge') as any,
+// ── Resolved UI components ─────────────────────────────────────────────────────
+const uiComponents = {
+  UCheckbox:     resolveComponent('UCheckbox'),
+  UButton:       resolveComponent('UButton'),
+  UDropdownMenu: resolveComponent('UDropdownMenu'),
+  UBadge:        resolveComponent('UBadge'),
 }
 
-const { columns } = useOrderScheduleColumns(
-  {
-    onView:   (order) => router.push(`/production-plan/order-schedule/${order.id}`),
-    onDelete: confirmDelete,
-  },
-  ui,
-)
-
+// ── Breadcrumbs ────────────────────────────────────────────────────────────────
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Production Plan' },
   { label: 'Production Order' },
 ]
 
-const search  = ref('')
+// ── State ──────────────────────────────────────────────────────────────────────
+const search = ref('')
 const filters = reactive({
-  status:    undefined as string | undefined,
-  priority:  undefined as string | undefined,
-  date_from: undefined as string | undefined,
-  date_to:   undefined as string | undefined,
+  status:  undefined as POStatus | undefined,
+  plan_id: undefined as number | undefined,
 })
 
-const rowSelection = ref({})
-
-const selectedCount = computed((): number =>
-  table.value?.tableApi?.getFilteredSelectedRowModel().rows.length || 0,
-)
-
-const confirm = reactive({
+const confirmDialog = reactive({
   open:        false,
   title:       '',
   description: '',
   action:      null as (() => Promise<void>) | null,
 })
 
+const rowSelection = ref({})
+
+const pagination = computed(() => ({
+  page:  meta.value.page,
+  limit: meta.value.limit,
+}))
+
+// ── Columns ────────────────────────────────────────────────────────────────────
+const { columns } = useOrderScheduleColumns(
+  {
+    onView:   handleView,
+    onDelete: handleDelete,
+  },
+  uiComponents,
+)
+
+// ── Data fetching ──────────────────────────────────────────────────────────────
 async function fetchData() {
-  await orderStore.fetchOrders({
-    page:      meta.value.page,
-    limit:     meta.value.limit,
-    search:    search.value || undefined,
-    status:    filters.status as any,
-    priority:  filters.priority as any,
-    date_from: filters.date_from,
-    date_to:   filters.date_to,
-  })
+  const params: Record<string, any> = {
+    page:   meta.value.page,
+    limit:  meta.value.limit,
+    search: search.value || undefined,
+  }
+  if (filters.status)  params.status  = filters.status
+  if (filters.plan_id) params.plan_id = filters.plan_id
+
+  await store.fetchOrders(params)
 }
 
-const debouncedSearch = useDebounceFn(() => { meta.value.page = 1; fetchData() }, 300)
+// ── Handlers ───────────────────────────────────────────────────────────────────
+function handleView(order: ProductionOrder) {
+  router.push(`/production-plan/order-schedule/${order.id}`)
+}
 
-watch(search, debouncedSearch)
-watch(filters, () => { meta.value.page = 1; fetchData() }, { deep: true })
-
-function confirmDelete(order: ProductionOrder) {
-  confirm.title       = 'Delete Production Order'
-  confirm.description = `Are you sure you want to delete "${order.po_number}"? This action cannot be undone.`
-  confirm.action      = async () => {
+function handleDelete(order: ProductionOrder) {
+  confirmDialog.title       = 'Delete Production Order'
+  confirmDialog.description = `Are you sure you want to delete Production Order "${order.po_number}"? This action cannot be undone.`
+  confirmDialog.action      = async () => {
     try {
-      const res = await orderStore.deleteOrder(order.id)
-      toastSuccess(res.message || 'Production Order deleted')
+      const res = await store.deleteOrder(order.id)
+      toastSuccess(res.message || 'Production order deleted successfully.')
+      confirmDialog.open = false
       fetchData()
-      confirm.open = false
-    } catch (e) {
-      toastError(e)
-      confirm.open = false
+    } catch (err) {
+      toastError(err)
+      confirmDialog.open = false
     }
   }
-  confirm.open = true
+  confirmDialog.open = true
 }
 
-function confirmBulkDelete() {
-  const rows = table.value?.tableApi?.getFilteredSelectedRowModel().rows || []
-  if (!rows.length) return
-  confirm.title       = 'Delete Selected Orders'
-  confirm.description = `Are you sure you want to delete ${rows.length} order(s)? This action cannot be undone.`
-  confirm.action      = async () => {
-    try {
-      await Promise.all(rows.map((r: Row<ProductionOrder>) => orderStore.deleteOrder(r.original.id)))
-      toastSuccess(`${rows.length} orders deleted`)
-      rowSelection.value = {}
-      fetchData()
-      confirm.open = false
-    } catch (e) {
-      toastError(e)
-      confirm.open = false
-    }
-  }
-  confirm.open = true
+function onUpdateSearch(value: string) {
+  search.value = value
 }
 
+function onUpdateFilters(partial: Record<string, any>) {
+  Object.assign(filters, partial)
+}
+
+function goToCreate() {
+  router.push('/production-plan/order-schedule/create')
+}
+
+// ── Watchers ───────────────────────────────────────────────────────────────────
+const debouncedFetch = useDebounceFn(() => {
+  meta.value.page = 1
+  fetchData()
+}, 300)
+
+watch(search, () => debouncedFetch())
+watch(filters, () => {
+  meta.value.page = 1
+  fetchData()
+}, { deep: true })
+
+// ── Lifecycle ──────────────────────────────────────────────────────────────────
 onMounted(() => {
   fetchData()
 })
@@ -125,56 +134,54 @@ onMounted(() => {
 <template>
   <UDashboardPanel id="order-schedule">
     <template #header>
-      <UDashboardNavbar title="Production Order">
+      <UDashboardNavbar title="Order Scheduling">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
       </UDashboardNavbar>
     </template>
-
     <template #body>
       <div class="space-y-5">
         <Breadcrumbs :items="breadcrumbItems" />
 
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-2xl font-bold">Production Orders</h1>
-            <p class="text-sm text-muted mt-0.5">
-              Manage production orders and daily scheduling
-            </p>
+            <h1 class="text-2xl font-bold">Production Order</h1>
+            <p class="text-sm text-muted mt-0.5">Manage and schedule production orders from approved production plans.</p>
           </div>
-          <UButton
-            icon="i-lucide-plus"
-            color="primary"
-            label="New Production Order"
-            @click="router.push('/production-plan/order-schedule/create')"
-          />
         </div>
 
-        <OrderFilters
-          :search="search"
-          :filters="filters"
-          @update:search="search = $event"
-          @update:filters="Object.assign(filters, $event)"
-        />
-
-        <OrderBulkActions :count="selectedCount" @delete="confirmBulkDelete" />
+        
+        <div class="flex gap-2">
+          <OrderScheduleFilters
+            :search="search"
+            :filters="filters"
+            :status-options="STATUS_OPTIONS"
+            @update:filters="onUpdateFilters"
+            @update:search="onUpdateSearch"
+          />
+          <UButton
+            icon="i-lucide-plus"
+            class="ml-auto"
+            color="primary"
+            variant="solid"
+            label="Create Production Order"
+            @click="goToCreate"
+          />
+        </div>
 
         <UTable
           ref="table"
           v-model:row-selection="rowSelection"
-          :data="orders"
+          :data="loading ? [] : orders"
           :columns="columns"
           :loading="loading"
           class="w-full"
         />
 
-        <!-- Pagination -->
         <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
           <div class="text-sm text-muted">
-            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{
-              Math.min(meta.page * meta.limit, meta.total)
-            }} of {{ meta.total }} row(s)
+            Total {{ meta.total }} production order(s).
           </div>
           <UPagination
             v-model:page="meta.page"
@@ -185,12 +192,12 @@ onMounted(() => {
         </div>
 
         <ConfirmDialog
-          v-model:open="confirm.open"
-          :title="confirm.title"
-          :description="confirm.description"
+          v-model:open="confirmDialog.open"
+          :title="confirmDialog.title"
+          :description="confirmDialog.description"
           confirm-label="Delete"
-          :loading="loading"
-          @confirm="confirm.action?.()"
+          :loading="saving"
+          @confirm="confirmDialog.action?.()"
         />
       </div>
     </template>

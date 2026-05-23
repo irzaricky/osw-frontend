@@ -7,33 +7,24 @@ import type {
   POListParams,
   CreatePOPayload,
   UpdatePOPayload,
-  AddProductPayload,
-  UpdateProductPayload,
-  AddSchedulePayload,
   UpdateSchedulePayload,
   ReschedulePayload,
+  ApprovePOPayload,
   RejectPOPayload,
-  CancelPOPayload,
-  RescheduleLog,
 } from '../../types/production-plan/order-schedule'
 
 export const useOrderScheduleStore = defineStore('orderSchedule', () => {
 
   // ── State ──────────────────────────────────────────────────────────────────
-
-  const orders        = ref<ProductionOrder[]>([])
-  const currentOrder  = ref<ProductionOrder | null>(null)
-  const dropdown      = ref<PODropdownItem[]>([])
-  const rescheduleLogs = ref<RescheduleLog[]>([])
-
-  const meta = ref({ page: 1, limit: 10, total: 0, totalPages: 0 })
-
-  const loading  = ref(false)
-  const saving   = ref(false)
-  const error    = ref<string | null>(null)
+  const orders       = ref<ProductionOrder[]>([])
+  const currentOrder = ref<ProductionOrder | null>(null)
+  const dropdown     = ref<PODropdownItem[]>([])
+  const meta         = ref({ page: 1, limit: 10, total: 0, totalPages: 0 })
+  const loading      = ref(false)
+  const saving       = ref(false)
+  const error        = ref<string | null>(null)
 
   // ── List & Detail ──────────────────────────────────────────────────────────
-
   async function fetchOrders(params: POListParams = {}) {
     loading.value = true
     error.value   = null
@@ -80,7 +71,6 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
   }
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
-
   async function createOrder(payload: CreatePOPayload) {
     saving.value = true
     error.value  = null
@@ -100,9 +90,6 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     error.value  = null
     try {
       const { data } = await orderScheduleService.updateOrder(id, payload)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, ...data.data }
-      }
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -126,13 +113,12 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     }
   }
 
-  // ── Products ───────────────────────────────────────────────────────────────
-
-  async function addProduct(id: number | string, payload: AddProductPayload) {
+  // ── Generate Schedule ──────────────────────────────────────────────────────
+  async function generateSchedule(id: number | string) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await orderScheduleService.addProduct(id, payload)
+      const { data } = await orderScheduleService.generateSchedule(id)
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -142,86 +128,16 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     }
   }
 
-  async function updateProduct(
-    id: number | string,
-    product_id: number | string,
-    payload: UpdateProductPayload,
-  ) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.updateProduct(id, product_id, payload)
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function deleteProduct(id: number | string, product_id: number | string) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.deleteProduct(id, product_id)
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
-  // ── Schedules ──────────────────────────────────────────────────────────────
-
-  async function addSchedule(
-    id: number | string,
-    product_id: number | string,
-    payload: AddSchedulePayload,
-  ) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.addSchedule(id, product_id, payload)
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
+  // ── Schedule Manual Edit ───────────────────────────────────────────────────
   async function updateSchedule(
     id: number | string,
-    product_id: number | string,
     schedule_id: number | string,
     payload: UpdateSchedulePayload,
   ) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await orderScheduleService.updateSchedule(id, product_id, schedule_id, payload)
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function deleteSchedule(
-    id: number | string,
-    product_id: number | string,
-    schedule_id: number | string,
-  ) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.deleteSchedule(id, product_id, schedule_id)
+      const { data } = await orderScheduleService.updateSchedule(id, schedule_id, payload)
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -232,15 +148,29 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
   }
 
   // ── Status Transitions ─────────────────────────────────────────────────────
-
-  async function release(id: number | string) {
+  async function submit(id: number | string) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await orderScheduleService.release(id)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, status: 'Released' }
-      }
+      const { data } = await orderScheduleService.submit(id)
+      if (data.status && currentOrder.value)
+        currentOrder.value = { ...currentOrder.value, status: 'Pending_Approval' }
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function approve(id: number | string, payload: ApprovePOPayload) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await orderScheduleService.approve(id, payload)
+      if (data.status && currentOrder.value)
+        currentOrder.value = { ...currentOrder.value, status: 'Approved' }
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -255,9 +185,8 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     error.value  = null
     try {
       const { data } = await orderScheduleService.reject(id, payload)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, status: 'Rejected' }
-      }
+      if (data.status && currentOrder.value)
+        currentOrder.value = { ...currentOrder.value, status: 'Draft' }
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -267,14 +196,13 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     }
   }
 
-  async function cancel(id: number | string, payload: CancelPOPayload) {
+  async function release(id: number | string) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await orderScheduleService.cancel(id, payload)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, status: 'Cancelled' }
-      }
+      const { data } = await orderScheduleService.release(id)
+      if (data.status && currentOrder.value)
+        currentOrder.value = { ...currentOrder.value, status: 'Released' }
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -283,48 +211,14 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
       saving.value = false
     }
   }
-
-  async function complete(id: number | string) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.complete(id)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, status: 'Completed' }
-      }
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
-  async function close(id: number | string) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await orderScheduleService.close(id)
-      if (data.status && currentOrder.value) {
-        currentOrder.value = { ...currentOrder.value, status: 'Closed' }
-      }
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      saving.value = false
-    }
-  }
-
-  // ── Reschedule ─────────────────────────────────────────────────────────────
 
   async function reschedule(id: number | string, payload: ReschedulePayload) {
     saving.value = true
     error.value  = null
     try {
       const { data } = await orderScheduleService.reschedule(id, payload)
+      if (data.status && currentOrder.value)
+        currentOrder.value = { ...currentOrder.value, status: 'Approved', total_scheduled_qty: 0 }
       return data
     } catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -334,59 +228,19 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
     }
   }
 
-  async function fetchRescheduleLogs(id: number | string) {
-    loading.value = true
-    error.value   = null
-    try {
-      const { data } = await orderScheduleService.getRescheduleLogs(id)
-      if (data.status) rescheduleLogs.value = data.data
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
-
   // ── Helpers ────────────────────────────────────────────────────────────────
-
   function clearCurrentOrder() {
-    currentOrder.value   = null
-    rescheduleLogs.value = []
+    currentOrder.value = null
+    error.value        = null
   }
-
-  // ── Expose ─────────────────────────────────────────────────────────────────
 
   return {
-    orders,
-    currentOrder,
-    dropdown,
-    rescheduleLogs,
-    meta,
-    loading,
-    saving,
-    error,
-
-    fetchOrders,
-    fetchOrder,
-    fetchDropdown,
-    createOrder,
-    updateOrder,
-    deleteOrder,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    addSchedule,
-    updateSchedule,
-    deleteSchedule,
-    release,
-    reject,
-    cancel,
-    complete,
-    close,
-    reschedule,
-    fetchRescheduleLogs,
+    orders, currentOrder, dropdown, meta,
+    loading, saving, error,
+    fetchOrders, fetchOrder, fetchDropdown,
+    createOrder, updateOrder, deleteOrder,
+    generateSchedule, updateSchedule,
+    submit, approve, reject, release, reschedule,
     clearCurrentOrder,
   }
 })

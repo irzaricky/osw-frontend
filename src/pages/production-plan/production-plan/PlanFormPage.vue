@@ -288,6 +288,32 @@ async function handleCalculate() {
   catch (e) { toastError(e) }
 }
 
+const calculatingAll = ref(false)
+
+async function handleCalculateAll() {
+  if (!planId.value) return
+  const baseParams = currentPlan.value?.capacity_params?.filter((p: any) => p.param_type === 'BASE') ?? []
+  if (baseParams.length === 0) {
+    toastError('No lines with BASE parameters to calculate.')
+    return
+  }
+
+  calculatingAll.value = true
+  try {
+    for (const param of baseParams) {
+      await planStore.calculateCapacity(planId.value, { line_id: param.line_id })
+    }
+    await planStore.fetchPlan(planId.value)
+    toastSuccess('All lines calculated successfully.')
+  }
+  catch (e) {
+    toastError(e)
+  }
+  finally {
+    calculatingAll.value = false
+  }
+}
+
 // ── Approval Workflow ────────────────────────────────────────────────────────
 
 function openSubmitConfirm() {
@@ -579,6 +605,7 @@ watch(
           :loading="loading"
           :saving="saving"
           :calculating="calculating"
+          :calculating-all="calculatingAll"
           :is-editable="isEditable"
           :plan-id="planId"
           :fmt-date="fmtDate"
@@ -593,6 +620,11 @@ watch(
             title: 'Recalculate Capacity',
             description: 'Capacity will be recalculated based on the current BASE and adjustments. Do you want to proceed?',
             action: handleCalculate,
+          })"
+          @calculate-all="openConfirm({
+            title: 'Recalculate All Lines',
+            description: 'All lines with BASE parameters will be recalculated. This may take some time. Do you want to proceed?',
+            action: handleCalculateAll,
           })"
           @delete-adjustment="confirmDeleteAdjustment"
         />

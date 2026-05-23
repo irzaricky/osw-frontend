@@ -141,15 +141,33 @@ const router = createRouter({
     { 
       path: '/production-plan/order-schedule/:id', 
       name: 'order-schedule-detail-edit',
-      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      component: () => import('./pages/production-plan/order-schedule/detail.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
       path: '/production-plan/order-schedule/create', 
       name: 'order-schedule-create',
-      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      component: () => import('./pages/production-plan/order-schedule/create.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/production-plan/work-order',
+      name: 'work-order-list',
+      component: () => import('./pages/production-plan/work-order/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/work-order/:id', 
+      name: 'work-order-detail-edit',
+      component: () => import('./pages/production-plan/work-order/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    // { 
+    //   path: '/production-plan/work-order/create', 
+    //   name: 'work-order-create',
+    //   component: () => import('./pages/production-plan/work-order/create.vue'),
+    //   meta: { layout: 'default', requiresAuth: true }
+    // },
     
     //MATERIAL
     {

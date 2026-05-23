@@ -1,19 +1,13 @@
 export type POStatus =
   | 'Draft'
+  | 'Pending_Approval'
+  | 'Approved'
   | 'Released'
-  | 'In_Progress'
-  | 'Completed'
-  | 'Closed'
   | 'Rejected'
-  | 'Cancelled'
 
-export type POPriority = 'Low' | 'Medium' | 'High' | 'Critical'
+export type POPriority = 'Low' | 'Medium' | 'High'
 
 export type ScheduleStatus = 'Scheduled' | 'In_Progress' | 'Completed' | 'Cancelled'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Production Order Header
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface ProductionOrder {
   id:                      number
@@ -34,30 +28,17 @@ export interface ProductionOrder {
   released_at?:            string | null
   rejected_by?:            number | null
   rejected_at?:            string | null
-  cancelled_by?:           number | null
-  cancelled_at?:           string | null
-  completed_at?:           string | null
-  closed_at?:              string | null
+  created_by?:             number | null
   created_at?:             string
   updated_at?:             string
-  // Relations
-  plan?: {
-    id:               number
-    plan_number:      string
-    plan_description?: string | null
-    overall_status:   string
-  }
-  creator?:   { id: number; email: string }
-  releaser?:  { id: number; email: string }
-  rejecter?:  { id: number; email: string }
-  canceller?: { id: number; email: string }
-  products?:  POProduct[]
-  reschedule_logs?: RescheduleLog[]
+  plan?:             { id: number; plan_number: string; plan_description?: string | null }
+  creator?:          { id: number; email: string }
+  releaser?:         { id: number; email: string }
+  rejector?:         { id: number; email: string }
+  products?:         POProduct[]
+  schedules?:        POSchedule[]
+  reschedule_logs?:  RescheduleLog[]
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Product Line
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface POProduct {
   id:             number
@@ -66,53 +47,36 @@ export interface POProduct {
   plan_detail_id: number
   customer_id:    number
   part_id:        number
-  line_id:        number
+  line_id:        number | null
   delivery_date:  string
   planned_qty:    number
   scheduled_qty:  number
-  notes?:         string | null
-  // Relations
-  customer?:    { id: number; name: string }
-  part?:        { id: number; part_number: string; part_name: string }
-  line?:        { id: number; name: string }
-  plan_detail?: {
-    id:            number
-    qty_request:   number
-    qty_capacity?: number | null
-    capacity_gap?: number | null
-    status?:       string | null
-    delivery_date: string
-  }
-  schedules?: POSchedule[]
+  customer?: { id: number; customer_code: string; name: string }
+  part?:     { id: number; part_number: string; part_name: string }
+  line?:     { id: number; line_code: string; name: string }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Schedule entry (daily)
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface POSchedule {
-  id:                      number
-  po_id:                   number
-  po_product_id:           number
-  sequence:                number
-  part_id:                 number
-  line_id:                 number
-  shift_id:                number
-  production_date:         string
-  planned_qty_per_day:     number
-  line_capacity_per_day?:  number | null
-  utilization_pct?:        number | null
-  status:                  ScheduleStatus
-  notes?:                  string | null
-  // Relations
-  line?:  { id: number; name: string }
+  id:                    number
+  po_id:                 number
+  po_product_id:         number
+  sequence:              number
+  part_id:               number
+  line_id:               number
+  shift_id:              number
+  production_date:       string
+  planned_qty_per_day:   number
+  actual_qty_per_day:    number
+  line_capacity_per_day?: number | null
+  utilization_pct?:      number | null
+  status:                ScheduleStatus
+  notes?:                string | null
+  line?:  { id: number; line_code: string; name: string }
   shift?: { id: number; name: string; start_time: string; end_time: string }
   part?:  { id: number; part_number: string; part_name: string }
+  line_name_snapshot?:  string | null
+  shift_name_snapshot?: string | null
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Reschedule Log
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface RescheduleLog {
   id:                number
@@ -123,13 +87,9 @@ export interface RescheduleLog {
   new_end_date:      string
   reschedule_reason: string
   impacted_wo_count: number
+  rescheduled_by?:   number | null
   rescheduled_at:    string
-  rescheduler?:      { id: number; email: string }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Dropdown item
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface PODropdownItem {
   id:                    number
@@ -139,19 +99,12 @@ export interface PODropdownItem {
   production_end_date:   string
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API Request Payloads
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface POListParams {
-  page?:      number
-  limit?:     number
-  search?:    string
-  status?:    POStatus
-  priority?:  POPriority
-  plan_id?:   number
-  date_from?: string
-  date_to?:   string
+  page?:    number
+  limit?:   number
+  search?:  string
+  status?:  POStatus
+  plan_id?: number
   [key: string]: any
 }
 
@@ -161,16 +114,6 @@ export interface CreatePOPayload {
   production_end_date:   string
   priority?:             POPriority
   po_description?:       string | null
-  notes?:                string | null
-  products: {
-    plan_detail_id: number
-    customer_id:    number
-    part_id:        number
-    line_id:        number
-    delivery_date:  string
-    planned_qty:    number
-    notes?:         string | null
-  }[]
 }
 
 export interface UpdatePOPayload {
@@ -178,41 +121,13 @@ export interface UpdatePOPayload {
   production_end_date?:   string
   priority?:              POPriority
   po_description?:        string | null
-  notes?:                 string | null
-}
-
-export interface AddProductPayload {
-  plan_detail_id: number
-  customer_id:    number
-  part_id:        number
-  line_id:        number
-  delivery_date:  string
-  planned_qty:    number
-  notes?:         string | null
-}
-
-export interface UpdateProductPayload {
-  line_id?:       number
-  delivery_date?: string
-  planned_qty?:   number
-  notes?:         string | null
-}
-
-export interface AddSchedulePayload {
-  production_date:       string
-  shift_id:              number
-  planned_qty_per_day:   number
-  line_capacity_per_day?: number | null
-  notes?:                string | null
 }
 
 export interface UpdateSchedulePayload {
-  production_date?:       string
-  shift_id?:              number
-  planned_qty_per_day?:   number
-  line_capacity_per_day?: number | null
-  status?:                ScheduleStatus
-  notes?:                 string | null
+  production_date?:     string
+  shift_id?:            number
+  planned_qty_per_day?: number
+  notes?:               string | null
 }
 
 export interface ReschedulePayload {
@@ -221,10 +136,10 @@ export interface ReschedulePayload {
   reschedule_reason: string
 }
 
-export interface RejectPOPayload {
-  reason: string
+export interface ApprovePOPayload {
+  notes?: string | null
 }
 
-export interface CancelPOPayload {
-  reason: string
+export interface RejectPOPayload {
+  notes: string
 }
