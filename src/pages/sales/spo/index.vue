@@ -62,7 +62,7 @@ function selectSpo(spo: Spo) {
 // ─── Generate Modal ───────────────────────────────────────────────────────────
 const isGenerateOpen = ref(false)
 
-async function handleSave(data: Record<string, any>) {
+async function handleSave(data: FormData) {
   try {
     const res = await store.createSpo(data)
     toastSuccess(`SPO ${res?.data?.spo_number || ''} generated successfully`)

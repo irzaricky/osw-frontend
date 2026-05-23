@@ -36,8 +36,8 @@ const spoService = {
   },
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
-  createSpo(data: Record<string, any>) {
-    return api.post(`${BASE}/`, data)
+  createSpo(data: FormData) {
+    return api.post(`${BASE}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
 
   updateSpo(id: number | string, data: Record<string, any>) {

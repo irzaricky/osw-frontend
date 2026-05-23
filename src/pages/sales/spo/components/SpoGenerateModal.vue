@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  save: [data: Record<string, any>]
+  save: [data: FormData]
 }>()
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -26,6 +26,9 @@ const state = reactive({
   spo_date: format(new Date(), 'yyyy-MM-dd'),
   delivery_due_date: ''
 })
+
+const poFile = ref<File | null>(null)
+const fileInputKey = ref(0)
 
 const isMapOpen = ref(false)
 
@@ -133,6 +136,8 @@ watch(() => props.open, (isOpen) => {
     state.delivery_due_date = ''
     selectedSpr.value = null
     previewDetails.value = []
+    poFile.value = null
+    fileInputKey.value++
     store.fetchSprDropdown()
     store.fetchDropdownCustomers()
   }
@@ -141,6 +146,13 @@ watch(() => props.open, (isOpen) => {
 // ─── Submit ───────────────────────────────────────────────────────────────────
 const formError = ref('')
 
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    poFile.value = target.files[0]
+  }
+}
+
 function submit() {
   formError.value = ''
   if (!state.spr_id) { formError.value = 'Please select an SPR.'; return }
@@ -148,6 +160,7 @@ function submit() {
   if (!state.shipping_address.trim()) { formError.value = 'Shipping address is required.'; return }
   if (!state.spo_date) { formError.value = 'SPO date is required.'; return }
   if (!state.delivery_due_date) { formError.value = 'Due date is required.'; return }
+  if (!poFile.value) { formError.value = 'Customer PO Document is required.'; return }
 
   const spoDate = new Date(state.spo_date);
   const dueDate = new Date(state.delivery_due_date);
@@ -156,13 +169,15 @@ function submit() {
     return;
   }
 
-  emit('save', {
-    spr_id: state.spr_id,
-    customer_id: state.customer_id,
-    shipping_address: state.shipping_address,
-    spo_date: state.spo_date,
-    delivery_due_date: state.delivery_due_date
-  })
+  const formData = new FormData()
+  formData.append('spr_id', String(state.spr_id))
+  formData.append('customer_id', String(state.customer_id))
+  formData.append('shipping_address', state.shipping_address)
+  formData.append('spo_date', state.spo_date)
+  formData.append('delivery_due_date', state.delivery_due_date)
+  formData.append('po_document', poFile.value)
+
+  emit('save', formData)
 }
 
 function close() {
@@ -228,7 +243,17 @@ function close() {
             placeholder="Select customer..."
             searchable
             clear
-            class="w-full"
+        </UFormField>
+
+        <!-- Customer PO Document -->
+        <UFormField label="Customer PO Document" required>
+          <input
+            :key="fileInputKey"
+            type="file"
+            accept="image/*,application/pdf"
+            required
+            class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
+            @change="handleFileChange($event)"
           />
         </UFormField>
 

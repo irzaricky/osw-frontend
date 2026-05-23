@@ -24,6 +24,7 @@ export interface Spo {
   delivery_due_date: string
   status: 'Draft' | 'Submitted' | 'Locked' | 'Processing' | 'Completed'
   remarks: string | null
+  po_document: string | null
   created_by: number
   createdAt: string
   updatedAt: string

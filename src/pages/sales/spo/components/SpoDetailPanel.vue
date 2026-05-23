@@ -90,6 +90,20 @@ async function handleSubmit() {
 }
 
 // ─── Workflow: Lock ───────────────────────────────────────────────────────────
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+const isLockModalOpen = ref(false)
+
+function viewPoDocument() {
+  if (store.detail?.po_document) {
+    window.open(`${apiBaseUrl}${store.detail.po_document}`, '_blank')
+  }
+}
+
+async function confirmLock() {
+  isLockModalOpen.value = false
+  await handleLock()
+}
+
 async function handleLock() {
   try {
     await store.updateStatus(props.spoId, { status: 'Locked' })
@@ -286,7 +300,7 @@ function openMap(address: string) {
             size="sm"
             label="Lock"
             :loading="store.loading"
-            @click="handleLock"
+            @click="isLockModalOpen = true"
           />
 
           <!-- Submit -->
@@ -337,15 +351,28 @@ function openMap(address: string) {
 
         <!-- Info Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
-              Customer
+          <div class="bg-elevated/50 rounded-xl border border-default p-3 flex flex-col justify-between">
+            <div>
+              <div class="text-xs text-muted mb-1">
+                Customer
+              </div>
+              <div class="text-sm font-semibold truncate">
+                {{ store.detail.customer?.name || '-' }}
+              </div>
+              <div class="text-xs text-muted font-mono">
+                {{ store.detail.customer?.customer_code }}
+              </div>
             </div>
-            <div class="text-sm font-semibold">
-              {{ store.detail.customer?.name || '-' }}
-            </div>
-            <div class="text-xs text-muted font-mono">
-              {{ store.detail.customer?.customer_code }}
+            <div v-if="store.detail.po_document" class="mt-2 pt-2 border-t border-default">
+              <UButton
+                icon="i-lucide-file-text"
+                color="primary"
+                variant="subtle"
+                size="xs"
+                label="View Customer PO"
+                class="w-full justify-center"
+                @click="viewPoDocument"
+              />
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
@@ -525,6 +552,48 @@ function openMap(address: string) {
             label="Save Changes"
             :loading="savingEdit"
             @click="saveEdit"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Commercial Verification Modal -->
+    <UModal
+      v-model:open="isLockModalOpen"
+      title="Commercial Verification"
+      class="sm:max-w-md"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <p class="text-sm leading-relaxed text-default">
+            Please confirm that you have verified the SPO details against the uploaded Customer PO document.
+          </p>
+          <div v-if="store.detail?.po_document" class="flex justify-center p-3 rounded-lg border border-default bg-elevated/40">
+            <UButton
+              icon="i-lucide-file-text"
+              color="primary"
+              variant="subtle"
+              size="sm"
+              label="View Customer PO Document"
+              @click="viewPoDocument"
+            />
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isLockModalOpen = false"
+          />
+          <UButton
+            color="success"
+            icon="i-lucide-lock"
+            label="Confirm Lock"
+            :loading="store.loading"
+            @click="confirmLock"
           />
         </div>
       </template>

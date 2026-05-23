@@ -106,7 +106,7 @@ export const useSpoStore = defineStore('spo', () => {
     }
   }
 
-  async function createSpo(data: Record<string, any>) {
+  async function createSpo(data: FormData) {
     loading.value = true
     error.value = null
     try {
