@@ -64,6 +64,7 @@ const detailItems = ref<{
 
 const loadedSalesPlanData = ref<SalesPlanLoadData | null>(null)
 const isLoadingSalesPlan = ref(false)
+const selectedBomInfo = ref<{ display_label: string } | null>(null)
 
 // ─── Sync edit data ───────────────────────────────────────────────────────────
 watch(
@@ -90,6 +91,7 @@ watch(
       state.save_as_draft = true
       detailItems.value = []
       loadedSalesPlanData.value = null
+      selectedBomInfo.value = null
     }
   }
 )
@@ -122,6 +124,9 @@ async function loadSalesPlanData(sprId: number) {
     const data = await store.loadSalesPlan(sprId)
     loadedSalesPlanData.value = data
 
+    // Simpan info BOM utama untuk field disabled di form
+    selectedBomInfo.value = data?.primary_bom ?? null
+
     if (data?.suggestedDetails && data.suggestedDetails.length > 0) {
       detailItems.value = data.suggestedDetails.map(d => ({
         part_id: d.part_id,
@@ -133,9 +138,9 @@ async function loadSalesPlanData(sprId: number) {
         stock: data.warehouseStock?.find(s => s.part_id === d.part_id)?.qty_on_hand ?? 0
       }))
     } else {
-      // suggestedDetails kosong — mungkin BOM tidak ditemukan atau semua part bukan RAW
+      // suggestedDetails kosong — BOM tidak ditemukan atau tidak ada komponen RAW di semua level
       detailItems.value = []
-      console.warn('[MRP] loadSalesPlanData: suggestedDetails kosong. Cek apakah BOM sudah di-approve dan BOM Detail mengandung part bertipe RAW.')
+      console.warn('[MRP] loadSalesPlanData: suggestedDetails kosong setelah BOM explosion. Cek apakah BOM sudah di-approve dan mengandung part RAW di level manapun.')
     }
   } catch (err) {
     console.error('[MRP] loadSalesPlanData error:', err)
@@ -251,6 +256,21 @@ function close() {
             <UIcon name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
             Loading sales plan data...
           </div>
+
+          <!-- BOM utama (read-only) — muncul setelah SPR dipilih dan data berhasil dimuat -->
+          <UFormField
+            v-if="selectedBomInfo"
+            label="BOM"
+            name="bom_display"
+            hint="Auto-filled from selected sales plan"
+          >
+            <UInput
+              :model-value="selectedBomInfo.display_label"
+              class="w-full"
+              disabled
+              :ui="{ base: 'cursor-not-allowed opacity-70' }"
+            />
+          </UFormField>
 
           <!-- Loaded Sales Plan Info -->
           <div

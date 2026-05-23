@@ -120,6 +120,7 @@ export const useMrpStore = defineStore('mrp', () => {
         // Normalise into SalesPlanLoadData shape used by the frontend
         const raw = data.data
         const normalised: SalesPlanLoadData = {
+          primary_bom: raw.primary_bom,
           salesPlan: {
             id: raw.spr?.id,
             spr_number: raw.spr?.spr_number,
