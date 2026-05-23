@@ -180,6 +180,20 @@ export const useSpoStore = defineStore('spo', () => {
     }
   }
 
+  async function downloadSpoPdf(id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await spoService.downloadPdf(id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchKanbanByStatus(status: string, params: SpoParams = {}, append = false) {
     if (!kanbanMeta.value[status]) {
       kanbanMeta.value[status] = { page: 1, total: 0, totalPages: 0, loading: false }
@@ -248,6 +262,7 @@ export const useSpoStore = defineStore('spo', () => {
     deleteSpo,
     updateStatus,
     fetchSdoHistory,
+    downloadSpoPdf,
     // Kanban
     kanbanSpos,
     kanbanMeta,

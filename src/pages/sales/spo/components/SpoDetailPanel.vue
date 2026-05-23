@@ -205,6 +205,26 @@ function openMap(address: string) {
   const url = `https://www.openstreetmap.org/search?query=${encodeURIComponent(address)}`
   window.open(url, '_blank')
 }
+
+const downloadingPdf = ref(false)
+
+async function handleDownloadPdf() {
+  downloadingPdf.value = true
+  try {
+    const blob = await store.downloadSpoPdf(props.spoId)
+    const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `SPO-${store.detail?.spo_number || props.spoId}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  } catch (e: any) {
+    toastError(e)
+  } finally {
+    downloadingPdf.value = false
+  }
+}
 </script>
 
 <template>
@@ -290,6 +310,18 @@ function openMap(address: string) {
             size="sm"
             label="Create Delivery Plan"
             @click="handleCreateDeliveryPlan"
+          />
+
+          <!-- Download SPO Document -->
+          <UButton
+            v-if="['Locked', 'Processing', 'Completed'].includes(store.detail?.status || '')"
+            icon="i-lucide-download"
+            color="primary"
+            variant="subtle"
+            size="sm"
+            label="Download SPO Document"
+            :loading="downloadingPdf"
+            @click="handleDownloadPdf"
           />
 
           <!-- Supervisor: Lock -->

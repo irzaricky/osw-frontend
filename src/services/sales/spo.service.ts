@@ -56,6 +56,11 @@ const spoService = {
   // ─── SDO History ─────────────────────────────────────────────────────────
   getSdoHistory(id: number | string) {
     return api.get(`${BASE}/${id}/sdo-history`)
+  },
+
+  // ─── PDF Download ─────────────────────────────────────────────────────────
+  downloadPdf(id: number | string) {
+    return api.get(`${BASE}/${id}/pdf`, { responseType: 'blob' })
   }
 }
 
