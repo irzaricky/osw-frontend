@@ -120,6 +120,7 @@ export const useMrpStore = defineStore('mrp', () => {
         // Normalise into SalesPlanLoadData shape used by the frontend
         const raw = data.data
         const normalised: SalesPlanLoadData = {
+          primary_bom: raw.primary_bom,
           salesPlan: {
             id: raw.spr?.id,
             spr_number: raw.spr?.spr_number,
@@ -145,6 +146,11 @@ export const useMrpStore = defineStore('mrp', () => {
             qty: d.qty,
             bom_id: d.bom_id,
             part: d.part,
+            stock_on_hand: d.stock_on_hand,
+            current_safety_stock: d.current_safety_stock,
+            target_safety_stock: d.target_safety_stock,
+            gross_requirement: d.gross_requirement,
+            net_requirement: d.net_requirement
           }))
         }
         return normalised

@@ -66,6 +66,13 @@ export interface Mrp {
 
 // Payload for loadSalesPlanData response
 export interface SalesPlanLoadData {
+  primary_bom?: {
+    id: number
+    bom_number: string
+    bom_version: number
+    description: string
+    display_label: string
+  } | null;
   salesPlan: {
     id: number
     spr_number: string
@@ -113,5 +120,9 @@ export interface SalesPlanLoadData {
       part_name: string
       uom?: { id: number; name: string; code: string }
     }
+    stock_on_hand?: number
+    safety_stock?: number
+    gross_requirement?: number
+    net_requirement?: number
   }[]
 }
