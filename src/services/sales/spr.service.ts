@@ -57,9 +57,7 @@ const sprService = {
     return api.put(`${BASE}/${id}/review-sales`, data)
   },
 
-  reviewPpicSpr(id: number | string, data: { status: string; remarks?: string }) {
-    return api.put(`${BASE}/${id}/review-ppic`, data)
-  },
+
 
   // Excel
   exportSpr(id: number | string) {
@@ -82,14 +80,6 @@ const sprService = {
     })
   },
 
-  // PPIC Aggregation
-  getPpicAggregation(params?: { month?: string; part_id?: number }) {
-    return api.get(`${BASE}/ppic-aggregation`, { params })
-  },
-
-  ppicBatchApprove(data: { month: string; remarks?: string }) {
-    return api.put(`${BASE}/ppic-batch-approve`, data)
-  }
 }
 
 export default sprService

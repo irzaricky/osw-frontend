@@ -66,7 +66,6 @@ watch([statusFilter, sourceFilter], () => {
 const STATUS_ORDER = [
   'Draft',
   'Submitted',
-  'Waiting Review PPIC',
   'Approved',
   'Rejected'
 ]
@@ -116,7 +115,6 @@ function getStatusColor(status: string): any {
   const map: Record<string, string> = {
     'Draft': 'neutral',
     'Submitted': 'warning',
-    'Waiting Review PPIC': 'info',
     'Approved': 'success',
     'Rejected': 'error'
   }

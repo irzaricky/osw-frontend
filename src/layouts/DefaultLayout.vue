@@ -169,14 +169,6 @@ const links = [[{
       }
     },
     {
-      label: 'SPR PPIC Review',
-      icon: 'i-lucide-clipboard-check',
-      to: '/sales/spr-ppic',
-      onSelect: () => {
-        open.value = false
-      }
-    },
-    {
       label: 'SPO',
       icon: 'i-lucide-file-plus',
       to: '/sales/spo',

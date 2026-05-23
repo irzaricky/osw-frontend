@@ -36,12 +36,11 @@ export interface Spr {
   required_date: string
   confirmed_date: string | null
   description: string
-  status: 'Draft' | 'Submitted' | 'Waiting Review Supervisor Sales' | 'Waiting Review PPIC' | 'Approved' | 'Rejected'
+  status: 'Draft' | 'Submitted' | 'Approved' | 'Rejected'
   remarks: string | null
   created_by: number
   approved_by: number | null
   sales_order_approved_by: number | null
-  ppic_approved_by: number | null
   createdAt: string
   updatedAt: string
   deleted_at: string | null
@@ -57,11 +56,7 @@ export interface Spr {
     email: string
     user_detail?: { full_name: string }
   } | null
-  ppic_approver?: {
-    id: number
-    email: string
-    user_detail?: { full_name: string }
-  } | null
+
   forecast?: {
     id: number
     forecast_number: string

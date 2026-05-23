@@ -14,18 +14,7 @@ export const useSprStore = defineStore('spr', () => {
   const statusDropdown = ref<string[]>([])
   const sourceDropdown = ref<string[]>([])
 
-  // PPIC Aggregation state
-  const ppicAggregation = ref<{
-    target_month: string
-    months: string[]
-    parts: { part_id: number; part_number: string; part_name: string }[]
-    matrix: Record<string, Record<string, { total_qty: number; spr_count: number; sprs: any[] }>>
-    month_totals: Record<string, number>
-    part_totals: Record<string, number>
-    grand_total: number
-    pending_spr_count: number
-    pending_sprs: any[]
-  } | null>(null)
+
 
   const meta = ref({
     page: 1,
@@ -183,19 +172,7 @@ export const useSprStore = defineStore('spr', () => {
     }
   }
 
-  async function reviewPpicSpr(id: number | string, data: { status: string; remarks?: string }) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await sprService.reviewPpicSpr(id, data)
-      return response.data
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
+
 
   async function exportSpr(id: number | string) {
     loading.value = true
@@ -253,37 +230,7 @@ export const useSprStore = defineStore('spr', () => {
     }
   }
 
-  async function fetchPpicAggregation(params?: { month?: string; part_id?: number }) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await sprService.getPpicAggregation(params)
-      const data = response.data
-      if (data.status) {
-        ppicAggregation.value = data.data
-      }
-      return data
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
 
-  async function batchApprovePpic(data: { month: string; remarks?: string }) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await sprService.ppicBatchApprove(data)
-      return response.data
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      throw e
-    } finally {
-      loading.value = false
-    }
-  }
 
   return {
     sprs,
@@ -305,13 +252,9 @@ export const useSprStore = defineStore('spr', () => {
     deleteSpr,
     submitSpr,
     reviewSalesSpr,
-    reviewPpicSpr,
     exportSpr,
     exportLogSnapshot,
     getTemplate,
-    uploadTemplate,
-    ppicAggregation,
-    fetchPpicAggregation,
-    batchApprovePpic
+    uploadTemplate
   }
 })

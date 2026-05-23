@@ -54,7 +54,6 @@ function getStatusIcon(status: string): string {
   const map: Record<string, string> = {
     'Draft': 'i-lucide-file-edit',
     'Submitted': 'i-lucide-user-check',
-    'Waiting Review PPIC': 'i-lucide-clipboard-check',
     'Approved': 'i-lucide-check-circle',
     'Rejected': 'i-lucide-x-circle'
   }
@@ -106,14 +105,12 @@ async function submitSpr() {
 
 // ─── Workflow: Review ─────────────────────────────────────────────────────────
 const isReviewOpen = ref(false)
-const reviewMode = ref<'sales' | 'ppic'>('sales')
 const reviewForm = ref({
   status: 'Approved' as 'Approved' | 'Rejected',
   remarks: ''
 })
 
-function openReviewModal(mode: 'sales' | 'ppic') {
-  reviewMode.value = mode
+function openReviewModal() {
   reviewForm.value = { status: 'Approved', remarks: '' }
   isReviewOpen.value = true
 }
@@ -124,11 +121,7 @@ async function confirmReview() {
     return
   }
   try {
-    if (reviewMode.value === 'sales') {
-      await store.reviewSalesSpr(props.sprId, reviewForm.value)
-    } else {
-      await store.reviewPpicSpr(props.sprId, reviewForm.value)
-    }
+    await store.reviewSalesSpr(props.sprId, reviewForm.value)
     toastSuccess(`SPR ${reviewForm.value.status.toLowerCase()} successfully`)
     isReviewOpen.value = false
     loadDetail()
@@ -195,8 +188,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
   const order: Record<string, number> = {
     'Draft': 0,
     'Submitted': 2, // Skip Step 1 'Submitted' (Completed) and go to Step 2 'Waiting Review Sales'
-    'Waiting Review PPIC': 3,
-    'Approved': 4,
+    'Approved': 3,
     'Rejected': -1
   }
   const current = order[status || 'Draft'] ?? 0
@@ -248,7 +240,6 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             :class="{
               'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
               'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
-              'bg-info-100 text-info-700 dark:bg-info-900/40 dark:text-info-300': store.detail.status === 'Waiting Review PPIC',
               'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300': store.detail.status === 'Approved',
               'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300': store.detail.status === 'Rejected',
             }"
@@ -315,7 +306,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             size="sm"
             label="Review Sales"
             :loading="store.loading"
-            @click="openReviewModal('sales')"
+            @click="openReviewModal"
           />
 
           <!-- Submit -->
@@ -392,31 +383,14 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Connector -->
           <div class="h-0.5 flex-1 mt-4 self-start" :class="getStepState(3) !== 'pending' ? 'bg-success-500' : 'bg-default'" />
 
-          <!-- Step 3: Waiting Review PPIC -->
+          <!-- Step 3: Approved -->
           <div class="flex flex-col items-center flex-1 min-w-[80px]">
             <div
               class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-              :class="getStepState(3) === 'complete' ? 'bg-success-500 text-white' : getStepState(3) === 'current' ? 'bg-info-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
-            >
-              <UIcon v-if="getStepState(3) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
-              <span v-else>4</span>
-            </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(3) === 'current' ? 'text-info-600 dark:text-info-400' : 'text-muted'">
-              Waiting Review<br>PPIC
-            </p>
-          </div>
-
-          <!-- Connector -->
-          <div class="h-0.5 flex-1 mt-4 self-start" :class="getStepState(4) !== 'pending' ? 'bg-success-500' : 'bg-default'" />
-
-          <!-- Step 4: Approved -->
-          <div class="flex flex-col items-center flex-1 min-w-[80px]">
-            <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-              :class="getStepState(4) === 'complete' || store.detail.status === 'Approved' ? 'bg-success-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
+              :class="getStepState(3) === 'complete' || store.detail.status === 'Approved' ? 'bg-success-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="store.detail.status === 'Approved'" name="i-lucide-check" class="w-4 h-4" />
-              <span v-else>5</span>
+              <span v-else>4</span>
             </div>
             <p class="text-xs text-center mt-2 font-medium" :class="store.detail.status === 'Approved' ? 'text-success-600 dark:text-success-400' : 'text-muted'">
               Approved
@@ -477,23 +451,14 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
         </div>
 
         <!-- Approver Info Row -->
-        <div v-if="store.detail.sales_order_approver || store.detail.ppic_approver" class="grid grid-cols-2 gap-3">
-          <div v-if="store.detail.sales_order_approver" class="bg-elevated/50 rounded-xl border border-default p-3">
+        <div v-if="store.detail.sales_order_approver" class="grid grid-cols-1 gap-3">
+          <div class="bg-elevated/50 rounded-xl border border-default p-3">
             <div class="text-xs text-muted mb-1">
               Sales Approver
             </div>
             <div class="text-sm font-semibold flex items-center gap-1.5">
               <UIcon name="i-lucide-user-check" class="w-3.5 h-3.5 text-success-500" />
               {{ store.detail.sales_order_approver?.user_detail?.full_name || store.detail.sales_order_approver?.email }}
-            </div>
-          </div>
-          <div v-if="store.detail.ppic_approver" class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
-              PPIC Approver
-            </div>
-            <div class="text-sm font-semibold flex items-center gap-1.5">
-              <UIcon name="i-lucide-clipboard-check" class="w-3.5 h-3.5 text-success-500" />
-              {{ store.detail.ppic_approver?.user_detail?.full_name || store.detail.ppic_approver?.email }}
             </div>
           </div>
         </div>
@@ -566,8 +531,8 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 
     <!-- ── Review Modal ─────────────────────────────────────────────────────── -->
     <UModal
-      v-model:open="isReviewOpen"
-      :title="reviewMode === 'sales' ? 'Review SPR — Supervisor Sales' : 'Review SPR — Supervisor PPIC'"
+      v-model="isReviewOpen"
+      title="Review SPR — Supervisor Sales"
       description="Approve or reject this Sales Purchase Request"
     >
       <template #body>
@@ -584,7 +549,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               v-model="reviewForm.remarks"
               placeholder="Enter rejection reason..."
               class="w-full"
-              rows="3"
+              :rows="3"
             />
           </UFormField>
         </div>

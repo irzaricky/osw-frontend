@@ -193,7 +193,7 @@ function close() {
             v-model="state.description"
             placeholder="Additional notes..."
             class="w-full"
-            rows="2"
+            :rows="2"
             :disabled="isAutomatic"
           />
         </UFormField>
