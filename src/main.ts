@@ -141,13 +141,13 @@ const router = createRouter({
     { 
       path: '/production-plan/order-schedule/:id', 
       name: 'order-schedule-detail-edit',
-      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      component: () => import('./pages/production-plan/order-schedule/detail.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
       path: '/production-plan/order-schedule/create', 
       name: 'order-schedule-create',
-      component: () => import('./pages/production-plan/order-schedule/OrderScheduleForm.vue'),
+      component: () => import('./pages/production-plan/order-schedule/create.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
     
