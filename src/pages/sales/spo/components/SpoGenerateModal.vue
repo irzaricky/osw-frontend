@@ -243,6 +243,7 @@ function close() {
             placeholder="Select customer..."
             searchable
             clear
+          />
         </UFormField>
 
         <!-- Customer PO Document -->
