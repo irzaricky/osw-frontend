@@ -49,6 +49,57 @@ function getLocalDateString() {
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+<script setup lang="ts">
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { CalendarDate } from '@internationalized/date'
+import { useSdpStore } from '../../../stores/sales/sdp.store'
+import Breadcrumbs from '../../../components/Breadcrumbs.vue'
+import { storeToRefs } from 'pinia'
+import SdpAddModal from './components/SdpAddModal.vue'
+import SdpDetailPanel from './components/SdpDetailPanel.vue'
+import ConfirmDialog from '../../../components/ConfirmDialog.vue'
+import { useAppToast } from '../../../composables/useAppToast'
+
+const { toastSuccess, toastError } = useAppToast()
+
+const store = useSdpStore()
+const { loading, plans } = storeToRefs(store)
+const route = useRoute()
+const router = useRouter()
+
+const breadcrumbItems = [
+  { label: 'Home', to: '/' },
+  { label: 'Sales' },
+  { label: 'Delivery Plan (SDP)' }
+]
+
+// Modal & Panel state controls
+const openAddModal = ref(false)
+const selectedPlanId = ref<number | null>(null)
+const createLoading = ref(false)
+const presetSpoId = ref<number | null>(null)
+const isMasterListOpen = ref(false)
+
+const selectedPlan = computed(() => store.detail)
+
+const confirmDialog = ref({
+  open: false,
+  title: 'Delete Delivery Plan',
+  description: 'Are you sure you want to delete this delivery plan? This action cannot be undone.',
+  id: null as number | null
+})
+
+// Search & filter parameters
+const selectedWarehouseId = ref<number | undefined>(undefined)
+
+function getLocalDateString() {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const selectedDate = ref(getLocalDateString())
@@ -70,6 +121,34 @@ const selectedDateModel = computed({
     const mm = String(val.month).padStart(2, '0')
     const dd = String(val.day).padStart(2, '0')
     selectedDate.value = `${yyyy}-${mm}-${dd}`
+  }
+})
+
+const mlInputDate = ref<any>(null)
+const mlDateRangeModel = computed({
+  get() {
+    const start = mlStartDate.value ? new CalendarDate(...mlStartDate.value.split('-').map(Number) as [number, number, number]) : undefined
+    const end = mlEndDate.value ? new CalendarDate(...mlEndDate.value.split('-').map(Number) as [number, number, number]) : undefined
+    return { start, end }
+  },
+  set(val: any) {
+    if (!val || (!val.start && !val.end)) {
+      mlStartDate.value = ''
+      mlEndDate.value = ''
+      return
+    }
+    if (val.start) {
+      const yyyy = val.start.year
+      const mm = String(val.start.month).padStart(2, '0')
+      const dd = String(val.start.day).padStart(2, '0')
+      mlStartDate.value = `${yyyy}-${mm}-${dd}`
+    }
+    if (val.end) {
+      const yyyy = val.end.year
+      const mm = String(val.end.month).padStart(2, '0')
+      const dd = String(val.end.day).padStart(2, '0')
+      mlEndDate.value = `${yyyy}-${mm}-${dd}`
+    }
   }
 })
 
@@ -489,9 +568,27 @@ const conflictingDocksNames = computed(() => {
 
           <div v-show="isMasterListOpen" class="space-y-4">
             <div class="flex items-center gap-3">
-              <UInput v-model="mlStartDate" type="date" size="sm" />
-              <span class="text-xs text-muted">to</span>
-              <UInput v-model="mlEndDate" type="date" size="sm" />
+              <UInputDate ref="mlInputDate" v-model="mlDateRangeModel" range class="w-64">
+                <template #trailing>
+                  <UPopover :reference="mlInputDate?.inputsRef?.[0]?.$el">
+                    <UButton
+                      color="neutral"
+                      variant="link"
+                      size="sm"
+                      icon="i-lucide-calendar"
+                      class="px-0"
+                    />
+                    <template #content>
+                      <UCalendar
+                        v-model="mlDateRangeModel"
+                        class="p-2"
+                        :number-of-months="2"
+                        range
+                      />
+                    </template>
+                  </UPopover>
+                </template>
+              </UInputDate>
             </div>
             <div class="overflow-x-auto border border-default rounded-2xl">
               <table class="w-full text-left border-collapse text-xs">
@@ -536,35 +633,6 @@ const conflictingDocksNames = computed(() => {
                     </td>
                     <td class="p-3">
                       {{ plan.destination }}
-                    </td>
-                  </tr>
-                  <tr v-if="filteredMasterList.length === 0">
-                    <td colspan="5" class="p-4 text-center text-muted">
-                      No active plans for this date range/warehouse.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right side: Master-Detail Panel Info -->
-        <div v-if="selectedPlanId" class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
-          <SdpDetailPanel
-            :plan="selectedPlan"
-            :loading="loading"
-            @close="selectedPlanId = null; store.detail = null"
-            @delete="handleDeletePlan"
-            @refresh="loadPlans(); selectPlan(selectedPlanId!)"
-          />
-        </div>
-      </div>
-
-      <!-- Modals -->
-      <SdpAddModal
-        v-model:open="openAddModal"
-        :loading="createLoading"
         :preset-spo-id="presetSpoId"
         @save="handleSavePlan"
       />
