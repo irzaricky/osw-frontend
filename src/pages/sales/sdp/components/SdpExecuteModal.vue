@@ -116,7 +116,7 @@ function close() {
 <template>
   <UModal
     :open="props.open"
-    title="Execute Delivery Order (SDO)"
+    title="Schedule the Delivery (SDO)"
     description="Allocate a fleet vehicle and assign a driver to transfer this plan into an active shipping execution."
     class="sm:max-w-md"
     @update:open="emit('update:open', $event)"
@@ -192,7 +192,7 @@ function close() {
         />
         <UButton
           color="success"
-          label="Execute Shipment"
+          label="Schedule Shipment"
           :loading="props.loading"
           :disabled="isOverloaded"
           @click="submitForm"

@@ -271,15 +271,6 @@ const isLoadExceeded = computed(() => {
   return totalPlannedLoad.value > store.maxVehicleCapacity
 })
 
-function isStockInsufficient(item: any) {
-  if (!isSelected(item.id)) return false
-  const selectedItem = getSelectedRef(item.id)
-  if (!selectedItem) return false
-  const planned = Number(selectedItem.planned_qty) || 0
-  const stock = Number(item.stock_qty) || 0
-  return planned > stock
-}
-
 // Form Submit
 function submitForm() {
   if (conflictData.value || isLoadExceeded.value) return // Block if conflict or load exceeded exists
@@ -516,15 +507,6 @@ function close() {
                     <span class="text-[10px] font-semibold text-muted block mt-0.5">
                       Stock: {{ item.stock_qty || 0 }} pcs
                     </span>
-                    <UBadge
-                      v-if="isStockInsufficient(item)"
-                      color="warning"
-                      variant="subtle"
-                      size="xs"
-                      class="rounded-full mt-1 font-bold animate-pulse"
-                    >
-                      Exceeds Stock
-                    </UBadge>
                     
                     <div v-if="isSelected(item.id)" class="w-24 mt-2">
                       <UInput

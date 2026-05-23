@@ -275,7 +275,7 @@ async function handleDownloadPdf() {
           color="success"
           class="w-full font-bold justify-center"
           icon="i-lucide-truck"
-          label="Execute Delivery Order"
+          label="Schedule the Delivery"
           @click="isExecutingModalOpen = true"
         />
 
