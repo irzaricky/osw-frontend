@@ -62,7 +62,7 @@ function getStatusIcon(status: string): string {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 const isSupervisor = computed(() => {
   const role = authStore.user?.role
-  return role === 'Superadmin' || role === 'Supervisor Sales Order'
+  return role === 'Superadmin' || role === 'Supervisor Sales'
 })
 
 // ─── Action Guards ────────────────────────────────────────────────────────────

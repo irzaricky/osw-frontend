@@ -391,7 +391,7 @@ async function confirmReview() {
 
 const isSupervisor = computed(() => {
   const role = authStore.user?.role
-  return role === 'Superadmin' || role === 'Supervisor Sales Forecast'
+  return role === 'Superadmin' || role === 'Supervisor Sales'
 })
 
 function getStatusIcon(status: string): string {
