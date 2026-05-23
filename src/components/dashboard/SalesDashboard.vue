@@ -46,7 +46,7 @@ const quickLinks = [
         Needs Review
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <NuxtLink to="/sales">
+        <RouterLink to="/sales">
           <div class="bg-warning/10 border border-warning/20 hover:border-warning/50 rounded-2xl p-5 transition-all cursor-pointer group">
             <div class="flex items-center justify-between">
               <div class="space-y-1">
@@ -58,9 +58,9 @@ const quickLinks = [
               <UIcon name="i-lucide-file-search" class="w-8 h-8 text-warning/50 group-hover:text-warning transition-colors" />
             </div>
           </div>
-        </NuxtLink>
+        </RouterLink>
 
-        <NuxtLink to="/sales/sdo">
+        <RouterLink to="/sales/sdo">
           <div class="bg-primary/5 border border-primary/20 hover:border-primary/50 rounded-2xl p-5 transition-all cursor-pointer group">
             <div class="flex items-center justify-between">
               <div class="space-y-1">
@@ -72,7 +72,7 @@ const quickLinks = [
               <UIcon name="i-lucide-truck-fast" class="w-8 h-8 text-primary/50 group-hover:text-primary transition-colors" />
             </div>
           </div>
-        </NuxtLink>
+        </RouterLink>
       </div>
     </div>
 
@@ -83,7 +83,7 @@ const quickLinks = [
         Quick Actions
       </h2>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <NuxtLink v-for="link in quickLinks" :key="link.title" :to="link.to">
+        <RouterLink v-for="link in quickLinks" :key="link.title" :to="link.to">
           <div class="bg-elevated border border-default hover:border-primary/50 hover:shadow-md rounded-2xl p-5 transition-all cursor-pointer group h-full">
             <UIcon :name="link.icon" class="w-6 h-6 text-muted-foreground group-hover:text-primary mb-3 transition-colors" />
             <h3 class="font-bold text-default group-hover:text-primary transition-colors">
@@ -93,7 +93,7 @@ const quickLinks = [
               {{ link.description }}
             </p>
           </div>
-        </NuxtLink>
+        </RouterLink>
       </div>
     </div>
   </div>
