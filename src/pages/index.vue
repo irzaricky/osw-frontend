@@ -22,9 +22,11 @@ const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver'
         </UDashboardNavbar>
       </template>
       <!-- Dashboard Content -->
-      <UDashboardPanelContent class="bg-muted/10 p-0">
-        <SalesDashboard />
-      </UDashboardPanelContent>
+      <template #body>
+        <div class="bg-muted/10 p-0 h-full overflow-y-auto">
+          <SalesDashboard />
+        </div>
+      </template>
     </UDashboardPanel>
   </div>
 </template>
