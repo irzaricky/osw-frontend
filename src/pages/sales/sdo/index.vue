@@ -66,7 +66,7 @@ async function fetchStats() {
   try {
     // Perform a background prefetch of recent SDOs to calculate dashboard metrics
     const res = await sdoService.getSdos({ limit: 100 })
-    const list = res.data?.data || []
+    const list = res.data?.data?.rows || []
     let inTransit = 0
     let delivered = 0
     let dispatched = 0

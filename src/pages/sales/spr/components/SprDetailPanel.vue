@@ -531,7 +531,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 
     <!-- ── Review Modal ─────────────────────────────────────────────────────── -->
     <UModal
-      v-model="isReviewOpen"
+      v-model:open="isReviewOpen"
       title="Review SPR — Supervisor Sales"
       description="Approve or reject this Sales Purchase Request"
     >

@@ -46,7 +46,7 @@ const quickLinks = [
         Needs Review
       </h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <RouterLink to="/sales">
+        <RouterLink to="/sales/spr">
           <div class="bg-warning/10 border border-warning/20 hover:border-warning/50 rounded-2xl p-5 transition-all cursor-pointer group">
             <div class="flex items-center justify-between">
               <div class="space-y-1">
