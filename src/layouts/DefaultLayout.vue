@@ -275,6 +275,14 @@ const links = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Work Orders',
+      icon: 'i-lucide-clipboard-list',
+      to: '/production-plan/work-order',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, {

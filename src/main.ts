@@ -150,6 +150,24 @@ const router = createRouter({
       component: () => import('./pages/production-plan/order-schedule/create.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    { 
+      path: '/production-plan/work-order',
+      name: 'work-order-list',
+      component: () => import('./pages/production-plan/work-order/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
+      path: '/production-plan/work-order/:id', 
+      name: 'work-order-detail-edit',
+      component: () => import('./pages/production-plan/work-order/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    // { 
+    //   path: '/production-plan/work-order/create', 
+    //   name: 'work-order-create',
+    //   component: () => import('./pages/production-plan/work-order/create.vue'),
+    //   meta: { layout: 'default', requiresAuth: true }
+    // },
     
     //MATERIAL
     {
