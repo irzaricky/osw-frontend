@@ -207,10 +207,8 @@ function close() {
         @submit="onSubmit"
       >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
           <!-- ── Kolom Kiri: Konfigurasi Utama ────────────────────────────── -->
           <div class="space-y-4">
-
             <!-- MPO -->
             <UFormField label="Material Purchase Order (MPO)" name="mpo_id" required>
               <USelectMenu
@@ -235,7 +233,13 @@ function close() {
               <UInputDate v-model="targetDateModel" class="w-full">
                 <template #trailing>
                   <UPopover>
-                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <UButton
+                      color="neutral"
+                      variant="link"
+                      size="sm"
+                      icon="i-lucide-calendar"
+                      class="px-0"
+                    />
                     <template #content>
                       <UCalendar v-model="targetDateModel" class="p-2" />
                     </template>
@@ -347,7 +351,12 @@ function close() {
                 <UIcon name="i-lucide-package-2" class="text-primary w-4 h-4" />
                 <span>Detail Parts (dari MPO)</span>
               </h4>
-              <UBadge color="primary" variant="subtle" size="xs" class="rounded-full">
+              <UBadge
+                color="primary"
+                variant="subtle"
+                size="xs"
+                class="rounded-full"
+              >
                 {{ state.details.filter(d => d.selected).length }} / {{ state.details.length }} dipilih
               </UBadge>
             </div>
@@ -355,15 +364,23 @@ function close() {
             <!-- Empty: no MPO selected -->
             <div v-if="!state.mpo_id" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
               <UIcon name="i-lucide-file-search" class="w-10 h-10 text-muted mb-3 opacity-40" />
-              <p class="text-xs text-muted font-medium">Pilih MPO terlebih dahulu</p>
-              <p class="text-[10px] text-muted/70 mt-1">Parts dari MPO yang dipilih akan muncul di sini.</p>
+              <p class="text-xs text-muted font-medium">
+                Pilih MPO terlebih dahulu
+              </p>
+              <p class="text-[10px] text-muted/70 mt-1">
+                Parts dari MPO yang dipilih akan muncul di sini.
+              </p>
             </div>
 
             <!-- Empty: MPO has no remaining parts -->
             <div v-else-if="state.details.length === 0" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
               <UIcon name="i-lucide-check-circle" class="w-10 h-10 text-success-500 mb-3 opacity-70" />
-              <p class="text-xs text-muted font-medium">Semua parts sudah terpenuhi</p>
-              <p class="text-[10px] text-muted/70 mt-1">Tidak ada remaining qty pada MPO ini.</p>
+              <p class="text-xs text-muted font-medium">
+                Semua parts sudah terpenuhi
+              </p>
+              <p class="text-[10px] text-muted/70 mt-1">
+                Tidak ada remaining qty pada MPO ini.
+              </p>
             </div>
 
             <!-- Parts list -->
@@ -382,8 +399,12 @@ function close() {
 
                   <div class="flex-1 min-w-0 flex items-start justify-between gap-3">
                     <div class="flex-1 min-w-0">
-                      <p class="text-xs font-bold text-default truncate">{{ detail.label }}</p>
-                      <p class="text-[10px] text-muted mt-0.5">Maks: {{ detail.max_qty }} pcs</p>
+                      <p class="text-xs font-bold text-default truncate">
+                        {{ detail.label }}
+                      </p>
+                      <p class="text-[10px] text-muted mt-0.5">
+                        Maks: {{ detail.max_qty }} pcs
+                      </p>
 
                       <!-- Notes input per part -->
                       <UInput

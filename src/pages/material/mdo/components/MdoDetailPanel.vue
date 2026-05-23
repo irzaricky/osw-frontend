@@ -243,7 +243,6 @@ async function handleAdvanceStatus() {
 
 <template>
   <div class="h-full flex flex-col bg-elevated border-l border-default shadow-2xl relative overflow-hidden">
-
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <div class="p-4 border-b border-default shrink-0 flex items-center justify-between bg-elevated/40">
       <div class="flex items-center gap-2">
@@ -251,8 +250,12 @@ async function handleAdvanceStatus() {
           <UIcon name="i-lucide-truck" class="w-4 h-4" />
         </div>
         <div>
-          <h3 class="text-sm font-bold text-default">Detail MDO</h3>
-          <p class="text-[10px] text-muted">{{ props.order?.number || 'Pilih MDO' }}</p>
+          <h3 class="text-sm font-bold text-default">
+            Detail MDO
+          </h3>
+          <p class="text-[10px] text-muted">
+            {{ props.order?.number || 'Pilih MDO' }}
+          </p>
         </div>
       </div>
       <div class="flex items-center gap-1">
@@ -288,8 +291,12 @@ async function handleAdvanceStatus() {
       <div class="w-12 h-12 bg-default rounded-full flex items-center justify-center mb-4 opacity-40 shadow-inner">
         <UIcon name="i-lucide-package-open" class="w-6 h-6 text-muted" />
       </div>
-      <h3 class="text-sm font-bold text-default">Tidak Ada MDO Dipilih</h3>
-      <p class="text-[10px] text-muted mt-1">Klik blok di timeline atau item di list untuk melihat detailnya.</p>
+      <h3 class="text-sm font-bold text-default">
+        Tidak Ada MDO Dipilih
+      </h3>
+      <p class="text-[10px] text-muted mt-1">
+        Klik blok di timeline atau item di list untuk melihat detailnya.
+      </p>
     </div>
 
     <!-- ── EDIT MODE ───────────────────────────────────────────────────────── -->
@@ -311,7 +318,13 @@ async function handleAdvanceStatus() {
           <UInputDate v-model="editTargetDateModel" class="w-full">
             <template #trailing>
               <UPopover>
-                <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                <UButton
+                  color="neutral"
+                  variant="link"
+                  size="sm"
+                  icon="i-lucide-calendar"
+                  class="px-0"
+                />
                 <template #content>
                   <UCalendar v-model="editTargetDateModel" class="p-2" />
                 </template>
@@ -391,14 +404,18 @@ async function handleAdvanceStatus() {
 
         <!-- Part details edit -->
         <div>
-          <h5 class="text-xs font-bold text-muted uppercase tracking-wider mb-2">Detail Parts</h5>
+          <h5 class="text-xs font-bold text-muted uppercase tracking-wider mb-2">
+            Detail Parts
+          </h5>
           <div class="border border-default rounded-xl overflow-hidden divide-y divide-default">
             <div
               v-for="(detail, idx) in editState.details"
               :key="detail.part_id"
               class="p-3 bg-elevated/20"
             >
-              <p class="text-xs font-bold text-default truncate">{{ detail.label }}</p>
+              <p class="text-xs font-bold text-default truncate">
+                {{ detail.label }}
+              </p>
               <div class="flex gap-2 mt-2">
                 <UInput
                   v-model="editState.details[idx].qty"
@@ -456,7 +473,6 @@ async function handleAdvanceStatus() {
 
     <!-- ── VIEW MODE ───────────────────────────────────────────────────────── -->
     <div v-else class="flex-1 overflow-y-auto p-6 space-y-6">
-
       <!-- MDO Number Card -->
       <div class="p-5 rounded-2xl border border-default bg-elevated/20 relative overflow-hidden flex flex-col justify-center">
         <div class="absolute -right-16 -bottom-16 w-40 h-40 bg-primary/5 rounded-full blur-2xl" />
@@ -498,7 +514,9 @@ async function handleAdvanceStatus() {
 
       <!-- Metadata Grid -->
       <div class="space-y-4">
-        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">Informasi Pengiriman</h4>
+        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+          Informasi Pengiriman
+        </h4>
 
         <div class="grid grid-cols-2 gap-3">
           <!-- MPO -->
@@ -587,11 +605,15 @@ async function handleAdvanceStatus() {
         <div v-if="props.order.description || props.order.remarks" class="space-y-2">
           <div v-if="props.order.description" class="p-3 rounded-xl border border-default bg-elevated/40">
             <span class="text-[10px] text-muted font-semibold block mb-1">Deskripsi</span>
-            <p class="text-xs text-default leading-relaxed">{{ props.order.description }}</p>
+            <p class="text-xs text-default leading-relaxed">
+              {{ props.order.description }}
+            </p>
           </div>
           <div v-if="props.order.remarks" class="p-3 rounded-xl border border-default bg-elevated/40">
             <span class="text-[10px] text-muted font-semibold block mb-1">Catatan / Remarks</span>
-            <p class="text-xs text-default leading-relaxed">{{ props.order.remarks }}</p>
+            <p class="text-xs text-default leading-relaxed">
+              {{ props.order.remarks }}
+            </p>
           </div>
         </div>
 
@@ -607,7 +629,9 @@ async function handleAdvanceStatus() {
 
       <!-- Parts Detail Table -->
       <div class="space-y-3">
-        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">Detail Parts</h4>
+        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+          Detail Parts
+        </h4>
         <div class="border border-default rounded-xl overflow-hidden">
           <div class="divide-y divide-default bg-elevated/20">
             <div v-if="orderDetails.length === 0" class="p-4 text-center text-xs text-muted">
@@ -627,7 +651,9 @@ async function handleAdvanceStatus() {
                     No: {{ detail.part?.part_number || '-' }}
                     <span v-if="detail.part?.uom"> · {{ detail.part.uom.name }}</span>
                   </p>
-                  <p v-if="detail.notes" class="text-[10px] text-muted/70 italic">{{ detail.notes }}</p>
+                  <p v-if="detail.notes" class="text-[10px] text-muted/70 italic">
+                    {{ detail.notes }}
+                  </p>
                 </div>
                 <div class="text-right shrink-0">
                   <span class="text-[10px] text-muted block">Qty</span>

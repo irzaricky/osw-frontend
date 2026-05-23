@@ -205,7 +205,6 @@ const statusLabel = (status: string) => {
 
 <template>
   <div class="flex flex-col h-full bg-elevated/10">
-
     <!-- Breadcrumbs & Header -->
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0 bg-elevated/40">
       <Breadcrumbs :items="breadcrumbItems" />
@@ -231,10 +230,8 @@ const statusLabel = (status: string) => {
 
     <!-- Active State & Visual Shell -->
     <div class="flex-1 flex overflow-hidden">
-
       <!-- Left: Timeline Workspace -->
       <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-
         <!-- Filter Bar -->
         <div class="bg-elevated rounded-2xl p-4 border border-default flex flex-wrap gap-4 items-center justify-between shrink-0 shadow-sm">
           <div class="flex flex-wrap items-center gap-4">
@@ -256,7 +253,13 @@ const statusLabel = (status: string) => {
               <UInputDate v-model="selectedDateModel" class="w-44">
                 <template #trailing>
                   <UPopover>
-                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <UButton
+                      color="neutral"
+                      variant="link"
+                      size="sm"
+                      icon="i-lucide-calendar"
+                      class="px-0"
+                    />
                     <template #content>
                       <UCalendar v-model="selectedDateModel" class="p-2" />
                     </template>
@@ -279,7 +282,9 @@ const statusLabel = (status: string) => {
         >
           <UIcon name="i-lucide-alert-triangle" class="w-5 h-5 shrink-0 text-error-500 mt-0.5" />
           <div>
-            <h5 class="text-xs font-bold uppercase tracking-wider">Konflik Slot Dock Terdeteksi!</h5>
+            <h5 class="text-xs font-bold uppercase tracking-wider">
+              Konflik Slot Dock Terdeteksi!
+            </h5>
             <p class="text-xs mt-0.5 leading-relaxed">
               Terdapat MDO yang saling tumpang tindih pada Dock:
               <span class="font-bold font-mono">{{ conflictingDocksNames.join(', ') }}</span>.
@@ -290,7 +295,6 @@ const statusLabel = (status: string) => {
 
         <!-- Timeline Grid Board -->
         <div class="flex-1 bg-elevated border border-default rounded-3xl p-6 flex flex-col min-w-[700px] shadow-sm relative overflow-hidden">
-
           <!-- Loading Overlay -->
           <div v-if="loading && orders.length === 0" class="absolute inset-0 bg-elevated/60 backdrop-blur-sm z-50 flex items-center justify-center">
             <UIcon name="i-lucide-loader-2" class="w-10 h-10 animate-spin text-primary" />
@@ -302,7 +306,9 @@ const statusLabel = (status: string) => {
               <UIcon name="i-lucide-package-open" class="w-8 h-8 text-default" />
             </div>
             <div>
-              <h3 class="font-bold text-default text-lg">Belum Ada MDO</h3>
+              <h3 class="font-bold text-default text-lg">
+                Belum Ada MDO
+              </h3>
               <p class="text-xs text-muted mt-1">
                 Tidak ada delivery order yang dijadwalkan untuk tanggal ini.
               </p>
@@ -444,15 +450,24 @@ const statusLabel = (status: string) => {
                   <UIcon name="i-lucide-package" class="w-4 h-4 text-primary" />
                 </div>
                 <div>
-                  <p class="text-xs font-black text-default font-mono">{{ order.number }}</p>
-                  <p class="text-[10px] text-muted mt-0.5">MPO: {{ order.mpo?.number || '-' }} · Dock: {{ order.dock?.name || '-' }}</p>
+                  <p class="text-xs font-black text-default font-mono">
+                    {{ order.number }}
+                  </p>
+                  <p class="text-[10px] text-muted mt-0.5">
+                    MPO: {{ order.mpo?.number || '-' }} · Dock: {{ order.dock?.name || '-' }}
+                  </p>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <span v-if="order.target_time" class="text-[10px] font-semibold text-muted">
                   {{ (order.target_time || '').slice(0, 5) }}
                 </span>
-                <UBadge :color="statusColor(order.status)" variant="subtle" size="xs" class="rounded-full text-[10px]">
+                <UBadge
+                  :color="statusColor(order.status)"
+                  variant="subtle"
+                  size="xs"
+                  class="rounded-full text-[10px]"
+                >
                   {{ statusLabel(order.status) }}
                 </UBadge>
               </div>

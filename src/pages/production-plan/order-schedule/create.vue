@@ -62,8 +62,12 @@ function handleCancel() {
         @click="$router.back()"
       />
       <div>
-        <h1 class="text-2xl font-bold">Create Production Order</h1>
-        <p class="text-sm text-muted mt-0.5">Select an approved production plan and set the production schedule range.</p>
+        <h1 class="text-2xl font-bold">
+          Create Production Order
+        </h1>
+        <p class="text-sm text-muted mt-0.5">
+          Select an approved production plan and set the production schedule range.
+        </p>
       </div>
     </div>
 

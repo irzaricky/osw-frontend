@@ -51,7 +51,7 @@ function getCapacityLabel(bin?: WarehouseBin) {
     <table class="min-w-full text-sm">
       <thead>
         <tr class="bg-elevated/50">
-          <th class="p-2 border-b border-default w-12"></th>
+          <th class="p-2 border-b border-default w-12" />
           <th
             v-for="c in props.totalCols"
             :key="c"
@@ -74,12 +74,12 @@ function getCapacityLabel(bin?: WarehouseBin) {
             class="p-2 border-b border-default align-top"
           >
             <div
-                class="rounded-md border border-default p-2 min-h-20 cursor-pointer hover:bg-elevated/40"
-                :class="getBin(r, c)?.is_dedicated
-                  ? 'bg-primary-50/30 dark:bg-primary-950/30'
-                  : ''"
-                @click="getBin(r, c) && emit('clickBin', getBin(r, c)!)"
-              >
+              class="rounded-md border border-default p-2 min-h-20 cursor-pointer hover:bg-elevated/40"
+              :class="getBin(r, c)?.is_dedicated
+                ? 'bg-primary-50/30 dark:bg-primary-950/30'
+                : ''"
+              @click="getBin(r, c) && emit('clickBin', getBin(r, c)!)"
+            >
               <div class="font-semibold">
                 {{ getBin(r, c)?.bin_code || 'No Bin' }}
               </div>

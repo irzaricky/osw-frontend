@@ -55,7 +55,7 @@ function handleConfirm() {
         <p class="text-sm text-muted max-w-sm mx-auto leading-relaxed">
           {{
             props.description ||
-            'Please provide the reason for rejection.'
+              'Please provide the reason for rejection.'
           }}
         </p>
       </div>

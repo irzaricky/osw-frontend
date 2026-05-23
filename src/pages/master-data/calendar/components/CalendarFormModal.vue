@@ -99,7 +99,12 @@ function handleSave() {
           />
         </div>
         <div class="flex gap-3">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="close"
+          />
           <UButton
             color="primary"
             :label="mode === 'add' ? 'Save' : 'Update'"

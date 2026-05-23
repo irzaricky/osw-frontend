@@ -23,8 +23,12 @@ function getCategoryColor(category?: string) {
     <div class="space-y-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-sm text-muted">Warehouse Code</p>
-          <p class="text-lg font-bold">{{ warehouseLayout.warehouse?.warehouse_code || '-' }}</p>
+          <p class="text-sm text-muted">
+            Warehouse Code
+          </p>
+          <p class="text-lg font-bold">
+            {{ warehouseLayout.warehouse?.warehouse_code || '-' }}
+          </p>
         </div>
 
         <UBadge :color="getCategoryColor(warehouseLayout.warehouse?.category?.name)" variant="soft">
@@ -34,13 +38,21 @@ function getCategoryColor(category?: string) {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
-          <p class="text-muted">Warehouse Name</p>
-          <p class="font-semibold">{{ warehouseLayout.warehouse?.name || '-' }}</p>
+          <p class="text-muted">
+            Warehouse Name
+          </p>
+          <p class="font-semibold">
+            {{ warehouseLayout.warehouse?.name || '-' }}
+          </p>
         </div>
 
         <div>
-          <p class="text-muted">Total Area</p>
-          <p class="font-semibold">{{ warehouseLayout.total_area_count }}</p>
+          <p class="text-muted">
+            Total Area
+          </p>
+          <p class="font-semibold">
+            {{ warehouseLayout.total_area_count }}
+          </p>
         </div>
       </div>
 

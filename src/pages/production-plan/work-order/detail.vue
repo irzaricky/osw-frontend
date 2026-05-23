@@ -202,8 +202,15 @@ watch(
 
       <div v-else-if="!currentWO && !loading" class="flex flex-col items-center justify-center py-24 gap-4">
         <UIcon name="i-lucide-file-x-2" class="w-12 h-12 text-muted" />
-        <p class="text-sm text-muted">Work Order not found</p>
-        <UButton label="Back to List" color="neutral" variant="soft" @click="router.push('/work-order')" />
+        <p class="text-sm text-muted">
+          Work Order not found
+        </p>
+        <UButton
+          label="Back to List"
+          color="neutral"
+          variant="soft"
+          @click="router.push('/work-order')"
+        />
       </div>
 
       <div v-else-if="currentWO" class="space-y-6">
@@ -221,7 +228,9 @@ watch(
             />
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-2xl font-bold font-mono">{{ currentWO.wo_number }}</h1>
+                <h1 class="text-2xl font-bold font-mono">
+                  {{ currentWO.wo_number }}
+                </h1>
                 <UBadge
                   :label="WO_STATUS_LABEL[currentWO.status]"
                   :color="WO_STATUS_COLOR[currentWO.status]"
@@ -295,9 +304,9 @@ watch(
         <!-- Tabs -->
         <UTabs
           :items="[
-            { slot: 'stations'  as const, label: 'Process Stations', icon: 'i-lucide-layout-grid' },
-            { slot: 'progress'  as const, label: 'Progress History',  icon: 'i-lucide-trending-up' },
-            { slot: 'issues'    as const, label: 'Issues',             icon: 'i-lucide-alert-triangle' },
+            { slot: 'stations' as const, label: 'Process Stations', icon: 'i-lucide-layout-grid' },
+            { slot: 'progress' as const, label: 'Progress History', icon: 'i-lucide-trending-up' },
+            { slot: 'issues' as const, label: 'Issues', icon: 'i-lucide-alert-triangle' },
           ]"
           variant="link"
           class="w-full"

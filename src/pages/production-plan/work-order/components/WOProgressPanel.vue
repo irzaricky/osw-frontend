@@ -41,17 +41,27 @@ function fmtDateTime(d?: string | null) {
 
     <div v-else-if="progresses.length === 0" class="flex flex-col items-center justify-center py-10 text-center text-muted gap-2">
       <UIcon name="i-lucide-bar-chart-2" class="w-7 h-7" />
-      <p class="text-sm">No progress reported yet.</p>
+      <p class="text-sm">
+        No progress reported yet.
+      </p>
     </div>
 
     <div v-else class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-elevated border-b border-default">
           <tr>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Time</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Cumulative Qty</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Progress</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Reported By</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Time
+            </th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Cumulative Qty
+            </th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Progress
+            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Reported By
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-default">
@@ -60,7 +70,9 @@ function fmtDateTime(d?: string | null) {
             :key="p.id"
             class="hover:bg-elevated/50 transition-colors"
           >
-            <td class="px-4 py-3 text-muted">{{ fmtDateTime(p.progress_time) }}</td>
+            <td class="px-4 py-3 text-muted">
+              {{ fmtDateTime(p.progress_time) }}
+            </td>
             <td class="px-4 py-3 text-right font-mono font-semibold">
               {{ p.cumulative_qty.toLocaleString() }}
               <span class="text-xs text-muted font-normal"> / {{ plannedQty.toLocaleString() }}</span>
@@ -76,7 +88,9 @@ function fmtDateTime(d?: string | null) {
                 <span class="text-xs font-mono font-semibold">{{ p.progress_pct }}%</span>
               </div>
             </td>
-            <td class="px-4 py-3 text-muted">{{ p.reported_by }}</td>
+            <td class="px-4 py-3 text-muted">
+              {{ p.reported_by }}
+            </td>
           </tr>
         </tbody>
       </table>

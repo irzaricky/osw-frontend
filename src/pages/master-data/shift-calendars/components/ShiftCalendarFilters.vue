@@ -60,16 +60,40 @@ const selectedActive = computed({
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-      <USelectMenu v-model="selectedShift" :items="shiftItems" placeholder="Shift" class="w-44" clear />
-      <USelectMenu v-model="selectedLine" :items="lineItems" placeholder="Line" class="w-36" clear />
-      <USelectMenu v-model="selectedCalendarType" :items="calendarTypeItems" placeholder="Calendar Type" class="w-40" clear />
-      <USelectMenu v-model="selectedActive" :items="activeItems" placeholder="Status" class="w-32" clear />
-      <UInput
-        :model-value="search"
-        icon="i-lucide-search"
-        placeholder="Search calendars..."
-        class="w-64 ml-auto"
-        @update:model-value="emit('update:search', $event)"
-      />
+    <USelectMenu
+      v-model="selectedShift"
+      :items="shiftItems"
+      placeholder="Shift"
+      class="w-44"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedLine"
+      :items="lineItems"
+      placeholder="Line"
+      class="w-36"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedCalendarType"
+      :items="calendarTypeItems"
+      placeholder="Calendar Type"
+      class="w-40"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedActive"
+      :items="activeItems"
+      placeholder="Status"
+      class="w-32"
+      clear
+    />
+    <UInput
+      :model-value="search"
+      icon="i-lucide-search"
+      placeholder="Search calendars..."
+      class="w-64 ml-auto"
+      @update:model-value="emit('update:search', $event)"
+    />
   </div>
 </template>

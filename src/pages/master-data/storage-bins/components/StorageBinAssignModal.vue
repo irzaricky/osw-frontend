@@ -211,7 +211,12 @@ function handleClear() {
 
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
 
         <UButton
           v-if="props.bin?.is_dedicated || props.bin?.capacity"

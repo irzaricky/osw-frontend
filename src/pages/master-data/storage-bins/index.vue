@@ -265,7 +265,9 @@ onMounted(async () => {
     <Breadcrumbs :items="breadcrumbItems" />
 
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Storage Bin</h1>
+      <h1 class="text-2xl font-bold">
+        Storage Bin
+      </h1>
     </div>
 
     <StorageBinFilters

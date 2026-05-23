@@ -355,13 +355,11 @@ onMounted(async () => {
     v-if="!pageLoading && detail"
     class="p-6 space-y-6"
   >
-
     <Breadcrumbs
       :items="breadcrumbItems"
     />
 
     <div class="flex items-center gap-4">
-
       <UButton
         icon="i-lucide-arrow-left"
         color="neutral"
@@ -370,7 +368,6 @@ onMounted(async () => {
       />
 
       <div>
-
         <h1
           class="text-2xl font-bold"
         >
@@ -383,19 +380,14 @@ onMounted(async () => {
           Inspect and validate
           incoming material quality.
         </p>
-
       </div>
-
     </div>
 
     <UCard>
-
       <div
         class="flex items-start justify-between gap-4 mb-6"
       >
-
         <div>
-
           <h2
             class="text-lg font-semibold"
           >
@@ -411,15 +403,12 @@ onMounted(async () => {
               detail.part.part_name
             }}
           </p>
-
         </div>
-
       </div>
 
       <div
         class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6"
       >
-
         <div class="space-y-1">
           <div class="text-sm text-muted">
             MDO Number
@@ -459,8 +448,8 @@ onMounted(async () => {
             {{
               detail.target_date
                 ? new Date(
-                    detail.target_date
-                  ).toLocaleDateString()
+                  detail.target_date
+                ).toLocaleDateString()
                 : '-'
             }}
           </div>
@@ -475,19 +464,17 @@ onMounted(async () => {
             {{
               detail.arrived_at
                 ? new Date(
-                    detail.arrived_at
-                  ).toLocaleString()
+                  detail.arrived_at
+                ).toLocaleString()
                 : '-'
             }}
           </div>
         </div>
-
       </div>
 
       <div
         class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
       >
-
         <UCard>
           <div
             class="text-sm text-muted"
@@ -535,15 +522,12 @@ onMounted(async () => {
             }}
           </div>
         </UCard>
-
       </div>
 
       <div class="mb-6 space-y-2">
-
         <div
           class="flex items-center justify-between"
         >
-
           <div
             class="text-sm font-medium"
           >
@@ -557,7 +541,6 @@ onMounted(async () => {
               progressPercentage
             }}% Completed
           </div>
-
         </div>
 
         <UProgress
@@ -569,13 +552,10 @@ onMounted(async () => {
             progressColor
           "
         />
-
       </div>
 
       <div class="mb-6">
-
         <div class="flex gap-3">
-
           <UButton
             color="neutral"
             variant="soft"
@@ -627,15 +607,12 @@ onMounted(async () => {
           >
             Add Label
           </UButton>
-
         </div>
-
       </div>
 
       <div
         class="max-h-[400px] overflow-auto"
       >
-
         <UTable
           :data="
             detail.labels || []
@@ -643,13 +620,11 @@ onMounted(async () => {
 
           :columns="columns"
         />
-
       </div>
 
       <div
         class="sticky bottom-0 bg-default pt-4 mt-6 flex justify-end"
       >
-
         <UButton
           color="warning"
 
@@ -673,9 +648,7 @@ onMounted(async () => {
               : 'Submit Quality Checking'
           }}
         </UButton>
-
       </div>
-
     </UCard>
 
     <QualityDefectFormModal
@@ -735,7 +708,6 @@ onMounted(async () => {
         confirmDialog.action?.()
       "
     />
-
   </div>
 
   <div

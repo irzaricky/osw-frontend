@@ -107,7 +107,9 @@ watch(() => props.dockUtilization, (newVal) => {
     <template #header>
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="font-semibold text-base">Utilisasi Loading Dock</h3>
+          <h3 class="font-semibold text-base">
+            Utilisasi Loading Dock
+          </h3>
           <p class="text-xs text-muted">
             Tingkat occupancy loading dock berdasarkan jam operasional harian (08:00 - 18:00 WIB).
           </p>
@@ -155,7 +157,9 @@ watch(() => props.dockUtilization, (newVal) => {
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-anchor" class="w-5 h-5 text-primary" />
             <div>
-              <h4 class="font-bold text-sm text-default-primary">{{ dock.name }}</h4>
+              <h4 class="font-bold text-sm text-default-primary">
+                {{ dock.name }}
+              </h4>
               <p class="text-xs text-muted">
                 Total Terjadwal: {{ dock.plan_count }} Rencana Pengiriman (SDP)
               </p>
@@ -163,7 +167,9 @@ watch(() => props.dockUtilization, (newVal) => {
           </div>
           <div class="text-right">
             <span class="text-[10px] uppercase font-bold tracking-wider text-muted">Akumulasi Jam</span>
-            <p class="text-xs font-semibold text-default-primary">{{ dock.total_hours.toFixed(1) }} jam total</p>
+            <p class="text-xs font-semibold text-default-primary">
+              {{ dock.total_hours.toFixed(1) }} jam total
+            </p>
           </div>
         </div>
 
@@ -237,12 +243,24 @@ watch(() => props.dockUtilization, (newVal) => {
 
               <!-- Interactive Timeline Hour axis guide ruler below -->
               <div class="flex justify-between text-[10px] text-muted-foreground px-2 font-mono select-none">
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>08:00</span></div>
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>10:00</span></div>
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>12:00</span></div>
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>14:00</span></div>
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>16:00</span></div>
-                <div class="flex flex-col items-center"><span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>18:00</span></div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>08:00</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>10:00</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>12:00</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>14:00</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>16:00</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="h-1.5 w-[1px] bg-zinc-300 dark:bg-zinc-800 mb-1" /><span>18:00</span>
+                </div>
               </div>
 
               <!-- Individual Schedule List Details -->
@@ -260,7 +278,12 @@ watch(() => props.dockUtilization, (newVal) => {
                   <div class="flex items-center gap-2 text-muted-foreground font-mono">
                     <UIcon name="i-lucide-clock" class="w-3.5 h-3.5" />
                     <span>{{ plan.time_start.slice(0,5) }} - {{ plan.time_end.slice(0,5) }} WIB</span>
-                    <UBadge size="xs" variant="subtle" color="neutral" class="ml-1 font-sans">
+                    <UBadge
+                      size="xs"
+                      variant="subtle"
+                      color="neutral"
+                      class="ml-1 font-sans"
+                    >
                       {{ plan.hours }} jam
                     </UBadge>
                   </div>

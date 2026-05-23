@@ -280,7 +280,6 @@ const conflictingDocksNames = computed(() => {
     <div class="flex-1 flex overflow-hidden">
       <!-- Left side: Timeline Scheduler Workspace -->
       <div class="flex-1 flex flex-col overflow-y-auto p-6 space-y-6">
-        
         <!-- Controls Filter bar -->
         <div class="bg-elevated rounded-2xl p-4 border border-default flex flex-wrap gap-4 items-center justify-between shrink-0 shadow-sm">
           <div class="flex flex-wrap items-center gap-4">
@@ -303,7 +302,13 @@ const conflictingDocksNames = computed(() => {
               <UInputDate v-model="selectedDateModel" class="w-44">
                 <template #trailing>
                   <UPopover>
-                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <UButton
+                      color="neutral"
+                      variant="link"
+                      size="sm"
+                      icon="i-lucide-calendar"
+                      class="px-0"
+                    />
                     <template #content>
                       <UCalendar
                         v-model="selectedDateModel"
@@ -327,7 +332,9 @@ const conflictingDocksNames = computed(() => {
         <div v-if="conflictingDocksNames.length > 0" class="bg-error-500/10 border border-error-500/30 text-error-700 dark:text-error-300 px-4 py-3 rounded-2xl flex items-start gap-2.5 shrink-0 shadow-sm">
           <UIcon name="i-lucide-alert-triangle" class="w-5 h-5 shrink-0 text-error-500 mt-0.5" />
           <div>
-            <h5 class="text-xs font-bold uppercase tracking-wider">Overlap Conflict Detected!</h5>
+            <h5 class="text-xs font-bold uppercase tracking-wider">
+              Overlap Conflict Detected!
+            </h5>
             <p class="text-xs mt-0.5 leading-relaxed">
               Multiple shipments overlap on Dock slot(s): <span class="font-bold font-mono">{{ conflictingDocksNames.join(', ') }}</span>. Overlapping blocks are highlighted below in pulsing red.
             </p>
@@ -336,7 +343,6 @@ const conflictingDocksNames = computed(() => {
 
         <!-- Timeline Grid Board -->
         <div class="flex-1 bg-elevated border border-default rounded-3xl p-6 flex flex-col min-w-[700px] shadow-sm relative overflow-hidden">
-          
           <!-- Loading State Indicator Overlay -->
           <div v-if="loading && plans.length === 0" class="absolute inset-0 bg-elevated/60 backdrop-blur-sm z-50 flex items-center justify-center">
             <UIcon name="i-lucide-loader-2" class="w-10 h-10 animate-spin text-primary" />
@@ -394,7 +400,6 @@ const conflictingDocksNames = computed(() => {
 
                 <!-- Relative Timeline Bar Container -->
                 <div class="flex-1 h-full py-3 relative min-h-[64px]">
-                  
                   <!-- Grid vertical background hour slot indicators -->
                   <div class="grid grid-cols-10 h-full w-full absolute top-0 left-0 pointer-events-none z-0 pr-4">
                     <div
@@ -442,7 +447,6 @@ const conflictingDocksNames = computed(() => {
                       </div>
                     </div>
                   </div>
-
                 </div>
               </div>
             </div>
@@ -462,7 +466,6 @@ const conflictingDocksNames = computed(() => {
                 <span>Overlap Conflict</span>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -486,75 +489,95 @@ const conflictingDocksNames = computed(() => {
 
           <div v-show="isMasterListOpen" class="space-y-4">
             <div class="flex items-center gap-3">
-              <UInput type="date" size="sm" v-model="mlStartDate" />
+              <UInput v-model="mlStartDate" type="date" size="sm" />
               <span class="text-xs text-muted">to</span>
-              <UInput type="date" size="sm" v-model="mlEndDate" />
+              <UInput v-model="mlEndDate" type="date" size="sm" />
             </div>
             <div class="overflow-x-auto border border-default rounded-2xl">
               <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="border-b border-default text-muted-foreground bg-default/40 font-bold">
-                  <th class="p-3">DP Number</th>
-                  <th class="p-3">Scheduled Date</th>
-                  <th class="p-3">Time Start</th>
-                  <th class="p-3">Time End</th>
-                  <th class="p-3">Destination</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-default/40">
-                <tr
-                  v-for="plan in filteredMasterList"
-                  :key="plan.id"
-                  class="hover:bg-default/20 transition-colors cursor-pointer"
-                  :class="selectedPlanId === plan.id ? 'bg-primary/5 font-semibold text-primary' : ''"
-                  @click="selectPlan(plan.id)"
-                >
-                  <td class="p-3 font-mono font-bold">{{ plan.dp_number }}</td>
-                  <td class="p-3">{{ plan.scheduled_date.split('T')[0] }}</td>
-                  <td class="p-3">{{ plan.time_start.slice(0, 5) }}</td>
-                  <td class="p-3">{{ plan.time_end.slice(0, 5) }}</td>
-                  <td class="p-3">{{ plan.destination }}</td>
-                </tr>
-                <tr v-if="filteredMasterList.length === 0">
-                  <td colspan="5" class="p-4 text-center text-muted">
-                    No active plans for this date range/warehouse.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                <thead>
+                  <tr class="border-b border-default text-muted-foreground bg-default/40 font-bold">
+                    <th class="p-3">
+                      DP Number
+                    </th>
+                    <th class="p-3">
+                      Scheduled Date
+                    </th>
+                    <th class="p-3">
+                      Time Start
+                    </th>
+                    <th class="p-3">
+                      Time End
+                    </th>
+                    <th class="p-3">
+                      Destination
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-default/40">
+                  <tr
+                    v-for="plan in filteredMasterList"
+                    :key="plan.id"
+                    class="hover:bg-default/20 transition-colors cursor-pointer"
+                    :class="selectedPlanId === plan.id ? 'bg-primary/5 font-semibold text-primary' : ''"
+                    @click="selectPlan(plan.id)"
+                  >
+                    <td class="p-3 font-mono font-bold">
+                      {{ plan.dp_number }}
+                    </td>
+                    <td class="p-3">
+                      {{ plan.scheduled_date.split('T')[0] }}
+                    </td>
+                    <td class="p-3">
+                      {{ plan.time_start.slice(0, 5) }}
+                    </td>
+                    <td class="p-3">
+                      {{ plan.time_end.slice(0, 5) }}
+                    </td>
+                    <td class="p-3">
+                      {{ plan.destination }}
+                    </td>
+                  </tr>
+                  <tr v-if="filteredMasterList.length === 0">
+                    <td colspan="5" class="p-4 text-center text-muted">
+                      No active plans for this date range/warehouse.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
+        <!-- Right side: Master-Detail Panel Info -->
+        <div v-if="selectedPlanId" class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
+          <SdpDetailPanel
+            :plan="selectedPlan"
+            :loading="loading"
+            @close="selectedPlanId = null; store.detail = null"
+            @delete="handleDeletePlan"
+            @refresh="loadPlans(); selectPlan(selectedPlanId!)"
+          />
+        </div>
       </div>
 
-      <!-- Right side: Master-Detail Panel Info -->
-      <div v-if="selectedPlanId" class="w-[400px] shrink-0 border-l border-default bg-elevated/40 h-full">
-        <SdpDetailPanel
-          :plan="selectedPlan"
-          :loading="loading"
-          @close="selectedPlanId = null; store.detail = null"
-          @delete="handleDeletePlan"
-          @refresh="loadPlans(); selectPlan(selectedPlanId!)"
-        />
-      </div>
+      <!-- Modals -->
+      <SdpAddModal
+        v-model:open="openAddModal"
+        :loading="createLoading"
+        :preset-spo-id="presetSpoId"
+        @save="handleSavePlan"
+      />
+
+      <!-- Confirm Dialog -->
+      <ConfirmDialog
+        v-model:open="confirmDialog.open"
+        :title="confirmDialog.title"
+        :description="confirmDialog.description"
+        confirm-label="Delete"
+        :loading="loading"
+        @confirm="executeDeletePlan"
+      />
     </div>
-
-    <!-- Modals -->
-    <SdpAddModal
-      v-model:open="openAddModal"
-      :loading="createLoading"
-      :preset-spo-id="presetSpoId"
-      @save="handleSavePlan"
-    />
-
-    <!-- Confirm Dialog -->
-    <ConfirmDialog
-      v-model:open="confirmDialog.open"
-      :title="confirmDialog.title"
-      :description="confirmDialog.description"
-      confirm-label="Delete"
-      :loading="loading"
-      @confirm="executeDeletePlan"
-    />
   </div>
 </template>

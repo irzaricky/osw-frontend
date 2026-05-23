@@ -47,15 +47,33 @@ watch(
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left">
-            <th class="p-3">Part Number</th>
-            <th class="p-3">Part Name</th>
-            <th class="p-3">Category</th>
-            <th class="p-3">Current</th>
-            <th class="p-3">Safety</th>
-            <th class="p-3">Coverage</th>
-            <th class="p-3">Status</th>
-            <th class="p-3">Area</th>
-            <th class="p-3">Aging</th>
+            <th class="p-3">
+              Part Number
+            </th>
+            <th class="p-3">
+              Part Name
+            </th>
+            <th class="p-3">
+              Category
+            </th>
+            <th class="p-3">
+              Current
+            </th>
+            <th class="p-3">
+              Safety
+            </th>
+            <th class="p-3">
+              Coverage
+            </th>
+            <th class="p-3">
+              Status
+            </th>
+            <th class="p-3">
+              Area
+            </th>
+            <th class="p-3">
+              Aging
+            </th>
           </tr>
         </thead>
 

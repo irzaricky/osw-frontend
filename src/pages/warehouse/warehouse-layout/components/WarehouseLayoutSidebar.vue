@@ -259,7 +259,7 @@ function deleteArea() {
         <p class="font-semibold">
           {{
             layout.warehouse?.category?.name ||
-            '-'
+              '-'
           }}
         </p>
       </div>
@@ -396,8 +396,8 @@ function deleteArea() {
             size="sm"
             variant="soft"
             label="Add"
-            @click="addSpacing"
             :disabled="!state.area_id"
+            @click="addSpacing"
           />
         </div>
 

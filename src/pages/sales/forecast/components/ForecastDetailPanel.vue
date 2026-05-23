@@ -774,8 +774,7 @@ onMounted(() => {
           <div
             v-if="parts.length > 0"
             class="flex items-center gap-2 p-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-          >
-          </div>
+          />
         </div>
 
         <!-- Add Part -->

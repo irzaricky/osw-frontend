@@ -371,37 +371,51 @@ onMounted(async () => {
     <Breadcrumbs :items="breadcrumbItems" />
 
     <div class="flex justify-between items-center">
-      <h1 class="text-2xl font-bold">Warehouse Area Management</h1>
+      <h1 class="text-2xl font-bold">
+        Warehouse Area Management
+      </h1>
     </div>
 
     <!-- FILTER -->
     <div class="flex flex-wrap items-center gap-3">
-    <USelectMenu
-      v-model="filters.warehouse"
-      :items="warehouseItems"
-      placeholder="Filter by Warehouse"
-      class="w-full md:w-48"
-      clear
-    />
+      <USelectMenu
+        v-model="filters.warehouse"
+        :items="warehouseItems"
+        placeholder="Filter by Warehouse"
+        class="w-full md:w-48"
+        clear
+      />
     
-    <UInput 
-      v-model="search" 
-      icon="i-lucide-search"
-      placeholder="Search area code or name..."
-      class="w-full md:w-64 ml-auto"
-    />
-  </div>
+      <UInput 
+        v-model="search" 
+        icon="i-lucide-search"
+        placeholder="Search area code or name..."
+        class="w-full md:w-64 ml-auto"
+      />
+    </div>
 
     <!-- ACTION -->
     <div class="flex gap-2">
-      <UButton icon="i-lucide-plus" color="primary" label="Add Area" @click="openAddModal" />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        label="Add Area"
+        @click="openAddModal"
+      />
     </div>
 
     <WarehouseAreaBulkAction :count="selectedCount" @delete="handleBulkDelete" />
 
     <!-- TABLE -->
-    <UTable ref="table" v-model:row-selection="rowSelection" v-model:expanded="expanded" :data="areas"
-      :columns="columns" :loading="loading" class="w-full">
+    <UTable
+      ref="table"
+      v-model:row-selection="rowSelection"
+      v-model:expanded="expanded"
+      :data="areas"
+      :columns="columns"
+      :loading="loading"
+      class="w-full"
+    >
       <template #expanded="{ row }">
         <div class="p-4 bg-white dark:bg-slate-950 border-b border-default">
           <div class="mb-3 text-sm font-semibold">
@@ -419,17 +433,33 @@ onMounted(async () => {
         {{ selectedCount }} of {{ meta.total }} row(s) selected.
       </div>
 
-      <UPagination v-model:page="meta.page" :total="meta.total" :items-per-page="meta.limit" @update:page="fetchData" />
+      <UPagination
+        v-model:page="meta.page"
+        :total="meta.total"
+        :items-per-page="meta.limit"
+        @update:page="fetchData"
+      />
     </div>
 
     <!-- MODALS -->
-    <WarehouseAreaFormModal v-model:open="isModalOpen" :mode="modalMode" :area="currentArea" :warehouses="warehouses"
-      :loading="loading" @save="handleSave" />
+    <WarehouseAreaFormModal
+      v-model:open="isModalOpen"
+      :mode="modalMode"
+      :area="currentArea"
+      :warehouses="warehouses"
+      :loading="loading"
+      @save="handleSave"
+    />
 
     <WarehouseAreaPrintModal v-model:open="isPrintOpen" :area="currentArea" />
 
-    <ConfirmDialog v-model:open="confirmDialog.open" :title="confirmDialog.title"
-      :description="confirmDialog.description" confirm-label="Delete" :loading="loading"
-      @confirm="confirmDialog.action?.()" />
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Delete"
+      :loading="loading"
+      @confirm="confirmDialog.action?.()"
+    />
   </div>
 </template>

@@ -211,7 +211,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="!pageLoading && detail" class="p-6 space-y-6" >
+  <div v-if="!pageLoading && detail" class="p-6 space-y-6">
     <Breadcrumbs :items="breadcrumbItems" />
 
     <div class="flex items-center gap-4">
@@ -286,8 +286,8 @@ onMounted(() => {
             {{
               detail.target_date
                 ? new Date(
-                    detail.target_date
-                  ).toLocaleDateString()
+                  detail.target_date
+                ).toLocaleDateString()
                 : '-'
             }}
           </div>
@@ -302,8 +302,8 @@ onMounted(() => {
             {{
               detail.arrived_at
                 ? new Date(
-                    detail.arrived_at
-                  ).toLocaleString()
+                  detail.arrived_at
+                ).toLocaleString()
                 : '-'
             }}
           </div>
@@ -318,7 +318,6 @@ onMounted(() => {
             {{ detail.part.qty_per_kanban || '-' }}
           </div>
         </div>
-
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 text-center">
@@ -376,8 +375,8 @@ onMounted(() => {
             color="neutral"
             variant="soft"
             icon="i-lucide-camera"
-            @click="scannerModal.open = true"
             :disabled="isSubmitted"
+            @click="scannerModal.open = true"
           />
 
           <UInput
@@ -385,15 +384,15 @@ onMounted(() => {
             placeholder="Scan/Input Label Number"
             icon="i-lucide-scan-line"
             class="flex-1"
-            @keyup.enter="handleScan"
             :disabled="isSubmitted"
+            @keyup.enter="handleScan"
           />
 
           <UButton
             color="primary"
             :loading="scanLoading"
-            @click="handleScan"
             :disabled="isSubmitted"
+            @click="handleScan"
           >
             Add Label
           </UButton>
@@ -412,8 +411,8 @@ onMounted(() => {
           color="warning"
           icon="i-lucide-check-check"
           :loading="submitLoading"
-          @click="handleSubmitChecking"
           :disabled="isSubmitted"
+          @click="handleSubmitChecking"
         >
           {{ isSubmitted ? 'Already Submitted' : 'Submit Quantity Checking' }}
         </UButton>

@@ -73,7 +73,6 @@ function close() {
         class="space-y-4"
         @submit="onSubmit"
       >
-
         <UFormField label="Label Number">
           <UInput :model-value="props.label?.label_number || '-'" disabled class="w-full" />
         </UFormField>
@@ -91,7 +90,6 @@ function close() {
             class="w-full"
           />
         </UFormField>
-
       </UForm>
     </template>
 

@@ -47,8 +47,20 @@ function onConfirm() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" :disabled="props.loading" @click="emit('update:open', false)" />
-        <UButton color="success" variant="solid" label="Approve" :loading="props.loading" @click="onConfirm" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          label="Cancel"
+          :disabled="props.loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          color="success"
+          variant="solid"
+          label="Approve"
+          :loading="props.loading"
+          @click="onConfirm"
+        />
       </div>
     </template>
   </UModal>

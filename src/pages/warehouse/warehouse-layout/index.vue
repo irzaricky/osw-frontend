@@ -174,7 +174,12 @@ onMounted(async () => {
         Total {{ meta.total }} warehouse layout(s).
       </div>
 
-      <UPagination v-model:page="meta.page" :total="meta.total" :items-per-page="meta.limit" @update:page="fetchData" />
+      <UPagination
+        v-model:page="meta.page"
+        :total="meta.total"
+        :items-per-page="meta.limit"
+        @update:page="fetchData"
+      />
     </div>
 
     <WarehouseLayoutFormModal

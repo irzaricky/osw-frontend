@@ -34,7 +34,9 @@ function setUomId(v: number | null) { emit('update:selectedUomId', v) }
     <!-- Card header -->
     <div class="flex items-center gap-2 px-5 py-4 border-b border-default">
       <UIcon name="i-lucide-file-text" class="w-4 h-4 text-primary" />
-      <h2 class="font-semibold text-sm">BOM Information</h2>
+      <h2 class="font-semibold text-sm">
+        BOM Information
+      </h2>
 
       <!-- Create: step indicator -->
       <!-- <div v-if="isCreate" class="ml-auto flex items-center gap-2 text-xs text-muted">
@@ -74,7 +76,11 @@ function setUomId(v: number | null) { emit('update:selectedUomId', v) }
             </div>
             <UButton
               v-if="createStep === 1"
-              icon="i-lucide-x" color="neutral" variant="ghost" size="xs" type="button"
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              type="button"
               @click="emit('update:selectedParentPart', null); emit('update:partSearch', '')"
             />
           </div>
@@ -105,7 +111,9 @@ function setUomId(v: number | null) { emit('update:selectedUomId', v) }
                 <span v-if="part.uom" class="ml-2 text-xs text-muted">({{ part.uom.code }})</span>
               </button>
             </div>
-            <p v-else-if="partSearch" class="text-xs text-muted px-1">No parts found.</p>
+            <p v-else-if="partSearch" class="text-xs text-muted px-1">
+              No parts found.
+            </p>
           </template>
         </div>
       </UFormField>

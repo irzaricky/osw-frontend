@@ -97,14 +97,25 @@ function close() {
 </script>
 
 <template>
-  <UModal :open="props.open" :title="props.mode === 'add' ? 'Add Warehouse Area' : 'Edit Warehouse Area'" :description="props.mode === 'add'
-    ? 'Add a new warehouse area to the system'
-    : 'Update warehouse area details'" @update:open="emit('update:open', $event)">
+  <UModal
+    :open="props.open"
+    :title="props.mode === 'add' ? 'Add Warehouse Area' : 'Edit Warehouse Area'"
+    :description="props.mode === 'add'
+      ? 'Add a new warehouse area to the system'
+      : 'Update warehouse area details'"
+    @update:open="emit('update:open', $event)"
+  >
     <template #body>
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Warehouse" name="warehouse_id" required>
-          <USelectMenu v-model="selectedWarehouse" :items="warehouseItems" placeholder="Select warehouse" class="w-full"
-            clear searchable />
+          <USelectMenu
+            v-model="selectedWarehouse"
+            :items="warehouseItems"
+            placeholder="Select warehouse"
+            class="w-full"
+            clear
+            searchable
+          />
         </UFormField>
 
         <UFormField label="Area Code" name="area_code" required>
@@ -117,11 +128,21 @@ function close() {
 
         <div class="grid grid-cols-2 gap-3">
           <UFormField label="Total Cols" name="total_cols" required>
-            <UInput v-model.number="form.total_cols" type="number" min="1" class="w-full" />
+            <UInput
+              v-model.number="form.total_cols"
+              type="number"
+              min="1"
+              class="w-full"
+            />
           </UFormField>
 
           <UFormField label="Total Rows" name="total_rows" required>
-            <UInput v-model.number="form.total_rows" type="number" min="1" class="w-full" />
+            <UInput
+              v-model.number="form.total_rows"
+              type="number"
+              min="1"
+              class="w-full"
+            />
           </UFormField>
         </div>
       </form>
@@ -129,9 +150,18 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" :label="props.mode === 'add' ? 'Create' : 'Update'" :loading="props.loading"
-          @click="handleSave" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          :label="props.mode === 'add' ? 'Create' : 'Update'"
+          :loading="props.loading"
+          @click="handleSave"
+        />
       </div>
     </template>
   </UModal>

@@ -313,7 +313,12 @@ onMounted(() => {
                 :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                 class="w-4 h-4 text-muted transition-transform"
               />
-              <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs" class="capitalize">
+              <UBadge
+                :color="getStatusColor(statusGroup.status)"
+                variant="subtle"
+                size="xs"
+                class="capitalize"
+              >
                 {{ statusGroup.status }}
               </UBadge>
               <span class="ml-auto text-xs text-muted shrink-0">{{ statusGroup.items.length }} item(s)</span>

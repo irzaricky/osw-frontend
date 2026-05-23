@@ -36,8 +36,11 @@ function formatPartCategory(category?: string) {
         </div>
 
         <div class="space-y-2 border-t border-default pt-3">
-          <div v-for="item in inventoryValue.by_category" :key="item.part_category"
-            class="flex items-center justify-between text-sm">
+          <div
+            v-for="item in inventoryValue.by_category"
+            :key="item.part_category"
+            class="flex items-center justify-between text-sm"
+          >
             <span class="text-muted">
               {{ formatPartCategory(item.part_category) }}
             </span>

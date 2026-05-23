@@ -28,8 +28,20 @@ const emit = defineEmits<{
         <UIcon name="i-lucide-clipboard-list" class="w-4 h-4 text-primary" />
         Plan Info
       </h2>
-      <UBadge v-if="isCreate" label="New" color="primary" variant="soft" size="sm" />
-      <UBadge v-else-if="isDetail" label="Edit Mode" color="warning" variant="soft" size="sm" />
+      <UBadge
+        v-if="isCreate"
+        label="New"
+        color="primary"
+        variant="soft"
+        size="sm"
+      />
+      <UBadge
+        v-else-if="isDetail"
+        label="Edit Mode"
+        color="warning"
+        variant="soft"
+        size="sm"
+      />
     </div>
 
     <!-- Info bar (detail/edit mode only) -->
@@ -38,27 +50,49 @@ const emit = defineEmits<{
       class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 divide-x divide-default border-b border-default"
     >
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Plan Number</p>
-        <p class="text-sm font-semibold font-mono">{{ currentPlan.plan_number }}</p>
+        <p class="text-xs text-muted">
+          Plan Number
+        </p>
+        <p class="text-sm font-semibold font-mono">
+          {{ currentPlan.plan_number }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Earliest Delivery</p>
-        <p class="text-sm font-semibold">{{ fmtDate(currentPlan.earliest_delivery_date) }}</p>
+        <p class="text-xs text-muted">
+          Earliest Delivery
+        </p>
+        <p class="text-sm font-semibold">
+          {{ fmtDate(currentPlan.earliest_delivery_date) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Latest Delivery</p>
-        <p class="text-sm font-semibold">{{ fmtDate(currentPlan.latest_delivery_date) }}</p>
+        <p class="text-xs text-muted">
+          Latest Delivery
+        </p>
+        <p class="text-sm font-semibold">
+          {{ fmtDate(currentPlan.latest_delivery_date) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Product</p>
-        <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_products) }}</p>
+        <p class="text-xs text-muted">
+          Total Product
+        </p>
+        <p class="text-sm font-semibold">
+          {{ fmtNum(currentPlan.total_products) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Requested Qty</p>
-        <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_qty_request) }}</p>
+        <p class="text-xs text-muted">
+          Total Requested Qty
+        </p>
+        <p class="text-sm font-semibold">
+          {{ fmtNum(currentPlan.total_qty_request) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Available Qty</p>
+        <p class="text-xs text-muted">
+          Total Available Qty
+        </p>
         <p
           class="text-sm font-semibold"
           :class="{

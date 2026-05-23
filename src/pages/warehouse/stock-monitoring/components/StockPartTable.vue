@@ -162,10 +162,16 @@ const columns = [
       </div>
     </template>
 
-    <UTable v-model:expanded="expanded" :data="loading ? [] : props.parts" :columns="columns" :loading="loading"
-      class="w-full" :ui="{
+    <UTable
+      v-model:expanded="expanded"
+      :data="loading ? [] : props.parts"
+      :columns="columns"
+      :loading="loading"
+      class="w-full"
+      :ui="{
         tbody: '[&>tr[data-low-stock=true]]:bg-error/10 [&>tr[data-aging=true]]:bg-warning/10'
-      }">
+      }"
+    >
       <template #expanded="{ row }">
         <div class="p-4 bg-elevated/50 border-b border-default">
           <div class="mb-3">
@@ -181,33 +187,59 @@ const columns = [
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-default text-left">
-                  <th class="p-2">FIFO</th>
-                  <th class="p-2">Label Number</th>
-                  <th class="p-2">Bin</th>
-                  <th class="p-2">Area</th>
-                  <th class="p-2">Placed By</th>
-                  <th class="p-2">Qty / Kanban</th>
-                  <th class="p-2">Placement Date</th>
-
+                  <th class="p-2">
+                    FIFO
+                  </th>
+                  <th class="p-2">
+                    Label Number
+                  </th>
+                  <th class="p-2">
+                    Bin
+                  </th>
+                  <th class="p-2">
+                    Area
+                  </th>
+                  <th class="p-2">
+                    Placed By
+                  </th>
+                  <th class="p-2">
+                    Qty / Kanban
+                  </th>
+                  <th class="p-2">
+                    Placement Date
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr v-for="(label, index) in labelsMap[row.original.part_number] || []" :key="label.stock_id"
-                  class="border-b border-default">
+                <tr
+                  v-for="(label, index) in labelsMap[row.original.part_number] || []"
+                  :key="label.stock_id"
+                  class="border-b border-default"
+                >
                   <td class="p-2">
                     <UBadge size="sm" variant="soft" :color="index === 0 ? 'success' : 'neutral'">
                       #{{ index + 1 }}
                     </UBadge>
                   </td>
-                  <td class="p-2">{{ label.label_number }}</td>
-                  <td class="p-2">{{ label.bin_code }}</td>
-                  <td class="p-2">{{ label.warehouse_area || '-' }}</td>
+                  <td class="p-2">
+                    {{ label.label_number }}
+                  </td>
+                  <td class="p-2">
+                    {{ label.bin_code }}
+                  </td>
+                  <td class="p-2">
+                    {{ label.warehouse_area || '-' }}
+                  </td>
                   <td class="p-2">
                     {{ label.placed_by || '-' }}
                   </td>
-                  <td class="p-2">{{ label.qty_per_kanban }}</td>
-                  <td class="p-2">{{ formatDate(label.placement_date) }}</td>
+                  <td class="p-2">
+                    {{ label.qty_per_kanban }}
+                  </td>
+                  <td class="p-2">
+                    {{ formatDate(label.placement_date) }}
+                  </td>
                 </tr>
 
                 <tr v-if="!(labelsMap[row.original.part_number] || []).length">

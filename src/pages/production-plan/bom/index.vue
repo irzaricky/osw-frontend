@@ -178,7 +178,9 @@ onMounted(() => {
         <!-- Page header -->
         <div class="flex items-start justify-between gap-4">
           <div>
-            <h1 class="text-2xl font-bold">Bill of Materials</h1>
+            <h1 class="text-2xl font-bold">
+              Bill of Materials
+            </h1>
             <p class="text-sm text-muted mt-0.5">
               Manage component structures for production
             </p>

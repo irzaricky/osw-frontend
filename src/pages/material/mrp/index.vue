@@ -548,7 +548,12 @@ onMounted(() => {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isBulkReviewOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isBulkReviewOpen = false"
+          />
           <UButton
             :color="bulkReviewForm.action === 'approve' ? 'success' : 'error'"
             :label="bulkReviewForm.action === 'approve' ? 'Approve All' : 'Reject All'"

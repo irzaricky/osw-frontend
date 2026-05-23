@@ -98,9 +98,7 @@ function close() {
       )
     "
   >
-
     <template #body>
-
       <UForm
         ref="formRef"
 
@@ -112,7 +110,6 @@ function close() {
 
         @submit="onSubmit"
       >
-
         <UFormField
           label="PO Number"
         >
@@ -120,7 +117,7 @@ function close() {
             :model-value="
               props.receipt
                 ?.po_number ||
-              '-'
+                '-'
             "
 
             disabled
@@ -136,7 +133,7 @@ function close() {
             :model-value="
               props.receipt
                 ?.do_number ||
-              '-'
+                '-'
             "
 
             disabled
@@ -161,17 +158,13 @@ function close() {
             class="w-full"
           />
         </UFormField>
-
       </UForm>
-
     </template>
 
     <template #footer>
-
       <div
         class="flex justify-end gap-2 w-full"
       >
-
         <UButton
           color="neutral"
           variant="ghost"
@@ -195,10 +188,7 @@ function close() {
             submitForm
           "
         />
-
       </div>
-
     </template>
-
   </UModal>
 </template>

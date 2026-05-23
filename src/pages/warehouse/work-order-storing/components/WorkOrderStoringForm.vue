@@ -510,22 +510,45 @@ function onSubmit(event: FormSubmitEvent<any>) {
 
 <template>
   <div class="space-y-6">
-
-    <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" @error="onError" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-      <UFormField label="Work Order Number" name="wo_number" class="md:col-span-3" help="Generated automatically by the system after saving">
+    <UForm
+      ref="formRef"
+      :schema="schema"
+      :state="state"
+      class="grid grid-cols-1 md:grid-cols-3 gap-4"
+      @submit="onSubmit"
+      @error="onError"
+    >
+      <UFormField
+        label="Work Order Number"
+        name="wo_number"
+        class="md:col-span-3"
+        help="Generated automatically by the system after saving"
+      >
         <UInput :model-value="props.workOrder?.wo_number" disabled class="w-full" />
       </UFormField>
 
       <UFormField label="Work Order Category" name="wo_category" required>
-        <URadioGroup orientation="horizontal" variant="list" v-model="state.wo_category" :disabled="props.mode === 'edit'" :items="categoryItems" />
+        <URadioGroup
+          v-model="state.wo_category"
+          orientation="horizontal"
+          variant="list"
+          :disabled="props.mode === 'edit'"
+          :items="categoryItems"
+        />
       </UFormField>
 
       <UFormField label="Work Order Date" name="wo_date" required>
         <UInputDate v-model="dateModel" :disabled="!isEditable">
           <template #trailing>
             <UPopover>
-              <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" :disabled="!isEditable" />
+              <UButton
+                color="neutral"
+                variant="link"
+                size="sm"
+                icon="i-lucide-calendar"
+                class="px-0"
+                :disabled="!isEditable"
+              />
               <template #content>
                 <UCalendar
                   v-model="dateModel"
@@ -552,10 +575,23 @@ function onSubmit(event: FormSubmitEvent<any>) {
       </UFormField>
 
       <UFormField label="Work Order Type" name="wo_type_id" required>
-        <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Select Work Order Type" class="w-full" clear :disabled="!isEditable" />
+        <USelectMenu
+          v-model="selectedType"
+          :items="typeItems"
+          placeholder="Select Work Order Type"
+          class="w-full"
+          clear
+          :disabled="!isEditable"
+        />
       </UFormField>
 
-      <UFormField v-if="showReferenceSource" label="Reference Source" name="ref_source" required class="md:col-span-3">
+      <UFormField
+        v-if="showReferenceSource"
+        label="Reference Source"
+        name="ref_source"
+        required
+        class="md:col-span-3"
+      >
         <URadioGroup 
           v-model="state.ref_source" 
           orientation="horizontal" 
@@ -586,30 +622,67 @@ function onSubmit(event: FormSubmitEvent<any>) {
           :disabled="!isEditable || !showReferenceSource || state.ref_source !== 'delivery_order'"
         />
 
-        <UInput v-else :model-value="selectedRefDoc?.label || '-'" disabled class="w-full" />
+        <UInput
+          v-else
+          :model-value="selectedRefDoc?.label || '-'"
+          disabled
+          class="w-full"
+        />
       </UFormField>
 
       <UFormField label="Reff Doc Number">
-        <UInput :model-value="displayRefDocNumber" @update:model-value="val => state.ref_doc_number = val" placeholder="e.g. DO-2024-001" class="w-full" :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')" />
+        <UInput
+          :model-value="displayRefDocNumber"
+          placeholder="e.g. DO-2024-001"
+          class="w-full"
+          :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')"
+          @update:model-value="val => state.ref_doc_number = val"
+        />
       </UFormField>
 
       <UFormField label="Reff Doc Name">
-        <UInput :model-value="displayRefDocName" @update:model-value="val => state.ref_doc_name = val" placeholder="e.g. Delivery Order" class="w-full" :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')" />
+        <UInput
+          :model-value="displayRefDocName"
+          placeholder="e.g. Delivery Order"
+          class="w-full"
+          :disabled="!isEditable || (showReferenceSource && state.ref_source === 'delivery_order')"
+          @update:model-value="val => state.ref_doc_name = val"
+        />
       </UFormField>
 
-      <UFormField label="Warehouse Area" name="warehouse_area_id" class="md:col-span-3" required>
-        <USelectMenu v-model="selectedArea" :items="areaItems" option-attribute="label" placeholder="Select Warehouse Area" class="w-full" :disabled="!state.wo_type_id || !isEditable" clear />
+      <UFormField
+        label="Warehouse Area"
+        name="warehouse_area_id"
+        class="md:col-span-3"
+        required
+      >
+        <USelectMenu
+          v-model="selectedArea"
+          :items="areaItems"
+          option-attribute="label"
+          placeholder="Select Warehouse Area"
+          class="w-full"
+          :disabled="!state.wo_type_id || !isEditable"
+          clear
+        />
       </UFormField>
 
       <UFormField label="Description" class="md:col-span-3">
-        <UInput :model-value="displayDescription" @update:model-value="val => state.wo_description = val" placeholder="Enter additional notes or description..." class="w-full" :disabled="!isEditable" />
+        <UInput
+          :model-value="displayDescription"
+          placeholder="Enter additional notes or description..."
+          class="w-full"
+          :disabled="!isEditable"
+          @update:model-value="val => state.wo_description = val"
+        />
       </UFormField>
-
     </UForm>
 
     <div class="space-y-3">
       <div class="flex justify-between items-center">
-        <h3 class="font-semibold">Items</h3>
+        <h3 class="font-semibold">
+          Items
+        </h3>
         <UButton v-if="isEditable" label="Add Item" @click="openItemModal" />
       </div>
 
@@ -624,8 +697,8 @@ function onSubmit(event: FormSubmitEvent<any>) {
         color="neutral"
         variant="outline"
         :loading="loading"
-        @click="handleSubmit('draft')"
         :disabled="!isEditable"
+        @click="handleSubmit('draft')"
       >
         Save as Draft
       </UButton>
@@ -633,8 +706,8 @@ function onSubmit(event: FormSubmitEvent<any>) {
       <UButton
         color="primary"
         :loading="loading"
-        @click="handleSubmit('submit')"
         :disabled="!isEditable"
+        @click="handleSubmit('submit')"
       >
         Submit
       </UButton>

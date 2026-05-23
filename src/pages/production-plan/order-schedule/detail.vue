@@ -411,25 +411,45 @@ onUnmounted(() => store.clearCurrentOrder())
       <!-- KPI Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">Production Range</p>
-          <p class="text-sm font-medium font-mono">{{ fmtDate(order.production_start_date) }} – {{ fmtDate(order.production_end_date) }}</p>
+          <p class="text-xs text-muted uppercase tracking-wide">
+            Production Range
+          </p>
+          <p class="text-sm font-medium font-mono">
+            {{ fmtDate(order.production_start_date) }} – {{ fmtDate(order.production_end_date) }}
+          </p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">Delivery Window</p>
-          <p class="text-sm font-medium font-mono">{{ fmtDate(order.earliest_delivery_date) }} – {{ fmtDate(order.latest_delivery_date) }}</p>
+          <p class="text-xs text-muted uppercase tracking-wide">
+            Delivery Window
+          </p>
+          <p class="text-sm font-medium font-mono">
+            {{ fmtDate(order.earliest_delivery_date) }} – {{ fmtDate(order.latest_delivery_date) }}
+          </p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">Total Products</p>
-          <p class="text-2xl font-bold">{{ order.total_products }}</p>
+          <p class="text-xs text-muted uppercase tracking-wide">
+            Total Products
+          </p>
+          <p class="text-2xl font-bold">
+            {{ order.total_products }}
+          </p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">Scheduled / Planned Qty</p>
+          <p class="text-xs text-muted uppercase tracking-wide">
+            Scheduled / Planned Qty
+          </p>
           <div class="flex items-end gap-2">
-            <p class="text-2xl font-bold">{{ fmtNum(order.total_scheduled_qty) }}</p>
-            <p class="text-sm text-muted pb-0.5">/ {{ fmtNum(order.total_planned_qty) }}</p>
+            <p class="text-2xl font-bold">
+              {{ fmtNum(order.total_scheduled_qty) }}
+            </p>
+            <p class="text-sm text-muted pb-0.5">
+              / {{ fmtNum(order.total_planned_qty) }}
+            </p>
           </div>
           <UProgress :value="pct" size="xs" :color="pct >= 100 ? 'success' : 'warning'" />
-          <p class="text-xs text-muted">{{ pct }}% scheduled</p>
+          <p class="text-xs text-muted">
+            {{ pct }}% scheduled
+          </p>
         </div>
       </div>
 
@@ -454,69 +474,129 @@ onUnmounted(() => store.clearCurrentOrder())
       <!-- ── TAB: Summary ────────────────────────────────────────────────────── -->
       <div v-show="activeTab === 'summary'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-default border border-default rounded-lg p-5 space-y-4">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">Order Info</h3>
+          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">
+            Order Info
+          </h3>
           <dl class="space-y-3 text-sm">
             <div class="flex justify-between">
-              <dt class="text-muted">PO Number</dt>
-              <dd class="font-mono font-semibold">{{ order.po_number }}</dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-muted">Plan</dt>
-              <dd class="font-mono">{{ order.plan?.plan_number ?? '—' }}</dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-muted">Status</dt>
-              <dd>
-                <component :is="UBadge" :label="poStatusLabel[order.status]" :color="poStatusColor[order.status]" variant="subtle" size="sm" />
+              <dt class="text-muted">
+                PO Number
+              </dt>
+              <dd class="font-mono font-semibold">
+                {{ order.po_number }}
               </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Priority</dt>
-              <dd>
-                <component :is="UBadge" :label="order.priority" :color="priorityColor[order.priority]" variant="soft" size="sm" />
+              <dt class="text-muted">
+                Plan
+              </dt>
+              <dd class="font-mono">
+                {{ order.plan?.plan_number ?? '—' }}
               </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Description</dt>
-              <dd class="text-right max-w-xs">{{ order.po_description || '—' }}</dd>
+              <dt class="text-muted">
+                Status
+              </dt>
+              <dd>
+                <component
+                  :is="UBadge"
+                  :label="poStatusLabel[order.status]"
+                  :color="poStatusColor[order.status]"
+                  variant="subtle"
+                  size="sm"
+                />
+              </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Notes</dt>
-              <dd class="text-right max-w-xs">{{ order.notes || '—' }}</dd>
+              <dt class="text-muted">
+                Priority
+              </dt>
+              <dd>
+                <component
+                  :is="UBadge"
+                  :label="order.priority"
+                  :color="priorityColor[order.priority]"
+                  variant="soft"
+                  size="sm"
+                />
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted">
+                Description
+              </dt>
+              <dd class="text-right max-w-xs">
+                {{ order.po_description || '—' }}
+              </dd>
+            </div>
+            <div class="flex justify-between">
+              <dt class="text-muted">
+                Notes
+              </dt>
+              <dd class="text-right max-w-xs">
+                {{ order.notes || '—' }}
+              </dd>
             </div>
           </dl>
         </div>
 
         <div class="bg-default border border-default rounded-lg p-5 space-y-4">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">Timeline & Audit</h3>
+          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">
+            Timeline & Audit
+          </h3>
           <dl class="space-y-3 text-sm">
             <div class="flex justify-between">
-              <dt class="text-muted">Start Date</dt>
-              <dd class="font-mono">{{ fmtDate(order.production_start_date) }}</dd>
+              <dt class="text-muted">
+                Start Date
+              </dt>
+              <dd class="font-mono">
+                {{ fmtDate(order.production_start_date) }}
+              </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">End Date</dt>
-              <dd class="font-mono">{{ fmtDate(order.production_end_date) }}</dd>
+              <dt class="text-muted">
+                End Date
+              </dt>
+              <dd class="font-mono">
+                {{ fmtDate(order.production_end_date) }}
+              </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Earliest Delivery</dt>
-              <dd class="font-mono">{{ fmtDate(order.earliest_delivery_date) }}</dd>
+              <dt class="text-muted">
+                Earliest Delivery
+              </dt>
+              <dd class="font-mono">
+                {{ fmtDate(order.earliest_delivery_date) }}
+              </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Latest Delivery</dt>
-              <dd class="font-mono">{{ fmtDate(order.latest_delivery_date) }}</dd>
+              <dt class="text-muted">
+                Latest Delivery
+              </dt>
+              <dd class="font-mono">
+                {{ fmtDate(order.latest_delivery_date) }}
+              </dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Created By</dt>
+              <dt class="text-muted">
+                Created By
+              </dt>
               <dd>{{ order.creator?.email ?? '—' }}</dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Released By</dt>
+              <dt class="text-muted">
+                Released By
+              </dt>
               <dd>{{ order.releaser?.email ?? '—' }}</dd>
             </div>
             <div class="flex justify-between">
-              <dt class="text-muted">Released At</dt>
-              <dd class="font-mono">{{ order.released_at ? fmtDate(order.released_at) : '—' }}</dd>
+              <dt class="text-muted">
+                Released At
+              </dt>
+              <dd class="font-mono">
+                {{ order.released_at ? fmtDate(order.released_at) : '—' }}
+              </dd>
             </div>
           </dl>
         </div>
@@ -526,16 +606,18 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'products'">
         <div v-if="!order.products?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-package-x" class="size-12 opacity-40" />
-          <p class="text-sm">No products found in this production order.</p>
+          <p class="text-sm">
+            No products found in this production order.
+          </p>
         </div>
         <UTable
           v-else
           :data="order.products"
           :columns="[
-            { header: '#',          cell: ({ row }) => row.index + 1 },
-            { accessorKey: 'part',  header: 'Part', cell: ({ row }) => `${row.original.part?.part_number ?? '—'} — ${row.original.part?.part_name ?? ''}` },
+            { header: '#', cell: ({ row }) => row.index + 1 },
+            { accessorKey: 'part', header: 'Part', cell: ({ row }) => `${row.original.part?.part_number ?? '—'} — ${row.original.part?.part_name ?? ''}` },
             { accessorKey: 'customer', header: 'Customer', cell: ({ row }) => row.original.customer?.name ?? '—' },
-            { accessorKey: 'line',  header: 'Line', cell: ({ row }) => row.original.line?.name ?? '—' },
+            { accessorKey: 'line', header: 'Line', cell: ({ row }) => row.original.line?.name ?? '—' },
             { accessorKey: 'delivery_date', header: 'Delivery Date', cell: ({ row }) => fmtDate(row.original.delivery_date) },
             { accessorKey: 'planned_qty', header: 'Planned Qty', cell: ({ row }) => fmtNum(row.original.planned_qty) },
             { accessorKey: 'scheduled_qty', header: 'Scheduled Qty', cell: ({ row }) => fmtNum(row.original.scheduled_qty) },
@@ -548,7 +630,9 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'schedule'">
         <div v-if="!hasSchedule" class="flex flex-col items-center justify-center py-16 text-muted gap-3">
           <UIcon name="i-lucide-calendar-off" class="size-12 opacity-40" />
-          <p class="text-sm">No schedule generated yet.</p>
+          <p class="text-sm">
+            No schedule generated yet.
+          </p>
           <UButton
             v-if="order.status === 'Draft'"
             icon="i-lucide-calendar-cog"
@@ -578,17 +662,39 @@ onUnmounted(() => store.clearCurrentOrder())
             <table class="w-full text-sm">
               <thead class="bg-elevated">
                 <tr>
-                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Seq</th>
-                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Part</th>
-                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Line</th>
-                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Shift</th>
-                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Date</th>
-                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Plan Qty</th>
-                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Actual Qty</th>
-                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Capacity</th>
-                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Util %</th>
-                  <th class="px-3 py-2 text-center font-semibold text-muted text-xs uppercase tracking-wide">Status</th>
-                  <th v-if="isEditable" class="px-3 py-2 text-center font-semibold text-muted text-xs uppercase tracking-wide">Action</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                    Seq
+                  </th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                    Part
+                  </th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                    Line
+                  </th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                    Shift
+                  </th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                    Date
+                  </th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
+                    Plan Qty
+                  </th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
+                    Actual Qty
+                  </th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
+                    Capacity
+                  </th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
+                    Util %
+                  </th>
+                  <th class="px-3 py-2 text-center font-semibold text-muted text-xs uppercase tracking-wide">
+                    Status
+                  </th>
+                  <th v-if="isEditable" class="px-3 py-2 text-center font-semibold text-muted text-xs uppercase tracking-wide">
+                    Action
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-default">
@@ -598,12 +704,16 @@ onUnmounted(() => store.clearCurrentOrder())
                   class="hover:bg-elevated/50 transition-colors"
                   :class="{ 'bg-amber-50 dark:bg-amber-950/20': isWeekend(sched.production_date) }"
                 >
-                  <td class="px-3 py-2 text-muted text-xs font-mono">{{ sched.sequence }}</td>
+                  <td class="px-3 py-2 text-muted text-xs font-mono">
+                    {{ sched.sequence }}
+                  </td>
                   <td class="px-3 py-2 font-mono text-xs">
                     {{ sched.part?.part_number ?? '—' }}
                     <span class="text-muted block">{{ sched.part?.part_name ?? '' }}</span>
                   </td>
-                  <td class="px-3 py-2 text-xs">{{ sched.line?.name ?? sched.line_name_snapshot ?? '—' }}</td>
+                  <td class="px-3 py-2 text-xs">
+                    {{ sched.line?.name ?? sched.line_name_snapshot ?? '—' }}
+                  </td>
                   <td class="px-3 py-2 text-xs">
                     {{ sched.shift?.name ?? sched.shift_name_snapshot ?? '—' }}
                     <span v-if="sched.shift" class="text-muted block font-mono text-xs">
@@ -613,9 +723,15 @@ onUnmounted(() => store.clearCurrentOrder())
                   <td class="px-3 py-2 font-mono text-xs" :class="isWeekend(sched.production_date) ? 'text-warning-600 dark:text-warning-400' : ''">
                     {{ fmtDate(sched.production_date) }}
                   </td>
-                  <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(sched.planned_qty_per_day) }}</td>
-                  <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(sched.actual_qty_per_day) }}</td>
-                  <td class="px-3 py-2 text-right font-mono text-xs text-muted">{{ sched.line_capacity_per_day != null ? fmtNum(sched.line_capacity_per_day) : '—' }}</td>
+                  <td class="px-3 py-2 text-right font-mono text-xs">
+                    {{ fmtNum(sched.planned_qty_per_day) }}
+                  </td>
+                  <td class="px-3 py-2 text-right font-mono text-xs">
+                    {{ fmtNum(sched.actual_qty_per_day) }}
+                  </td>
+                  <td class="px-3 py-2 text-right font-mono text-xs text-muted">
+                    {{ sched.line_capacity_per_day != null ? fmtNum(sched.line_capacity_per_day) : '—' }}
+                  </td>
                   <td class="px-3 py-2 text-right font-mono text-xs" :class="utilClass(sched.utilization_pct)">
                     {{ sched.utilization_pct != null ? `${sched.utilization_pct}%` : '—' }}
                   </td>
@@ -648,7 +764,9 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'gantt'">
         <div v-if="!hasSchedule" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-gantt-chart-square" class="size-12 opacity-40" />
-          <p class="text-sm">Generate a schedule first to view the Gantt chart.</p>
+          <p class="text-sm">
+            Generate a schedule first to view the Gantt chart.
+          </p>
         </div>
 
         <div v-else class="overflow-x-auto rounded-lg border border-default">
@@ -665,7 +783,9 @@ onUnmounted(() => store.clearCurrentOrder())
                   :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/30 text-warning-600' : ''"
                 >
                   <div>{{ new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }}</div>
-                  <div class="text-muted/60 font-normal">{{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}</div>
+                  <div class="text-muted/60 font-normal">
+                    {{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -676,9 +796,15 @@ onUnmounted(() => store.clearCurrentOrder())
                 class="hover:bg-elevated/40 transition-colors"
               >
                 <td class="px-3 py-2 sticky left-0 bg-default z-10 border-r border-default">
-                  <div class="font-mono font-semibold">{{ product.part?.part_number }}</div>
-                  <div class="text-muted truncate max-w-[160px]">{{ product.part?.part_name }}</div>
-                  <div class="text-muted/60">{{ product.customer?.name }}</div>
+                  <div class="font-mono font-semibold">
+                    {{ product.part?.part_number }}
+                  </div>
+                  <div class="text-muted truncate max-w-[160px]">
+                    {{ product.part?.part_name }}
+                  </div>
+                  <div class="text-muted/60">
+                    {{ product.customer?.name }}
+                  </div>
                 </td>
                 <td
                   v-for="date in ganttDates"
@@ -706,15 +832,15 @@ onUnmounted(() => store.clearCurrentOrder())
           <!-- Gantt legend -->
           <div class="flex items-center gap-4 px-4 py-2 border-t border-default text-xs text-muted bg-elevated">
             <div class="flex items-center gap-1.5">
-              <div class="w-3 h-3 rounded bg-primary-200 dark:bg-primary-900/60"></div>
+              <div class="w-3 h-3 rounded bg-primary-200 dark:bg-primary-900/60" />
               Normal utilization
             </div>
             <div class="flex items-center gap-1.5">
-              <div class="w-3 h-3 rounded bg-error-200 dark:bg-error-900/60"></div>
+              <div class="w-3 h-3 rounded bg-error-200 dark:bg-error-900/60" />
               Over capacity (&gt;100%)
             </div>
             <div class="flex items-center gap-1.5">
-              <div class="w-3 h-3 rounded bg-amber-100 dark:bg-amber-900/40"></div>
+              <div class="w-3 h-3 rounded bg-amber-100 dark:bg-amber-900/40" />
               Weekend
             </div>
           </div>
@@ -725,7 +851,9 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'resource'">
         <div v-if="!hasSchedule || !resourceRows.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-bar-chart-2" class="size-12 opacity-40" />
-          <p class="text-sm">No resource data available yet.</p>
+          <p class="text-sm">
+            No resource data available yet.
+          </p>
         </div>
 
         <div v-else class="overflow-x-auto rounded-lg border border-default">
@@ -764,7 +892,9 @@ onUnmounted(() => store.clearCurrentOrder())
                     <div :class="utilClass(row.byDate[date].pct)" class="font-mono font-semibold">
                       {{ row.byDate[date].pct != null ? `${row.byDate[date].pct}%` : '—' }}
                     </div>
-                    <div class="text-muted/60 font-mono">{{ fmtNum(row.byDate[date].total_qty) }}</div>
+                    <div class="text-muted/60 font-mono">
+                      {{ fmtNum(row.byDate[date].total_qty) }}
+                    </div>
                   </template>
                   <span v-else class="text-muted/30">·</span>
                 </td>
@@ -778,19 +908,33 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'logs'">
         <div v-if="!order.reschedule_logs?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-history" class="size-12 opacity-40" />
-          <p class="text-sm">No reschedule history found.</p>
+          <p class="text-sm">
+            No reschedule history found.
+          </p>
         </div>
 
         <div v-else class="overflow-x-auto rounded-lg border border-default">
           <table class="w-full text-sm">
             <thead class="bg-elevated">
               <tr>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">#</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Old Range</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">New Range</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Reason</th>
-                <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Impacted WOs</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Rescheduled At</th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                  #
+                </th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                  Old Range
+                </th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                  New Range
+                </th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                  Reason
+                </th>
+                <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
+                  Impacted WOs
+                </th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
+                  Rescheduled At
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default">
@@ -799,12 +943,24 @@ onUnmounted(() => store.clearCurrentOrder())
                 :key="log.id"
                 class="hover:bg-elevated/50"
               >
-                <td class="px-3 py-2 text-muted text-xs">{{ idx + 1 }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.old_start_date) }} – {{ fmtDate(log.old_end_date) }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.new_start_date) }} – {{ fmtDate(log.new_end_date) }}</td>
-                <td class="px-3 py-2 text-xs max-w-xs">{{ log.reschedule_reason }}</td>
-                <td class="px-3 py-2 text-right font-mono text-xs">{{ log.impacted_wo_count }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.rescheduled_at) }}</td>
+                <td class="px-3 py-2 text-muted text-xs">
+                  {{ idx + 1 }}
+                </td>
+                <td class="px-3 py-2 font-mono text-xs">
+                  {{ fmtDate(log.old_start_date) }} – {{ fmtDate(log.old_end_date) }}
+                </td>
+                <td class="px-3 py-2 font-mono text-xs">
+                  {{ fmtDate(log.new_start_date) }} – {{ fmtDate(log.new_end_date) }}
+                </td>
+                <td class="px-3 py-2 text-xs max-w-xs">
+                  {{ log.reschedule_reason }}
+                </td>
+                <td class="px-3 py-2 text-right font-mono text-xs">
+                  {{ log.impacted_wo_count }}
+                </td>
+                <td class="px-3 py-2 font-mono text-xs">
+                  {{ fmtDate(log.rescheduled_at) }}
+                </td>
               </tr>
             </tbody>
           </table>

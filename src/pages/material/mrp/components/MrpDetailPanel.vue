@@ -580,7 +580,12 @@ async function confirmReview() {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton color="neutral" variant="ghost" label="Cancel" @click="isReviewOpen = false" />
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Cancel"
+            @click="isReviewOpen = false"
+          />
           <UButton
             color="primary"
             label="Submit Review"

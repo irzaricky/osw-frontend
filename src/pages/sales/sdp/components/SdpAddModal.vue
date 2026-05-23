@@ -398,7 +398,13 @@ function close() {
               <UInputDate v-model="scheduledDateModel">
                 <template #trailing>
                   <UPopover>
-                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <UButton
+                      color="neutral"
+                      variant="link"
+                      size="sm"
+                      icon="i-lucide-calendar"
+                      class="px-0"
+                    />
                     <template #content>
                       <UCalendar
                         v-model="scheduledDateModel"
@@ -433,7 +439,12 @@ function close() {
 
             <!-- Destination -->
             <UFormField label="Destination Address/Location" name="destination" required>
-              <UInput v-model="state.destination" placeholder="Select SPO item to set destination" class="w-full" :disabled="true" />
+              <UInput
+                v-model="state.destination"
+                placeholder="Select SPO item to set destination"
+                class="w-full"
+                :disabled="true"
+              />
             </UFormField>
           </div>
 

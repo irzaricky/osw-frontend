@@ -129,13 +129,14 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
 
 <template>
   <div class="mt-4 space-y-5">
-
     <!-- ── 1. Line Selector ───────────────────────────────────────────────── -->
     <div class="bg-default border border-default rounded-xl">
       <div class="px-5 py-4 border-b border-default flex items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <UIcon name="i-lucide-factory" class="w-4 h-4 text-primary" />
-          <h3 class="font-semibold text-sm">Production Line</h3>
+          <h3 class="font-semibold text-sm">
+            Production Line
+          </h3>
         </div>
 
         <!-- Tombol Calculate All — muncul jika ada ≥2 line dengan BASE -->
@@ -201,7 +202,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
 
         <!-- Input untuk pilih line baru (jika editable) -->
         <div v-if="isEditable" class="mt-4 pt-4 border-t border-default">
-          <p class="text-xs text-muted mb-2 font-medium">Add another line to this plan:</p>
+          <p class="text-xs text-muted mb-2 font-medium">
+            Add another line to this plan:
+          </p>
           <div class="flex items-end gap-3">
             <UFormField label="Select Line" class="flex-1 max-w-xs">
               <USelectMenu
@@ -235,18 +238,21 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
       class="bg-default border border-dashed border-default rounded-xl px-5 py-10 text-center"
     >
       <UIcon name="i-lucide-mouse-pointer-click" class="w-8 h-8 text-muted mx-auto mb-2" />
-      <p class="text-sm text-muted">Select a production line above to view capacity settings.</p>
+      <p class="text-sm text-muted">
+        Select a production line above to view capacity settings.
+      </p>
     </div>
 
     <template v-else>
-
       <!-- ── 2. Master Preview + Save BASE ───────────────────────────────── -->
       <div class="bg-default border border-default rounded-xl">
         <div class="px-5 py-4 border-b border-default flex items-center justify-between">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-database" class="w-4 h-4 text-primary" />
             <div>
-              <h3 class="font-semibold text-sm">Base Parameters</h3>
+              <h3 class="font-semibold text-sm">
+                Base Parameters
+              </h3>
               <p class="text-xs text-muted mt-0.5">
                 {{ hasBaseForSelected
                   ? 'Snapshot copied from line master when plan was configured.'
@@ -277,7 +283,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
         <!-- Loading state -->
         <div v-if="loadingParams" class="px-5 py-8 text-center">
           <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin text-muted mx-auto" />
-          <p class="text-xs text-muted mt-2">Loading line params...</p>
+          <p class="text-xs text-muted mt-2">
+            Loading line params...
+          </p>
         </div>
 
         <!-- No master params warning -->
@@ -287,7 +295,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
         >
           <UIcon name="i-lucide-alert-circle" class="w-4 h-4 text-warning-500 flex-shrink-0 mt-0.5" />
           <div>
-            <p class="text-sm font-medium text-warning-700 dark:text-warning-400">Line capacity params not set up</p>
+            <p class="text-sm font-medium text-warning-700 dark:text-warning-400">
+              Line capacity params not set up
+            </p>
             <p class="text-xs text-muted mt-1">
               Go to <strong>Master Data → Lines</strong>, select this line, and run
               <strong>Calculate Capacity Params</strong> first.
@@ -300,18 +310,20 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             <div
               v-for="item in [
-                { label: 'Working Days',  value: (hasBaseForSelected ? selectedBase?.working_days : masterParams?.default_working_days) ?? '—', unit: 'days' },
-                { label: 'Shifts / Day',  value: (hasBaseForSelected ? selectedBase?.shifts_per_day : masterParams?.default_shifts_per_day) ?? '—', unit: 'shift' },
+                { label: 'Working Days', value: (hasBaseForSelected ? selectedBase?.working_days : masterParams?.default_working_days) ?? '—', unit: 'days' },
+                { label: 'Shifts / Day', value: (hasBaseForSelected ? selectedBase?.shifts_per_day : masterParams?.default_shifts_per_day) ?? '—', unit: 'shift' },
                 { label: 'Hours / Shift', value: (hasBaseForSelected ? selectedBase?.working_hours_per_shift : masterParams?.default_working_hours_per_shift) ?? '—', unit: 'hrs' },
-                { label: 'Manpower',      value: (hasBaseForSelected ? selectedBase?.manpower : masterParams?.default_manpower) ?? '—', unit: 'pax' },
-                { label: 'Efficiency',    value: (hasBaseForSelected ? selectedBase?.efficiency_factor : masterParams?.default_efficiency_factor) ?? null, unit: '%', isEfficiency: true },
-                { label: 'Overtime',      value: (hasBaseForSelected ? selectedBase?.overtime_hours : masterParams?.default_overtime_hours) ?? '—', unit: 'hrs' },
+                { label: 'Manpower', value: (hasBaseForSelected ? selectedBase?.manpower : masterParams?.default_manpower) ?? '—', unit: 'pax' },
+                { label: 'Efficiency', value: (hasBaseForSelected ? selectedBase?.efficiency_factor : masterParams?.default_efficiency_factor) ?? null, unit: '%', isEfficiency: true },
+                { label: 'Overtime', value: (hasBaseForSelected ? selectedBase?.overtime_hours : masterParams?.default_overtime_hours) ?? '—', unit: 'hrs' },
                 { label: 'Max Takt Time', value: (hasBaseForSelected ? selectedBase?.max_takt_time : masterParams?.default_max_takt_time) ?? null, unit: '', isTakt: true },
               ]"
               :key="item.label"
               class="bg-elevated rounded-lg px-3 py-3 space-y-1"
             >
-              <p class="text-xs text-muted leading-none">{{ item.label }}</p>
+              <p class="text-xs text-muted leading-none">
+                {{ item.label }}
+              </p>
               <p class="text-sm font-semibold font-mono leading-none">
                 <template v-if="item.isEfficiency">
                   {{ item.value != null ? `${(Number(item.value) * 100).toFixed(0)}%` : '—' }}
@@ -329,7 +341,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
 
           <!-- Actual line info — hanya jika belum save BASE -->
           <div v-if="!hasBaseForSelected && lineParams?.actual" class="mt-4 pt-4 border-t border-default">
-            <p class="text-xs font-medium text-muted mb-2">Actual line condition (basis of master params):</p>
+            <p class="text-xs font-medium text-muted mb-2">
+              Actual line condition (basis of master params):
+            </p>
             <div class="flex flex-wrap gap-3">
               <span class="inline-flex items-center gap-1.5 text-xs bg-elevated px-2.5 py-1.5 rounded-md">
                 <UIcon name="i-lucide-layout-grid" class="w-3.5 h-3.5 text-muted" />
@@ -386,7 +400,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
         <div class="px-5 py-4 border-b border-default flex items-center gap-2">
           <UIcon name="i-lucide-sliders-horizontal" class="w-4 h-4 text-primary" />
           <div>
-            <h3 class="font-semibold text-sm">Add Adjustment</h3>
+            <h3 class="font-semibold text-sm">
+              Add Adjustment
+            </h3>
             <p class="text-xs text-muted mt-0.5">
               Override a specific parameter without changing the BASE snapshot.
             </p>
@@ -452,7 +468,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
         <div class="px-5 py-4 border-b border-default flex items-center justify-between">
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-git-branch" class="w-4 h-4 text-primary" />
-            <h3 class="font-semibold text-sm">Active Adjustments</h3>
+            <h3 class="font-semibold text-sm">
+              Active Adjustments
+            </h3>
           </div>
           <UBadge
             :label="`${selectedAdjustments.length} adjustment${selectedAdjustments.length > 1 ? 's' : ''}`"
@@ -511,7 +529,9 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
           <div class="flex items-center gap-2">
             <UIcon name="i-lucide-calculator" class="w-4 h-4 text-primary" />
             <div>
-              <h3 class="font-semibold text-sm">Capacity Calculation</h3>
+              <h3 class="font-semibold text-sm">
+                Capacity Calculation
+              </h3>
               <p class="text-xs text-muted mt-0.5">
                 {{ selectedResult
                   ? `Last calculated ${fmtDate(selectedResult.calculated_at)} — v${selectedResult.calculation_version}`
@@ -572,22 +592,28 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div
               v-for="metric in [
-                { label: 'Capacity',       value: fmtMinutes(selectedResult.total_capacity_minutes), icon: 'i-lucide-clock-3',       sub: 'available' },
-                { label: 'Required',       value: fmtMinutes(selectedResult.total_required_minutes), icon: 'i-lucide-clock-alert',   sub: 'needed' },
-                { label: 'Capacity Units', value: fmtNum(selectedResult.total_capacity_units),        icon: 'i-lucide-package-check', sub: 'units' },
-                { label: 'Stations',       value: selectedResult.total_stations ?? '—',               icon: 'i-lucide-layout-grid',   sub: 'active' },
-                { label: 'Jobs',           value: selectedResult.total_jobs ?? '—',                   icon: 'i-lucide-wrench',        sub: 'active' },
-                { label: 'Takt Time',      value: fmtSeconds(selectedResult.max_takt_time),           icon: 'i-lucide-timer',         sub: 'bottleneck' },
+                { label: 'Capacity', value: fmtMinutes(selectedResult.total_capacity_minutes), icon: 'i-lucide-clock-3', sub: 'available' },
+                { label: 'Required', value: fmtMinutes(selectedResult.total_required_minutes), icon: 'i-lucide-clock-alert', sub: 'needed' },
+                { label: 'Capacity Units', value: fmtNum(selectedResult.total_capacity_units), icon: 'i-lucide-package-check', sub: 'units' },
+                { label: 'Stations', value: selectedResult.total_stations ?? '—', icon: 'i-lucide-layout-grid', sub: 'active' },
+                { label: 'Jobs', value: selectedResult.total_jobs ?? '—', icon: 'i-lucide-wrench', sub: 'active' },
+                { label: 'Takt Time', value: fmtSeconds(selectedResult.max_takt_time), icon: 'i-lucide-timer', sub: 'bottleneck' },
               ]"
               :key="metric.label"
               class="bg-elevated rounded-lg px-3 py-3"
             >
               <div class="flex items-center gap-1.5 mb-1.5">
                 <UIcon :name="metric.icon" class="w-3.5 h-3.5 text-muted" />
-                <p class="text-xs text-muted leading-none">{{ metric.label }}</p>
+                <p class="text-xs text-muted leading-none">
+                  {{ metric.label }}
+                </p>
               </div>
-              <p class="text-sm font-semibold font-mono">{{ metric.value }}</p>
-              <p class="text-xs text-muted leading-none mt-0.5">{{ metric.sub }}</p>
+              <p class="text-sm font-semibold font-mono">
+                {{ metric.value }}
+              </p>
+              <p class="text-xs text-muted leading-none mt-0.5">
+                {{ metric.sub }}
+              </p>
             </div>
           </div>
         </div>
@@ -604,7 +630,6 @@ const isBusy = computed(() => props.calculating || props.calculatingAll)
           </p>
         </div>
       </div>
-
     </template>
   </div>
 </template>

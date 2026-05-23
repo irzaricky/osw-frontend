@@ -99,8 +99,12 @@ onMounted(async () => {
         <!-- Page Header -->
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 class="text-2xl font-bold">Work Orders</h1>
-            <p class="text-sm text-muted mt-0.5">Manage and monitor shop floor Work Orders</p>
+            <h1 class="text-2xl font-bold">
+              Work Orders
+            </h1>
+            <p class="text-sm text-muted mt-0.5">
+              Manage and monitor shop floor Work Orders
+            </p>
           </div>
         </div>
 
@@ -150,8 +154,12 @@ onMounted(async () => {
         >
           <UIcon name="i-lucide-clipboard-x" class="w-10 h-10" />
           <div>
-            <p class="text-sm font-medium">No Work Orders found</p>
-            <p class="text-xs mt-1">Try adjusting your filters or search.</p>
+            <p class="text-sm font-medium">
+              No Work Orders found
+            </p>
+            <p class="text-xs mt-1">
+              Try adjusting your filters or search.
+            </p>
           </div>
           <UButton
             label="Reset Filters"

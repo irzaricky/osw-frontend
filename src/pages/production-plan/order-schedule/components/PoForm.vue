@@ -245,17 +245,25 @@ onMounted(() => {
         <!-- Delivery window -->
         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
           <div>
-            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">Earliest Delivery</p>
-            <p class="font-mono font-medium">{{ fmtDate(selectedPlanData.earliest_delivery_date) }}</p>
+            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">
+              Earliest Delivery
+            </p>
+            <p class="font-mono font-medium">
+              {{ fmtDate(selectedPlanData.earliest_delivery_date) }}
+            </p>
           </div>
           <div>
-            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">Latest Delivery</p>
+            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">
+              Latest Delivery
+            </p>
             <p class="font-mono font-medium text-error-600 dark:text-error-400">
               {{ fmtDate(selectedPlanData.latest_delivery_date) }}
             </p>
           </div>
           <div v-if="selectedPlanData.plan_description" class="md:col-span-1">
-            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">Description</p>
+            <p class="text-xs text-muted uppercase tracking-wide mb-0.5">
+              Description
+            </p>
             <p>{{ selectedPlanData.plan_description }}</p>
           </div>
         </div>
@@ -263,22 +271,34 @@ onMounted(() => {
         <!-- Latest product item -->
         <template v-if="latestProductItem">
           <div class="border-t border-default pt-3">
-            <p class="text-xs text-muted uppercase tracking-wide mb-2">Product with Latest Delivery Date</p>
+            <p class="text-xs text-muted uppercase tracking-wide mb-2">
+              Product with Latest Delivery Date
+            </p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div>
-                <p class="text-xs text-muted mb-0.5">Part Number</p>
-                <p class="font-mono font-semibold">{{ latestProductItem.part?.part_number ?? '—' }}</p>
+                <p class="text-xs text-muted mb-0.5">
+                  Part Number
+                </p>
+                <p class="font-mono font-semibold">
+                  {{ latestProductItem.part?.part_number ?? '—' }}
+                </p>
               </div>
               <div>
-                <p class="text-xs text-muted mb-0.5">Part Name</p>
+                <p class="text-xs text-muted mb-0.5">
+                  Part Name
+                </p>
                 <p>{{ latestProductItem.part?.part_name ?? '—' }}</p>
               </div>
               <div>
-                <p class="text-xs text-muted mb-0.5">Customer</p>
+                <p class="text-xs text-muted mb-0.5">
+                  Customer
+                </p>
                 <p>{{ latestProductItem.customer?.name ?? '—' }}</p>
               </div>
               <div>
-                <p class="text-xs text-muted mb-0.5">Delivery Date</p>
+                <p class="text-xs text-muted mb-0.5">
+                  Delivery Date
+                </p>
                 <p class="font-mono font-semibold text-warning-600 dark:text-warning-400">
                   {{ fmtDate(latestProductItem.delivery_date) }}
                 </p>
@@ -297,7 +317,7 @@ onMounted(() => {
         :help="selectedPlanData?.latest_delivery_date
           ? `End Date must be before ${fmtDate(selectedPlanData.latest_delivery_date)}.`
           : 'Select the production date range for this order.'"
-        >
+      >
         <HomeDateRangePicker 
           v-model="dateRange" 
           :is-date-disabled="isDateDisabled ?? undefined" 

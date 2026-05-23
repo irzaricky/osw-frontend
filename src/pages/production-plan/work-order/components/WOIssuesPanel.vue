@@ -50,7 +50,9 @@ function fmtDateTime(d?: string | null) {
 
     <div v-else-if="issues.length === 0" class="flex flex-col items-center justify-center py-10 text-center text-muted gap-2">
       <UIcon name="i-lucide-check-circle-2" class="w-7 h-7 text-success-500" />
-      <p class="text-sm">No issues reported for this Work Order.</p>
+      <p class="text-sm">
+        No issues reported for this Work Order.
+      </p>
     </div>
 
     <div v-else class="divide-y divide-default">
@@ -79,7 +81,9 @@ function fmtDateTime(d?: string | null) {
               </span>
             </div>
 
-            <p class="text-sm font-medium">{{ issue.issue_description }}</p>
+            <p class="text-sm font-medium">
+              {{ issue.issue_description }}
+            </p>
 
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
               <span class="flex items-center gap-1">
@@ -99,8 +103,12 @@ function fmtDateTime(d?: string | null) {
             </div>
 
             <div v-if="issue.resolved_time" class="mt-1.5 p-2.5 bg-success-50 dark:bg-success-950/30 rounded-lg border border-success-200 dark:border-success-800">
-              <p class="text-xs font-medium text-success-700 dark:text-success-400">Resolution</p>
-              <p class="text-xs text-success-700 dark:text-success-400 mt-0.5">{{ issue.resolution }}</p>
+              <p class="text-xs font-medium text-success-700 dark:text-success-400">
+                Resolution
+              </p>
+              <p class="text-xs text-success-700 dark:text-success-400 mt-0.5">
+                {{ issue.resolution }}
+              </p>
               <p class="text-xs text-muted mt-1">
                 By {{ issue.resolved_by }} · {{ fmtDateTime(issue.resolved_time) }}
               </p>

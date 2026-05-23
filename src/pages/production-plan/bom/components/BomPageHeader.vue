@@ -63,8 +63,21 @@ const router = useRouter()
     <!-- Workflow buttons (edit mode only) -->
     <div v-if="!isCreate && currentBom" class="flex items-center gap-2 flex-wrap">
       <template v-if="currentBom.doc_status?.code === 'PENDING_APPROVAL'">
-        <UButton label="Approve" icon="i-lucide-check" color="success" :loading="saving" @click="emit('approve')" />
-        <UButton label="Reject"  icon="i-lucide-x"    color="error"  variant="soft" :loading="saving" @click="emit('reject')" />
+        <UButton
+          label="Approve"
+          icon="i-lucide-check"
+          color="success"
+          :loading="saving"
+          @click="emit('approve')"
+        />
+        <UButton
+          label="Reject"
+          icon="i-lucide-x"
+          color="error"
+          variant="soft"
+          :loading="saving"
+          @click="emit('reject')"
+        />
       </template>
       <template v-if="currentBom.doc_status?.code === 'APPROVED'">
         <UButton

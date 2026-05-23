@@ -113,7 +113,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<UDashboardPanel id="planning">
+  <UDashboardPanel id="planning">
     <template #header>
       <UDashboardNavbar title="Production Plan">
         <template #leading>
@@ -121,63 +121,67 @@ onMounted(() => {
         </template>
       </UDashboardNavbar>
     </template>
-		<template #body>
-			<div class="space-y-5">
-				<Breadcrumbs :items="breadcrumbItems" />
+    <template #body>
+      <div class="space-y-5">
+        <Breadcrumbs :items="breadcrumbItems" />
 
-				<div class="flex items-start justify-between gap-4">
-					<div>
-						<h1 class="text-2xl font-bold">Production Plans</h1>
-						<p class="text-sm text-muted mt-0.5">Manage production capacity and delivery order planning</p>
-					</div>
-					<UButton
-						icon="i-lucide-plus"
-						color="primary"
-						label="New Plan"
-						@click="router.push('/production-plan/plan/create')"
-					/>
-				</div>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-bold">
+              Production Plans
+            </h1>
+            <p class="text-sm text-muted mt-0.5">
+              Manage production capacity and delivery order planning
+            </p>
+          </div>
+          <UButton
+            icon="i-lucide-plus"
+            color="primary"
+            label="New Plan"
+            @click="router.push('/production-plan/plan/create')"
+          />
+        </div>
 
-				<PlanFilters
-					:search="search"
-					:filters="filters"
-					@update:search="search = $event"
-					@update:filters="Object.assign(filters, $event)"
-				/>
+        <PlanFilters
+          :search="search"
+          :filters="filters"
+          @update:search="search = $event"
+          @update:filters="Object.assign(filters, $event)"
+        />
 
-				<PlanBulkActions :count="selectedCount" @delete="confirmBulkDelete" />
+        <PlanBulkActions :count="selectedCount" @delete="confirmBulkDelete" />
 
-				<UTable
-					ref="table"
-					v-model:row-selection="rowSelection"
-					:data="plans"
-					:columns="columns"
-					:loading="loading"
-					class="w-full"
-				/>
+        <UTable
+          ref="table"
+          v-model:row-selection="rowSelection"
+          :data="plans"
+          :columns="columns"
+          :loading="loading"
+          class="w-full"
+        />
 
-				<!-- Pagination -->
-				<div class="flex items-center justify-between gap-3 border-t border-default pt-4">
-					<div class="text-sm text-muted">
-						{{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
-					</div>
-					<UPagination
-						v-model:page="meta.page"
-						:total="meta.total"
-						:items-per-page="meta.limit"
-						@update:page="fetchData"
-					/>
-				</div>
+        <!-- Pagination -->
+        <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+          <div class="text-sm text-muted">
+            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
+          </div>
+          <UPagination
+            v-model:page="meta.page"
+            :total="meta.total"
+            :items-per-page="meta.limit"
+            @update:page="fetchData"
+          />
+        </div>
 
-				<ConfirmDialog
-					v-model:open="confirm.open"
-					:title="confirm.title"
-					:description="confirm.description"
-					confirm-label="Delete"
-					:loading="loading"
-					@confirm="confirm.action?.()"
-				/>
-			</div>
-		</template>
+        <ConfirmDialog
+          v-model:open="confirm.open"
+          :title="confirm.title"
+          :description="confirm.description"
+          confirm-label="Delete"
+          :loading="loading"
+          @confirm="confirm.action?.()"
+        />
+      </div>
+    </template>
   </UDashboardPanel>
 </template>

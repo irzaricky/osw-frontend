@@ -49,13 +49,13 @@ function close() {
 
 <template>
   <UModal 
-		:open="open" 
-		@update:open="emit('update:open', $event)" 
-		:title="props.title || 'Select Delivery Orders'" 
-		:description="props.description || 'Select Delivery Orders to include in the production plan.'" 
-		:ui="{ content: 'sm:max-w-2xl', title: 'pt-2', description: 'pb-2' }"
-		size="xl">
-
+    :open="open" 
+    :title="props.title || 'Select Delivery Orders'" 
+    :description="props.description || 'Select Delivery Orders to include in the production plan.'" 
+    :ui="{ content: 'sm:max-w-2xl', title: 'pt-2', description: 'pb-2' }" 
+    size="xl"
+    @update:open="emit('update:open', $event)"
+  >
     <template #body>
       <div class="space-y-4">
         <UInput
@@ -76,24 +76,32 @@ function close() {
           <table class="w-full text-sm">
             <thead class="bg-elevated border-b border-default">
               <tr>
-								<th class="w-10 px-4 py-3 cursor-pointer" @click="handleToggleAll">
-									<div class="flex items-center justify-center">
-										<UIcon
-											v-if="allSelected"
-											name="i-lucide-check-square"
-											class="w-4 h-4 text-primary"
-										/>
-										<UIcon
-											v-else
-											name="i-lucide-square"
-											class="w-4 h-4 text-muted"
-										/>
-									</div>
-								</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">No. DO</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Customer</th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Delivery Date</th>
-                <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Item</th>
+                <th class="w-10 px-4 py-3 cursor-pointer" @click="handleToggleAll">
+                  <div class="flex items-center justify-center">
+                    <UIcon
+                      v-if="allSelected"
+                      name="i-lucide-check-square"
+                      class="w-4 h-4 text-primary"
+                    />
+                    <UIcon
+                      v-else
+                      name="i-lucide-square"
+                      class="w-4 h-4 text-muted"
+                    />
+                  </div>
+                </th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+                  No. DO
+                </th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+                  Customer
+                </th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+                  Delivery Date
+                </th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+                  Item
+                </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default">
@@ -111,10 +119,18 @@ function close() {
                   />
                   <UIcon v-else name="i-lucide-square" class="w-4 h-4 text-muted" />
                 </td>
-                <td class="px-4 py-3 font-mono font-medium">{{ doItem.do_number }}</td>
-                <td class="px-4 py-3">{{ doItem.customer?.name ?? '-' }}</td>
-                <td class="px-4 py-3 text-muted">{{ fmtDate(doItem.shipment_date) }}</td>
-                <td class="px-4 py-3 text-right text-muted">{{ doItem.details?.length ?? '-' }}</td>
+                <td class="px-4 py-3 font-mono font-medium">
+                  {{ doItem.do_number }}
+                </td>
+                <td class="px-4 py-3">
+                  {{ doItem.customer?.name ?? '-' }}
+                </td>
+                <td class="px-4 py-3 text-muted">
+                  {{ fmtDate(doItem.shipment_date) }}
+                </td>
+                <td class="px-4 py-3 text-right text-muted">
+                  {{ doItem.details?.length ?? '-' }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -126,7 +142,12 @@ function close() {
       <div class="flex items-center justify-between w-full">
         <span class="text-sm text-muted">{{ selectedDoIds.length }} DO selected</span>
         <div class="flex gap-2">
-          <UButton label="Cancel" color="neutral" variant="ghost" @click="close" />
+          <UButton
+            label="Cancel"
+            color="neutral"
+            variant="ghost"
+            @click="close"
+          />
           <UButton
             label="Confirm Selection"
             color="primary"

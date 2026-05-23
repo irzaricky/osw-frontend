@@ -30,33 +30,55 @@ const progressBarColor = computed(() => {
     <!-- Info grid -->
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-default border-b border-default">
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">PO Number</p>
-        <p class="text-sm font-semibold font-mono">{{ wo.production_order?.po_number ?? '-' }}</p>
+        <p class="text-xs text-muted">
+          PO Number
+        </p>
+        <p class="text-sm font-semibold font-mono">
+          {{ wo.production_order?.po_number ?? '-' }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Work Date</p>
-        <p class="text-sm font-semibold">{{ fmtDate(wo.work_date) }}</p>
+        <p class="text-xs text-muted">
+          Work Date
+        </p>
+        <p class="text-sm font-semibold">
+          {{ fmtDate(wo.work_date) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Factory</p>
-        <p class="text-sm font-semibold">{{ wo.factory?.name ?? '-' }}</p>
+        <p class="text-xs text-muted">
+          Factory
+        </p>
+        <p class="text-sm font-semibold">
+          {{ wo.factory?.name ?? '-' }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Shift</p>
-        <p class="text-sm font-semibold">{{ wo.shift?.name ?? '-' }}</p>
+        <p class="text-xs text-muted">
+          Shift
+        </p>
+        <p class="text-sm font-semibold">
+          {{ wo.shift?.name ?? '-' }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Planned Qty</p>
-        <p class="text-sm font-semibold font-mono">{{ fmtNum(wo.planned_quantity) }}</p>
+        <p class="text-xs text-muted">
+          Planned Qty
+        </p>
+        <p class="text-sm font-semibold font-mono">
+          {{ fmtNum(wo.planned_quantity) }}
+        </p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Actual Qty</p>
+        <p class="text-xs text-muted">
+          Actual Qty
+        </p>
         <p
           class="text-sm font-semibold font-mono"
           :class="{
             'text-success-600': wo.actual_quantity >= wo.planned_quantity,
             'text-warning-600': wo.actual_quantity > 0 && wo.actual_quantity < wo.planned_quantity,
-            'text-muted':       wo.actual_quantity === 0,
+            'text-muted': wo.actual_quantity === 0,
           }"
         >
           {{ fmtNum(wo.actual_quantity) }}

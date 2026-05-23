@@ -104,7 +104,12 @@ const violationColumns = [
         </div>
       </template>
 
-      <apexchart height="250" type="donut" :options="agingChartOptions" :series="agingChartSeries" />
+      <apexchart
+        height="250"
+        type="donut"
+        :options="agingChartOptions"
+        :series="agingChartSeries"
+      />
     </UCard>
   </div>
   <UCard>
@@ -137,8 +142,12 @@ const violationColumns = [
           of {{ fifoViolationMeta.total }} violations
         </p>
 
-        <UPagination :page="fifoViolationMeta.page" :items-per-page="fifoViolationMeta.limit"
-          :total="fifoViolationMeta.total" @update:page="emit('update:fifo-violation-page', $event)" />
+        <UPagination
+          :page="fifoViolationMeta.page"
+          :items-per-page="fifoViolationMeta.limit"
+          :total="fifoViolationMeta.total"
+          @update:page="emit('update:fifo-violation-page', $event)"
+        />
       </div>
     </div>
   </UCard>

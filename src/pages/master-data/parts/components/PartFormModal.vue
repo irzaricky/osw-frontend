@@ -160,7 +160,6 @@ function handleClose() {
   >
     <template #body>
       <form id="part-form" class="space-y-4" @submit.prevent="handleSubmit">
-
         <!-- Row 1: Part Number & Part Name -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <UFormField label="Part Number" required>
@@ -324,7 +323,6 @@ function handleClose() {
             />
           </UFormField>
         </div>
-
       </form>
     </template>
 

@@ -176,7 +176,9 @@ onMounted(() => {
   <div class="p-6 space-y-5">
     <Breadcrumbs :items="breadcrumbItems" />
 
-    <h1 class="text-2xl font-bold">Job Management</h1>
+    <h1 class="text-2xl font-bold">
+      Job Management
+    </h1>
 
     <JobFilters
       :search="search"
@@ -188,15 +190,39 @@ onMounted(() => {
 
     <!-- Toolbar -->
     <div class="flex items-center gap-2">
-      <UButton icon="i-lucide-download" color="neutral" variant="ghost" label="Export" @click="handleDownload" />
-      <UButton icon="i-lucide-upload" color="neutral" variant="ghost" label="Import" @click="isUploadOpen = true" />
-      <UButton icon="i-lucide-plus" color="primary" label="Add Job" @click="openAddModal" />
+      <UButton
+        icon="i-lucide-download"
+        color="neutral"
+        variant="ghost"
+        label="Export"
+        @click="handleDownload"
+      />
+      <UButton
+        icon="i-lucide-upload"
+        color="neutral"
+        variant="ghost"
+        label="Import"
+        @click="isUploadOpen = true"
+      />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        label="Add Job"
+        @click="openAddModal"
+      />
     </div>
 
     <!-- Bulk action bar -->
     <div v-if="selectedCount > 0" class="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2">
       <span class="text-sm text-primary font-medium">{{ selectedCount }} selected</span>
-      <UButton icon="i-lucide-trash-2" color="error" variant="soft" label="Delete Selected" size="sm" @click="confirmBulkDelete" />
+      <UButton
+        icon="i-lucide-trash-2"
+        color="error"
+        variant="soft"
+        label="Delete Selected"
+        size="sm"
+        @click="confirmBulkDelete"
+      />
     </div>
 
     <!-- Table -->

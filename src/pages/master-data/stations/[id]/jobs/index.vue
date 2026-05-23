@@ -178,34 +178,63 @@ onMounted(async () => {
 
     <!-- Back + Title -->
     <div class="flex items-center gap-3">
-      <UButton icon="i-lucide-arrow-left" color="neutral" variant="ghost" @click="router.back()" />
-      <h1 class="text-2xl font-bold">Job Assignments</h1>
+      <UButton
+        icon="i-lucide-arrow-left"
+        color="neutral"
+        variant="ghost"
+        @click="router.back()"
+      />
+      <h1 class="text-2xl font-bold">
+        Job Assignments
+      </h1>
     </div>
 
     <!-- Station info header -->
     <div v-if="station" class="rounded-lg border border-default bg-elevated p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
       <div>
-        <p class="text-xs text-muted mb-1">Station Code</p>
-        <p class="text-sm font-semibold">{{ station.station_code }}</p>
+        <p class="text-xs text-muted mb-1">
+          Station Code
+        </p>
+        <p class="text-sm font-semibold">
+          {{ station.station_code }}
+        </p>
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Name</p>
-        <p class="text-sm font-semibold">{{ station.name }}</p>
+        <p class="text-xs text-muted mb-1">
+          Name
+        </p>
+        <p class="text-sm font-semibold">
+          {{ station.name }}
+        </p>
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Line</p>
-        <p class="text-sm font-semibold">{{ station.line?.name ?? '-' }}</p>
+        <p class="text-xs text-muted mb-1">
+          Line
+        </p>
+        <p class="text-sm font-semibold">
+          {{ station.line?.name ?? '-' }}
+        </p>
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Station Type</p>
-        <p class="text-sm font-semibold">{{ station.station_type?.name ?? '-' }}</p>
+        <p class="text-xs text-muted mb-1">
+          Station Type
+        </p>
+        <p class="text-sm font-semibold">
+          {{ station.station_type?.name ?? '-' }}
+        </p>
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Sequence</p>
-        <p class="text-sm font-semibold">{{ station.sequence }}</p>
+        <p class="text-xs text-muted mb-1">
+          Sequence
+        </p>
+        <p class="text-sm font-semibold">
+          {{ station.sequence }}
+        </p>
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Status</p>
+        <p class="text-xs text-muted mb-1">
+          Status
+        </p>
         <UBadge
           :label="station.status ? 'Active' : 'Inactive'"
           :color="station.status ? 'success' : 'neutral'"
@@ -213,14 +242,24 @@ onMounted(async () => {
         />
       </div>
       <div>
-        <p class="text-xs text-muted mb-1">Total Jobs</p>
-        <p class="text-sm font-semibold">{{ stationJobs.length }}</p>
+        <p class="text-xs text-muted mb-1">
+          Total Jobs
+        </p>
+        <p class="text-sm font-semibold">
+          {{ stationJobs.length }}
+        </p>
       </div>
     </div>
 
     <!-- Toolbar -->
     <div class="flex items-center gap-2">
-      <UButton icon="i-lucide-plus" color="primary" label="Assign Job" class="ml-auto" @click="openAddModal" />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        label="Assign Job"
+        class="ml-auto"
+        @click="openAddModal"
+      />
     </div>
 
     <!-- Bulk Actions -->

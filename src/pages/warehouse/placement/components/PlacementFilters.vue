@@ -165,10 +165,10 @@ const selectedStatus = computed({
         @update:model-value="emit('update:search', String($event))"
       />
 
-        <HomeDateRangePicker
-          v-model="woDateRange as any"
-          clear
-        />
+      <HomeDateRangePicker
+        v-model="woDateRange as any"
+        clear
+      />
 
 
       <USelectMenu

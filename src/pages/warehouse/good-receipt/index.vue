@@ -154,13 +154,11 @@ onMounted(() => {
 
 <template>
   <div class="p-6 space-y-6">
-
     <Breadcrumbs
       :items="breadcrumbItems"
     />
 
     <div>
-
       <h1
         class="text-2xl font-bold"
       >
@@ -172,11 +170,9 @@ onMounted(() => {
       >
         Manage and approve completed material receiving inspections.
       </p>
-
     </div>
 
     <UCard>
-
       <UTable
         :data="goodReceipts"
 
@@ -184,7 +180,6 @@ onMounted(() => {
 
         :loading="loading"
       />
-
     </UCard>
 
     <ApproveGoodReceiptModal
@@ -204,6 +199,5 @@ onMounted(() => {
         handleApprove
       "
     />
-
   </div>
 </template>

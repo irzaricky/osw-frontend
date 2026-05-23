@@ -96,8 +96,20 @@ function handleSave() {
 
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" :disabled="loading" @click="emit('update:open', false)" />
-        <UButton type="submit" form="station-job-form" label="Save" color="primary" :loading="loading" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          :disabled="loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          type="submit"
+          form="station-job-form"
+          label="Save"
+          color="primary"
+          :loading="loading"
+        />
       </div>
     </template>
   </UModal>

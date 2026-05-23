@@ -24,7 +24,9 @@ function setInputValue(v: string) {
 <template>
   <UModal v-model:open="modal.open" :title="modal.title">
     <template #body>
-      <p class="text-sm text-muted">{{ modal.description }}</p>
+      <p class="text-sm text-muted">
+        {{ modal.description }}
+      </p>
       <UFormField v-if="modal.inputLabel" :label="modal.inputLabel" class="mt-4">
         <UTextarea
           :model-value="modal.inputValue"

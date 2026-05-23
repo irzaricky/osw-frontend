@@ -43,7 +43,12 @@ async function onConfirm() {
           title="You are about to reject this production order."
           description="The order will be returned to Draft status so the staff can revise and resubmit."
         />
-        <UForm ref="formRef" :schema="schema" :state="state" class="space-y-4">
+        <UForm
+          ref="formRef"
+          :schema="schema"
+          :state="state"
+          class="space-y-4"
+        >
           <UFormField label="Rejection Reason" name="notes" required>
             <UTextarea
               v-model="state.notes"
@@ -57,8 +62,20 @@ async function onConfirm() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" :disabled="props.loading" @click="emit('update:open', false)" />
-        <UButton color="error" variant="solid" label="Reject" :loading="props.loading" @click="onConfirm" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          label="Cancel"
+          :disabled="props.loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          color="error"
+          variant="solid"
+          label="Reject"
+          :loading="props.loading"
+          @click="onConfirm"
+        />
       </div>
     </template>
   </UModal>

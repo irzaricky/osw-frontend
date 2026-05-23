@@ -69,13 +69,11 @@ onMounted(() => {
 
 <template>
   <div class="p-6 space-y-6">
-
     <Breadcrumbs
       :items="breadcrumbItems"
     />
 
     <div>
-
       <h1
         class="text-2xl font-bold"
       >
@@ -87,11 +85,9 @@ onMounted(() => {
       >
         View quantity and quality non-conformance records from material receiving inspections.
       </p>
-
     </div>
 
     <UCard>
-
       <UTable
         :data="
           warrantyAndClaims
@@ -110,8 +106,6 @@ onMounted(() => {
           th: 'py-3'
         }"
       />
-
     </UCard>
-
   </div>
 </template>

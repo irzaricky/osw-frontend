@@ -157,30 +157,48 @@ onMounted(() => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <p class="text-muted">Work Order Number</p>
-            <p class="font-medium">{{ takeOutDetail.wo_number }}</p>
+            <p class="text-muted">
+              Work Order Number
+            </p>
+            <p class="font-medium">
+              {{ takeOutDetail.wo_number }}
+            </p>
           </div>
 
           <div>
-            <p class="text-muted">Work Order Date</p>
+            <p class="text-muted">
+              Work Order Date
+            </p>
             <p class="font-medium">
               {{ takeOutDetail.wo_date ? new Date(takeOutDetail.wo_date).toLocaleDateString() : '-' }}
             </p>
           </div>
 
           <div>
-            <p class="text-muted">Type</p>
-            <p class="font-medium">{{ takeOutDetail.type?.name || '-' }}</p>
+            <p class="text-muted">
+              Type
+            </p>
+            <p class="font-medium">
+              {{ takeOutDetail.type?.name || '-' }}
+            </p>
           </div>
 
           <div>
-            <p class="text-muted">Warehouse Area</p>
-            <p class="font-medium">{{ takeOutDetail.area?.name || '-' }}</p>
+            <p class="text-muted">
+              Warehouse Area
+            </p>
+            <p class="font-medium">
+              {{ takeOutDetail.area?.name || '-' }}
+            </p>
           </div>
 
           <div class="md:col-span-2">
-            <p class="text-muted">Description</p>
-            <p class="font-medium">{{ takeOutDetail.wo_description || '-' }}</p>
+            <p class="text-muted">
+              Description
+            </p>
+            <p class="font-medium">
+              {{ takeOutDetail.wo_description || '-' }}
+            </p>
           </div>
         </div>
       </UCard>
@@ -202,18 +220,30 @@ onMounted(() => {
 
         <div class="grid grid-cols-3 gap-2 text-center text-sm mt-4">
           <div class="rounded-lg border border-default p-2">
-            <p class="text-muted">Total</p>
-            <p class="font-bold">{{ takeOutDetail.total_label }}</p>
+            <p class="text-muted">
+              Total
+            </p>
+            <p class="font-bold">
+              {{ takeOutDetail.total_label }}
+            </p>
           </div>
 
           <div class="rounded-lg border border-default p-2">
-            <p class="text-muted">Taken Out</p>
-            <p class="font-bold">{{ takeOutDetail.total_scanned_out }}</p>
+            <p class="text-muted">
+              Taken Out
+            </p>
+            <p class="font-bold">
+              {{ takeOutDetail.total_scanned_out }}
+            </p>
           </div>
 
           <div class="rounded-lg border border-default p-2">
-            <p class="text-muted">Remaining</p>
-            <p class="font-bold">{{ takeOutDetail.remaining }}</p>
+            <p class="text-muted">
+              Remaining
+            </p>
+            <p class="font-bold">
+              {{ takeOutDetail.remaining }}
+            </p>
           </div>
         </div>
       </UCard>

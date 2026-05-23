@@ -91,10 +91,14 @@ function formatFileSize(bytes: number): string {
             accept=".xlsx,.xls"
             class="hidden"
             @change="handleFileChange"
-          />
+          >
           <UIcon name="i-lucide-file-spreadsheet" class="w-10 h-10 mx-auto mb-3 text-muted" />
-          <p class="text-sm font-medium">Drag & drop your Excel file here</p>
-          <p class="text-xs text-muted mt-1">or click to browse — .xlsx / .xls only</p>
+          <p class="text-sm font-medium">
+            Drag & drop your Excel file here
+          </p>
+          <p class="text-xs text-muted mt-1">
+            or click to browse — .xlsx / .xls only
+          </p>
         </div>
 
         <!-- Expected Headers Hint -->
@@ -102,7 +106,9 @@ function formatFileSize(bytes: number): string {
           v-if="expectedHeaders.length > 0"
           class="text-xs text-muted bg-muted/20 rounded-lg p-3 space-y-1"
         >
-          <p class="font-medium text-default">Expected Excel column order:</p>
+          <p class="font-medium text-default">
+            Expected Excel column order:
+          </p>
           <p>{{ expectedHeaders.map((h, i) => `${String.fromCharCode(65 + i)} — ${h}`).join('  |  ') }}</p>
         </div>
 
@@ -113,8 +119,12 @@ function formatFileSize(bytes: number): string {
         >
           <UIcon name="i-lucide-file-spreadsheet" class="w-8 h-8 text-green-500 shrink-0" />
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium truncate">{{ selectedFile.name }}</p>
-            <p class="text-xs text-muted">{{ formatFileSize(selectedFile.size) }}</p>
+            <p class="text-sm font-medium truncate">
+              {{ selectedFile.name }}
+            </p>
+            <p class="text-xs text-muted">
+              {{ formatFileSize(selectedFile.size) }}
+            </p>
           </div>
           <UButton
             icon="i-lucide-x"

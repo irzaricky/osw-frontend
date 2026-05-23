@@ -40,15 +40,33 @@ const selectedActive = computed({
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-      <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Type" class="w-36" clear />
-      <USelectMenu v-model="selectedCategory" :items="categoryItems" placeholder="Category" class="w-36" clear />
-      <USelectMenu v-model="selectedActive" :items="activeItems" placeholder="Status" class="w-32" clear />
-      <UInput
-        :model-value="search"
-        icon="i-lucide-search"
-        placeholder="Search shifts..."
-        class="w-64 ml-auto"
-        @update:model-value="emit('update:search', $event)"
-      />
+    <USelectMenu
+      v-model="selectedType"
+      :items="typeItems"
+      placeholder="Type"
+      class="w-36"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedCategory"
+      :items="categoryItems"
+      placeholder="Category"
+      class="w-36"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedActive"
+      :items="activeItems"
+      placeholder="Status"
+      class="w-32"
+      clear
+    />
+    <UInput
+      :model-value="search"
+      icon="i-lucide-search"
+      placeholder="Search shifts..."
+      class="w-64 ml-auto"
+      @update:model-value="emit('update:search', $event)"
+    />
   </div>
 </template>

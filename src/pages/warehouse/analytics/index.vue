@@ -630,28 +630,48 @@ onMounted(async () => {
 
     <AnalyticsFilters :filters="filters" :warehouse-areas="warehouseAreas" @update:filters="onUpdateFilters" />
 
-    <ExecutiveSummaryCards :executive-summary="executiveSummary" :inventory-value="inventoryValue"
-      :utilization-percentage="utilizationPercentage" />
+    <ExecutiveSummaryCards
+      :executive-summary="executiveSummary"
+      :inventory-value="inventoryValue"
+      :utilization-percentage="utilizationPercentage"
+    />
 
-    <InventoryHealthSection :inventory-health="inventoryHealth" :chart-options="inventoryHealthChartOptions"
-      :chart-series="inventoryHealthChartSeries" />
+    <InventoryHealthSection
+      :inventory-health="inventoryHealth"
+      :chart-options="inventoryHealthChartOptions"
+      :chart-series="inventoryHealthChartSeries"
+    />
 
     <CriticalPartsTable :parts="criticalParts" :loading="loading.criticalParts" />
 
-    <FifoAnalyticsSection :fifo-compliance="fifoCompliance" :fifo-violation-details="fifoViolationDetails"
-      :fifo-violation-meta="fifoViolationMeta" @update:fifo-violation-page="onUpdateFifoViolationPage"
-      :aging-chart-options="agingChartOptions" :aging-chart-series="agingChartSeries" />
+    <FifoAnalyticsSection
+      :fifo-compliance="fifoCompliance"
+      :fifo-violation-details="fifoViolationDetails"
+      :fifo-violation-meta="fifoViolationMeta"
+      :aging-chart-options="agingChartOptions"
+      :aging-chart-series="agingChartSeries"
+      @update:fifo-violation-page="onUpdateFifoViolationPage"
+    />
 
-    <MovementCharts :movement-chart-options="movementChartOptions" :movement-chart-series="movementChartSeries"
-      :utilization-chart-options="utilizationChartOptions" :utilization-chart-series="utilizationChartSeries" />
+    <MovementCharts
+      :movement-chart-options="movementChartOptions"
+      :movement-chart-series="movementChartSeries"
+      :utilization-chart-options="utilizationChartOptions"
+      :utilization-chart-series="utilizationChartSeries"
+    />
 
-    <InventoryValueCharts :inventory-value-by-area-chart-options="inventoryValueByAreaChartOptions"
+    <InventoryValueCharts
+      :inventory-value-by-area-chart-options="inventoryValueByAreaChartOptions"
       :inventory-value-by-area-chart-series="inventoryValueByAreaChartSeries"
       :top-inventory-value-chart-options="topInventoryValueChartOptions"
-      :top-inventory-value-chart-series="topInventoryValueChartSeries" />
+      :top-inventory-value-chart-series="topInventoryValueChartSeries"
+    />
 
-    <BehaviorCharts :fast-moving-chart-options="fastMovingChartOptions"
-      :fast-moving-chart-series="fastMovingChartSeries" :slow-moving-chart-options="slowMovingChartOptions"
-      :slow-moving-chart-series="slowMovingChartSeries" />
+    <BehaviorCharts
+      :fast-moving-chart-options="fastMovingChartOptions"
+      :fast-moving-chart-series="fastMovingChartSeries"
+      :slow-moving-chart-options="slowMovingChartOptions"
+      :slow-moving-chart-series="slowMovingChartSeries"
+    />
   </div>
 </template>

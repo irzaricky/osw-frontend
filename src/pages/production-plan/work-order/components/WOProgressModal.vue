@@ -123,7 +123,12 @@ function handleSubmit() {
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          @click="emit('update:open', false)"
+        />
         <UButton
           label="Record Progress"
           icon="i-lucide-trending-up"

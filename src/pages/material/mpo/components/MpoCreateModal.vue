@@ -273,7 +273,6 @@ function close() {
 
           <!-- ── Dua kolom: Daftar Part (kiri) | Keranjang MPO (kanan) ─────── -->
           <div v-if="loadedSourceData && !isLoadingSource" class="grid grid-cols-2 gap-4">
-
             <!-- KIRI: Daftar Part dari Source -->
             <div class="space-y-2">
               <p class="text-xs font-semibold text-muted uppercase tracking-wide">
@@ -348,8 +347,12 @@ function close() {
                   <!-- Nama part -->
                   <div class="flex items-start justify-between gap-2 mb-1.5">
                     <div class="min-w-0 flex-1">
-                      <p class="text-xs font-medium truncate">{{ item.part_number }}</p>
-                      <p class="text-xs text-muted truncate">{{ item.part_name }}</p>
+                      <p class="text-xs font-medium truncate">
+                        {{ item.part_number }}
+                      </p>
+                      <p class="text-xs text-muted truncate">
+                        {{ item.part_name }}
+                      </p>
                     </div>
                     <UButton
                       icon="i-lucide-trash-2"
@@ -362,7 +365,9 @@ function close() {
                   <!-- Qty & Price inline -->
                   <div class="flex gap-2">
                     <div class="flex-1">
-                      <p class="text-xs text-muted mb-0.5">Qty ({{ item.uom_code }})</p>
+                      <p class="text-xs text-muted mb-0.5">
+                        Qty ({{ item.uom_code }})
+                      </p>
                       <UInput
                         v-model.number="item.qty"
                         type="number"
@@ -372,7 +377,9 @@ function close() {
                       />
                     </div>
                     <div class="flex-1">
-                      <p class="text-xs text-muted mb-0.5">Price</p>
+                      <p class="text-xs text-muted mb-0.5">
+                        Price
+                      </p>
                       <UInput
                         v-model.number="item.price"
                         type="number"
@@ -403,7 +410,12 @@ function close() {
         </UFormField>
 
         <UFormField label="Remarks" name="remarks">
-          <UTextarea v-model="state.remarks" placeholder="Additional remarks..." class="w-full" rows="2" />
+          <UTextarea
+            v-model="state.remarks"
+            placeholder="Additional remarks..."
+            class="w-full"
+            rows="2"
+          />
         </UFormField>
 
         <!-- ── Save mode toggle ────────────────────────────────────────────── -->
@@ -423,7 +435,12 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
         <UButton
           color="primary"
           :label="state.save_as_draft ? 'Save as Draft' : 'Submit'"

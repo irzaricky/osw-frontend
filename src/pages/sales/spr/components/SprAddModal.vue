@@ -174,7 +174,14 @@ function close() {
             <UInputDate v-model="dateModel" :disabled="isAutomatic">
               <template #trailing>
                 <UPopover>
-                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" :disabled="isAutomatic" />
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    icon="i-lucide-calendar"
+                    class="px-0"
+                    :disabled="isAutomatic"
+                  />
                   <template #content>
                     <UCalendar
                       v-model="dateModel"

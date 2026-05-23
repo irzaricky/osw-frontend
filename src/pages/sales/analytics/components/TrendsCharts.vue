@@ -122,8 +122,12 @@ const fulfillmentChartSeries = computed(() => [
     <UCard>
       <template #header>
         <div>
-          <h3 class="font-semibold text-base">Tren Pesanan & Pengiriman</h3>
-          <p class="text-xs text-muted">Statistik SPO terbit vs SDO terkirim 12 bulan terakhir.</p>
+          <h3 class="font-semibold text-base">
+            Tren Pesanan & Pengiriman
+          </h3>
+          <p class="text-xs text-muted">
+            Statistik SPO terbit vs SDO terkirim 12 bulan terakhir.
+          </p>
         </div>
       </template>
 
@@ -143,8 +147,12 @@ const fulfillmentChartSeries = computed(() => [
     <UCard>
       <template #header>
         <div>
-          <h3 class="font-semibold text-base">Analisis Pemenuhan Kuantitas</h3>
-          <p class="text-xs text-muted">Perbandingan kuantitas item direncanakan vs barang diterima.</p>
+          <h3 class="font-semibold text-base">
+            Analisis Pemenuhan Kuantitas
+          </h3>
+          <p class="text-xs text-muted">
+            Perbandingan kuantitas item direncanakan vs barang diterima.
+          </p>
         </div>
       </template>
 

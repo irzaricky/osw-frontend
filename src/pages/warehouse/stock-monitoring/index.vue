@@ -659,22 +659,45 @@ onMounted(async () => {
     <UCard>
       <div class="flex flex-col gap-4">
         <div class="flex flex-col md:flex-row md:items-center gap-3">
-          <UInput v-model="search" icon="i-lucide-search" placeholder="Search part / bin / area..."
-            class="w-full md:w-80" />
+          <UInput
+            v-model="search"
+            icon="i-lucide-search"
+            placeholder="Search part / bin / area..."
+            class="w-full md:w-80"
+          />
 
           <div class="w-full md:w-64">
             <HomeDateRangePicker v-model="dateRange as any" clear />
           </div>
 
-          <USelectMenu v-if="activeTab === 'bins'" v-model="selectedWarehouseArea"
-            :items="warehouseAreas.map(area => area.name)" placeholder="Warehouse Area" class="w-full md:w-64"
-            searchable clear />
+          <USelectMenu
+            v-if="activeTab === 'bins'"
+            v-model="selectedWarehouseArea"
+            :items="warehouseAreas.map(area => area.name)"
+            placeholder="Warehouse Area"
+            class="w-full md:w-64"
+            searchable
+            clear
+          />
 
-          <USelectMenu v-if="activeTab === 'bins'" v-model="selectedStatus" placeholder="Bin Status"
-            :items="statusItems.map(item => item.label)" class="w-full md:w-48" searchable clear />
+          <USelectMenu
+            v-if="activeTab === 'bins'"
+            v-model="selectedStatus"
+            placeholder="Bin Status"
+            :items="statusItems.map(item => item.label)"
+            class="w-full md:w-48"
+            searchable
+            clear
+          />
 
           <UDropdownMenu :items="exportItems">
-            <UButton icon="i-lucide-download" color="primary" variant="soft" label="Export" :loading="exporting" />
+            <UButton
+              icon="i-lucide-download"
+              color="primary"
+              variant="soft"
+              label="Export"
+              :loading="exporting"
+            />
           </UDropdownMenu>
         </div>
 
@@ -682,10 +705,21 @@ onMounted(async () => {
       </div>
     </UCard>
 
-    <StockPartTable v-if="activeTab === 'parts'" :parts="paginatedParts" :labels-map="partLabels" :loading="loading"
-      @expand-part="expandPart" />
+    <StockPartTable
+      v-if="activeTab === 'parts'"
+      :parts="paginatedParts"
+      :labels-map="partLabels"
+      :loading="loading"
+      @expand-part="expandPart"
+    />
 
-    <StockBinTable v-else :bins="paginatedBins" :stocks-map="binStocks" :loading="loading" @expand-bin="expandBin" />
+    <StockBinTable
+      v-else
+      :bins="paginatedBins"
+      :stocks-map="binStocks"
+      :loading="loading"
+      @expand-bin="expandBin"
+    />
 
     <div class="flex items-center justify-between mt-4">
       <p class="text-sm text-muted">

@@ -88,7 +88,12 @@ function onCancel() {
         </div>
 
         <!-- Editable fields -->
-        <UForm ref="formRef" :schema="schema" :state="state" class="space-y-4">
+        <UForm
+          ref="formRef"
+          :schema="schema"
+          :state="state"
+          class="space-y-4"
+        >
           <UFormField label="Planned Qty per Day" name="planned_qty_per_day" required>
             <UInput
               v-model.number="state.planned_qty_per_day"
@@ -112,8 +117,20 @@ function onCancel() {
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" :disabled="props.loading" @click="onCancel" />
-        <UButton color="primary" variant="solid" label="Save Changes" :loading="props.loading" @click="onSubmit" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          label="Cancel"
+          :disabled="props.loading"
+          @click="onCancel"
+        />
+        <UButton
+          color="primary"
+          variant="solid"
+          label="Save Changes"
+          :loading="props.loading"
+          @click="onSubmit"
+        />
       </div>
     </template>
   </UModal>

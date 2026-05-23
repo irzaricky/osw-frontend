@@ -193,7 +193,9 @@ onMounted(() => {
   <div class="p-6 space-y-5">
     <Breadcrumbs :items="breadcrumbItems" />
 
-    <h1 class="text-2xl font-bold">Shift Management</h1>
+    <h1 class="text-2xl font-bold">
+      Shift Management
+    </h1>
 
     <ShiftFilters
       :search="search"
@@ -206,9 +208,26 @@ onMounted(() => {
 
     <!-- Toolbar -->
     <div class="flex items-center gap-2">
-      <UButton icon="i-lucide-download" color="neutral" variant="ghost" label="Export" @click="handleDownload" />
-      <UButton icon="i-lucide-upload" color="neutral" variant="ghost" label="Import" @click="isUploadOpen = true" />
-      <UButton icon="i-lucide-plus" color="primary" label="Add Shift" @click="openAddModal" />
+      <UButton
+        icon="i-lucide-download"
+        color="neutral"
+        variant="ghost"
+        label="Export"
+        @click="handleDownload"
+      />
+      <UButton
+        icon="i-lucide-upload"
+        color="neutral"
+        variant="ghost"
+        label="Import"
+        @click="isUploadOpen = true"
+      />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        label="Add Shift"
+        @click="openAddModal"
+      />
     </div>
 
     <!-- Bulk Actions -->

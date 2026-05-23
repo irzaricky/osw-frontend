@@ -106,7 +106,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :state="state" :schema="schema" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :state="state"
+        :schema="schema"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <UFormField label="Dock Code" name="dock_code" required>
           <UInput v-model="state.dock_code" placeholder="e.g. D001" class="w-full" />
         </UFormField>
@@ -129,8 +135,18 @@ function close() {
 
     <template #footer>
       <div class="flex justify-end gap-2 w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>

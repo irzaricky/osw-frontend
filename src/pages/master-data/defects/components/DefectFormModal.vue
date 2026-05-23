@@ -107,7 +107,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <UFormField label="Defect Name" name="name" required>
           <UInput v-model="state.name" placeholder="e.g. Retak" class="w-full" />
         </UFormField>
@@ -130,8 +136,18 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>

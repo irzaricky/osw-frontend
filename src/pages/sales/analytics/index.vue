@@ -86,8 +86,12 @@ onMounted(() => {
 
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold">Sales Analytics</h1>
-        <p class="text-sm text-muted">Dasbor analitik penjualan dan pelaporan pengiriman terpusat.</p>
+        <h1 class="text-2xl font-bold">
+          Sales Analytics
+        </h1>
+        <p class="text-sm text-muted">
+          Dasbor analitik penjualan dan pelaporan pengiriman terpusat.
+        </p>
       </div>
 
       <UButton
@@ -141,8 +145,12 @@ onMounted(() => {
             <UIcon name="i-lucide-shopping-cart" class="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p class="text-3xl font-bold">{{ summary.kpis.total_spos }}</p>
-            <p class="text-xs text-muted mt-1">Dokumen SPO terbit</p>
+            <p class="text-3xl font-bold">
+              {{ summary.kpis.total_spos }}
+            </p>
+            <p class="text-xs text-muted mt-1">
+              Dokumen SPO terbit
+            </p>
           </div>
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
@@ -169,8 +177,12 @@ onMounted(() => {
             <UIcon name="i-lucide-calendar" class="w-5 h-5 text-success" />
           </div>
           <div>
-            <p class="text-3xl font-bold">{{ summary.kpis.active_plans_count }}</p>
-            <p class="text-xs text-muted mt-1">Schedules Pending / Draft</p>
+            <p class="text-3xl font-bold">
+              {{ summary.kpis.active_plans_count }}
+            </p>
+            <p class="text-xs text-muted mt-1">
+              Schedules Pending / Draft
+            </p>
           </div>
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
@@ -220,7 +232,9 @@ onMounted(() => {
             <p class="text-3xl font-bold">
               {{ summary.dock_utilization.reduce((acc, curr) => acc + curr.total_hours, 0).toFixed(1) }} jam
             </p>
-            <p class="text-xs text-muted mt-1">Total waktu dermaga terpakai</p>
+            <p class="text-xs text-muted mt-1">
+              Total waktu dermaga terpakai
+            </p>
           </div>
           <div class="border-t border-default pt-3 space-y-2 max-h-[80px] overflow-y-auto">
             <div v-for="dock in summary.dock_utilization" :key="dock.id" class="flex justify-between text-xs">
@@ -245,6 +259,5 @@ onMounted(() => {
       :trends="trends"
       :loading="loading"
     />
-
   </div>
 </template>

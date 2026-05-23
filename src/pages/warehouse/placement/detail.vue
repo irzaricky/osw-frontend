@@ -123,119 +123,165 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="p-6 space-y-6">
-        <Breadcrumbs :items="breadcrumbItems" />
+  <div class="p-6 space-y-6">
+    <Breadcrumbs :items="breadcrumbItems" />
 
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h1 class="text-2xl font-bold">
-                    Stock In Placement Detail
-                </h1>
-                <p class="text-sm text-muted">
-                    Scan part label, validate item, then scan storage bin.
-                </p>
-            </div>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold">
+          Stock In Placement Detail
+        </h1>
+        <p class="text-sm text-muted">
+          Scan part label, validate item, then scan storage bin.
+        </p>
+      </div>
 
-            <UBadge v-if="placementDetail?.status" variant="soft" :color="statusColor">
-                {{ placementDetail.status.name }}
-            </UBadge>
-        </div>
-
-        <div v-if="placementDetail" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <UCard class="lg:col-span-2">
-                <template #header>
-                    <div class="font-semibold">
-                        Work Order Information
-                    </div>
-                </template>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <p class="text-muted">Work Order Number</p>
-                        <p class="font-medium">{{ placementDetail.wo_number }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-muted">Work Order Date</p>
-                        <p class="font-medium">
-                            {{ placementDetail.wo_date ? new Date(placementDetail.wo_date).toLocaleDateString() : '-' }}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p class="text-muted">Type</p>
-                        <p class="font-medium">{{ placementDetail.type?.name || '-' }}</p>
-                    </div>
-
-                    <div>
-                        <p class="text-muted">Warehouse Area</p>
-                        <p class="font-medium">{{ placementDetail.area?.name || '-' }}</p>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <p class="text-muted">Description</p>
-                        <p class="font-medium">{{ placementDetail.wo_description || '-' }}</p>
-                    </div>
-                </div>
-            </UCard>
-
-            <UCard>
-                <template #header>
-                    <div class="font-semibold">
-                        Progress
-                    </div>
-                </template>
-
-                <PlacementProgress :total="placementDetail.total_label" :scanned="placementDetail.total_scanned"
-                    :progress="placementDetail.progress" :total-pcs="placementDetail.total_pcs"
-                    :scanned-pcs="placementDetail.scanned_pcs" />
-
-                <div class="grid grid-cols-3 gap-2 text-center text-sm mt-4">
-                    <div class="rounded-lg border border-default p-2">
-                        <p class="text-muted">Total</p>
-                        <p class="font-bold">{{ placementDetail.total_label }}</p>
-                    </div>
-                    <div class="rounded-lg border border-default p-2">
-                        <p class="text-muted">Scanned</p>
-                        <p class="font-bold">{{ placementDetail.total_scanned }}</p>
-                    </div>
-                    <div class="rounded-lg border border-default p-2">
-                        <p class="text-muted">Remaining</p>
-                        <p class="font-bold">{{ placementDetail.remaining }}</p>
-                    </div>
-                </div>
-            </UCard>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <PlacementScanPart v-model="labelNumber" :scanned-label="scannedLabel" :loading="loading"
-                @scan="handleScanLabel" @scan-qr="openPartScanner" />
-
-            <PlacementScanBin v-model:bin-code="binCode" v-model:qty-per-kanban="qtyPerKanban"
-                :scanned-label="scannedLabel" :available-bins="availableBins" :loading="loading" @place="handlePlaceBin"
-                @select-bin="selectBin" @scan-qr="openBinScanner" />
-        </div>
-
-        <UCard v-if="placementDetail">
-            <template #header>
-                <div class="font-semibold">
-                    Part Items
-                </div>
-            </template>
-
-            <div class="space-y-4">
-                <PlacementItemCard v-for="item in placementDetail.items" :key="item.wo_item_id" :item="item" />
-            </div>
-        </UCard>
-
-        <UCard v-else>
-            <div class="py-10 text-center text-muted">
-                Loading placement detail...
-            </div>
-        </UCard>
+      <UBadge v-if="placementDetail?.status" variant="soft" :color="statusColor">
+        {{ placementDetail.status.name }}
+      </UBadge>
     </div>
 
-    <QRCodeScannerModal v-model:open="partScannerOpen" title="Scan Part Label QR" @scanned="onPartQrScanned" />
+    <div v-if="placementDetail" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <UCard class="lg:col-span-2">
+        <template #header>
+          <div class="font-semibold">
+            Work Order Information
+          </div>
+        </template>
 
-    <QRCodeScannerModal v-model:open="binScannerOpen" title="Scan Storage Bin QR" @scanned="onBinQrScanned" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p class="text-muted">
+              Work Order Number
+            </p>
+            <p class="font-medium">
+              {{ placementDetail.wo_number }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-muted">
+              Work Order Date
+            </p>
+            <p class="font-medium">
+              {{ placementDetail.wo_date ? new Date(placementDetail.wo_date).toLocaleDateString() : '-' }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-muted">
+              Type
+            </p>
+            <p class="font-medium">
+              {{ placementDetail.type?.name || '-' }}
+            </p>
+          </div>
+
+          <div>
+            <p class="text-muted">
+              Warehouse Area
+            </p>
+            <p class="font-medium">
+              {{ placementDetail.area?.name || '-' }}
+            </p>
+          </div>
+
+          <div class="md:col-span-2">
+            <p class="text-muted">
+              Description
+            </p>
+            <p class="font-medium">
+              {{ placementDetail.wo_description || '-' }}
+            </p>
+          </div>
+        </div>
+      </UCard>
+
+      <UCard>
+        <template #header>
+          <div class="font-semibold">
+            Progress
+          </div>
+        </template>
+
+        <PlacementProgress
+          :total="placementDetail.total_label"
+          :scanned="placementDetail.total_scanned"
+          :progress="placementDetail.progress"
+          :total-pcs="placementDetail.total_pcs"
+          :scanned-pcs="placementDetail.scanned_pcs"
+        />
+
+        <div class="grid grid-cols-3 gap-2 text-center text-sm mt-4">
+          <div class="rounded-lg border border-default p-2">
+            <p class="text-muted">
+              Total
+            </p>
+            <p class="font-bold">
+              {{ placementDetail.total_label }}
+            </p>
+          </div>
+          <div class="rounded-lg border border-default p-2">
+            <p class="text-muted">
+              Scanned
+            </p>
+            <p class="font-bold">
+              {{ placementDetail.total_scanned }}
+            </p>
+          </div>
+          <div class="rounded-lg border border-default p-2">
+            <p class="text-muted">
+              Remaining
+            </p>
+            <p class="font-bold">
+              {{ placementDetail.remaining }}
+            </p>
+          </div>
+        </div>
+      </UCard>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <PlacementScanPart
+        v-model="labelNumber"
+        :scanned-label="scannedLabel"
+        :loading="loading"
+        @scan="handleScanLabel"
+        @scan-qr="openPartScanner"
+      />
+
+      <PlacementScanBin
+        v-model:bin-code="binCode"
+        v-model:qty-per-kanban="qtyPerKanban"
+        :scanned-label="scannedLabel"
+        :available-bins="availableBins"
+        :loading="loading"
+        @place="handlePlaceBin"
+        @select-bin="selectBin"
+        @scan-qr="openBinScanner"
+      />
+    </div>
+
+    <UCard v-if="placementDetail">
+      <template #header>
+        <div class="font-semibold">
+          Part Items
+        </div>
+      </template>
+
+      <div class="space-y-4">
+        <PlacementItemCard v-for="item in placementDetail.items" :key="item.wo_item_id" :item="item" />
+      </div>
+    </UCard>
+
+    <UCard v-else>
+      <div class="py-10 text-center text-muted">
+        Loading placement detail...
+      </div>
+    </UCard>
+  </div>
+
+  <QRCodeScannerModal v-model:open="partScannerOpen" title="Scan Part Label QR" @scanned="onPartQrScanned" />
+
+  <QRCodeScannerModal v-model:open="binScannerOpen" title="Scan Storage Bin QR" @scanned="onBinQrScanned" />
 </template>

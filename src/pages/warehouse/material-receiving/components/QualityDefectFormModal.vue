@@ -185,7 +185,6 @@ function close() {
     "
   >
     <template #body>
-
       <UForm
         ref="formRef"
         :schema="schema"
@@ -193,7 +192,6 @@ function close() {
         class="space-y-4"
         @submit="onSubmit"
       >
-
         <UFormField
           label="Label Number"
         >
@@ -201,7 +199,7 @@ function close() {
             :model-value="
               props.label
                 ?.label_number ||
-              '-'
+                '-'
             "
 
             disabled
@@ -211,7 +209,6 @@ function close() {
         </UFormField>
 
         <div class="space-y-4">
-
           <div
             class="flex items-center justify-between"
           >
@@ -242,13 +239,10 @@ function close() {
 
             class="border rounded-xl p-4 space-y-4"
           >
-
             <div
               class="flex items-start gap-3"
             >
-
               <div class="flex-1">
-
                 <UFormField
                   :name="`defects.${index}.defect_id`"
                   label="Defect"
@@ -272,7 +266,6 @@ function close() {
                     class="w-full"
                   />
                 </UFormField>
-
               </div>
 
               <UButton
@@ -291,17 +284,14 @@ function close() {
                   )
                 "
               />
-
             </div>
 
             <UFormField
               label="Defect Image"
             >
-
               <div
                 class="space-y-3"
               >
-
                 <input
                   type="file"
                   accept="image/*"
@@ -312,7 +302,7 @@ function close() {
                       index
                     )
                   "
-                />
+                >
 
                 <img
                   v-if="
@@ -326,26 +316,18 @@ function close() {
                   alt="Defect Preview"
 
                   class="w-32 h-32 object-cover rounded-lg border"
-                />
-
+                >
               </div>
-
             </UFormField>
-
           </div>
-
         </div>
-
       </UForm>
-
     </template>
 
     <template #footer>
-
       <div
         class="flex justify-end gap-2 w-full"
       >
-
         <UButton
           color="neutral"
           variant="ghost"
@@ -366,9 +348,7 @@ function close() {
             submitForm
           "
         />
-
       </div>
-
     </template>
   </UModal>
 </template>

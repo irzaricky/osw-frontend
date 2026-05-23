@@ -33,8 +33,13 @@ defineProps<{
       </UBadge>
     </div>
 
-    <TakeOutProgress :total="item.total_label" :scanned="item.total_scanned_out" :progress="item.progress"
-      :total-pcs="item.total_pcs" :scanned-pcs="item.scanned_out_pcs" />
+    <TakeOutProgress
+      :total="item.total_label"
+      :scanned="item.total_scanned_out"
+      :progress="item.progress"
+      :total-pcs="item.total_pcs"
+      :scanned-pcs="item.scanned_out_pcs"
+    />
 
     <div class="space-y-4">
       <!-- Actual Taken Out -->
@@ -44,8 +49,11 @@ defineProps<{
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          <div v-for="label in item.labels.filter(label => label.is_scanned_out)" :key="label.wo_item_label_id"
-            class="rounded-lg border border-success/30 bg-success/5 p-2 text-sm flex items-center justify-between gap-2">
+          <div
+            v-for="label in item.labels.filter(label => label.is_scanned_out)"
+            :key="label.wo_item_label_id"
+            class="rounded-lg border border-success/30 bg-success/5 p-2 text-sm flex items-center justify-between gap-2"
+          >
             <span class="truncate">
               {{ label.label_number }}
             </span>
@@ -64,8 +72,11 @@ defineProps<{
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-          <div v-for="label in item.labels.filter(label => !label.is_scanned_out)" :key="label.wo_item_label_id"
-            class="rounded-lg border border-default p-2 text-sm flex items-center justify-between gap-2 opacity-70">
+          <div
+            v-for="label in item.labels.filter(label => !label.is_scanned_out)"
+            :key="label.wo_item_label_id"
+            class="rounded-lg border border-default p-2 text-sm flex items-center justify-between gap-2 opacity-70"
+          >
             <span class="truncate">
               {{ label.label_number }}
             </span>

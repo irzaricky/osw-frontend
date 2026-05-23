@@ -43,9 +43,27 @@ const selectedStatus = computed({
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-    <USelectMenu v-model="selectedLine" :items="lineItems" placeholder="Filter by Line" class="w-44" clear />
-    <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Filter by Type" class="w-44" clear />
-    <USelectMenu v-model="selectedStatus" :items="statusItems" placeholder="Filter by Status" class="w-44" clear />
+    <USelectMenu
+      v-model="selectedLine"
+      :items="lineItems"
+      placeholder="Filter by Line"
+      class="w-44"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedType"
+      :items="typeItems"
+      placeholder="Filter by Type"
+      class="w-44"
+      clear
+    />
+    <USelectMenu
+      v-model="selectedStatus"
+      :items="statusItems"
+      placeholder="Filter by Status"
+      class="w-44"
+      clear
+    />
     <UInput
       :model-value="search"
       icon="i-lucide-search"

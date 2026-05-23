@@ -28,23 +28,39 @@ function formatCurrency(value: any) {
 
       <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
         <div>
-          <p class="text-muted">Parts</p>
-          <p class="font-semibold">{{ item.total_parts }}</p>
+          <p class="text-muted">
+            Parts
+          </p>
+          <p class="font-semibold">
+            {{ item.total_parts }}
+          </p>
         </div>
 
         <div>
-          <p class="text-muted">Kanban</p>
-          <p class="font-semibold">{{ item.total_kanban }}</p>
+          <p class="text-muted">
+            Kanban
+          </p>
+          <p class="font-semibold">
+            {{ item.total_kanban }}
+          </p>
         </div>
 
         <div>
-          <p class="text-muted">PCS</p>
-          <p class="font-semibold">{{ item.total_pcs }}</p>
+          <p class="text-muted">
+            PCS
+          </p>
+          <p class="font-semibold">
+            {{ item.total_pcs }}
+          </p>
         </div>
 
         <div>
-          <p class="text-muted">Main Area</p>
-          <p class="font-semibold truncate">{{ item.dominant_area || '-' }}</p>
+          <p class="text-muted">
+            Main Area
+          </p>
+          <p class="font-semibold truncate">
+            {{ item.dominant_area || '-' }}
+          </p>
         </div>
       </div>
     </UCard>

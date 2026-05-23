@@ -57,19 +57,42 @@ function handleSave() {
     <template #body>
       <form id="job-form" class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Job Code" required>
-          <UInput v-model="job_code" placeholder="e.g. JOB-001" class="w-full" :disabled="loading" />
+          <UInput
+            v-model="job_code"
+            placeholder="e.g. JOB-001"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Name" required>
-          <UInput v-model="name" placeholder="e.g. Bolt Tightening" class="w-full" :disabled="loading" />
+          <UInput
+            v-model="name"
+            placeholder="e.g. Bolt Tightening"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Job Type" required>
-          <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Select type" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedType"
+            :items="typeItems"
+            placeholder="Select type"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Standard Time (seconds)" required>
-          <UInput v-model.number="standard_time" type="number" min="0" class="w-full" :disabled="loading" />
+          <UInput
+            v-model.number="standard_time"
+            type="number"
+            min="0"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Status">
@@ -80,8 +103,20 @@ function handleSave() {
 
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" :disabled="loading" @click="emit('update:open', false)" />
-        <UButton type="submit" form="job-form" label="Save" color="primary" :loading="loading" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          :disabled="loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          type="submit"
+          form="job-form"
+          label="Save"
+          color="primary"
+          :loading="loading"
+        />
       </div>
     </template>
   </UModal>

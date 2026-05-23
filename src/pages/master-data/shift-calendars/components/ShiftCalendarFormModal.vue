@@ -80,27 +80,63 @@ function handleSave() {
     <template #body>
       <form id="shift-calendar-form" class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Shift" required>
-          <USelectMenu v-model="selectedShift" :items="shiftItems" placeholder="Select shift" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedShift"
+            :items="shiftItems"
+            placeholder="Select shift"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Line" required>
-          <USelectMenu v-model="selectedLine" :items="lineItems" placeholder="Select line" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedLine"
+            :items="lineItems"
+            placeholder="Select line"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Calendar Type" required>
-          <USelectMenu v-model="selectedCalendarType" :items="calendarTypeItems" placeholder="Select calendar type" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedCalendarType"
+            :items="calendarTypeItems"
+            placeholder="Select calendar type"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Event Name" required>
-          <UInput v-model="date_event" placeholder="e.g. Normal Production" class="w-full" :disabled="loading" />
+          <UInput
+            v-model="date_event"
+            placeholder="e.g. Normal Production"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <div class="grid grid-cols-2 gap-4">
           <UFormField label="Start Date" required>
-            <UInput v-model="start_date" type="date" class="w-full" :disabled="loading" />
+            <UInput
+              v-model="start_date"
+              type="date"
+              class="w-full"
+              :disabled="loading"
+            />
           </UFormField>
           <UFormField label="End Date" required>
-            <UInput v-model="end_date" type="date" class="w-full" :disabled="loading" />
+            <UInput
+              v-model="end_date"
+              type="date"
+              class="w-full"
+              :disabled="loading"
+            />
           </UFormField>
         </div>
 
@@ -112,8 +148,20 @@ function handleSave() {
 
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" :disabled="loading" @click="emit('update:open', false)" />
-        <UButton type="submit" form="shift-calendar-form" label="Save" color="primary" :loading="loading" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          :disabled="loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          type="submit"
+          form="shift-calendar-form"
+          label="Save"
+          color="primary"
+          :loading="loading"
+        />
       </div>
     </template>
   </UModal>

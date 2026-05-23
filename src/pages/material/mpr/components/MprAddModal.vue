@@ -174,7 +174,12 @@ function close() {
       >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- Description -->
-          <UFormField label="Description" name="description" required class="md:col-span-2">
+          <UFormField
+            label="Description"
+            name="description"
+            required
+            class="md:col-span-2"
+          >
             <UInput
               v-model="state.description"
               placeholder="e.g. Request for May Production Material"

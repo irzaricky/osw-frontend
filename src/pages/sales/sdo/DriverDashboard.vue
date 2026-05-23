@@ -68,8 +68,12 @@ function getSlaBadgeConfig(status?: string) {
             {{ driverName.charAt(0).toUpperCase() }}
           </div>
           <div>
-            <p class="text-xs text-slate-400">Driver Portal</p>
-            <h2 class="font-bold text-base text-white truncate max-w-[180px]">{{ driverName }}</h2>
+            <p class="text-xs text-slate-400">
+              Driver Portal
+            </p>
+            <h2 class="font-bold text-base text-white truncate max-w-[180px]">
+              {{ driverName }}
+            </h2>
           </div>
         </div>
         <UButton
@@ -90,8 +94,12 @@ function getSlaBadgeConfig(status?: string) {
         <div class="flex items-center gap-3 mb-2">
           <span class="text-2xl">🚚</span>
           <div>
-            <h3 class="font-bold text-lg text-white">Delivery Summary</h3>
-            <p class="text-xs text-slate-400">Track and confirm your assigned shipments</p>
+            <h3 class="font-bold text-lg text-white">
+              Delivery Summary
+            </h3>
+            <p class="text-xs text-slate-400">
+              Track and confirm your assigned shipments
+            </p>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-4">
@@ -138,8 +146,12 @@ function getSlaBadgeConfig(status?: string) {
           <UIcon name="i-lucide-clipboard-list" class="w-8 h-8" />
         </div>
         <div>
-          <h4 class="font-bold text-white text-base">No Active Deliveries</h4>
-          <p class="text-xs text-slate-400 max-w-[240px] mt-1">You don't have any active "In Transit" orders assigned to you right now.</p>
+          <h4 class="font-bold text-white text-base">
+            No Active Deliveries
+          </h4>
+          <p class="text-xs text-slate-400 max-w-[240px] mt-1">
+            You don't have any active "In Transit" orders assigned to you right now.
+          </p>
         </div>
       </div>
 
@@ -148,8 +160,12 @@ function getSlaBadgeConfig(status?: string) {
           <UIcon name="i-lucide-history" class="w-8 h-8" />
         </div>
         <div>
-          <h4 class="font-bold text-white text-base">No Completed Deliveries</h4>
-          <p class="text-xs text-slate-400 max-w-[240px] mt-1">You haven't completed any SDO deliveries yet.</p>
+          <h4 class="font-bold text-white text-base">
+            No Completed Deliveries
+          </h4>
+          <p class="text-xs text-slate-400 max-w-[240px] mt-1">
+            You haven't completed any SDO deliveries yet.
+          </p>
         </div>
       </div>
 
@@ -163,8 +179,12 @@ function getSlaBadgeConfig(status?: string) {
           <!-- DO number & Status -->
           <div class="flex justify-between items-start border-b border-slate-700/40 pb-2">
             <div>
-              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">DO Number</p>
-              <h4 class="font-mono font-black text-xs text-primary mt-0.5">{{ sdo.do_number }}</h4>
+              <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                DO Number
+              </p>
+              <h4 class="font-mono font-black text-xs text-primary mt-0.5">
+                {{ sdo.do_number }}
+              </h4>
             </div>
             <div class="flex flex-col items-end gap-1">
               <UBadge
@@ -193,27 +213,43 @@ function getSlaBadgeConfig(status?: string) {
             <div class="flex items-start gap-2">
               <UIcon name="i-lucide-user" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div>
-                <p class="text-[10px] text-slate-400">Customer</p>
-                <p class="font-bold text-white">{{ sdo.customer?.name || '-' }}</p>
+                <p class="text-[10px] text-slate-400">
+                  Customer
+                </p>
+                <p class="font-bold text-white">
+                  {{ sdo.customer?.name || '-' }}
+                </p>
               </div>
             </div>
 
             <div class="flex items-start gap-2">
               <UIcon name="i-lucide-map-pin" class="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div>
-                <p class="text-[10px] text-slate-400">Destination</p>
-                <p class="font-semibold text-slate-300 leading-normal">{{ sdo.deliveryPlan?.destination || 'See details' }}</p>
+                <p class="text-[10px] text-slate-400">
+                  Destination
+                </p>
+                <p class="font-semibold text-slate-300 leading-normal">
+                  {{ sdo.deliveryPlan?.destination || 'See details' }}
+                </p>
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-2 pt-1">
               <div>
-                <p class="text-[10px] text-slate-400">Shipment Date</p>
-                <p class="font-semibold text-slate-300">{{ formatDate(sdo.shipment_date) }}</p>
+                <p class="text-[10px] text-slate-400">
+                  Shipment Date
+                </p>
+                <p class="font-semibold text-slate-300">
+                  {{ formatDate(sdo.shipment_date) }}
+                </p>
               </div>
               <div>
-                <p class="text-[10px] text-slate-400">Plate Number</p>
-                <p class="font-mono font-semibold text-slate-300">{{ sdo.vehicle?.license_plate || '-' }}</p>
+                <p class="text-[10px] text-slate-400">
+                  Plate Number
+                </p>
+                <p class="font-mono font-semibold text-slate-300">
+                  {{ sdo.vehicle?.license_plate || '-' }}
+                </p>
               </div>
             </div>
           </div>

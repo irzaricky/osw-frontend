@@ -128,7 +128,13 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <UForm ref="formRef" :schema="schema" :state="state" @submit="onSubmit" class="space-y-4">
+      <UForm
+        ref="formRef"
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
         <UFormField label="Part" name="part_id" required>
           <USelectMenu 
             v-model="selectedPart"
@@ -140,7 +146,7 @@ function close() {
           />
         </UFormField>
 
-        <UFormField label="Available Stock (Kanban)" v-if="props.showStockField">
+        <UFormField v-if="props.showStockField" label="Available Stock (Kanban)">
           <UInput
             :model-value="selectedPartStock ?? '-'"
             disabled
@@ -148,7 +154,7 @@ function close() {
           />
         </UFormField>
 
-        <UFormField label="Remaining Qty (Kanban)" v-if="props.showRemainingQtyField">
+        <UFormField v-if="props.showRemainingQtyField" label="Remaining Qty (Kanban)">
           <UInput
             :model-value="selectedPartRemainingQty ?? '-'"
             disabled
@@ -158,8 +164,8 @@ function close() {
 
         <UFormField label="Total Kanban" name="total_kanban" required>
           <UInput
-            type="number"
             v-model="state.total_kanban"
+            type="number"
             placeholder="Enter total kanban"
             class="w-full"
             :disabled="props.kanbanDisabled"
@@ -170,8 +176,18 @@ function close() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="close" />
-        <UButton color="primary" label="Save" :loading="props.loading" @click="submitForm" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="close"
+        />
+        <UButton
+          color="primary"
+          label="Save"
+          :loading="props.loading"
+          @click="submitForm"
+        />
       </div>
     </template>
   </UModal>

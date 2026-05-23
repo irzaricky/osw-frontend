@@ -66,15 +66,33 @@ function getDetailLineNames(detail: PlanDetail): string {
       <table class="w-full text-sm">
         <thead class="bg-elevated border-b border-default">
           <tr>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">No</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Customer</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Product</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Delivery Date</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Requested Qty</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Bottleneck Capacity</th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Capacity Gap</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Production Lines</th>
-            <th class="text-center px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Status</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              No
+            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Customer
+            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Product
+            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Delivery Date
+            </th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Requested Qty
+            </th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Bottleneck Capacity
+            </th>
+            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Capacity Gap
+            </th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Production Lines
+            </th>
+            <th class="text-center px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
+              Status
+            </th>
           </tr>
         </thead>
         <tbody class="divide-y divide-default">
@@ -94,20 +112,32 @@ function getDetailLineNames(detail: PlanDetail): string {
             :key="detail.id"
             class="hover:bg-elevated/50 transition-colors"
           >
-            <td class="px-4 py-3 text-muted">{{ idx + 1 }}</td>
-            <td class="px-4 py-3 font-medium">{{ detail.customer?.name ?? '-' }}</td>
-            <td class="px-4 py-3">
-              <div class="font-medium">{{ detail.part?.part_name ?? '-' }}</div>
-              <div class="text-xs text-muted font-mono">{{ detail.part?.part_number ?? '' }}</div>
+            <td class="px-4 py-3 text-muted">
+              {{ idx + 1 }}
             </td>
-            <td class="px-4 py-3 text-muted">{{ fmtDate(detail.delivery_date) }}</td>
-            <td class="px-4 py-3 text-right font-mono">{{ fmtNum(detail.qty_request) }}</td>
+            <td class="px-4 py-3 font-medium">
+              {{ detail.customer?.name ?? '-' }}
+            </td>
+            <td class="px-4 py-3">
+              <div class="font-medium">
+                {{ detail.part?.part_name ?? '-' }}
+              </div>
+              <div class="text-xs text-muted font-mono">
+                {{ detail.part?.part_number ?? '' }}
+              </div>
+            </td>
+            <td class="px-4 py-3 text-muted">
+              {{ fmtDate(detail.delivery_date) }}
+            </td>
+            <td class="px-4 py-3 text-right font-mono">
+              {{ fmtNum(detail.qty_request) }}
+            </td>
             <td class="px-4 py-3 text-right font-mono">
               <span
                 :class="{
                   'text-success-600': getBottleneckCapacity(detail) != null && getBottleneckCapacity(detail)! >= detail.qty_request,
-                  'text-error-600':   getBottleneckCapacity(detail) != null && getBottleneckCapacity(detail)! < detail.qty_request,
-                  'text-muted':       getBottleneckCapacity(detail) == null,
+                  'text-error-600': getBottleneckCapacity(detail) != null && getBottleneckCapacity(detail)! < detail.qty_request,
+                  'text-muted': getBottleneckCapacity(detail) == null,
                 }"
               >
                 {{ getBottleneckCapacity(detail) != null ? fmtNum(getBottleneckCapacity(detail)) : '—' }}
@@ -145,9 +175,9 @@ function getDetailLineNames(detail: PlanDetail): string {
             <td class="px-4 py-3 text-center">
               <UBadge
                 :label="
-                  detail.status === 'POSSIBLE'   ? 'POSSIBLE'
+                  detail.status === 'POSSIBLE' ? 'POSSIBLE'
                   : detail.status === 'IMPOSSIBLE' ? 'IMPOSSIBLE'
-                  : 'Not Calculated'
+                    : 'Not Calculated'
                 "
                 :color="detailStatusColor(detail.status)"
                 variant="soft"

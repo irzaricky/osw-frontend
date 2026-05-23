@@ -140,7 +140,12 @@ function handleSubmit() {
         <template v-if="form.issue_type === 'DEFECT'">
           <div class="grid grid-cols-2 gap-3">
             <UFormField label="Defect Quantity">
-              <UInput v-model.number="form.defect_qty" type="number" min="0" class="w-full font-mono" />
+              <UInput
+                v-model.number="form.defect_qty"
+                type="number"
+                min="0"
+                class="w-full font-mono"
+              />
             </UFormField>
             <UFormField label="Defect Type">
               <UInput v-model="form.defect_type" placeholder="e.g. Scratch, Dimension..." class="w-full" />
@@ -152,7 +157,12 @@ function handleSubmit() {
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          @click="emit('update:open', false)"
+        />
         <UButton
           label="Submit Issue"
           icon="i-lucide-alert-triangle"

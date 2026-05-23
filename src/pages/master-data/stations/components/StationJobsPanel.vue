@@ -157,12 +157,18 @@ function goToDetail() {
 
 <template>
   <div class="px-6 py-4 bg-elevated/40 border-b border-default space-y-3">
-
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <p class="text-sm font-semibold">Jobs — {{ station.name }}</p>
-        <UBadge :label="`${stationJobs.length} total`" color="neutral" variant="soft" size="xs" />
+        <p class="text-sm font-semibold">
+          Jobs — {{ station.name }}
+        </p>
+        <UBadge
+          :label="`${stationJobs.length} total`"
+          color="neutral"
+          variant="soft"
+          size="xs"
+        />
       </div>
       <div class="flex items-center gap-2">
         <UButton
@@ -197,12 +203,36 @@ function goToDetail() {
 
     <!-- Add row -->
     <div v-if="isAdding" class="flex items-center gap-3 p-2 rounded-lg border border-primary/30 bg-primary/5">
-      <USelectMenu v-model="selectedNewJob" :items="availableJobItems" placeholder="Select job" class="flex-1 min-w-0" clear />
-      <UInput v-model.number="newSequence" type="number" placeholder="Seq" class="w-20" :min="0" />
+      <USelectMenu
+        v-model="selectedNewJob"
+        :items="availableJobItems"
+        placeholder="Select job"
+        class="flex-1 min-w-0"
+        clear
+      />
+      <UInput
+        v-model.number="newSequence"
+        type="number"
+        placeholder="Seq"
+        class="w-20"
+        :min="0"
+      />
       <UCheckbox v-model="newMandatory" label="Mandatory" />
       <UCheckbox v-model="newActive" label="Active" />
-      <UButton icon="i-lucide-check" color="primary" size="xs" :disabled="!newJobId || loading" @click="submitAdd" />
-      <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" @click="cancelAdd" />
+      <UButton
+        icon="i-lucide-check"
+        color="primary"
+        size="xs"
+        :disabled="!newJobId || loading"
+        @click="submitAdd"
+      />
+      <UButton
+        icon="i-lucide-x"
+        color="neutral"
+        variant="ghost"
+        size="xs"
+        @click="cancelAdd"
+      />
     </div>
 
     <!-- Empty state -->
@@ -223,33 +253,78 @@ function goToDetail() {
     >
       <!-- Edit mode -->
       <template v-if="editingId === sj.id">
-        <USelectMenu v-model="selectedEditJob" :items="allJobItems" placeholder="Select job" class="flex-1 min-w-0" clear />
-        <UInput v-model.number="editSequence" type="number" placeholder="Seq" class="w-20" :min="0" />
+        <USelectMenu
+          v-model="selectedEditJob"
+          :items="allJobItems"
+          placeholder="Select job"
+          class="flex-1 min-w-0"
+          clear
+        />
+        <UInput
+          v-model.number="editSequence"
+          type="number"
+          placeholder="Seq"
+          class="w-20"
+          :min="0"
+        />
         <UCheckbox v-model="editMandatory" label="Mandatory" />
         <UCheckbox v-model="editActive" label="Active" />
-        <UButton icon="i-lucide-check" color="primary" size="xs" :disabled="loading" @click="submitEdit(sj.id)" />
-        <UButton icon="i-lucide-x" color="neutral" variant="ghost" size="xs" @click="cancelEdit" />
+        <UButton
+          icon="i-lucide-check"
+          color="primary"
+          size="xs"
+          :disabled="loading"
+          @click="submitEdit(sj.id)"
+        />
+        <UButton
+          icon="i-lucide-x"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          @click="cancelEdit"
+        />
       </template>
 
       <!-- View mode -->
       <template v-else>
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium truncate">{{ sj.job?.name ?? '—' }}</p>
-          <p class="text-xs text-muted">{{ sj.job?.job_code }} · {{ sj.job?.standard_time }}s</p>
+          <p class="text-sm font-medium truncate">
+            {{ sj.job?.name ?? '—' }}
+          </p>
+          <p class="text-xs text-muted">
+            {{ sj.job?.job_code }} · {{ sj.job?.standard_time }}s
+          </p>
         </div>
         <span class="text-xs text-muted w-14 text-center shrink-0">Seq: {{ sj.sequence }}</span>
         <UBadge
           :label="sj.mandatory ? 'Mandatory' : 'Optional'"
           :color="sj.mandatory ? 'warning' : 'neutral'"
-          variant="soft" size="xs" class="shrink-0"
+          variant="soft"
+          size="xs"
+          class="shrink-0"
         />
         <UBadge
           :label="sj.active ? 'Active' : 'Inactive'"
           :color="sj.active ? 'success' : 'neutral'"
-          variant="soft" size="xs" class="shrink-0"
+          variant="soft"
+          size="xs"
+          class="shrink-0"
         />
-        <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="startEdit(sj)" />
-        <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" :disabled="loading" @click="openDeleteConfirm(sj)" />
+        <UButton
+          icon="i-lucide-pencil"
+          color="neutral"
+          variant="ghost"
+          size="xs"
+          @click="startEdit(sj)"
+        />
+        <UButton
+          icon="i-lucide-trash-2"
+          color="error"
+          variant="ghost"
+          size="xs"
+          :disabled="loading"
+          @click="openDeleteConfirm(sj)"
+        />
       </template>
     </div>
 
@@ -260,7 +335,6 @@ function goToDetail() {
     >
       +{{ hiddenCount }} more job{{ hiddenCount > 1 ? 's' : '' }} — View All
     </button>
-
   </div>
 
   <UModal v-model:open="confirm.open" title="Remove Job" :ui="{ content: 'sm:max-w-sm' }">
@@ -272,8 +346,18 @@ function goToDetail() {
     </template>
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" @click="confirm.open = false" />
-        <UButton label="Remove" color="error" :loading="loading" @click="submitDelete" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          @click="confirm.open = false"
+        />
+        <UButton
+          label="Remove"
+          color="error"
+          :loading="loading"
+          @click="submitDelete"
+        />
       </div>
     </template>
   </UModal>

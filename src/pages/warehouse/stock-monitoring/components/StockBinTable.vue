@@ -124,8 +124,13 @@ const columns = [
       </div>
     </template>
 
-    <UTable v-model:expanded="expanded" :data="loading ? [] : props.bins" :columns="columns" :loading="loading"
-      class="w-full">
+    <UTable
+      v-model:expanded="expanded"
+      :data="loading ? [] : props.bins"
+      :columns="columns"
+      :loading="loading"
+      class="w-full"
+    >
       <template #expanded="{ row }">
         <div class="p-4 bg-elevated/50 border-b border-default">
           <div class="mb-3">
@@ -141,30 +146,59 @@ const columns = [
             <table class="w-full text-sm">
               <thead>
                 <tr class="border-b border-default text-left">
-                  <th class="p-2">FIFO</th>
-                  <th class="p-2">Part Number</th>
-                  <th class="p-2">Part Name</th>
-                  <th class="p-2">Label Number</th>
-                  <th class="p-2">Placed By</th>
-                  <th class="p-2">Qty / Kanban</th>
-                  <th class="p-2">Placement Date</th>
+                  <th class="p-2">
+                    FIFO
+                  </th>
+                  <th class="p-2">
+                    Part Number
+                  </th>
+                  <th class="p-2">
+                    Part Name
+                  </th>
+                  <th class="p-2">
+                    Label Number
+                  </th>
+                  <th class="p-2">
+                    Placed By
+                  </th>
+                  <th class="p-2">
+                    Qty / Kanban
+                  </th>
+                  <th class="p-2">
+                    Placement Date
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr v-for="(stock, index) in stocksMap[String(row.original.bin_id)] || []" :key="stock.stock_id"
-                  class="border-b border-default">
+                <tr
+                  v-for="(stock, index) in stocksMap[String(row.original.bin_id)] || []"
+                  :key="stock.stock_id"
+                  class="border-b border-default"
+                >
                   <td class="p-2">
                     <UBadge size="sm" variant="soft" :color="index === 0 ? 'success' : 'neutral'">
                       #{{ index + 1 }}
                     </UBadge>
                   </td>
-                  <td class="p-2">{{ stock.part_number }}</td>
-                  <td class="p-2">{{ stock.part_name }}</td>
-                  <td class="p-2">{{ stock.label_number }}</td>
-                  <td class="p-2">{{ stock.placed_by || '-' }}</td>
-                  <td class="p-2">{{ stock.qty_per_kanban }}</td>
-                  <td class="p-2">{{ formatDate(stock.placement_date) }}</td>
+                  <td class="p-2">
+                    {{ stock.part_number }}
+                  </td>
+                  <td class="p-2">
+                    {{ stock.part_name }}
+                  </td>
+                  <td class="p-2">
+                    {{ stock.label_number }}
+                  </td>
+                  <td class="p-2">
+                    {{ stock.placed_by || '-' }}
+                  </td>
+                  <td class="p-2">
+                    {{ stock.qty_per_kanban }}
+                  </td>
+                  <td class="p-2">
+                    {{ formatDate(stock.placement_date) }}
+                  </td>
                 </tr>
 
                 <tr v-if="!(stocksMap[String(row.original.bin_id)] || []).length">

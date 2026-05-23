@@ -102,7 +102,9 @@ async function onConfirm() {
 
         <!-- Current range summary -->
         <div class="bg-elevated rounded-lg p-3 text-sm space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide mb-2">Current Schedule</p>
+          <p class="text-xs text-muted uppercase tracking-wide mb-2">
+            Current Schedule
+          </p>
           <div class="flex justify-between">
             <span class="text-muted">Start Date</span>
             <span class="font-mono font-semibold">{{ fmtDate(props.currentStart) }}</span>
@@ -117,13 +119,24 @@ async function onConfirm() {
           </div>
         </div>
 
-        <UForm ref="formRef" :schema="schema" :state="state" class="space-y-4">
+        <UForm
+          ref="formRef"
+          :schema="schema"
+          :state="state"
+          class="space-y-4"
+        >
           <!-- New start date -->
           <UFormField label="New Start Date" name="new_start_date" required>
             <UInputDate v-model="state.new_start_date" class="w-full">
               <template #trailing>
                 <UPopover>
-                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    icon="i-lucide-calendar"
+                    class="px-0"
+                  />
                   <template #content>
                     <UCalendar v-model="newStartModel" class="p-2" />
                   </template>
@@ -137,14 +150,20 @@ async function onConfirm() {
             <UInputDate v-model="state.new_end_date" class="w-full">
               <template #trailing>
                 <UPopover>
-                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    icon="i-lucide-calendar"
+                    class="px-0"
+                  />
                   <template #content>
                     <UCalendar
                       v-model="newEndModel"
                       class="p-2"
                       :is-date-disabled="(date: any) => {
                         if (!state.new_start_date) return false
-                        const cur   = new Date(date.year, date.month - 1, date.day)
+                        const cur = new Date(date.year, date.month - 1, date.day)
                         const start = new Date(state.new_start_date)
                         const latest = props.latestDeliveryDate ? new Date(props.latestDeliveryDate) : null
                         if (cur <= start) return true
@@ -173,8 +192,20 @@ async function onConfirm() {
 
     <template #footer>
       <div class="flex justify-end gap-2">
-        <UButton color="neutral" variant="outline" label="Cancel" :disabled="props.loading" @click="emit('update:open', false)" />
-        <UButton color="warning" variant="solid" label="Confirm Reschedule" :loading="props.loading" @click="onConfirm" />
+        <UButton
+          color="neutral"
+          variant="outline"
+          label="Cancel"
+          :disabled="props.loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          color="warning"
+          variant="solid"
+          label="Confirm Reschedule"
+          :loading="props.loading"
+          @click="onConfirm"
+        />
       </div>
     </template>
   </UModal>

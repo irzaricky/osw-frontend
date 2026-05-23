@@ -82,12 +82,20 @@ function handleSubmit() {
         <!-- Summary -->
         <div class="grid grid-cols-2 gap-3 p-3 bg-elevated rounded-lg text-sm">
           <div>
-            <p class="text-xs text-muted">Planned Qty</p>
-            <p class="font-mono font-semibold">{{ wo.planned_quantity.toLocaleString() }}</p>
+            <p class="text-xs text-muted">
+              Planned Qty
+            </p>
+            <p class="font-mono font-semibold">
+              {{ wo.planned_quantity.toLocaleString() }}
+            </p>
           </div>
           <div>
-            <p class="text-xs text-muted">Max Allowed (110%)</p>
-            <p class="font-mono font-semibold">{{ maxAllowed.toLocaleString() }}</p>
+            <p class="text-xs text-muted">
+              Max Allowed (110%)
+            </p>
+            <p class="font-mono font-semibold">
+              {{ maxAllowed.toLocaleString() }}
+            </p>
           </div>
         </div>
 
@@ -101,11 +109,14 @@ function handleSubmit() {
             class="w-full font-mono"
           />
           <template #hint>
-            <span class="text-xs" :class="{
-              'text-success-600': progressPct >= 100,
-              'text-warning-600': progressPct >= 80 && progressPct < 100,
-              'text-error-600':   progressPct < 80,
-            }">
+            <span
+              class="text-xs"
+              :class="{
+                'text-success-600': progressPct >= 100,
+                'text-warning-600': progressPct >= 80 && progressPct < 100,
+                'text-error-600': progressPct < 80,
+              }"
+            >
               {{ progressPct }}% of planned
               <span v-if="isOver" class="ml-1 text-warning-600">(Over-production)</span>
             </span>
@@ -139,7 +150,12 @@ function handleSubmit() {
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          @click="emit('update:open', false)"
+        />
         <UButton
           label="Complete Work Order"
           icon="i-lucide-check-circle"

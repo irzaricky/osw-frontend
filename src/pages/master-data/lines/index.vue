@@ -267,9 +267,27 @@ onMounted(() => { fetchData(); factoryStore.fetchDropdown() })
     />
 
     <div class="flex gap-2">
-      <UButton icon="i-lucide-download" color="neutral" variant="ghost" label="Export"     @click="handleDownload" />
-      <UButton icon="i-lucide-upload"   color="neutral" variant="ghost" label="Import"     @click="isUploadModalOpen = true" />
-      <UButton icon="i-lucide-plus"     color="primary" variant="solid" label="Add Line"   @click="openAddModal" />
+      <UButton
+        icon="i-lucide-download"
+        color="neutral"
+        variant="ghost"
+        label="Export"
+        @click="handleDownload"
+      />
+      <UButton
+        icon="i-lucide-upload"
+        color="neutral"
+        variant="ghost"
+        label="Import"
+        @click="isUploadModalOpen = true"
+      />
+      <UButton
+        icon="i-lucide-plus"
+        color="primary"
+        variant="solid"
+        label="Add Line"
+        @click="openAddModal"
+      />
     </div>
 
     <LineBulkActions :count="selectedCount" @delete="handleBulkDelete" />

@@ -22,8 +22,12 @@ function getStatusColor(status?: string) {
     <div class="space-y-4">
       <div class="flex justify-between gap-4">
         <div>
-          <p class="text-sm text-muted">Work Order Number</p>
-          <p class="font-bold">{{ takeOut.wo_number }}</p>
+          <p class="text-sm text-muted">
+            Work Order Number
+          </p>
+          <p class="font-bold">
+            {{ takeOut.wo_number }}
+          </p>
         </div>
 
         <UBadge
@@ -36,20 +40,30 @@ function getStatusColor(status?: string) {
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div>
-          <p class="text-muted">Work Order Date</p>
+          <p class="text-muted">
+            Work Order Date
+          </p>
           <p class="font-semibold">
             {{ takeOut.wo_date ? new Date(takeOut.wo_date).toLocaleDateString() : '-' }}
           </p>
         </div>
 
         <div>
-          <p class="text-muted">Work Order Type</p>
-          <p class="font-semibold">{{ takeOut.type?.name || '-' }}</p>
+          <p class="text-muted">
+            Work Order Type
+          </p>
+          <p class="font-semibold">
+            {{ takeOut.type?.name || '-' }}
+          </p>
         </div>
 
         <div class="md:col-span-2">
-          <p class="text-muted">Warehouse Area</p>
-          <p class="font-semibold">{{ takeOut.area?.name || '-' }}</p>
+          <p class="text-muted">
+            Warehouse Area
+          </p>
+          <p class="font-semibold">
+            {{ takeOut.area?.name || '-' }}
+          </p>
         </div>
       </div>
 

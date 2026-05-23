@@ -58,36 +58,54 @@ function fmtNum(n?: number | null) {
 
     <div v-else-if="summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-default">
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">Total WO</p>
-        <p class="text-xl font-bold font-mono">{{ fmtNum(summary.total_wo) }}</p>
+        <p class="text-xs text-muted">
+          Total WO
+        </p>
+        <p class="text-xl font-bold font-mono">
+          {{ fmtNum(summary.total_wo) }}
+        </p>
       </div>
 
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">In Progress</p>
+        <p class="text-xs text-muted">
+          In Progress
+        </p>
         <p class="text-xl font-bold font-mono text-warning-600">
           {{ fmtNum(summary.status_breakdown?.In_Progress) }}
         </p>
       </div>
 
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">Completed</p>
+        <p class="text-xs text-muted">
+          Completed
+        </p>
         <p class="text-xl font-bold font-mono text-success-600">
           {{ fmtNum(summary.status_breakdown?.Completed) }}
         </p>
       </div>
 
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">Planned Qty</p>
-        <p class="text-xl font-bold font-mono">{{ fmtNum(summary.total_planned) }}</p>
+        <p class="text-xs text-muted">
+          Planned Qty
+        </p>
+        <p class="text-xl font-bold font-mono">
+          {{ fmtNum(summary.total_planned) }}
+        </p>
       </div>
 
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">Actual Qty</p>
-        <p class="text-xl font-bold font-mono">{{ fmtNum(summary.total_actual) }}</p>
+        <p class="text-xs text-muted">
+          Actual Qty
+        </p>
+        <p class="text-xl font-bold font-mono">
+          {{ fmtNum(summary.total_actual) }}
+        </p>
       </div>
 
       <div class="px-4 py-3 space-y-1">
-        <p class="text-xs text-muted">Achievement</p>
+        <p class="text-xs text-muted">
+          Achievement
+        </p>
         <p class="text-xl font-bold font-mono" :class="achievementColor">
           {{ summary.achievement_pct }}%
         </p>

@@ -167,7 +167,7 @@ function close() {
               class="h-full rounded-full transition-all duration-350"
               :class="isOverloaded ? 'bg-error' : 'bg-success'"
               :style="{ width: `${Math.min(loadPercentage, 100)}%` }"
-            ></div>
+            />
           </div>
           
           <p v-if="isOverloaded" class="text-[11px] font-bold text-error flex items-center gap-1 mt-1">

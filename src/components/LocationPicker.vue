@@ -173,7 +173,7 @@ async function searchLocation() {
         </div>
 
         <div class="relative w-full h-[400px] border border-default rounded-xl overflow-hidden shadow-inner">
-          <div ref="mapContainer" class="w-full h-full z-0"></div>
+          <div ref="mapContainer" class="w-full h-full z-0" />
           
           <div v-if="loading" class="absolute inset-0 bg-default/50 backdrop-blur-[1px] flex items-center justify-center z-[1000]">
             <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-primary" />
@@ -183,8 +183,12 @@ async function searchLocation() {
         <div class="p-3 bg-elevated rounded-lg border border-default flex gap-3 items-start">
           <UIcon name="i-lucide-map-pin" class="w-5 h-5 text-primary mt-0.5 shrink-0" />
           <div class="space-y-1">
-            <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">Address:</p>
-            <p class="text-sm font-medium leading-relaxed">{{ localAddress }}</p>
+            <p class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Address:
+            </p>
+            <p class="text-sm font-medium leading-relaxed">
+              {{ localAddress }}
+            </p>
           </div>
         </div>
       </div>
@@ -192,7 +196,12 @@ async function searchLocation() {
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton color="neutral" variant="ghost" label="Cancel" @click="emit('update:open', false)" />
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="emit('update:open', false)"
+        />
         <UButton
           color="primary"
           label="Confirm"

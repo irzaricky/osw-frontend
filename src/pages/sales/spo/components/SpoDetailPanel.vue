@@ -541,7 +541,13 @@ async function handleDownloadPdf() {
             <UInputDate v-model="dueDatePickerModel">
               <template #trailing>
                 <UPopover>
-                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    icon="i-lucide-calendar"
+                    class="px-0"
+                  />
                   <template #content>
                     <UCalendar
                       v-model="dueDatePickerModel"

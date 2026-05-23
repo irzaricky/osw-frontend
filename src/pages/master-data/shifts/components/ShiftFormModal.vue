@@ -73,32 +73,72 @@ function handleSave() {
     <template #body>
       <form id="shift-form" class="space-y-4" @submit.prevent="handleSave">
         <UFormField label="Name" required>
-          <UInput v-model="name" placeholder="e.g. Shift 1 Morning" class="w-full" :disabled="loading" />
+          <UInput
+            v-model="name"
+            placeholder="e.g. Shift 1 Morning"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Shift Number" required>
-          <UInput v-model="shift_number" placeholder="e.g. MRN001" class="w-full" :disabled="loading" />
+          <UInput
+            v-model="shift_number"
+            placeholder="e.g. MRN001"
+            class="w-full"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Type" required>
-          <USelectMenu v-model="selectedType" :items="typeItems" placeholder="Select type" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedType"
+            :items="typeItems"
+            placeholder="Select type"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Category" required>
-          <USelectMenu v-model="selectedCategory" :items="categoryItems" placeholder="Select category" class="w-full" clear :disabled="loading" />
+          <USelectMenu
+            v-model="selectedCategory"
+            :items="categoryItems"
+            placeholder="Select category"
+            class="w-full"
+            clear
+            :disabled="loading"
+          />
         </UFormField>
 
         <div class="grid grid-cols-2 gap-4">
           <UFormField label="Start Time" required>
-            <UInput v-model="start_time" type="time" class="w-full" :disabled="loading" />
+            <UInput
+              v-model="start_time"
+              type="time"
+              class="w-full"
+              :disabled="loading"
+            />
           </UFormField>
           <UFormField label="End Time" required>
-            <UInput v-model="end_time" type="time" class="w-full" :disabled="loading" />
+            <UInput
+              v-model="end_time"
+              type="time"
+              class="w-full"
+              :disabled="loading"
+            />
           </UFormField>
         </div>
 
         <UFormField label="Description">
-          <UTextarea v-model="description" placeholder="Optional description" class="w-full" rows="2" :disabled="loading" />
+          <UTextarea
+            v-model="description"
+            placeholder="Optional description"
+            class="w-full"
+            rows="2"
+            :disabled="loading"
+          />
         </UFormField>
 
         <UFormField label="Status">
@@ -109,8 +149,20 @@ function handleSave() {
 
     <template #footer>
       <div class="flex justify-end gap-3 w-full">
-        <UButton label="Cancel" color="neutral" variant="ghost" :disabled="loading" @click="emit('update:open', false)" />
-        <UButton type="submit" form="shift-form" label="Save" color="primary" :loading="loading" />
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="ghost"
+          :disabled="loading"
+          @click="emit('update:open', false)"
+        />
+        <UButton
+          type="submit"
+          form="shift-form"
+          label="Save"
+          color="primary"
+          :loading="loading"
+        />
       </div>
     </template>
   </UModal>

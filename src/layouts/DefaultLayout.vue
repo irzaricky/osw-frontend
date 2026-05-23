@@ -398,7 +398,12 @@ const groups = computed(() => [{
     >
       <template #header="{ collapsed }">
         <div class="flex items-center gap-3" :class="collapsed ? 'justify-center p-2' : 'px-2 py-2'">
-          <UAvatar src="https://github.com/vuejs.png" alt="Vue Logo" size="sm" class="shrink-0" />
+          <UAvatar
+            src="https://github.com/vuejs.png"
+            alt="Vue Logo"
+            size="sm"
+            class="shrink-0"
+          />
           <span v-if="!collapsed" class="font-bold text-[15px] truncate text-gray-900 dark:text-white">OSW SYSTEM</span>
         </div>
       </template>

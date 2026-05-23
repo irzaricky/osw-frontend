@@ -55,7 +55,9 @@ const sortedStations = computed(() =>
   <div class="mt-4 space-y-4">
     <div v-if="sortedStations.length === 0" class="flex flex-col items-center justify-center py-12 text-center text-muted gap-2">
       <UIcon name="i-lucide-layout-grid" class="w-8 h-8" />
-      <p class="text-sm">No process stations configured for this Work Order.</p>
+      <p class="text-sm">
+        No process stations configured for this Work Order.
+      </p>
     </div>
 
     <div
@@ -64,7 +66,8 @@ const sortedStations = computed(() =>
       class="bg-default border border-default rounded-xl overflow-hidden"
     >
       <!-- Station Header -->
-      <div class="flex items-center justify-between px-5 py-4 border-b border-default"
+      <div
+        class="flex items-center justify-between px-5 py-4 border-b border-default"
         :class="{
           'bg-warning-50 dark:bg-warning-950/30': station.status === 'In_Progress',
           'bg-success-50 dark:bg-success-950/30': station.status === 'Completed',
@@ -76,7 +79,9 @@ const sortedStations = computed(() =>
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <p class="text-sm font-semibold">{{ station.station?.name ?? `Station #${station.station_id}` }}</p>
+              <p class="text-sm font-semibold">
+                {{ station.station?.name ?? `Station #${station.station_id}` }}
+              </p>
               <UBadge
                 :label="station.status"
                 :color="stationStatusColor[station.status]"
@@ -84,7 +89,9 @@ const sortedStations = computed(() =>
                 size="xs"
               />
             </div>
-            <p class="text-xs text-muted font-mono">{{ station.station?.station_code }}</p>
+            <p class="text-xs text-muted font-mono">
+              {{ station.station?.station_code }}
+            </p>
           </div>
         </div>
       </div>
@@ -101,7 +108,9 @@ const sortedStations = computed(() =>
           </div>
 
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium">{{ job.job?.name ?? `Job #${job.job_id}` }}</p>
+            <p class="text-sm font-medium">
+              {{ job.job?.name ?? `Job #${job.job_id}` }}
+            </p>
             <div class="flex items-center gap-2 mt-0.5">
               <span class="text-xs text-muted font-mono">{{ job.job?.job_code }}</span>
               <span v-if="job.job?.standard_time" class="text-xs text-muted">

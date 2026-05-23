@@ -27,18 +27,25 @@ function getBin(r: number, c: number) {
 <template>
   <div class="space-y-3">
     <div class="grid gap-0" :style="{ gridTemplateColumns: `48px repeat(${cols}, minmax(120px, 1fr))` }">
-      <div class="bg-slate-50 dark:bg-slate-900 border p-2"></div>
+      <div class="bg-slate-50 dark:bg-slate-900 border p-2" />
 
-      <div v-for="c in cols" :key="c"
-        class="bg-slate-50 dark:bg-slate-900 border p-2 text-center text-sm font-semibold">
+      <div
+        v-for="c in cols"
+        :key="c"
+        class="bg-slate-50 dark:bg-slate-900 border p-2 text-center text-sm font-semibold"
+      >
         {{ c }}
       </div>
     </div>
 
 
     <div class="space-y-0">
-      <div v-for="r in rows" :key="r" class="grid gap-0"
-        :style="{ gridTemplateColumns: `48px repeat(${cols}, minmax(120px, 1fr))` }">
+      <div
+        v-for="r in rows"
+        :key="r"
+        class="grid gap-0"
+        :style="{ gridTemplateColumns: `48px repeat(${cols}, minmax(120px, 1fr))` }"
+      >
         <div class="bg-slate-50 dark:bg-slate-900 border p-2 text-center text-sm font-semibold">
           {{ r }}
         </div>

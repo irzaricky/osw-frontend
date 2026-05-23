@@ -86,31 +86,45 @@ onMounted(() => {
 </script>
 
 <template>
-    <div class="p-6 space-y-6">
-        <Breadcrumbs :items="breadcrumbItems" />
+  <div class="p-6 space-y-6">
+    <Breadcrumbs :items="breadcrumbItems" />
 
-        <div>
-            <h1 class="text-2xl font-bold">
-                Transaction Activity
-            </h1>
-            <p class="text-sm text-muted">
-                Track placement and take out stock movement activity.
-            </p>
-        </div>
-
-        <TransactionActivityFilters :search="search" :filters="filters" :warehouse-areas="warehouseAreas"
-            @update:search="onUpdateSearch" @update:filters="onUpdateFilters" @reset="resetFilters"/>
-
-        <TransactionActivityTable :data="transactionActivities" :loading="loading" :page="meta.page"
-            :limit="meta.limit" />
-
-        <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
-            <div class="text-sm text-muted">
-                Total {{ meta.total }} transaction(s)
-            </div>
-
-            <UPagination v-model:page="meta.page" :total="meta.total" :items-per-page="meta.limit"
-                @update:page="fetchData" />
-        </div>
+    <div>
+      <h1 class="text-2xl font-bold">
+        Transaction Activity
+      </h1>
+      <p class="text-sm text-muted">
+        Track placement and take out stock movement activity.
+      </p>
     </div>
+
+    <TransactionActivityFilters
+      :search="search"
+      :filters="filters"
+      :warehouse-areas="warehouseAreas"
+      @update:search="onUpdateSearch"
+      @update:filters="onUpdateFilters"
+      @reset="resetFilters"
+    />
+
+    <TransactionActivityTable
+      :data="transactionActivities"
+      :loading="loading"
+      :page="meta.page"
+      :limit="meta.limit"
+    />
+
+    <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+      <div class="text-sm text-muted">
+        Total {{ meta.total }} transaction(s)
+      </div>
+
+      <UPagination
+        v-model:page="meta.page"
+        :total="meta.total"
+        :items-per-page="meta.limit"
+        @update:page="fetchData"
+      />
+    </div>
+  </div>
 </template>

@@ -24,16 +24,40 @@ const emit = defineEmits<{
 
     <div class="space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-2">
-        <UInput :model-value="modelValue" icon="i-lucide-qr-code" placeholder="Scan / input part label number"
-          @update:model-value="emit('update:modelValue', String($event))" @keyup.enter="emit('scan')" />
+        <UInput
+          :model-value="modelValue"
+          icon="i-lucide-qr-code"
+          placeholder="Scan / input part label number"
+          @update:model-value="emit('update:modelValue', String($event))"
+          @keyup.enter="emit('scan')"
+        />
 
-        <UButton icon="i-lucide-qr-code" variant="soft" color="neutral" label="Scan QR" @click="emit('scanQr')" />
+        <UButton
+          icon="i-lucide-qr-code"
+          variant="soft"
+          color="neutral"
+          label="Scan QR"
+          @click="emit('scanQr')"
+        />
       </div>
 
-      <UButton block color="primary" icon="i-lucide-scan-line" label="Validate Part Label" :loading="loading"
-        :disabled="!modelValue" @click="emit('scan')" />
+      <UButton
+        block
+        color="primary"
+        icon="i-lucide-scan-line"
+        label="Validate Part Label"
+        :loading="loading"
+        :disabled="!modelValue"
+        @click="emit('scan')"
+      />
 
-      <UAlert v-if="scannedLabel" color="success" variant="soft" icon="i-lucide-check-circle" title="Label Valid">
+      <UAlert
+        v-if="scannedLabel"
+        color="success"
+        variant="soft"
+        icon="i-lucide-check-circle"
+        title="Label Valid"
+      >
         <template #description>
           <div class="space-y-1">
             <p><span class="text-muted">Label:</span> {{ scannedLabel.label_number }}</p>

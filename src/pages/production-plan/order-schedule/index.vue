@@ -146,8 +146,12 @@ onMounted(() => {
 
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-2xl font-bold">Production Order</h1>
-            <p class="text-sm text-muted mt-0.5">Manage and schedule production orders from approved production plans.</p>
+            <h1 class="text-2xl font-bold">
+              Production Order
+            </h1>
+            <p class="text-sm text-muted mt-0.5">
+              Manage and schedule production orders from approved production plans.
+            </p>
           </div>
         </div>
 

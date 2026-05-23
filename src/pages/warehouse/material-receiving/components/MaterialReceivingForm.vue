@@ -66,7 +66,6 @@ const { columns } = useMaterialReceivingItemColumns(
 
 <template>
   <div class="space-y-6">
-
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
@@ -108,7 +107,8 @@ const { columns } = useMaterialReceivingItemColumns(
                 ? new Date(materialReceiving.target_date).toLocaleDateString()
                 : '-'
             "
-            disabled class="w-full" 
+            disabled
+            class="w-full" 
           />
         </UFormField>
 
@@ -119,7 +119,8 @@ const { columns } = useMaterialReceivingItemColumns(
                 ? new Date(materialReceiving.arrived_at).toLocaleString()
                 : '-'
             "
-            disabled class="w-full"
+            disabled
+            class="w-full"
           />
         </UFormField>
 
@@ -131,11 +132,20 @@ const { columns } = useMaterialReceivingItemColumns(
 
         <div class="md:col-span-3">
           <UFormField label="Remarks">
-            <UInput v-if="!isArrived" v-model="state.remarks" placeholder="Input remarks..." class="w-full" />
-            <UInput v-else :model-value="state.remarks || '-'" disabled class="w-full" />
+            <UInput
+              v-if="!isArrived"
+              v-model="state.remarks"
+              placeholder="Input remarks..."
+              class="w-full"
+            />
+            <UInput
+              v-else
+              :model-value="state.remarks || '-'"
+              disabled
+              class="w-full"
+            />
           </UFormField>
         </div>
-
       </div>
     </UCard>
 

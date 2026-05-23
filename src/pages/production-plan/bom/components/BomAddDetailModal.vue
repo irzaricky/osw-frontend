@@ -219,9 +219,10 @@ function handleSave() {
                 }}</span>
                 <span class="mx-2 text-muted">·</span>
                 <span>{{ selectedPart.part_name }}</span>
-                <span v-if="selectedPart.uom" class="ml-2 text-xs text-muted"
-                  >({{ selectedPart.uom.code }})</span
-                >
+                <span
+                  v-if="selectedPart.uom"
+                  class="ml-2 text-xs text-muted"
+                >({{ selectedPart.uom.code }})</span>
               </div>
               <UButton
                 icon="i-lucide-x"
@@ -258,9 +259,10 @@ function handleSave() {
                   }}</span>
                   <span class="mx-2 text-muted">·</span>
                   <span class="text-sm">{{ part.part_name }}</span>
-                  <span v-if="part.uom" class="ml-2 text-xs text-muted"
-                    >({{ part.uom.code }})</span
-                  >
+                  <span
+                    v-if="part.uom"
+                    class="ml-2 text-xs text-muted"
+                  >({{ part.uom.code }})</span>
                 </button>
               </div>
               <p v-else-if="partSearch" class="text-xs text-muted px-1">
@@ -358,7 +360,9 @@ function handleSave() {
             </p>
           </template>
           <template v-else-if="filteredBomItems.length === 0">
-            <p class="text-xs text-muted py-1.5">No BOM found for this part.</p>
+            <p class="text-xs text-muted py-1.5">
+              No BOM found for this part.
+            </p>
           </template>
           <USelectMenu
             v-else

@@ -255,7 +255,7 @@ function close() {
             required
             class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
             @change="handleFileChange($event)"
-          />
+          >
         </UFormField>
 
         <!-- Shipping Address -->
@@ -296,7 +296,13 @@ function close() {
             <UInputDate v-model="dueDatePickerModel">
               <template #trailing>
                 <UPopover>
-                  <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="sm"
+                    icon="i-lucide-calendar"
+                    class="px-0"
+                  />
                   <template #content>
                     <UCalendar
                       v-model="dueDatePickerModel"
