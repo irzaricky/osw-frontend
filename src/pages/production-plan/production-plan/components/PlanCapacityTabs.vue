@@ -11,6 +11,7 @@ const props = defineProps<{
   adjustmentForm: any
   saving:         boolean
   calculating:    boolean
+  calculatingAll: boolean
   isEditable:     boolean
   planId?:        number | null
   fmtNum:         (n?: number | null) => string
@@ -23,6 +24,7 @@ const emit = defineEmits<{
   saveBase:           []
   saveAdjustment:     []
   calculate:          []
+  calculateAll:       []
   deleteAdjustment:   [id: number]
 }>()
 
@@ -34,25 +36,20 @@ const hasBaseForSelected = computed(() =>
   savedBaseParams.value.some((p: any) => p.line_id === props.selectedLineId),
 )
 
-// Result untuk line yang dipilih
 const selectedResult = computed(() =>
   props.currentPlan?.capacity_results?.find((r: any) => r.line_id === props.selectedLineId),
 )
 
-// Adjustments untuk line yang dipilih
 const selectedAdjustments = computed(() =>
   (props.currentPlan?.adjustments ?? []).filter((a: any) => a.line_id === props.selectedLineId),
 )
 
-// Base param untuk line yang dipilih
 const selectedBase = computed(() =>
   savedBaseParams.value.find((p: any) => p.line_id === props.selectedLineId),
 )
 
-// Master params tersimpan di line (sebelum di-copy ke plan)
 const masterParams = computed(() => props.lineParams?.saved_params ?? null)
 
-// Detail lines yang melewati line yang dipilih (dari pivot table di setiap detail)
 const lineAssignedDetails = computed(() => {
   if (!props.selectedLineId) return []
   const result: Array<{ detail: any; detailLine: PlanDetailLine }> = []
@@ -63,7 +60,6 @@ const lineAssignedDetails = computed(() => {
   return result
 })
 
-// Adjustment type options
 const adjustmentTypeOptions = [
   { value: 'WORKING_DAYS',   label: 'Working Days' },
   { value: 'SHIFTS_PER_DAY', label: 'Shifts per Day' },
@@ -82,7 +78,6 @@ const adjustmentTypeLabel: Record<AdjustmentType, string> = {
   OVERTIME:       'Overtime Hours',
 }
 
-// Field untuk menampilkan base value hint di form adjustment
 const baseValueForSelectedType = computed(() => {
   if (!selectedBase.value || !props.adjustmentForm.adjustment_type) return null
   const map: Record<AdjustmentType, string> = {
@@ -118,7 +113,6 @@ function fmtDate(d?: string | null) {
 	return isNaN(dt.getTime()) ? '—' : dt.toLocaleString()
 }
 
-// Warna utilization
 function utilizationColor(pct?: number | null) {
   if (pct == null) return 'text-muted'
   if (pct <= 80)  return 'text-success-600'
@@ -126,8 +120,11 @@ function utilizationColor(pct?: number | null) {
   return 'text-error-600'
 }
 
-// Cek apakah line yang dipilih sudah punya detail yang melewatinya
 const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.length > 0)
+const configurableLineCount = computed(() => savedBaseParams.value.length)
+
+// Apakah sedang ada proses apapun (calculate satu line atau calculate all)
+const isBusy = computed(() => props.calculating || props.calculatingAll)
 </script>
 
 <template>
@@ -135,9 +132,32 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
 
     <!-- ── 1. Line Selector ───────────────────────────────────────────────── -->
     <div class="bg-default border border-default rounded-xl">
-      <div class="px-5 py-4 border-b border-default flex items-center gap-2">
-        <UIcon name="i-lucide-factory" class="w-4 h-4 text-primary" />
-        <h3 class="font-semibold text-sm">Production Line</h3>
+      <div class="px-5 py-4 border-b border-default flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-factory" class="w-4 h-4 text-primary" />
+          <h3 class="font-semibold text-sm">Production Line</h3>
+        </div>
+
+        <!-- Tombol Calculate All — muncul jika ada ≥2 line dengan BASE -->
+        <UButton
+          v-if="configurableLineCount >= 1"
+          icon="i-lucide-play-circle"
+          color="primary"
+          variant="soft"
+          size="sm"
+          :loading="calculatingAll"
+          :disabled="!isEditable || !hasBaseForSelected || !hasAssignedDetailsForSelected || isBusy"
+          @click="emit('calculateAll')"
+        >
+          <span>Calculate All Lines</span>
+          <UBadge
+            :label="`${configurableLineCount}`"
+            color="primary"
+            variant="solid"
+            size="xs"
+            class="ml-1.5"
+          />
+        </UButton>
       </div>
 
       <div class="px-5 py-4">
@@ -147,20 +167,36 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
             v-for="param in savedBaseParams"
             :key="param.line_id"
             class="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-all"
-            :class="
+            :class="[
               selectedLineId === param.line_id
                 ? 'bg-primary text-white border-primary shadow-sm'
-                : 'bg-default border-default text-default hover:border-primary/50'
-            "
-            @click="emit('update:selectedLineId', param.line_id)"
+                : 'bg-default border-default text-default hover:border-primary/50',
+              isBusy ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
+            ]"
+            :disabled="isBusy"
+            @click="!isBusy && emit('update:selectedLineId', param.line_id)"
           >
-            <UIcon name="i-lucide-check-circle" class="w-3.5 h-3.5" />
+            <UIcon
+              v-if="calculatingAll"
+              name="i-lucide-loader-2"
+              class="w-3.5 h-3.5 animate-spin"
+            />
+            <UIcon v-else name="i-lucide-check-circle" class="w-3.5 h-3.5" />
             {{ param.line?.name ?? `Line #${param.line_id}` }}
           </button>
 
           <p v-if="savedBaseParams.length === 0" class="text-sm text-muted">
             No lines configured yet.
           </p>
+        </div>
+
+        <!-- Banner status saat calculateAll berjalan -->
+        <div
+          v-if="calculatingAll"
+          class="mt-3 flex items-center gap-2 text-xs text-primary bg-primary/5 border border-primary/20 rounded-lg px-3 py-2"
+        >
+          <UIcon name="i-lucide-loader-2" class="w-3.5 h-3.5 animate-spin shrink-0" />
+          Calculating all lines sequentially — please wait until complete before performing other actions.
         </div>
 
         <!-- Input untuk pilih line baru (jika editable) -->
@@ -175,7 +211,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
                 label-key="name"
                 placeholder="Choose a line..."
                 class="w-full"
-                :disabled="saving"
+                :disabled="saving || isBusy"
                 @update:model-value="emit('update:selectedLineId', $event)"
               />
             </UFormField>
@@ -186,7 +222,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
               variant="soft"
               size="sm"
               :loading="loadingParams"
-              :disabled="!selectedLineId || loadingParams"
+              :disabled="!selectedLineId || loadingParams || isBusy"
             />
           </div>
         </div>
@@ -232,7 +268,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
               color="primary"
               size="sm"
               :loading="saving"
-              :disabled="!selectedLineId || loadingParams"
+              :disabled="!selectedLineId || loadingParams || isBusy"
               @click="emit('saveBase')"
             />
           </div>
@@ -264,13 +300,13 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             <div
               v-for="item in [
-                { label: 'Working Days',        value: (hasBaseForSelected ? selectedBase?.working_days : masterParams?.default_working_days) ?? '—', unit: 'days' },
-                { label: 'Shifts / Day',        value: (hasBaseForSelected ? selectedBase?.shifts_per_day : masterParams?.default_shifts_per_day) ?? '—', unit: 'shift' },
-                { label: 'Hours / Shift',       value: (hasBaseForSelected ? selectedBase?.working_hours_per_shift : masterParams?.default_working_hours_per_shift) ?? '—', unit: 'hrs' },
-                { label: 'Manpower',            value: (hasBaseForSelected ? selectedBase?.manpower : masterParams?.default_manpower) ?? '—', unit: 'pax' },
-                { label: 'Efficiency',          value: (hasBaseForSelected ? selectedBase?.efficiency_factor : masterParams?.default_efficiency_factor) ?? null, unit: '%', isEfficiency: true },
-                { label: 'Overtime',            value: (hasBaseForSelected ? selectedBase?.overtime_hours : masterParams?.default_overtime_hours) ?? '—', unit: 'hrs' },
-                { label: 'Max Takt Time',       value: (hasBaseForSelected ? selectedBase?.max_takt_time : masterParams?.default_max_takt_time) ?? null, unit: '', isTakt: true },
+                { label: 'Working Days',  value: (hasBaseForSelected ? selectedBase?.working_days : masterParams?.default_working_days) ?? '—', unit: 'days' },
+                { label: 'Shifts / Day',  value: (hasBaseForSelected ? selectedBase?.shifts_per_day : masterParams?.default_shifts_per_day) ?? '—', unit: 'shift' },
+                { label: 'Hours / Shift', value: (hasBaseForSelected ? selectedBase?.working_hours_per_shift : masterParams?.default_working_hours_per_shift) ?? '—', unit: 'hrs' },
+                { label: 'Manpower',      value: (hasBaseForSelected ? selectedBase?.manpower : masterParams?.default_manpower) ?? '—', unit: 'pax' },
+                { label: 'Efficiency',    value: (hasBaseForSelected ? selectedBase?.efficiency_factor : masterParams?.default_efficiency_factor) ?? null, unit: '%', isEfficiency: true },
+                { label: 'Overtime',      value: (hasBaseForSelected ? selectedBase?.overtime_hours : masterParams?.default_overtime_hours) ?? '—', unit: 'hrs' },
+                { label: 'Max Takt Time', value: (hasBaseForSelected ? selectedBase?.max_takt_time : masterParams?.default_max_takt_time) ?? null, unit: '', isTakt: true },
               ]"
               :key="item.label"
               class="bg-elevated rounded-lg px-3 py-3 space-y-1"
@@ -291,7 +327,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
             </div>
           </div>
 
-          <!-- Actual line info (stations, jobs, manpower dari group) — hanya jika belum save BASE -->
+          <!-- Actual line info — hanya jika belum save BASE -->
           <div v-if="!hasBaseForSelected && lineParams?.actual" class="mt-4 pt-4 border-t border-default">
             <p class="text-xs font-medium text-muted mb-2">Actual line condition (basis of master params):</p>
             <div class="flex flex-wrap gap-3">
@@ -314,7 +350,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
             </div>
           </div>
 
-          <!-- Routed details info untuk line yang dipilih -->
+          <!-- Routed details untuk line yang dipilih -->
           <div v-if="hasBaseForSelected" class="mt-4 pt-4 border-t border-default">
             <p class="text-xs font-medium text-muted mb-1">
               Products routed through this line:
@@ -367,7 +403,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
                 label-key="label"
                 placeholder="Select parameter..."
                 class="w-full"
-                :disabled="saving"
+                :disabled="saving || isBusy"
               />
             </UFormField>
 
@@ -380,7 +416,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
                 type="number"
                 step="any"
                 class="w-full font-mono"
-                :disabled="saving || !adjustmentForm.adjustment_type"
+                :disabled="saving || !adjustmentForm.adjustment_type || isBusy"
               />
             </UFormField>
 
@@ -389,7 +425,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
                 v-model="adjustmentForm.adjustment_description"
                 placeholder="e.g. National holiday deduction"
                 class="w-full"
-                :disabled="saving"
+                :disabled="saving || isBusy"
               />
             </UFormField>
 
@@ -400,7 +436,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
                 color="primary"
                 class="w-full"
                 :loading="saving"
-                :disabled="!adjustmentForm.adjustment_type"
+                :disabled="!adjustmentForm.adjustment_type || isBusy"
                 @click="emit('saveAdjustment')"
               />
             </div>
@@ -462,6 +498,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
               color="error"
               variant="ghost"
               size="xs"
+              :disabled="isBusy"
               @click="emit('deleteAdjustment', adj.id)"
             />
           </div>
@@ -487,7 +524,7 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
             icon="i-lucide-play"
             color="primary"
             :loading="calculating"
-            :disabled="!isEditable || !hasBaseForSelected || !hasAssignedDetailsForSelected"
+            :disabled="!isEditable || !hasBaseForSelected || !hasAssignedDetailsForSelected || isBusy"
             @click="emit('calculate')"
           />
         </div>
@@ -507,14 +544,20 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
               :class="selectedResult.status === 'POSSIBLE' ? 'text-success-600' : 'text-error-600'"
             />
             <div>
-              <p class="text-sm font-semibold" :class="selectedResult.status === 'POSSIBLE' ? 'text-success-700 dark:text-success-400' : 'text-error-700 dark:text-error-400'">
+              <p
+                class="text-sm font-semibold"
+                :class="selectedResult.status === 'POSSIBLE' ? 'text-success-700 dark:text-success-400' : 'text-error-700 dark:text-error-400'"
+              >
                 {{ overallStatusLabel[selectedResult.status] ?? selectedResult.status }}
               </p>
               <p class="text-xs text-muted mt-0.5">
                 Capacity Units:
                 <span class="font-mono font-semibold text-default">{{ fmtNum(selectedResult.total_capacity_units) }}</span>
                 &nbsp;·&nbsp; Gap:
-                <span class="font-mono font-semibold" :class="Number(selectedResult.capacity_gap_minutes) >= 0 ? 'text-success-600' : 'text-error-600'">
+                <span
+                  class="font-mono font-semibold"
+                  :class="Number(selectedResult.capacity_gap_minutes) >= 0 ? 'text-success-600' : 'text-error-600'"
+                >
                   {{ Number(selectedResult.capacity_gap_minutes) >= 0 ? '+' : '' }}{{ fmtMinutes(selectedResult.capacity_gap_minutes) }}
                 </span>
                 &nbsp;·&nbsp; Utilization:
@@ -529,12 +572,12 @@ const hasAssignedDetailsForSelected = computed(() => lineAssignedDetails.value.l
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             <div
               v-for="metric in [
-                { label: 'Capacity',        value: fmtMinutes(selectedResult.total_capacity_minutes),  icon: 'i-lucide-clock-3',      sub: 'available' },
-                { label: 'Required',        value: fmtMinutes(selectedResult.total_required_minutes),   icon: 'i-lucide-clock-alert',  sub: 'needed' },
-                { label: 'Capacity Units',  value: fmtNum(selectedResult.total_capacity_units),         icon: 'i-lucide-package-check', sub: 'units' },
-                { label: 'Stations',        value: selectedResult.total_stations ?? '—',                icon: 'i-lucide-layout-grid',  sub: 'active' },
-                { label: 'Jobs',            value: selectedResult.total_jobs ?? '—',                    icon: 'i-lucide-wrench',       sub: 'active' },
-                { label: 'Takt Time',       value: fmtSeconds(selectedResult.max_takt_time),            icon: 'i-lucide-timer',        sub: 'bottleneck' },
+                { label: 'Capacity',       value: fmtMinutes(selectedResult.total_capacity_minutes), icon: 'i-lucide-clock-3',       sub: 'available' },
+                { label: 'Required',       value: fmtMinutes(selectedResult.total_required_minutes), icon: 'i-lucide-clock-alert',   sub: 'needed' },
+                { label: 'Capacity Units', value: fmtNum(selectedResult.total_capacity_units),        icon: 'i-lucide-package-check', sub: 'units' },
+                { label: 'Stations',       value: selectedResult.total_stations ?? '—',               icon: 'i-lucide-layout-grid',   sub: 'active' },
+                { label: 'Jobs',           value: selectedResult.total_jobs ?? '—',                   icon: 'i-lucide-wrench',        sub: 'active' },
+                { label: 'Takt Time',      value: fmtSeconds(selectedResult.max_takt_time),           icon: 'i-lucide-timer',         sub: 'bottleneck' },
               ]"
               :key="metric.label"
               class="bg-elevated rounded-lg px-3 py-3"
