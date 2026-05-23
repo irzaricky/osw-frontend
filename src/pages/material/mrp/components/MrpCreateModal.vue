@@ -59,11 +59,16 @@ const detailItems = ref<{
   part_number?: string
   part_name?: string
   uom_code?: string
-  stock?: number
+  stock_on_hand?: number
+  current_safety_stock?: number
+  target_safety_stock?: number
+  gross_requirement?: number
+  net_requirement?: number
 }[]>([])
 
 const loadedSalesPlanData = ref<SalesPlanLoadData | null>(null)
 const isLoadingSalesPlan = ref(false)
+const selectedBomInfo = ref<{ display_label: string } | null>(null)
 
 // ─── Sync edit data ───────────────────────────────────────────────────────────
 watch(
@@ -90,6 +95,7 @@ watch(
       state.save_as_draft = true
       detailItems.value = []
       loadedSalesPlanData.value = null
+      selectedBomInfo.value = null
     }
   }
 )
@@ -122,20 +128,27 @@ async function loadSalesPlanData(sprId: number) {
     const data = await store.loadSalesPlan(sprId)
     loadedSalesPlanData.value = data
 
+    // Simpan info BOM utama untuk field disabled di form
+    selectedBomInfo.value = data?.primary_bom ?? null
+
     if (data?.suggestedDetails && data.suggestedDetails.length > 0) {
       detailItems.value = data.suggestedDetails.map(d => ({
         part_id: d.part_id,
-        qty: d.qty,
+        qty: d.net_requirement ?? d.qty,
         bom_id: d.bom_id,
         part_number: d.part?.part_number,
         part_name: d.part?.part_name,
         uom_code: d.part?.uom?.code,
-        stock: data.warehouseStock?.find(s => s.part_id === d.part_id)?.qty_on_hand ?? 0
+        stock_on_hand: d.stock_on_hand ?? 0,
+        current_safety_stock: d.current_safety_stock ?? 0,
+        target_safety_stock: d.target_safety_stock ?? 50,
+        gross_requirement: d.gross_requirement ?? d.qty,
+        net_requirement: d.net_requirement ?? d.qty,
       }))
     } else {
-      // suggestedDetails kosong — mungkin BOM tidak ditemukan atau semua part bukan RAW
+      // suggestedDetails kosong — BOM tidak ditemukan atau tidak ada komponen RAW di semua level
       detailItems.value = []
-      console.warn('[MRP] loadSalesPlanData: suggestedDetails kosong. Cek apakah BOM sudah di-approve dan BOM Detail mengandung part bertipe RAW.')
+      console.warn('[MRP] loadSalesPlanData: suggestedDetails kosong setelah BOM explosion. Cek apakah BOM sudah di-approve dan mengandung part RAW di level manapun.')
     }
   } catch (err) {
     console.error('[MRP] loadSalesPlanData error:', err)
@@ -177,18 +190,30 @@ function submitForm() {
 
 function onSubmit(event: FormSubmitEvent<any>) {
   if (props.mode === 'add') {
+    // 1. Filter detail: HANYA ambil yang Qty-nya lebih dari 0
+    const validDetails = detailItems.value
+      .filter(d => (d.qty || 0) > 0)
+      .map(d => ({
+        part_id: d.part_id,
+        qty: d.qty,
+        bom_id: d.bom_id,
+        notes: d.notes
+      }))
+
+    // 2. Cegah submit kalau ternyata kosong (stok aman semua)
+    if (validDetails.length === 0) {
+      alert('Tidak dapat menyimpan! Semua material stoknya masih mencukupi (Net Req = 0).')
+      return 
+    }
+
     emit('save', {
       spr_id: state.spr_id,
       description: event.data.description,
       priority: state.priority || undefined,
       notes: state.notes || undefined,
       save_as_draft: state.save_as_draft,
-      details: detailItems.value.map(d => ({
-        part_id: d.part_id,
-        qty: d.qty,
-        bom_id: d.bom_id,
-        notes: d.notes
-      }))
+      // 3. Kirim payload yang sudah bersih dari Qty 0
+      details: validDetails
     })
   } else {
     emit('save', {
@@ -251,6 +276,21 @@ function close() {
             <UIcon name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
             Loading sales plan data...
           </div>
+
+          <!-- BOM utama (read-only) — muncul setelah SPR dipilih dan data berhasil dimuat -->
+          <UFormField
+            v-if="selectedBomInfo"
+            label="BOM"
+            name="bom_display"
+            hint="Auto-filled from selected sales plan"
+          >
+            <UInput
+              :model-value="selectedBomInfo.display_label"
+              class="w-full"
+              disabled
+              :ui="{ base: 'cursor-not-allowed opacity-70' }"
+            />
+          </UFormField>
 
           <!-- Loaded Sales Plan Info -->
           <div
@@ -338,18 +378,27 @@ function close() {
                     <th class="text-left p-2.5 font-medium text-muted text-xs">
                       Part
                     </th>
-                    <th class="text-center p-2.5 font-medium text-muted text-xs w-28">
-                      Stock
+                    <th class="text-center p-2.5 font-medium text-muted text-xs w-24">
+                      Gross Req.
+                    </th>
+                    <th class="text-center p-2.5 font-medium text-muted text-xs w-24">
+                      On-Hand
+                    </th>
+                    <th class="text-center p-2.5 font-medium text-muted text-xs w-24">
+                      Safety Stk
+                    </th>
+                    <th class="text-center p-2.5 font-medium text-muted text-xs w-24">
+                      Target Safety
                     </th>
                     <th class="text-center p-2.5 font-medium text-muted text-xs w-28">
-                      Qty Needed
+                      Net Req. (Order Qty)
                     </th>
                     <th class="text-center p-2.5 font-medium text-muted text-xs w-10" />
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="detailItems.length === 0">
-                    <td colspan="4" class="p-6 text-center text-muted text-xs">
+                    <td colspan="7" class="p-6 text-center text-muted text-xs">
                       No materials added yet. Select a sales plan or add manually below.
                     </td>
                   </tr>
@@ -358,6 +407,7 @@ function close() {
                     :key="item.part_id"
                     class="border-t border-default hover:bg-elevated/20"
                   >
+                    <!-- Part info -->
                     <td class="p-2.5">
                       <div class="font-medium">
                         {{ item.part_number }}
@@ -366,19 +416,39 @@ function close() {
                         {{ item.part_name }}
                       </div>
                     </td>
+                    <!-- Gross Requirement -->
+                    <td class="p-2.5 text-center text-xs text-muted">
+                      {{ item.gross_requirement ?? '—' }}
+                    </td>
+                    <!-- On-Hand Stock (dari inventori) -->
                     <td class="p-2.5 text-center text-xs">
-                      <span :class="(item.stock ?? 0) === 0 ? 'text-error-500 font-medium' : 'text-muted'">
-                        {{ item.stock ?? 0 }} {{ item.uom_code || '' }}
+                      <span :class="(item.stock_on_hand ?? 0) === 0 ? 'text-error-500 font-medium' : 'text-success-600 dark:text-success-400'">
+                        {{ item.stock_on_hand ?? 0 }}
                       </span>
                     </td>
+                    <!-- Current Safety Stock (dari s_parts) -->
+                    <td class="p-2.5 text-center text-xs text-muted">
+                      {{ item.current_safety_stock ?? 0 }}
+                    </td>
+                    <!-- Target Safety Stock (hardcoded 50) -->
+                    <td class="p-2.5 text-center text-xs text-muted">
+                      {{ item.target_safety_stock ?? 50 }}
+                    </td>
+                    <!-- Net Requirement — editable, default = net_requirement -->
                     <td class="p-2 text-center">
-                      <UInput
-                        v-model.number="item.qty"
-                        type="number"
-                        size="sm"
-                        min="1"
-                        class="max-w-[90px] mx-auto"
-                      />
+                      <UTooltip
+                        :text="`${item.gross_requirement} + ${item.target_safety_stock} − (${item.stock_on_hand} + ${item.current_safety_stock})`"
+                        :delay-duration="300"
+                      >
+                        <UInput
+                          v-model.number="item.qty"
+                          type="number"
+                          size="sm"
+                          min="0"
+                          class="max-w-[90px] mx-auto"
+                          :color="item.qty === item.net_requirement ? 'primary' : 'neutral'"
+                        />
+                      </UTooltip>
                     </td>
                     <td class="p-2 text-center">
                       <UButton
@@ -393,6 +463,12 @@ function close() {
                 </tbody>
               </table>
             </div>
+
+            <!-- Formula legend -->
+            <p class="text-xs text-muted mt-1">
+              <span class="font-medium">Net Req.</span> = Gross Req. + Target Safety (50) − (On-Hand + Safety Stk).
+              Hover pada Order Qty untuk melihat detail angkanya.
+            </p>
 
             <!-- Manual part add row -->
             <div class="flex gap-2 items-end">
