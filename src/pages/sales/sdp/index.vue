@@ -29,6 +29,7 @@ const openAddModal = ref(false)
 const selectedPlanId = ref<number | null>(null)
 const createLoading = ref(false)
 const presetSpoId = ref<number | null>(null)
+const isMasterListOpen = ref(false)
 
 const selectedPlan = computed(() => store.detail)
 
@@ -453,6 +454,59 @@ const conflictingDocksNames = computed(() => {
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- Collapsible Master List Panel -->
+        <div class="bg-elevated border border-default rounded-3xl p-5 shadow-sm shrink-0 flex flex-col space-y-4">
+          <div class="flex items-center justify-between cursor-pointer select-none" @click="isMasterListOpen = !isMasterListOpen">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-lucide-list" class="w-4 h-4 text-primary" />
+              <h3 class="font-bold text-sm text-default">
+                Active Scheduled Plans
+              </h3>
+              <UBadge color="neutral" variant="subtle" size="xs">
+                {{ activePlansForDate.length }}
+              </UBadge>
+            </div>
+            <UIcon
+              :name="isMasterListOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              class="w-4 h-4 text-muted transition-transform"
+            />
+          </div>
+
+          <div v-show="isMasterListOpen" class="overflow-x-auto border border-default rounded-2xl">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-default text-muted-foreground bg-default/40 font-bold">
+                  <th class="p-3">DP Number</th>
+                  <th class="p-3">Scheduled Date</th>
+                  <th class="p-3">Time Start</th>
+                  <th class="p-3">Time End</th>
+                  <th class="p-3">Destination</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default/40">
+                <tr
+                  v-for="plan in activePlansForDate"
+                  :key="plan.id"
+                  class="hover:bg-default/20 transition-colors cursor-pointer"
+                  :class="selectedPlanId === plan.id ? 'bg-primary/5 font-semibold text-primary' : ''"
+                  @click="selectPlan(plan.id)"
+                >
+                  <td class="p-3 font-mono font-bold">{{ plan.dp_number }}</td>
+                  <td class="p-3">{{ plan.scheduled_date.split('T')[0] }}</td>
+                  <td class="p-3">{{ plan.time_start.slice(0, 5) }}</td>
+                  <td class="p-3">{{ plan.time_end.slice(0, 5) }}</td>
+                  <td class="p-3">{{ plan.destination }}</td>
+                </tr>
+                <tr v-if="activePlansForDate.length === 0">
+                  <td colspan="5" class="p-4 text-center text-muted">
+                    No active plans for this date/warehouse.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
