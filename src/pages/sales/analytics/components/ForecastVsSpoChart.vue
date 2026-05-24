@@ -61,8 +61,12 @@ const chartSeries = computed(() => [
   <UCard>
     <template #header>
       <div>
-        <h3 class="font-semibold text-base">Forecast vs SPO Correlation</h3>
-        <p class="text-xs text-muted">Target vs realization, last 6 months</p>
+        <h3 class="font-semibold text-base">
+          Forecast vs SPO Correlation
+        </h3>
+        <p class="text-xs text-muted">
+          Target vs realization, last 6 months
+        </p>
       </div>
     </template>
 

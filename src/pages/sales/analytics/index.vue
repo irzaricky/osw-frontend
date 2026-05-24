@@ -110,7 +110,7 @@ onMounted(() => {
           Sales Analytics
         </h1>
         <p class="text-sm text-muted">
-          Dasbor analitik penjualan dan pelaporan pengiriman terpusat.
+          Centralized dashboard for sales metrics and shipment reporting.
         </p>
       </div>
 
@@ -121,7 +121,7 @@ onMounted(() => {
         :loading="loading"
         @click="handleDownloadExcel"
       >
-        Unduh Laporan Excel
+        Export Excel Report
       </UButton>
     </div>
 
@@ -129,7 +129,7 @@ onMounted(() => {
     <UCard>
       <div class="flex flex-col md:flex-row md:items-center gap-3">
         <div class="w-full md:w-72">
-          <label class="text-xs text-muted block mb-1">Rentang Tanggal</label>
+          <label class="text-xs text-muted block mb-1">Date Range</label>
           <HomeDateRangePicker v-model="dateRange as any" clear />
         </div>
       </div>
@@ -140,7 +140,7 @@ onMounted(() => {
       v-if="error"
       color="error"
       variant="soft"
-      title="Terjadi kesalahan"
+      title="An error occurred"
       :description="error"
       icon="i-lucide-alert-circle"
     />
@@ -174,11 +174,11 @@ onMounted(() => {
           </div>
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
-              <span class="text-muted">Item Dipesan:</span>
+              <span class="text-muted">Ordered Items:</span>
               <span class="font-semibold">{{ summary.kpis.total_ordered_qty }} pcs</span>
             </div>
             <div class="flex justify-between text-xs">
-              <span class="text-muted">Item Terkirim:</span>
+              <span class="text-muted">Shipped Items:</span>
               <span class="font-semibold">{{ summary.kpis.total_sent_qty }} pcs</span>
             </div>
             <UProgress
@@ -206,7 +206,7 @@ onMounted(() => {
           </div>
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
-              <span class="text-muted">Total Rencana:</span>
+              <span class="text-muted">Total Plans:</span>
               <span class="font-semibold">{{ summary.kpis.total_plans_count }} SDP</span>
             </div>
           </div>
@@ -253,7 +253,7 @@ onMounted(() => {
               {{ summary.dock_utilization.reduce((acc, curr) => acc + curr.total_hours, 0).toFixed(1) }} jam
             </p>
             <p class="text-xs text-muted mt-1">
-              Total waktu dermaga terpakai
+              Total dock utilized hours
             </p>
           </div>
           <div class="border-t border-default pt-3 space-y-2 max-h-[80px] overflow-y-auto">
@@ -276,7 +276,9 @@ onMounted(() => {
             <p class="text-3xl font-bold">
               {{ slaMetrics ? (slaMetrics.on_time_rate * 100).toFixed(1) : '—' }}%
             </p>
-            <p class="text-xs text-muted mt-1">On Time Rate (24h SLA)</p>
+            <p class="text-xs text-muted mt-1">
+              On Time Rate (24h SLA)
+            </p>
           </div>
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
@@ -326,3 +328,6 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+>
+

@@ -109,7 +109,12 @@ onMounted(() => {
           <UIcon name="i-lucide-clipboard-list" class="w-4 h-4 text-warning" />
           Needs Review
         </h2>
-        <UBadge v-if="reviewItems.length" color="warning" variant="subtle" size="sm">
+        <UBadge
+          v-if="reviewItems.length"
+          color="warning"
+          variant="subtle"
+          size="sm"
+        >
           {{ reviewItems.length }} pending
         </UBadge>
       </div>
@@ -123,8 +128,12 @@ onMounted(() => {
         <!-- Empty state -->
         <div v-else-if="!reviewItems.length" class="text-center py-8 text-muted">
           <UIcon name="i-lucide-check-circle" class="w-10 h-10 mx-auto mb-2 text-success" />
-          <p class="text-sm font-medium">All caught up!</p>
-          <p class="text-xs mt-1">No documents pending your review.</p>
+          <p class="text-sm font-medium">
+            All caught up!
+          </p>
+          <p class="text-xs mt-1">
+            No documents pending your review.
+          </p>
         </div>
 
         <!-- Review item rows -->

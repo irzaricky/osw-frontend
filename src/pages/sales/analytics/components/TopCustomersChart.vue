@@ -63,8 +63,12 @@ const chartSeries = computed(() => [
   <UCard>
     <template #header>
       <div>
-        <h3 class="font-semibold text-base">Top 5 Customers</h3>
-        <p class="text-xs text-muted">By ordered quantity in selected period</p>
+        <h3 class="font-semibold text-base">
+          Top 5 Customers
+        </h3>
+        <p class="text-xs text-muted">
+          By ordered quantity in selected period
+        </p>
       </div>
     </template>
 

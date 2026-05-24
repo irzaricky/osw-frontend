@@ -519,7 +519,12 @@ const conflictingDocksNames = computed(() => {
 
           <div v-show="isMasterListOpen" class="space-y-4">
             <div class="flex items-center gap-3">
-              <UInputDate ref="mlInputDate" v-model="mlDateRangeModel" range class="w-64">
+              <UInputDate
+                ref="mlInputDate"
+                v-model="mlDateRangeModel"
+                range
+                class="w-64"
+              >
                 <template #trailing>
                   <UPopover :reference="mlInputDate?.inputsRef?.[0]?.$el">
                     <UButton

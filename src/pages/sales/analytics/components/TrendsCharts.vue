@@ -123,10 +123,10 @@ const fulfillmentChartSeries = computed(() => [
       <template #header>
         <div>
           <h3 class="font-semibold text-base">
-            Tren Pesanan & Pengiriman
+            Order & Shipment Trends
           </h3>
           <p class="text-xs text-muted">
-            Statistik SPO terbit vs SDO terkirim 12 bulan terakhir.
+            Comparison of issued SPOs vs delivered SDOs over the last 12 months.
           </p>
         </div>
       </template>
@@ -148,10 +148,10 @@ const fulfillmentChartSeries = computed(() => [
       <template #header>
         <div>
           <h3 class="font-semibold text-base">
-            Analisis Pemenuhan Kuantitas
+            Quantity Fulfillment Analysis
           </h3>
           <p class="text-xs text-muted">
-            Perbandingan kuantitas item direncanakan vs barang diterima.
+            Comparison of planned item quantities vs actual received goods.
           </p>
         </div>
       </template>
@@ -169,3 +169,4 @@ const fulfillmentChartSeries = computed(() => [
     </UCard>
   </div>
 </template>
+te>

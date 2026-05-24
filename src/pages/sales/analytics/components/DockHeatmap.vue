@@ -111,7 +111,7 @@ watch(() => props.dockUtilization, (newVal) => {
             Utilisasi Loading Dock
           </h3>
           <p class="text-xs text-muted">
-            Tingkat occupancy loading dock berdasarkan jam operasional harian (08:00 - 18:00 WIB).
+            Daily loading dock occupancy based on operational hours (08:00 - 18:00 WIB).
           </p>
         </div>
 
@@ -161,7 +161,7 @@ watch(() => props.dockUtilization, (newVal) => {
                 {{ dock.name }}
               </h4>
               <p class="text-xs text-muted">
-                Total Terjadwal: {{ dock.plan_count }} Rencana Pengiriman (SDP)
+                Total Scheduled: {{ dock.plan_count }} Delivery Plans (SDP)
               </p>
             </div>
           </div>
@@ -265,7 +265,7 @@ watch(() => props.dockUtilization, (newVal) => {
 
               <!-- Individual Schedule List Details -->
               <div class="space-y-2 border-t border-default pt-3 mt-1">
-                <span class="text-[10px] uppercase font-bold tracking-wider text-muted block mb-1">Rincian Rencana Jadwal:</span>
+                <span class="text-[10px] uppercase font-bold tracking-wider text-muted block mb-1">Scheduled Plan Details:</span>
                 <div
                   v-for="plan in group.plans"
                   :key="plan.id"
@@ -294,9 +294,11 @@ watch(() => props.dockUtilization, (newVal) => {
         </div>
 
         <div v-else class="text-center p-4 border border-dashed border-default rounded-lg">
-          <span class="text-xs text-muted">Tidak ada rencana jadwal untuk dermaga ini.</span>
+          <span class="text-xs text-muted">No plans scheduled for this dock.</span>
         </div>
       </div>
     </div>
   </UCard>
 </template>
+/template>
+

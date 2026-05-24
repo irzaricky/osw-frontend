@@ -386,7 +386,7 @@ function updateCountdown() {
     const remHrs = hrs % 24
     countdownText.value = `${days} Hari ${remHrs} Jam ${mins} Menit`
   } else {
-    countdownText.value = `${hrs} Jam ${mins} Menit`
+    countdownText.value = `${hrs}h ${mins}m`
   }
 }
 
