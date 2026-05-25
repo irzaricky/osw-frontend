@@ -560,7 +560,7 @@ function close() {
         />
         <UButton
           color="primary"
-          label="Schedule Delivery"
+          label="Save as draft"
           :loading="props.loading"
           :disabled="!!conflictData || isLoadExceeded"
           @click="submitForm"
