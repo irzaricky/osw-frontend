@@ -124,17 +124,17 @@ const hasShortages = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-screen bg-slate-900 text-gray-100 font-sans pb-10">
+  <div class="flex flex-col min-h-screen bg-default/10 text-default font-sans pb-10">
     <!-- Mobile Header -->
-    <div class="bg-slate-950 px-4 py-3 border-b border-slate-800 sticky top-0 z-20 flex items-center gap-3">
+    <div class="bg-elevated/80 backdrop-blur-md px-4 py-3 border-b border-default sticky top-0 z-20 flex items-center gap-3">
       <div class="p-2 bg-emerald-500/10 rounded-lg text-emerald-400">
         <UIcon name="i-lucide-smartphone" class="w-5 h-5" />
       </div>
       <div>
-        <h1 class="font-bold text-sm text-gray-100">
+        <h1 class="font-bold text-sm text-default">
           Driver Mobile Portal
         </h1>
-        <p class="text-[10px] text-slate-500">
+        <p class="text-[10px] text-muted-foreground">
           Real-time Delivery Dispatch & Proof of Delivery
         </p>
       </div>
@@ -150,36 +150,36 @@ const hasShortages = computed(() => {
 
     <!-- Main Container -->
     <div class="flex-1 p-4 max-w-md mx-auto w-full space-y-4">
-      <Breadcrumbs :items="breadcrumbItems" class="text-xs text-slate-400 mb-2" />
+      <Breadcrumbs :items="breadcrumbItems" class="text-xs text-muted-foreground mb-2" />
 
       <!-- SUCCESS CONFIRMATION VIEW -->
       <div
         v-if="isSuccess"
-        class="bg-slate-950 rounded-2xl p-8 border border-emerald-500/20 text-center space-y-5 shadow-2xl relative overflow-hidden"
+        class="bg-elevated rounded-2xl p-8 border border-default text-center space-y-5 shadow-2xl relative overflow-hidden"
       >
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl" />
         
         <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto shadow-inner">
           <UIcon name="i-lucide-badge-check" class="w-8 h-8" />
         </div>
 
         <div class="space-y-2">
-          <h2 class="text-xl font-bold text-gray-100">
+          <h2 class="text-xl font-bold text-default">
             Shipment Dispatched!
           </h2>
-          <p class="text-xs text-slate-400 leading-relaxed">
+          <p class="text-xs text-muted-foreground leading-relaxed">
             Delivery Order **{{ detail?.do_number }}** has been updated successfully. Stocks have been reconciled and logistics planners have been notified.
           </p>
         </div>
 
-        <div class="p-4 bg-slate-900 border border-slate-850 rounded-xl space-y-2 text-left text-xs">
+        <div class="p-4 bg-default/20 border border-default rounded-xl space-y-2 text-left text-xs">
           <div class="flex justify-between">
-            <span class="text-slate-500">Status</span>
+            <span class="text-muted-foreground">Status</span>
             <span class="font-bold text-emerald-400">DELIVERED</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-slate-500">Delivery Type</span>
-            <span class="font-bold text-gray-300">
+            <span class="text-muted-foreground">Delivery Type</span>
+            <span class="font-bold text-default">
               {{ hasShortages ? 'Partial Fulfillment' : 'Full Fulfillment' }}
             </span>
           </div>
@@ -198,19 +198,19 @@ const hasShortages = computed(() => {
       <!-- SDO EDITING FORM VIEW -->
       <template v-else>
         <!-- Loading Indicator -->
-        <div v-if="loading && !detail" class="py-12 text-center text-slate-500 text-xs">
+        <div v-if="loading && !detail" class="py-12 text-center text-muted-foreground text-xs">
           <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin mx-auto mb-2 text-emerald-400" />
           Fetching shipment allocations...
         </div>
 
-        <div v-else-if="(detail?.delivery_status as string) === 'Delivered'" class="bg-slate-950 rounded-2xl p-6 border border-default text-center space-y-4">
+        <div v-else-if="(detail?.delivery_status as string) === 'Delivered'" class="bg-elevated rounded-2xl p-6 border border-default text-center space-y-4">
           <div class="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto">
             <UIcon name="i-lucide-shield-check" class="w-6 h-6" />
           </div>
           <h3 class="font-bold text-sm text-default">
             Delivery Order Already Complete
           </h3>
-          <p class="text-xs text-muted leading-relaxed">
+          <p class="text-xs text-muted-foreground leading-relaxed">
             This shipment **{{ detail?.do_number }}** has already been dispatched and processed. Drivers cannot re-modify finalized delivery orders.
           </p>
           <UButton
@@ -224,13 +224,13 @@ const hasShortages = computed(() => {
 
         <div v-else class="space-y-4">
           <!-- SDO Status Header Card -->
-          <div class="bg-slate-950 rounded-2xl p-5 border border-slate-850 shadow-lg space-y-4 relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl" />
+          <div class="bg-elevated rounded-2xl p-5 border border-default shadow-lg space-y-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-xl" />
             
             <div class="flex justify-between items-start">
               <div>
-                <span class="text-[10px] uppercase font-mono tracking-wider text-slate-500 font-bold">Delivery order</span>
-                <h2 class="text-lg font-bold text-gray-200 mt-0.5">
+                <span class="text-[10px] uppercase font-mono tracking-wider text-muted-foreground font-bold">Delivery order</span>
+                <h2 class="text-lg font-bold text-default mt-0.5">
                   {{ detail?.do_number || `SDO ID #${sdoId}` }}
                 </h2>
               </div>
@@ -244,22 +244,22 @@ const hasShortages = computed(() => {
               </UBadge>
             </div>
 
-            <hr class="border-slate-850">
+            <hr class="border-default">
 
             <div class="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <p class="text-slate-500">
+                <p class="text-muted-foreground">
                   Destination
                 </p>
-                <p class="font-bold text-gray-300 mt-0.5 truncate">
+                <p class="font-bold text-default mt-0.5 truncate">
                   {{ detail?.deliveryPlan?.destination || 'N/A' }}
                 </p>
               </div>
               <div>
-                <p class="text-slate-500">
+                <p class="text-muted-foreground">
                   Shipment Date
                 </p>
-                <p class="font-bold text-gray-300 mt-0.5">
+                <p class="font-bold text-default mt-0.5">
                   {{ detail?.shipment_date ? new Date(detail.shipment_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A' }}
                 </p>
               </div>
@@ -282,34 +282,34 @@ const hasShortages = computed(() => {
           <!-- Alert Driver Notice -->
           <div
             v-if="hasShortages"
-            class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex gap-3 text-xs text-rose-300"
+            class="bg-rose-500/10 border border-rose-500/20 rounded-xl p-4 flex gap-3 text-xs text-rose-500 dark:text-rose-300"
           >
             <UIcon name="i-lucide-shield-alert" class="w-5 h-5 shrink-0" />
             <div>
-              <h4 class="font-bold text-rose-400">
+              <h4 class="font-bold text-rose-500 dark:text-rose-400">
                 Shortages Flagged (Partial Shipment)
               </h4>
-              <p class="mt-0.5 text-rose-400/90 leading-relaxed">
+              <p class="mt-0.5 leading-relaxed text-rose-600 dark:text-rose-400/90">
                 One or more items are flagged with shortages. Please record specific reasoning in the comments section below before submitting.
               </p>
             </div>
           </div>
-          <div v-else class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-xs text-amber-300">
+          <div v-else class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex gap-3 text-xs text-amber-600 dark:text-amber-300">
             <UIcon name="i-lucide-triangle-alert" class="w-5 h-5 shrink-0" />
             <div>
-              <h4 class="font-bold">
+              <h4 class="font-bold text-amber-700 dark:text-amber-400">
                 Driver Action Required
               </h4>
-              <p class="mt-0.5 text-amber-400/90 leading-relaxed">
+              <p class="mt-0.5 leading-relaxed text-amber-600 dark:text-amber-400/90">
                 Verify each item quantity physically with the customer. If shortages are present, use the adjustments below.
               </p>
             </div>
           </div>
 
           <!-- Fulfillment Items list editor -->
-          <div class="bg-slate-950 rounded-2xl p-4 border border-slate-850 shadow-lg space-y-3">
+          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-lg space-y-3">
             <div class="flex justify-between items-center px-1">
-              <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-muted-foreground">
                 Fulfillment Items
               </h3>
               <UButton
@@ -318,7 +318,7 @@ const hasShortages = computed(() => {
                 size="xs"
                 label="Match All Sent Qty"
                 icon="i-lucide-check-check"
-                class="font-bold"
+                class="font-bold cursor-pointer"
                 @click="matchAllQuantities"
               />
             </div>
@@ -327,29 +327,29 @@ const hasShortages = computed(() => {
               <div
                 v-for="item in detail.details"
                 :key="item.id"
-                class="bg-slate-900/50 p-4 rounded-xl border border-slate-850/60 space-y-4"
+                class="bg-default/20 p-4 rounded-xl border border-default space-y-4"
               >
                 <!-- Detail Info -->
                 <div class="flex justify-between items-start gap-3">
                   <div>
-                    <h4 class="text-sm font-bold text-gray-200">
+                    <h4 class="text-sm font-bold text-default">
                       {{ item.planDetail?.spoDetail?.part?.part_name || 'Part' }}
                     </h4>
-                    <p class="text-[10px] text-slate-500">
+                    <p class="text-[10px] text-muted-foreground">
                       Part No: {{ item.planDetail?.spoDetail?.part?.part_number || 'N/A' }}
                     </p>
                   </div>
                   <div class="text-right shrink-0">
-                    <span class="text-[9px] font-bold text-muted block mb-0.5">Planned Sent</span>
-                    <span class="text-xs font-mono text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                    <span class="text-[9px] font-bold text-muted-foreground block mb-0.5">Planned Sent</span>
+                    <span class="text-xs font-mono text-emerald-500 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded">
                       {{ item.sent_qty }} pcs
                     </span>
                   </div>
                 </div>
 
                 <!-- Quantity adjustment controls -->
-                <div class="flex items-center justify-between border-t border-slate-850/40 pt-3">
-                  <span class="text-xs text-slate-400 font-semibold">Received Qty</span>
+                <div class="flex items-center justify-between border-t border-default pt-3">
+                  <span class="text-xs text-muted-foreground font-semibold">Received Qty</span>
                   
                   <div class="flex items-center gap-3">
                     <UButton
@@ -357,10 +357,10 @@ const hasShortages = computed(() => {
                       variant="ghost"
                       size="md"
                       icon="i-lucide-minus"
-                      class="rounded-full bg-slate-850 text-slate-200 h-11 w-11 justify-center shrink-0 border border-slate-700 active:bg-slate-800"
+                      class="rounded-full bg-default/30 text-default h-11 w-11 justify-center shrink-0 border border-default active:bg-default/40 cursor-pointer"
                       @click="adjustQty(item.id, -1, item.sent_qty)"
                     />
-                    <span class="w-12 text-center text-base font-black font-mono text-gray-100">
+                    <span class="w-12 text-center text-base font-black font-mono text-default">
                       {{ receivedQuantities[item.id] ?? item.sent_qty }}
                     </span>
                     <UButton
@@ -368,7 +368,7 @@ const hasShortages = computed(() => {
                       variant="ghost"
                       size="md"
                       icon="i-lucide-plus"
-                      class="rounded-full bg-slate-850 text-slate-200 h-11 w-11 justify-center shrink-0 border border-slate-700 active:bg-slate-800"
+                      class="rounded-full bg-default/30 text-default h-11 w-11 justify-center shrink-0 border border-default active:bg-default/40 cursor-pointer"
                       @click="adjustQty(item.id, 1, item.sent_qty)"
                     />
                   </div>
@@ -389,21 +389,21 @@ const hasShortages = computed(() => {
           </div>
 
           <!-- Proof of Delivery Upload Section -->
-          <div class="bg-slate-950 rounded-2xl p-4 border border-slate-850 shadow-lg space-y-4">
-            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 px-1">
+          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-lg space-y-4">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-muted-foreground px-1">
               Proof of Delivery (POD)
             </h3>
 
             <!-- File selection controls -->
-            <div v-if="!podFile" class="flex flex-col items-center justify-center p-6 border border-dashed border-slate-800 rounded-xl bg-slate-900/30 gap-3">
-              <div class="w-10 h-10 bg-slate-850 rounded-full flex items-center justify-center text-slate-400 shadow-inner">
+            <div v-if="!podFile" class="flex flex-col items-center justify-center p-6 border border-dashed border-default rounded-xl bg-default/5 gap-3">
+              <div class="w-10 h-10 bg-default/20 rounded-full flex items-center justify-center text-muted-foreground shadow-inner">
                 <UIcon name="i-lucide-camera" class="w-5 h-5" />
               </div>
               <div class="text-center">
-                <p class="text-xs font-bold text-gray-300">
+                <p class="text-xs font-bold text-default">
                   Take POD Photo
                 </p>
-                <p class="text-[9px] text-slate-500 mt-0.5">
+                <p class="text-[9px] text-muted-foreground mt-0.5">
                   Capture signed Surat Jalan receipt
                 </p>
               </div>
@@ -425,47 +425,47 @@ const hasShortages = computed(() => {
 
             <!-- Upload Photo Preview Frame -->
             <div v-else class="space-y-3">
-              <div class="relative border border-slate-800 rounded-xl overflow-hidden bg-slate-900">
+              <div class="relative border border-default rounded-xl overflow-hidden bg-default/25">
                 <img
                   :src="podPreviewUrl"
                   class="w-full h-44 object-cover"
                   alt="POD Receipt preview"
                 >
                 <button
-                  class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow"
+                  class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow cursor-pointer"
                   @click="clearPhoto"
                 >
                   <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
                 </button>
               </div>
-              <p class="text-[10px] text-emerald-400 font-semibold text-center">
+              <p class="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold text-center">
                 POD Receipt Photo captured successfully!
               </p>
             </div>
           </div>
 
-          <!-- Overall Delivery Notes -->
-          <div class="bg-slate-950 rounded-2xl p-4 border border-slate-850 shadow-lg space-y-3">
-            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-400 px-1">
+          <!-- Overall Notes -->
+          <div class="bg-elevated rounded-2xl p-4 border border-default shadow-lg space-y-3">
+            <h3 class="font-bold text-xs uppercase tracking-wider text-muted-foreground px-1">
               Overall Notes
             </h3>
             <textarea
               v-model="overallNotes"
               rows="3"
-              class="w-full rounded-xl bg-slate-900 border border-slate-850 p-3 text-xs text-gray-200 focus:outline-none focus:border-slate-700 placeholder-slate-600"
+              class="w-full rounded-xl bg-default/15 border border-default p-3 text-xs text-default focus:outline-none focus:border-default/80 placeholder-muted-foreground/60"
               placeholder="Enter optional dispatch notes..."
             />
           </div>
 
           <!-- Validation alerts -->
-          <div v-if="validationError" class="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold leading-relaxed">
+          <div v-if="validationError" class="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 dark:text-rose-400 rounded-xl text-xs font-semibold leading-relaxed">
             {{ validationError }}
           </div>
 
           <!-- Submission Action buttons -->
           <UButton
             color="success"
-            class="w-full py-3 font-bold justify-center shadow-lg"
+            class="w-full py-3 font-bold justify-center shadow-lg cursor-pointer"
             icon="i-lucide-check-circle"
             label="Finalize & Submit Delivery"
             :loading="isSubmitting"

@@ -4,16 +4,28 @@ import { useRoute } from 'vue-router'
 import { useStorage } from '@vueuse/core'
 import DefaultLayout from './layouts/DefaultLayout.vue'
 import AuthLayout from './layouts/AuthLayout.vue'
+import DriverLayout from './layouts/DriverLayout.vue'
+import { useAuthStore } from './stores/auth.store'
 
 const toast = useToast()
 const route = useRoute()
+const authStore = useAuthStore()
+
+const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver')
 
 const layouts = {
   default: DefaultLayout,
-  auth: AuthLayout
+  auth: AuthLayout,
+  driver: DriverLayout
 }
 
 const layout = computed(() => {
+  if (route.meta.layout === 'auth') {
+    return AuthLayout
+  }
+  if (isDriver.value) {
+    return DriverLayout
+  }
   return layouts[route.meta.layout as keyof typeof layouts] || DefaultLayout
 })
 
