@@ -117,7 +117,7 @@ async function handleScan() {
 
   try {
     scanLoading.value = true
-    const res = await materialReceivingStore.scanQuantityLabel({ label_number: scanLabel.value })
+    const res = await materialReceivingStore.scanQuantityLabel(detail.value?.mr_item_id || '', { label_number: scanLabel.value })
     toastSuccess(res.message || 'Label scanned successfully.')
     scanLabel.value = ''
     await fetchDetail()
@@ -211,7 +211,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="!pageLoading && detail" class="p-6 space-y-6">
+  <div v-if="detail" class="p-6 space-y-6">
     <Breadcrumbs :items="breadcrumbItems" />
 
     <div class="flex items-center gap-4">
@@ -432,18 +432,18 @@ onMounted(() => {
       title="Scan Material Label"
       @scanned="handleScannedLabel"
     />
+
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Submit Anyway"
+      :loading="submitLoading"
+      @confirm="confirmDialog.action?.()"
+    />
   </div>
 
   <div v-else class="p-6 flex items-center justify-center">
     <UProgress indicator />
   </div>
-
-  <ConfirmDialog
-    v-model:open="confirmDialog.open"
-    :title="confirmDialog.title"
-    :description="confirmDialog.description"
-    confirm-label="Submit Anyway"
-    :loading="submitLoading"
-    @confirm="confirmDialog.action?.()"
-  />
 </template>

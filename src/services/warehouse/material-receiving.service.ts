@@ -39,8 +39,8 @@ const materialReceivingService = {
   getQuantityCheckingDetail(mdo_detail_id: number | string) {
     return api.get(`/warehouse/material-receiving/quantity-checking/${mdo_detail_id}`)
   },
-  scanQuantityLabel(payload: { label_number: string }) {
-    return api.post('/warehouse/material-receiving/quantity-checking/scan', payload)
+  scanQuantityLabel(mr_item_id: number | string, payload: { label_number: string }) {
+    return api.post(`/warehouse/material-receiving/quantity-checking/scan/${mr_item_id}`, payload)
   },
   markQuantityIncomplete(mr_item_label_id: number | string, payload: { actual_qty: number }) {
     return api.patch(`/warehouse/material-receiving/quantity-checking/incomplete/${mr_item_label_id}`, payload)
@@ -53,11 +53,19 @@ const materialReceivingService = {
   getQualityCheckingDetail(mdo_detail_id: number | string) {
     return api.get(`/warehouse/material-receiving/quality-checking/${mdo_detail_id}`)
   },
-  scanQualityLabel(payload: { label_number: string }) {
-    return api.post('/warehouse/material-receiving/quality-checking/scan', payload)
+  scanQualityLabel(mr_item_id: number | string, payload: { label_number: string }) {
+    return api.post(`/warehouse/material-receiving/quality-checking/scan/${mr_item_id}`, payload)
   },
-  markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload) {
-    return api.patch(`/warehouse/material-receiving/quality-checking/defect/${mr_item_label_id}`, payload)
+  markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload | FormData) {
+    const url = `/warehouse/material-receiving/quality-checking/defect/${mr_item_label_id}`
+    if (payload instanceof FormData) {
+      return api.patch(url, payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+    }
+    return api.patch(url, payload)
   },
   submitQualityChecking(mdo_detail_id: number | string) {
     return api.post(`/warehouse/material-receiving/quality-checking/submit/${mdo_detail_id}`)

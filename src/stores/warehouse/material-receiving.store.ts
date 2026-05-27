@@ -126,11 +126,11 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
-  async function scanQuantityLabel(payload: { label_number: string }) {
+  async function scanQuantityLabel(mr_item_id: number | string, payload: { label_number: string }) {
     loading.value = true
     error.value = null
     try {
-      const response = await materialReceivingService.scanQuantityLabel(payload)
+      const response = await materialReceivingService.scanQuantityLabel(mr_item_id, payload)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -187,11 +187,11 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
-  async function scanQualityLabel(payload: { label_number: string }) {
+  async function scanQualityLabel(mr_item_id: number | string, payload: { label_number: string }) {
     loading.value = true
     error.value = null
     try {
-      const response = await materialReceivingService.scanQualityLabel(payload)
+      const response = await materialReceivingService.scanQualityLabel(mr_item_id, payload)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -202,7 +202,7 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
-  async function markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload) {
+  async function markQualityDefect(mr_item_label_id: number | string, payload: MarkQualityDefectPayload | FormData) {
     loading.value = true
     error.value = null
     try {
