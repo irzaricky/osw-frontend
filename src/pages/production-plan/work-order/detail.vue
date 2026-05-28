@@ -72,8 +72,8 @@ function openConfirm(opts: {
 // ── Breadcrumbs ───────────────────────────────────────────────────────────────
 const breadcrumbItems = computed(() => [
   { label: 'Home', to: '/' },
-  { label: 'Manufacturing' },
-  { label: 'Work Orders', to: '/work-order' },
+  { label: 'Production Plan' },
+  { label: 'Work Orders', to: {name: 'work-order-list'} },
   { label: currentWO.value?.wo_number ?? '...' },
 ])
 
@@ -202,15 +202,8 @@ watch(
 
       <div v-else-if="!currentWO && !loading" class="flex flex-col items-center justify-center py-24 gap-4">
         <UIcon name="i-lucide-file-x-2" class="w-12 h-12 text-muted" />
-        <p class="text-sm text-muted">
-          Work Order not found
-        </p>
-        <UButton
-          label="Back to List"
-          color="neutral"
-          variant="soft"
-          @click="router.push('/work-order')"
-        />
+        <p class="text-sm text-muted">Work Order not found</p>
+        <UButton label="Back to List" color="neutral" variant="soft" @click="router.push({name: 'work-order-list'})" />
       </div>
 
       <div v-else-if="currentWO" class="space-y-6">
@@ -224,7 +217,7 @@ watch(
               color="neutral"
               variant="ghost"
               size="sm"
-              @click="router.push('/work-order')"
+              @click="router.push({name: 'work-order-list'})"
             />
             <div>
               <div class="flex items-center gap-2 flex-wrap">

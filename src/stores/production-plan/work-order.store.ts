@@ -7,11 +7,13 @@ import type {
   WorkOrderIssue,
   DailySummary,
   WorkOrderListParams,
+  DailySummaryParams,
   AddProgressPayload,
   ReportIssuePayload,
   ResolveIssuePayload,
   CompleteWorkOrderPayload,
   UpdateStationJobStatusPayload,
+  ScanOperatorPayload,          // [BARU]
 } from '../../types/production-plan/work-order'
 
 export const useWorkOrderStore = defineStore('workOrder', () => {
@@ -26,9 +28,10 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
 
   const meta = ref({ page: 1, limit: 10, total: 0, totalPages: 0 })
 
-  const loading    = ref(false)
-  const saving     = ref(false)
-  const error      = ref<string | null>(null)
+  const loading      = ref(false)
+  const saving       = ref(false)
+  const scanLoading  = ref(false)   // [BARU] state loading khusus untuk aksi scan operator
+  const error        = ref<string | null>(null)
 
   // ── List & Detail ──────────────────────────────────────────────────────────
 
@@ -72,11 +75,13 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     }
   }
 
-  async function fetchDailySummary(work_date?: string) {
+  // [PERUBAHAN] fetchDailySummary kini menerima objek params lengkap (DailySummaryParams)
+  // agar bisa meneruskan filter shift_id, stage, dan line_id ke service secara konsisten.
+  async function fetchDailySummary(params?: DailySummaryParams) {
     loading.value = true
     error.value   = null
     try {
-      const { data } = await workOrderService.getDailySummary(work_date)
+      const { data } = await workOrderService.getDailySummary(params)
       if (data.status) dailySummary.value = data.data
       return data
     }
@@ -261,6 +266,51 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     }
   }
 
+  // ── [FITUR BARU] Scan Operator ────────────────────────────────────────────
+  //
+  // Mengirim operator_id hasil scan QR ke endpoint BE.
+  // Setelah sukses, state lokal diperbarui secara reaktif:
+  //   - job.operator_id di-set ke operator_id yang baru
+  //   - job.status di-ubah ke 'In_Progress' jika sebelumnya 'Pending'
+  //
+  // Menggunakan `scanLoading` terpisah dari `saving` agar UI tombol lain
+  // tidak ikut ter-disable saat proses scan berlangsung.
+  async function scanOperator(
+    wo_id:      number | string,
+    station_id: number | string,
+    job_id:     number | string,
+    payload:    ScanOperatorPayload,
+  ) {
+    scanLoading.value = true
+    error.value       = null
+    try {
+      const { data } = await workOrderService.scanOperator(wo_id, station_id, job_id, payload)
+
+      // Perbarui state lokal secara reaktif tanpa perlu re-fetch seluruh WO
+      if (data.status && currentWO.value?.stations) {
+        const station = currentWO.value.stations.find((s) => s.id === Number(station_id))
+        if (station?.jobs) {
+          const jobIdx = station.jobs.findIndex((j) => j.id === Number(job_id))
+          if (jobIdx !== -1) {
+            // Merge seluruh field yang dikembalikan BE (termasuk operator_id dan status baru)
+            station.jobs[jobIdx] = { ...station.jobs[jobIdx], ...data.data }
+          }
+        }
+      }
+      return data
+    }
+    catch (e: any) {
+      // Lempar error agar komponen pemanggil bisa menampilkan toast error
+      // dengan pesan yang tepat dari BE (termasuk pesan Sequence Enforcer)
+      const errMsg = e.response?.data?.error || e.message
+      error.value = errMsg
+      throw new Error(errMsg)
+    }
+    finally {
+      scanLoading.value = false
+    }
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   function clearCurrentWO() {
@@ -285,6 +335,7 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     meta,
     loading,
     saving,
+    scanLoading,   // [BARU]
     error,
 
     fetchWorkOrders,
@@ -298,6 +349,7 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     resolveIssue,
     completeWorkOrder,
     updateStationJobStatus,
+    scanOperator,   // [BARU]
     clearCurrentWO,
     clearList,
   }

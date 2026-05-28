@@ -1,3 +1,5 @@
+// ─── Status Types ─────────────────────────────────────────────────────────────
+
 export type WorkOrderStatus =
   | 'Draft'
   | 'Released'
@@ -36,6 +38,7 @@ export interface WorkOrder {
   planned_quantity:        number
   actual_quantity:         number
   status:                  WorkOrderStatus
+  sequence?:               number | null   // stage order dari parallel-sequential model
   notes?:                  string | null
   created_at?:             string
   updated_at?:             string
@@ -51,25 +54,36 @@ export interface WorkOrder {
 }
 
 export interface WorkOrderStation {
-  id:              number
-  wo_id:           number
-  station_id:      number
-  sequence:        number
-  status:          StationStatus
+  id:               number
+  wo_id:            number
+  station_id:       number
+  sequence:         number
+  status:           StationStatus
   planned_quantity?: number | null
   actual_quantity?:  number | null
-  station?:        { id: number; station_code: string; name: string; sequence: number }
-  jobs?:           WorkOrderStationJob[]
+  station?:         { id: number; station_code: string; name: string; sequence: number }
+  jobs?:            WorkOrderStationJob[]
 }
 
+// [PERUBAHAN] Tambah field operator_id dan operator untuk mendukung fitur Scan Operator
 export interface WorkOrderStationJob {
-  id:            number
-  wo_station_id: number
-  job_id:        number
-  sequence:      number
-  status:        JobStatus
-  actual_time?:  number | null
-  job?:          { id: number; job_code: string; name: string; standard_time: number }
+  id:                     number
+  wo_station_id:          number
+  job_id:                 number
+  sequence:               number
+  status:                 JobStatus
+  actual_time?:           number | null
+  operator_id?:           number | null         // ID operator yang di-assign via scan
+  station_name_snapshot?: string | null
+  job_name_snapshot?:     string | null
+  standard_time_snapshot?: number | null
+  setup_time_snapshot?:   number | null
+  job?:                   { id: number; job_code: string; name: string; standard_time: number }
+  operator?:              {            // Relasi ke SEmployee sesuai model BE
+    id:            number
+    employee_code: string
+    name:          string
+  } | null
 }
 
 export interface WorkOrderProgress {
@@ -98,12 +112,38 @@ export interface WorkOrderIssue {
   resolved_time?:    string | null
 }
 
+// ─── Shift (Master Data) ──────────────────────────────────────────────────────
+
+// [PERUBAHAN] Tambah interface Shift untuk data dropdown filter
+export interface Shift {
+  id:           number
+  name:         string
+  shift_number: number
+  start_time:   string
+  end_time:     string
+  type?:        string
+  category?:    string
+  active?:      boolean
+}
+
 // ─── Daily Summary ────────────────────────────────────────────────────────────
 
+// [PERUBAHAN] Tambah field shift_id_filter dan stage_filter yang kini dikirim BE
 export interface DailySummary {
   work_date:        string
+  line_id_filter?:  number | null
+  stage_filter?:    number | null
+  shift_id_filter?: number | null   // field baru dari BE
   total_wo:         number
   status_breakdown: Partial<Record<WorkOrderStatus, number>>
+  stage_breakdown?: Record<string, {
+    stage:         number
+    wo_count:      number
+    total_planned: number
+    total_actual:  number
+  }>
+  lines_active?:    number
+  stages_active?:   number
   total_planned:    number
   total_actual:     number
   achievement_pct:  number
@@ -112,6 +152,7 @@ export interface DailySummary {
 
 // ─── List Params ──────────────────────────────────────────────────────────────
 
+// [PERUBAHAN] Tambah shift_id dan stage ke params filter
 export interface WorkOrderListParams {
   page?:      number
   limit?:     number
@@ -120,7 +161,17 @@ export interface WorkOrderListParams {
   work_date?: string
   line_id?:   number
   po_id?:     number
+  stage?:     number    // filter berdasarkan sequence/tahap produksi
+  shift_id?:  number    // [BARU] filter berdasarkan shift
   [key: string]: any
+}
+
+// [PERUBAHAN] Tambah params untuk daily-summary
+export interface DailySummaryParams {
+  work_date?: string
+  line_id?:   number
+  stage?:     number
+  shift_id?:  number   // [BARU]
 }
 
 // ─── Request Payloads ─────────────────────────────────────────────────────────
@@ -152,6 +203,11 @@ export interface CompleteWorkOrderPayload {
 }
 
 export interface UpdateStationJobStatusPayload {
-  status:      JobStatus
+  status:       JobStatus
   actual_time?: number | null
+}
+
+// [FITUR BARU] Payload untuk endpoint scan-operator
+export interface ScanOperatorPayload {
+  operator_id: number
 }
