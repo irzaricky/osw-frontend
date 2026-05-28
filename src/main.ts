@@ -54,37 +54,37 @@ const router = createRouter({
     {
       path: '/sales/forecast',
       component: () => import('./pages/sales/forecast/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Forecast'] }
     },
     {
       path: '/sales/spr',
       component: () => import('./pages/sales/spr/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Order'] }
     },
     {
       path: '/sales/spo',
       component: () => import('./pages/sales/spo/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Order'] }
     },
     {
       path: '/sales/sdp',
       component: () => import('./pages/sales/sdp/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Delivery'] }
     },
     { 
       path: '/sales/analytics', 
       component: () => import('./pages/sales/analytics/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales'] }
     },
     {
       path: '/sales/sdo',
       component: () => import('./pages/sales/sdo/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Delivery'] }
     },
     {
       path: '/sales/sdo/mobile/:id',
       component: () => import('./pages/sales/sdo/mobile.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Driver', 'Admin sales', 'Supervisor Sales', 'Staff Sales Delivery'] }
     },
     {
       path: '/production-plan',
@@ -398,6 +398,11 @@ const router = createRouter({
 
     // error
     {
+      path: '/forbidden',
+      component: () => import('./pages/error/Forbidden.vue'),
+      meta: { layout: 'auth', isPublic: true }
+    },
+    {
       path: '/error',
       component: () => import('./pages/error/GenericError.vue'),
       meta: { layout: 'auth', isPublic: true }
@@ -424,6 +429,18 @@ router.beforeEach(async (to, _from, next) => {
   } else if (authStore.isAuthenticated && to.path === '/login') {
     next('/')
   } else {
+    // Role Authorization Check
+    const allowedRoles = to.meta.allowedRoles as string[] | undefined
+    if (allowedRoles && Array.isArray(allowedRoles)) {
+      const userRole = authStore.user?.role
+      const hasAccess = allowedRoles.some(
+        role => role.toLowerCase() === userRole?.toLowerCase()
+      )
+      if (!hasAccess) {
+        next('/forbidden')
+        return
+      }
+    }
     next()
   }
 })

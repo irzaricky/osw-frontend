@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth.store'
 import sprService from '../../services/sales/spr.service'
 import spoService from '../../services/sales/spo.service'
 import forecastService from '../../services/sales/forecast.service'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 const isSupervisor = computed(() => {
   const r = authStore.user?.role?.toLowerCase()
@@ -13,12 +15,26 @@ const isSupervisor = computed(() => {
 })
 
 const quickLinks = [
+  { title: 'Forecast', description: 'Monthly Sales Forecast', icon: 'i-lucide-badge-dollar-sign', to: '/sales/forecast' },
   { title: 'Create SPR', description: 'Sales Purchase Request', icon: 'i-lucide-file-text', to: '/sales/spr' },
   { title: 'Create SPO', description: 'Sales Purchase Order', icon: 'i-lucide-file-check', to: '/sales/spo' },
   { title: 'Delivery Plan', description: 'Schedule Deliveries (SDP)', icon: 'i-lucide-calendar-days', to: '/sales/sdp' },
   { title: 'Delivery Order', description: 'Execute Deliveries (SDO)', icon: 'i-lucide-truck', to: '/sales/sdo' },
   { title: 'Analytics', description: 'Sales Performance Reports', icon: 'i-lucide-bar-chart-2', to: '/sales/analytics' }
 ]
+
+const filteredQuickLinks = computed(() => {
+  return quickLinks.filter(link => {
+    if (!link.to) return true
+    const resolved = router.resolve(link.to)
+    if (resolved && resolved.meta && resolved.meta.allowedRoles) {
+      const roles = resolved.meta.allowedRoles as string[]
+      const userRole = authStore.user?.role
+      return roles.some(role => role.toLowerCase() === userRole?.toLowerCase())
+    }
+    return true
+  })
+})
 
 // ─── Needs Review Table ────────────────────────────────────────────────────────
 interface ReviewItem {
@@ -167,7 +183,7 @@ onMounted(() => {
         Quick Actions
       </h2>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <RouterLink v-for="link in quickLinks" :key="link.title" :to="link.to">
+        <RouterLink v-for="link in filteredQuickLinks" :key="link.title" :to="link.to">
           <div class="bg-elevated border border-default hover:border-primary/50 hover:shadow-md rounded-2xl p-5 transition-all cursor-pointer group h-full">
             <UIcon :name="link.icon" class="w-6 h-6 text-muted-foreground group-hover:text-primary mb-3 transition-colors" />
             <h3 class="font-bold text-default group-hover:text-primary transition-colors">

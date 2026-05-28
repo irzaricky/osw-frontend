@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useAuthStore } from '../stores/auth.store'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const open = ref(false)
 
-const links = [[{
+const staticLinks = [[{
   label: 'Home',
   icon: 'i-lucide-house',
   to: '/',
@@ -373,10 +374,50 @@ const links = [[{
   ]
 }], []] satisfies NavigationMenuItem[][]
 
+const hasPermission = (to?: string) => {
+  if (!to) return true
+  const resolved = router.resolve(to)
+  if (resolved && resolved.meta && resolved.meta.allowedRoles) {
+    const roles = resolved.meta.allowedRoles as string[]
+    const userRole = authStore.user?.role
+    return roles.some(role => role.toLowerCase() === userRole?.toLowerCase())
+  }
+  return true
+}
+
+const filterLinks = (items: any[]): any[] => {
+  return items
+    .filter(item => {
+      if (item.to && !hasPermission(item.to)) {
+        return false
+      }
+      return true
+    })
+    .map(item => {
+      if (item.children) {
+        return {
+          ...item,
+          children: filterLinks(item.children)
+        }
+      }
+      return item
+    })
+    .filter(item => {
+      if (item.children && item.children.length === 0 && !item.to) {
+        return false
+      }
+      return true
+    })
+}
+
+const links = computed(() => {
+  return staticLinks.map(group => filterLinks(group))
+})
+
 const groups = computed(() => [{
   id: 'links',
   label: 'Go to',
-  items: links.flat()
+  items: links.value.flat()
 }])
 </script>
 
