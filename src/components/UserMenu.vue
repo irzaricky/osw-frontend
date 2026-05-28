@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { DropdownMenuItem } from '@nuxt/ui'
 import { useColorMode } from '@vueuse/core'
 import { api } from '../plugins/axios'
@@ -24,43 +24,38 @@ const isSuperadmin = computed(() => {
   return role === 'superadmin' || orig === 'superadmin'
 })
 
-const rolesList = ref<{ label: string; value: string | null }[]>([
-  { label: 'Superadmin (Reset)', value: null },
-  { label: 'Sales Staff', value: 'Sales Staff' },
-  { label: 'Supervisor Sales', value: 'Supervisor Sales' },
-  { label: 'Warehouse Staff', value: 'Warehouse Staff' },
-  { label: 'Production Planner', value: 'Production Planner' },
-  { label: 'Driver', value: 'Driver' }
+const rawDivisions = ref<any[]>([
+  { id: 1, name: 'SALES' },
+  { id: 2, name: 'WAREHOUSE' },
+  { id: 3, name: 'PPIC' },
+  { id: 4, name: 'PURCHASING' }
+])
+
+const rawRoles = ref<any[]>([
+  { name: 'Admin sales', division_id: 1 },
+  { name: 'Supervisor Sales', division_id: 1 },
+  { name: 'Staff Sales Forecast', division_id: 1 },
+  { name: 'Staff Sales Order', division_id: 1 },
+  { name: 'Staff Sales Delivery', division_id: 1 },
+  { name: 'Warehouse Staff', division_id: 2 },
+  { name: 'Production Planner', division_id: 3 },
+  { name: 'Driver', division_id: null }
 ])
 
 const fetchSimulatedRoles = async () => {
   try {
-    const response = await api.get('/master-data/users/dd-roles')
-    if (response.data && response.data.status && Array.isArray(response.data.data)) {
-      const fetchedRoles = response.data.data
-        .filter((r: any) => r.name.toLowerCase() !== 'superadmin')
-        .map((r: any) => ({
-          label: r.name,
-          value: r.name
-        }))
-      rolesList.value = [
-        { label: 'Superadmin (Reset)', value: null },
-        ...fetchedRoles
-      ]
+    const [rolesRes, divisionsRes] = await Promise.all([
+      api.get('/master-data/users/dd-roles'),
+      api.get('/master-data/users/dd-divisi')
+    ])
+    if (rolesRes.data && rolesRes.data.status && Array.isArray(rolesRes.data.data)) {
+      rawRoles.value = rolesRes.data.data
+    }
+    if (divisionsRes.data && divisionsRes.data.status && Array.isArray(divisionsRes.data.data)) {
+      rawDivisions.value = divisionsRes.data.data
     }
   } catch (error) {
-    console.error('Error fetching simulated roles:', error)
-    rolesList.value = [
-      { label: 'Superadmin (Reset)', value: null },
-      { label: 'Admin sales', value: 'Admin sales' },
-      { label: 'Supervisor Sales', value: 'Supervisor Sales' },
-      { label: 'Staff Sales Forecast', value: 'Staff Sales Forecast' },
-      { label: 'Staff Sales Order', value: 'Staff Sales Order' },
-      { label: 'Staff Sales Delivery', value: 'Staff Sales Delivery' },
-      { label: 'Warehouse Staff', value: 'Warehouse Staff' },
-      { label: 'Production Planner', value: 'Production Planner' },
-      { label: 'Driver', value: 'Driver' }
-    ]
+    console.error('Error fetching simulated roles or divisions:', error)
   }
 }
 
@@ -165,19 +160,76 @@ const items = computed<DropdownMenuItem[][]>(() => {
     const currentRole = authStore.user?.role
     const currentSimulated = authStore.simulatedRole
 
+    // Build the dynamic children list for "Simulate Role"
+    const simulationChildren: DropdownMenuItem[] = [
+      {
+        label: 'Superadmin (Reset)',
+        type: 'checkbox',
+        checked: !currentSimulated,
+        onSelect(e: Event) {
+          e.preventDefault()
+          authStore.simulateRole(null)
+          window.location.href = '/'
+        }
+      }
+    ]
+
+    // Group roles by division
+    const rolesByDivision: Record<string, any[]> = {}
+    const noDivisionRoles: any[] = []
+
+    rawRoles.value.forEach(r => {
+      if (r.name.toLowerCase() === 'superadmin') return // skip superadmin since it's the Reset option
+
+      if (r.division_id) {
+        const divName = rawDivisions.value.find(d => d.id === r.division_id)?.name || `Division ${r.division_id}`
+        if (!rolesByDivision[divName]) {
+          rolesByDivision[divName] = []
+        }
+        rolesByDivision[divName].push(r)
+      } else {
+        noDivisionRoles.push(r)
+      }
+    })
+
+    // Add grouped divisions as submenus
+    Object.keys(rolesByDivision).sort().forEach(divName => {
+      simulationChildren.push({
+        label: divName,
+        icon: 'i-lucide-folder',
+        children: rolesByDivision[divName].map(r => ({
+          label: r.name,
+          type: 'checkbox',
+          checked: currentRole === r.name,
+          onSelect(e: Event) {
+            e.preventDefault()
+            authStore.simulateRole(r.name)
+            window.location.href = '/'
+          }
+        }))
+      })
+    })
+
+    // Add ungrouped roles directly
+    if (noDivisionRoles.length > 0) {
+      noDivisionRoles.forEach(r => {
+        simulationChildren.push({
+          label: r.name,
+          type: 'checkbox',
+          checked: currentRole === r.name,
+          onSelect(e: Event) {
+            e.preventDefault()
+            authStore.simulateRole(r.name)
+            window.location.href = '/'
+          }
+        })
+      })
+    }
+
     list[1].push({
       label: 'Simulate Role',
       icon: 'i-lucide-shield-alert',
-      children: rolesList.value.map(r => ({
-        label: r.label,
-        type: 'checkbox',
-        checked: r.value === null ? (!currentSimulated) : (currentRole === r.value),
-        onSelect(e: Event) {
-          e.preventDefault()
-          authStore.simulateRole(r.value)
-          window.location.href = '/'
-        }
-      }))
+      children: simulationChildren
     })
   }
 
