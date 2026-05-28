@@ -361,6 +361,11 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true }
     },
     { 
+      path: '/warehouse/good-receipt/:id', 
+      component: () => import('./pages/warehouse/good-receipt/detail.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    { 
       path: '/warehouse/warranty-and-claim', 
       component: () => import('./pages/warehouse/warranty-and-claim/index.vue'),
       meta: { layout: 'default', requiresAuth: true }

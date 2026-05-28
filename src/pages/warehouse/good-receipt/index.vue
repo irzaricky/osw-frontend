@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, resolveComponent, watch, computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 
@@ -18,6 +19,8 @@ const goodReceiptStore = useGoodReceiptStore()
 const { goodReceipts, meta, loading } = storeToRefs(goodReceiptStore)
 
 const { toastSuccess, toastError } = useAppToast()
+
+const router = useRouter()
 
 const uiComponents = {
   UBadge: resolveComponent('UBadge'),
@@ -101,9 +104,13 @@ async function fetchData() {
 
 // Columns
 const { columns } = useGoodReceiptColumns({
-  onViewDetail: () => {},
+  onViewDetail: handleDetail,
   onApprove: handleOpenApprove
 }, uiComponents, pagination)
+
+function handleDetail(row: GoodReceipt) {
+  router.push(`/warehouse/good-receipt/${row.id}`)
+}
 
 // Watchers
 const debouncedFetch = useDebounceFn(() => {
