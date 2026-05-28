@@ -57,9 +57,9 @@ function handleCancel() {
       <UButton
         icon="i-lucide-arrow-left"
         color="neutral"
-        variant="soft"
+        variant="ghost"
         size="sm"
-        @click="$router.back()"
+        @click="$router.push({name: 'order-schedule-list'})"
       />
       <div>
         <h1 class="text-2xl font-bold">
