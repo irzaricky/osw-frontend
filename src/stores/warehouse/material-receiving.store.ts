@@ -274,14 +274,17 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     setArrived,
     fetchProgress,
     printLabel,
+
     fetchQuantityCheckingDetail,
     scanQuantityLabel,
     markQuantityIncomplete,
     submitQuantityChecking,
+
     fetchQualityCheckingDetail,
     scanQualityLabel,
     markQualityDefect,
     submitQualityChecking,
+    
     fetchDropdown,
     fetchMaterialReceivingStatusesDropdown
   }

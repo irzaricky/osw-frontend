@@ -1,16 +1,7 @@
 <script setup lang="ts">
-import {
-  computed,
-  ref,
-  watch,
-} from 'vue'
-
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-
-import type {
-  WarehouseLayoutDetail,
-  AreaSpacing,
-} from '../../../../types/warehouse/warehouse-layout'
+import type { WarehouseLayoutDetail, AreaSpacing } from '../../../../types/warehouse/warehouse-layout'
 
 const props = defineProps<{
   layout: WarehouseLayoutDetail
@@ -508,9 +499,8 @@ function getAreaColor(areaId: number) {
         >
           <!-- LABEL -->
           <UTooltip
-            :text="
-              `Manage ${areaLayout.area.area_code}`
-            "
+            :delay-duration="0"
+            :text="`Manage ${areaLayout.area.area_code}`"
             :content="{
               side: 'top',
               sideOffset: 10
@@ -625,13 +615,12 @@ function getAreaColor(areaId: number) {
                         b.col_index === col
                     )"
                     :key="bin.id"
-                    :text="
-                      `View ${bin.bin_code}`
-                    "
+                    :text="`Capacity: ${bin.stock_count}/${bin.capacity}`"
                     :content="{
                       side: 'top',
                       sideOffset: 8
                     }"
+                    :delay-duration="0"
                   >
                     <div
                       class="

@@ -283,7 +283,7 @@ const links = [[{
   children: [
     {
       label: 'Material Receiving',
-      icon: 'i-lucide-truck',
+      icon: 'i-lucide-inbox',
       to: '/warehouse/material-receiving',
       onSelect: () => {
         open.value = false
@@ -307,7 +307,7 @@ const links = [[{
     },
     {
       label: 'Work Order Storing',
-      icon: 'i-lucide-clipboard-list',
+      icon: 'i-lucide-archive',
       to: '/warehouse/work-order-storing',
       onSelect: () => {
         open.value = false
