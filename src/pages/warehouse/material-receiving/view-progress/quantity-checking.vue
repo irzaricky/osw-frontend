@@ -399,12 +399,12 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="max-h-[400px] overflow-auto">
-        <UTable
-          :data="detail.labels || []"
-          :columns="columns"
-        />
-      </div>
+      <UTable
+        :data="detail.labels || []"
+        :columns="columns"
+        sticky 
+        class="flex-1 max-h-[380px]"
+      />
 
       <div class="sticky bottom-0 bg-default pt-4 mt-6 flex justify-end">
         <UButton
