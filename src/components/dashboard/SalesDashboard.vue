@@ -104,9 +104,6 @@ onMounted(() => {
         <h1 class="text-2xl font-black tracking-tight text-default">
           Welcome back, {{ authStore.user?.name || 'User' }}
         </h1>
-        <p class="text-sm text-muted-foreground mt-1">
-          Here is what's happening in the Sales subsystem today.
-        </p>
       </div>
       <UBadge
         color="primary"
