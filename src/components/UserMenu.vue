@@ -14,6 +14,48 @@ const colorMode = useColorMode({ initialValue: 'light' })
 const appConfig = useAppConfig()
 const authStore = useAuthStore()
 
+const rolesList = ref<{ label: string; value: string | null }[]>([
+  { label: 'Superadmin (Reset)', value: null },
+  { label: 'Sales Staff', value: 'Sales Staff' },
+  { label: 'Supervisor Sales', value: 'Supervisor Sales' },
+  { label: 'Warehouse Staff', value: 'Warehouse Staff' },
+  { label: 'Production Planner', value: 'Production Planner' },
+  { label: 'Driver', value: 'Driver' }
+])
+
+onMounted(async () => {
+  if (isSuperadmin.value) {
+    try {
+      const response = await api.get('/master-data/users/dd-roles')
+      if (response.data && response.data.status && Array.isArray(response.data.data)) {
+        const fetchedRoles = response.data.data
+          .filter((r: any) => r.name.toLowerCase() !== 'superadmin')
+          .map((r: any) => ({
+            label: r.name,
+            value: r.name
+          }))
+        rolesList.value = [
+          { label: 'Superadmin (Reset)', value: null },
+          ...fetchedRoles
+        ]
+      }
+    } catch (error) {
+      console.error('Error fetching simulated roles:', error)
+      rolesList.value = [
+        { label: 'Superadmin (Reset)', value: null },
+        { label: 'Admin sales', value: 'Admin sales' },
+        { label: 'Supervisor Sales', value: 'Supervisor Sales' },
+        { label: 'Staff Sales Forecast', value: 'Staff Sales Forecast' },
+        { label: 'Staff Sales Order', value: 'Staff Sales Order' },
+        { label: 'Staff Sales Delivery', value: 'Staff Sales Delivery' },
+        { label: 'Warehouse Staff', value: 'Warehouse Staff' },
+        { label: 'Production Planner', value: 'Production Planner' },
+        { label: 'Driver', value: 'Driver' }
+      ]
+    }
+  }
+})
+
 const colors = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
 const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone']
 
@@ -112,21 +154,13 @@ const items = computed<DropdownMenuItem[][]>(() => {
   }]]
 
   if (isSuperadmin.value) {
-    const roles = [
-      { label: 'Superadmin (Reset)', value: null },
-      { label: 'Sales Staff', value: 'Sales Staff' },
-      { label: 'Supervisor Sales', value: 'Supervisor Sales' },
-      { label: 'Warehouse Staff', value: 'Warehouse Staff' },
-      { label: 'Production Planner', value: 'Production Planner' },
-      { label: 'Driver', value: 'Driver' }
-    ]
     const currentRole = authStore.user?.role
     const currentSimulated = authStore.simulatedRole
 
     list[1].push({
       label: 'Simulate Role',
       icon: 'i-lucide-shield-alert',
-      children: roles.map(r => ({
+      children: rolesList.value.map(r => ({
         label: r.label,
         type: 'checkbox',
         checked: r.value === null ? (!currentSimulated) : (currentRole === r.value),
