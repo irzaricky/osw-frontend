@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 import { useProductionPlanStore } from '../../../stores/production-plan/plan.store'
 import { useProductionPlanColumns } from './composables/useProductionPlanColumns'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { ProductionPlan } from '../../../types/production-plan/plan'
+import type { ProductionPlan, PlanType } from '../../../types/production-plan/plan'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -14,7 +14,7 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import PlanFilters from './components/PlanFilters.vue'
 import PlanBulkActions from './components/PlanBulkActions.vue'
 
-const router = useRouter()
+const router    = useRouter()
 const planStore = useProductionPlanStore()
 const { plans, meta, loading } = storeToRefs(planStore)
 const { toastSuccess, toastError } = useAppToast()
@@ -22,15 +22,15 @@ const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef('table')
 
 const ui = {
-  UCheckbox: resolveComponent('UCheckbox') as any,
-  UButton: resolveComponent('UButton') as any,
+  UCheckbox:    resolveComponent('UCheckbox') as any,
+  UButton:      resolveComponent('UButton') as any,
   UDropdownMenu: resolveComponent('UDropdownMenu') as any,
-  UBadge: resolveComponent('UBadge') as any,
+  UBadge:       resolveComponent('UBadge') as any,
 }
 
 const { columns } = useProductionPlanColumns(
   {
-    onView: (plan) => router.push(`/production-plan/plan/${plan.id}`),
+    onView:   (plan) => router.push(`/production-plan/plan/${plan.id}`),
     onDelete: confirmDelete,
   },
   ui,
@@ -42,10 +42,13 @@ const breadcrumbItems = [
   { label: 'Plan' },
 ]
 
-const search = ref('')
+const search  = ref('')
+// [+] tambah plan_month ke filters
 const filters = reactive({
-  status: undefined as string | undefined,
+  status:         undefined as string | undefined,
   overall_status: undefined as string | undefined,
+  plan_month:     undefined as string | undefined,
+  plan_type:      undefined as PlanType | undefined,
 })
 
 const rowSelection = ref({})
@@ -55,19 +58,22 @@ const selectedCount = computed((): number => {
 })
 
 const confirm = reactive({
-  open: false,
-  title: '',
+  open:        false,
+  title:       '',
   description: '',
-  action: null as (() => Promise<void>) | null,
+  action:      null as (() => Promise<void>) | null,
 })
 
+// [+] plan_month ikut dikirim ke fetchPlans
 async function fetchData() {
   await planStore.fetchPlans({
-    page: meta.value.page,
-    limit: meta.value.limit,
-    search: search.value || undefined,
-    status: filters.status as any,
+    page:           meta.value.page,
+    limit:          meta.value.limit,
+    search:         search.value || undefined,
+    status:         filters.status as any,
     overall_status: filters.overall_status as any,
+    plan_month:     filters.plan_month,
+    plan_type:      filters.plan_type,
   })
 }
 
@@ -77,9 +83,9 @@ watch(search, debouncedSearch)
 watch(filters, () => { meta.value.page = 1; fetchData() }, { deep: true })
 
 function confirmDelete(plan: ProductionPlan) {
-  confirm.title = 'Delete Production Plan'
+  confirm.title       = 'Delete Production Plan'
   confirm.description = `Are you sure you want to delete plan "${plan.plan_number}"? This action cannot be undone.`
-  confirm.action = async () => {
+  confirm.action      = async () => {
     try {
       const res = await planStore.deletePlan(plan.id)
       toastSuccess(res.message || 'Plan deleted')
@@ -93,9 +99,9 @@ function confirmDelete(plan: ProductionPlan) {
 function confirmBulkDelete() {
   const rows = table.value?.tableApi?.getFilteredSelectedRowModel().rows || []
   if (!rows.length) return
-  confirm.title = 'Delete Selected Plans'
+  confirm.title       = 'Delete Selected Plans'
   confirm.description = `Are you sure you want to delete ${rows.length} plan(s)? This action cannot be undone.`
-  confirm.action = async () => {
+  confirm.action      = async () => {
     try {
       await Promise.all(rows.map((r: Row<ProductionPlan>) => planStore.deletePlan(r.original.id)))
       toastSuccess(`${rows.length} plans deleted`)

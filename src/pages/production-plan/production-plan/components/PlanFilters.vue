@@ -1,63 +1,114 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { PlanStatus, OverallStatus } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
-  search: string
+  search:     string
   filters: {
-    status?: string
+    status?:         string
     overall_status?: string
+    plan_month?:     string
+    plan_type?:      string
   }
 }>()
 
 const emit = defineEmits<{
-  'update:search': [value: string]
-  'update:filters': [value: typeof props.filters]
+  (e: 'update:search', val: string): void
+  (e: 'update:filters', val: Partial<typeof props.filters>): void
 }>()
 
-const planStatusItems = [['Draft', 'Pending_Approval', 'Approved', 'Rejected']]
-const overallStatusItems = [['Not_Calculated', 'POSSIBLE', 'IMPOSSIBLE']]
+const statusOptions = [
+  { label: 'All Status', value: undefined },
+  { label: 'Draft', value: 'Draft' },
+  { label: 'Pending Approval', value: 'Pending_Approval' },
+  { label: 'Approved', value: 'Approved' },
+  { label: 'Rejected', value: 'Rejected' },
+]
 
-const planStatusLabel: Record<string, string> = {
-  Draft: 'Draft',
-  Pending_Approval: 'Pending Approval',
-  Approved: 'Approved',
-  Rejected: 'Rejected',
-}
+const overallStatusOptions = [
+  { label: 'All Capacity', value: undefined },
+  { label: 'Not Calculated', value: 'Not_Calculated' },
+  { label: 'Possible', value: 'POSSIBLE' },
+  { label: 'Impossible', value: 'IMPOSSIBLE' },
+]
 
-const selectedStatus = computed({
-  get: () => props.filters.status ?? null,
-  set: (v) => emit('update:filters', { ...props.filters, status: v ?? undefined }),
-})
+// [~] value disesuaikan dengan enum BE: 'ORIGINAL' | 'AMENDMENT'
+const planTypeOptions = [
+  { label: 'All Types', value: undefined },
+  { label: 'Original', value: 'ORIGINAL' },
+  { label: 'Amendment', value: 'AMENDMENT' },
+]
 
-const selectedOverallStatus = computed({
-  get: () => props.filters.overall_status ?? null,
-  set: (v) => emit('update:filters', { ...props.filters, overall_status: v ?? undefined }),
+// Generate opsi bulan: bulan ini sampai 11 bulan ke belakang + 3 bulan ke depan
+const planMonthOptions = computed(() => {
+  const options: { label: string; value: string | undefined }[] = [
+    { label: 'All Months', value: undefined },
+  ]
+  const now = new Date()
+  for (let i = -11; i <= 3; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    options.push({ label, value })
+  }
+  // Urutkan terbaru di atas (index 1 = terbaru, karena index 0 = "All Months")
+  options.splice(1, options.length - 1, ...options.slice(1).reverse())
+  return options
 })
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
-    <USelectMenu
-      v-model="selectedStatus"
-      :items="planStatusItems"
-      placeholder="Plan Status"
-      class="w-44"
-      clear
-    />
-    <USelectMenu
-      v-model="selectedOverallStatus"
-      :items="overallStatusItems"
-      placeholder="Capacity Status"
-      class="w-44"
-      clear
-    />
+    <!-- Search -->
     <UInput
       :model-value="search"
       icon="i-lucide-search"
-      placeholder="Search plans..."
-      class="w-64 ml-auto"
-      @update:model-value="emit('update:search', $event)"
+      placeholder="Search plan number or description..."
+      class="w-64"
+      @update:model-value="emit('update:search', $event as string)"
+    />
+
+    <!-- Filter Plan Month -->
+    <USelect
+      :model-value="filters.plan_month"
+      :items="planMonthOptions"
+      value-key="value"
+      label-key="label"
+      placeholder="All Months"
+      class="w-44"
+      @update:model-value="emit('update:filters', { ...filters, plan_month: $event || undefined })"
+    />
+
+    <!-- Filter Plan Type -->
+    <USelect
+      :model-value="filters.plan_type"
+      :items="planTypeOptions"
+      value-key="value"
+      label-key="label"
+      placeholder="All Types"
+      class="w-40"
+      @update:model-value="emit('update:filters', { ...filters, plan_type: $event || undefined })"
+    />
+
+    <!-- Filter Status -->
+    <USelect
+      :model-value="filters.status"
+      :items="statusOptions"
+      value-key="value"
+      label-key="label"
+      placeholder="All Status"
+      class="w-40"
+      @update:model-value="emit('update:filters', { ...filters, status: $event || undefined })"
+    />
+
+    <!-- Filter Capacity -->
+    <USelect
+      :model-value="filters.overall_status"
+      :items="overallStatusOptions"
+      value-key="value"
+      label-key="label"
+      placeholder="All Capacity"
+      class="w-40"
+      @update:model-value="emit('update:filters', { ...filters, overall_status: $event || undefined })"
     />
   </div>
 </template>

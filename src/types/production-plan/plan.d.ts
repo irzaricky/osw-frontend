@@ -2,6 +2,7 @@ export type PlanStatus     = 'Draft' | 'Pending_Approval' | 'Approved' | 'Reject
 export type OverallStatus  = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
 export type DetailStatus   = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
 export type ParamType      = 'BASE'
+export type PlanType       = 'ORIGINAL' | 'AMENDMENT'   // [+]
 export type AdjustmentType =
   | 'WORKING_DAYS'
   | 'SHIFTS_PER_DAY'
@@ -17,6 +18,10 @@ export type AdjustmentType =
 export interface ProductionPlan {
   id:                     number
   plan_number:            string
+  plan_month:             string          // format YYYY-MM
+  plan_type:              PlanType        // [+] ORIGINAL | AMENDMENT
+  parent_plan_id?:        number | null   // [+] diisi jika AMENDMENT
+  parent_plan?:           { id: number; plan_number: string } | null  // [+] eager-loaded
   plan_description?:      string | null
   earliest_delivery_date?: string | null
   latest_delivery_date?:  string | null
@@ -198,10 +203,15 @@ export interface PlanListParams {
   search?:         string
   status?:         PlanStatus
   overall_status?: OverallStatus
+  plan_month?:     string          // filter list by YYYY-MM
+  plan_type?:      PlanType        // [+] filter by ORIGINAL | AMENDMENT
   [key: string]:   any
 }
 
 export interface CreatePlanPayload {
+  plan_month:        string          // wajib, format YYYY-MM
+  plan_type?:        PlanType        // [+] default ORIGINAL; AMENDMENT butuh parent_plan_id
+  parent_plan_id?:   number          // [+] wajib jika plan_type === 'AMENDMENT'
   plan_description?: string | null
   do_ids:            number[]
   notes?:            string | null

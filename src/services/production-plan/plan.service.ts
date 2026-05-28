@@ -12,7 +12,7 @@ import type {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Production Plan service
-// Base path: /production-plan/plan
+const BASE = '/production-plan/plan'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const productionPlanService = {
@@ -20,39 +20,41 @@ const productionPlanService = {
   // ── List & Detail ──────────────────────────────────────────────────────────
 
   getPlans(params?: PlanListParams) {
-    return api.get('/production-plan/plan', { params })
+    return api.get(`${BASE}`, { params })
   },
 
   getPlan(id: number | string) {
-    return api.get(`/production-plan/plan/${id}`)
+    return api.get(`${BASE}/${id}`)
   },
 
   // ── Dropdown & Lookups ─────────────────────────────────────────────────────
 
   getDropdown() {
-    return api.get('/production-plan/plan/dropdown')
+    return api.get(`${BASE}/dropdown`)
   },
 
-  getAvailableDeliveryOrders() {
-    return api.get('/production-plan/plan/available-dos')
+  // [~] plan_month wajib dikirim sebagai query param agar BE bisa filter DO
+  //     yang shipment_date-nya jatuh di bulan tersebut
+  getAvailableDeliveryOrders(plan_month: string) {
+    return api.get(`${BASE}/available-dos`, { params: { plan_month } })
   },
 
   syncDOs(id: number | string, data: { do_ids: number[] }) {
-    return api.put(`/production-plan/plan/${id}/dos`, data)
+    return api.put(`${BASE}/${id}/dos`, data)
   },
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
   createPlan(data: CreatePlanPayload) {
-    return api.post('/production-plan/plan', data)
+    return api.post(`${BASE}`, data)
   },
 
   updatePlan(id: number | string, data: UpdatePlanPayload) {
-    return api.put(`/production-plan/plan/${id}`, data)
+    return api.put(`${BASE}/${id}`, data)
   },
 
   deletePlan(id: number | string) {
-    return api.delete(`/production-plan/plan/${id}`)
+    return api.delete(`${BASE}/${id}`)
   },
 
   // ── Capacity plan ──────────────────────────────────────────────────────────
@@ -66,7 +68,7 @@ const productionPlanService = {
    * Hanya bisa membuat BASE param; tidak ada ADJUSTED.
    */
   saveCapacityParams(id: number | string, data: CapacityParamPayload) {
-    return api.post(`/production-plan/plan/${id}/capacity-params`, data)
+    return api.post(`${BASE}/${id}/capacity-params`, data)
   },
 
   /**
@@ -77,31 +79,35 @@ const productionPlanService = {
    * Parameter diambil dari BASE snapshot + adjustments yang ada di DB.
    */
   calculateCapacity(id: number | string, data: CalculateCapacityPayload) {
-    return api.post(`/production-plan/plan/${id}/calculate`, data)
+    return api.post(`${BASE}/${id}/calculate`, data)
+  },
+
+  calculateAllCapacity(id: number | string) {
+    return api.post(`${BASE}/${id}/calculate-all`)
   },
 
   // ── Adjustments ────────────────────────────────────────────────────────────
 
   addAdjustment(id: number | string, data: AddAdjustmentPayload) {
-    return api.post(`/production-plan/plan/${id}/adjustments`, data)
+    return api.post(`${BASE}/${id}/adjustments`, data)
   },
 
   deleteAdjustment(id: number | string, adjId: number | string) {
-    return api.delete(`/production-plan/plan/${id}/adjustments/${adjId}`)
+    return api.delete(`${BASE}/${id}/adjustments/${adjId}`)
   },
 
   // ── Approval Workflow ──────────────────────────────────────────────────────
 
   submitForApproval(id: number | string) {
-    return api.post(`/production-plan/plan/${id}/submit`)
+    return api.post(`${BASE}/${id}/submit`)
   },
 
   approve(id: number | string, data?: ApprovePayload) {
-    return api.post(`/production-plan/plan/${id}/approve`, data)
+    return api.post(`${BASE}/${id}/approve`, data)
   },
 
   reject(id: number | string, data: RejectPayload) {
-    return api.post(`/production-plan/plan/${id}/reject`, data)
+    return api.post(`${BASE}/${id}/reject`, data)
   },
 }
 
