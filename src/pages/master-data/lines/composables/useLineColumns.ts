@@ -3,43 +3,34 @@ import type { Line } from '../../../../types/master-data/line'
 import type { ColumnDef, Row } from '@tanstack/table-core'
 
 interface UIComponents {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  UCheckbox: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  UButton: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  UCheckbox:     any
+  UButton:       any
   UDropdownMenu: any
 }
 
 interface Actions {
-  onEdit: (line: Line) => void
-  onDelete: (line: Line) => void
-  onCalculate: (line: Line) => void
-  hasCapacityParams: (lineId: number) => boolean
-  isCalculating: (lineId: number) => boolean
+  onEdit:             (line: Line) => void
+  onDelete:           (line: Line) => void
+  onViewLineCapacity: (line: Line) => void
 }
 
 export function useLineColumns(actions: Actions, ui: UIComponents) {
   const getActionItems = (row: Row<Line>) => [
     [
       {
-        label: 'Edit',
-        icon: 'i-lucide-pencil',
+        label:    'Edit',
+        icon:     'i-lucide-pencil',
         onSelect: () => actions.onEdit(row.original)
       },
       {
-        label: actions.hasCapacityParams(row.original.id) ? 'Recalculate Capacity' : 'Calculate Capacity',
-        icon: actions.isCalculating(row.original.id)
-          ? 'i-lucide-loader-circle'
-          : actions.hasCapacityParams(row.original.id)
-            ? 'i-lucide-refresh-cw'
-            : 'i-lucide-calculator',
-        onSelect: () => actions.onCalculate(row.original)
+        label:    'View Line Capacity',
+        icon:     'i-lucide-bar-chart-2',
+        onSelect: () => actions.onViewLineCapacity(row.original)
       },
       {
-        label: 'Delete',
-        icon: 'i-lucide-trash-2',
-        color: 'error' as const,
+        label:    'Delete',
+        icon:     'i-lucide-trash-2',
+        color:    'error' as const,
         onSelect: () => actions.onDelete(row.original)
       }
     ]
@@ -49,99 +40,56 @@ export function useLineColumns(actions: Actions, ui: UIComponents) {
     {
       id: 'select',
       header: ({ table }) => h(ui.UCheckbox, {
-        modelValue: table.getIsAllPageRowsSelected(),
-        indeterminate: table.getIsSomePageRowsSelected(),
+        modelValue:           table.getIsAllPageRowsSelected(),
+        indeterminate:        table.getIsSomePageRowsSelected(),
         'onUpdate:modelValue': (value: boolean) => table.toggleAllPageRowsSelected(!!value),
-        ariaLabel: 'Select all'
+        ariaLabel:            'Select all'
       }),
       cell: ({ row }) => h(ui.UCheckbox, {
-        modelValue: row.getIsSelected(),
+        modelValue:           row.getIsSelected(),
         'onUpdate:modelValue': (value: boolean) => row.toggleSelected(!!value),
-        ariaLabel: 'Select row'
+        ariaLabel:            'Select row'
       }),
       enableSorting: false,
-      enableHiding: false
-    },
-    {
-      id: 'expander',
-      header: '',
-      cell: ({ row }) => {
-        const hasParams = actions.hasCapacityParams(row.original.id)
-        const calculating = actions.isCalculating(row.original.id)
-
-        // Belum ada params & tidak sedang calculating → tombol Calculate
-        if (!hasParams && !calculating) {
-          return h(ui.UButton, {
-            icon: 'i-lucide-calculator',
-            color: 'primary',
-            variant: 'ghost',
-            size: 'xs',
-            class: 'h-8 px-2 gap-1 text-xs font-medium',
-            label: 'Calculate',
-            onClick: () => actions.onCalculate(row.original)
-          })
-        }
-
-        // Sedang calculating → spinner
-        if (calculating) {
-          return h(ui.UButton, {
-            icon: 'i-lucide-loader-circle',
-            color: 'neutral',
-            variant: 'ghost',
-            size: 'xs',
-            class: 'h-8 w-8 p-0 animate-spin',
-            disabled: true
-          })
-        }
-
-        // Sudah ada params → chevron expand / collapse
-        return h(ui.UButton, {
-          icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
-          color: 'neutral',
-          variant: 'ghost',
-          class: 'h-8 w-8 p-0',
-          onClick: () => row.toggleExpanded()
-        })
-      },
-      enableSorting: false
+      enableHiding:  false
     },
     {
       header: 'No',
-      cell: ({ row }) => row.index + 1
+      cell:   ({ row }) => row.index + 1
     },
     {
       accessorKey: 'line_code',
-      header: 'Code',
-      cell: ({ row }) => h('div', { class: 'font-medium' }, row.original.line_code)
+      header:      'Code',
+      cell:        ({ row }) => h('div', { class: 'font-medium' }, row.original.line_code)
     },
     {
       accessorKey: 'name',
-      header: 'Name',
-      cell: ({ row }) => h('div', { class: 'truncate max-w-[200px]' }, row.original.name)
+      header:      'Name',
+      cell:        ({ row }) => h('div', { class: 'truncate max-w-[200px]' }, row.original.name)
     },
     {
       accessorKey: 'factory',
-      header: 'Factory',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.factory?.name ?? '-')
+      header:      'Factory',
+      cell:        ({ row }) => h('div', { class: 'text-muted' }, row.original.factory?.name ?? '-')
     },
     {
       accessorKey: 'sequence',
-      header: 'Sequence',
-      cell: ({ row }) => h('div', { class: 'text-muted' }, row.original.sequence)
+      header:      'Sequence',
+      cell:        ({ row }) => h('div', { class: 'text-muted' }, row.original.sequence)
     },
     {
-      id: 'actions',
+      id:     'actions',
       header: '',
-      cell: ({ row }) => {
+      cell:   ({ row }) => {
         return h('div', { class: 'flex justify-end' }, [
           h(ui.UDropdownMenu, {
-            items: getActionItems(row),
+            items:   getActionItems(row),
             content: { align: 'end' }
           }, () => h(ui.UButton, {
-            icon: 'i-lucide-more-vertical',
-            color: 'neutral',
+            icon:    'i-lucide-more-vertical',
+            color:   'neutral',
             variant: 'ghost',
-            class: 'h-8 w-8 p-0'
+            class:   'h-8 w-8 p-0'
           }))
         ])
       }
