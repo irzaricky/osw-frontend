@@ -194,27 +194,27 @@ const router = createRouter({
     {
       path: '/warehouse/placement',
       component: () => import('./pages/warehouse/placement/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/warehouse/placement/:id',
       component: () => import('./pages/warehouse/placement/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/warehouse/take-out',
       component: () => import('./pages/warehouse/take-out/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/warehouse/take-out/:id',
       component: () => import('./pages/warehouse/take-out/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/warehouse/transaction-activity',
       component: () => import('./pages/warehouse/transaction-activity/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/warehouse/stock-monitoring',
@@ -224,7 +224,7 @@ const router = createRouter({
     {
       path: '/warehouse/critical-stock',
       component: () => import('./pages/warehouse/critical-stock/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'supervisor warehouse', 'staff material'] }
     },
     {
       path: '/warehouse/analytics',
@@ -454,4 +454,3 @@ app.use(router)
 app.use(ui)
 
 app.mount('#app')
-

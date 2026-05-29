@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '../stores/auth.store'
 import DriverDashboard from './sales/sdo/DriverDashboard.vue'
 import SalesDashboard from '../components/dashboard/SalesDashboard.vue'
+import WarehouseDashboard from '../components/dashboard/WarehouseDashboard.vue'
 
 const authStore = useAuthStore()
 const isDriver = computed(() => authStore.user?.role?.toLowerCase() === 'driver')
@@ -76,6 +77,7 @@ const isMaterialModule = computed(() => {
       <template #body>
         <div class="bg-muted/10 p-0 h-full overflow-y-auto">
           <SalesDashboard v-if="isSalesModule" />
+          <WarehouseDashboard v-if="isWarehouseModule" />
         </div>
       </template>
     </UDashboardPanel>
