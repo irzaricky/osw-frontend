@@ -194,18 +194,18 @@ async function submitMrp() {
 
 // ─── Review ───────────────────────────────────────────────────────────────────
 const isReviewOpen = ref(false)
-const reviewForm = ref<{ action: 'approve' | 'reject'; notes: string }>({
-  action: 'approve',
+const reviewForm = ref<{ action: 'Approve' | 'Reject'; notes: string }>({
+  action: 'Approve',
   notes: ''
 })
 
 function openReviewModal() {
-  reviewForm.value = { action: 'approve', notes: '' }
+  reviewForm.value = { action: 'Approve', notes: '' }
   isReviewOpen.value = true
 }
 
 async function confirmReview() {
-  if (reviewForm.value.action === 'reject' && !reviewForm.value.notes.trim()) {
+  if (reviewForm.value.action === 'Reject' && !reviewForm.value.notes.trim()) {
     toast.add({ title: 'Error', description: 'Notes are required when rejecting', color: 'error' })
     return
   }
@@ -215,7 +215,7 @@ async function confirmReview() {
       action: reviewForm.value.action,
       notes: reviewForm.value.notes || undefined
     })
-    toastSuccess(`MRP ${reviewForm.value.action === 'approve' ? 'approved' : 'rejected'} successfully`)
+    toastSuccess(`MRP ${reviewForm.value.action === 'Approve' ? 'approved' : 'rejected'} successfully`)
     isReviewOpen.value = false
     loadDetail()
     emit('refreshList')
@@ -556,11 +556,11 @@ async function confirmReview() {
           <UFormField label="Action" required>
             <USelectMenu
               v-model="reviewForm.action"
-              :items="['approve', 'reject']"
+              :items="['Approve', 'Reject']"
               class="w-full"
             />
           </UFormField>
-          <UFormField v-if="reviewForm.action === 'reject'" label="Rejection Notes" required>
+          <UFormField v-if="reviewForm.action === 'Reject'" label="Rejection Notes" required>
             <UTextarea
               v-model="reviewForm.notes"
               placeholder="Enter rejection notes..."

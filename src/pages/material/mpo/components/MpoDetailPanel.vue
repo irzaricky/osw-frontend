@@ -24,29 +24,26 @@ const toast = useToast()
 // ─── Data ─────────────────────────────────────────────────────────────────────
 const localDetail = ref<Mpo | null>(null)
 const loadingDetail = ref(false)
-const isDirty = ref(false)
 
-const editableDetails = ref<{
+// [REFACTOR] Detail items sekarang pure read-only — tidak ada state editable.
+// Struktur tetap ada untuk memudahkan render template.
+const detailItems = ref<{
   id?: number
   part_id: number
-  qty: number
-  price: number
-  supplier_id: number | undefined
-  notes?: string
+  qty: number           // Read-only — strict dari source
+  price: number         // Read-only
+  notes?: string        // Read-only
   part_number?: string
   part_name?: string
   uom_code?: string
-  supplier_name?: string
+  supplier_name?: string // Supplier milik Header MPO, ditampilkan info saja
 }[]>([])
 
-watch(editableDetails, () => {
-  if (!loadingDetail.value) isDirty.value = true
-}, { deep: true })
+// [HAPUS] isDirty, editableDetails, saveChanges tidak lagi relevan karena
+// tidak ada field yang bisa diedit di dalam tabel detail.
 
 defineExpose({
-  isDirty,
-  loadDetail,
-  resetDirty: () => { isDirty.value = false }
+  loadDetail
 })
 
 // ─── Role ─────────────────────────────────────────────────────────────────────
@@ -55,14 +52,12 @@ const isSupervisor = computed(() => {
   return role === 'Superadmin' || role === 'Supervisor Material'
 })
 
-// FIX: tambah isStaff agar tombol Edit & Delete bisa dicek per role
 const isStaff = computed(() => {
   const role = authStore.user?.role
   return role === 'Superadmin' || role === 'Staff Material'
 })
 
-// FIX: pakai toLowerCase() agar tidak bergantung pada kapitalisasi nilai dari DB
-// DB menyimpan lowercase ('draft','rejected') tapi cek lama pakai 'Draft','Rejected'
+// Status draft/rejected = boleh di-edit via modal (bukan via tabel)
 const isEditable = computed(() => {
   const status = localDetail.value?.status?.toLowerCase()
   return status === 'draft' || status === 'rejected'
@@ -88,11 +83,15 @@ function getStatusColor(status: string) {
 
 // ─── Total Price ──────────────────────────────────────────────────────────────
 const totalPrice = computed(() =>
-  editableDetails.value.reduce((sum, d) => sum + (d.qty * d.price), 0)
+  detailItems.value.reduce((sum, d) => sum + (d.qty * d.price), 0)
 )
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0
+  }).format(val)
 }
 
 // ─── Source label ─────────────────────────────────────────────────────────────
@@ -103,6 +102,11 @@ const sourceLabel = computed(() => {
   return '-'
 })
 
+// ─── Supplier Header (dari MPO, bukan per-item) ───────────────────────────────
+const headerSupplierName = computed(() =>
+  (localDetail.value as any)?.supplier?.name ?? '-'
+)
+
 // ─── Load ──────────────────────────────────────────────────────────────────────
 async function loadDetail() {
   if (!props.mpoId) return
@@ -111,63 +115,37 @@ async function loadDetail() {
     const data = await store.fetchMpoById(props.mpoId)
     if (data?.data) {
       localDetail.value = data.data
-      setupEditableDetails(data.data)
+      setupDetailItems(data.data)
     }
   } catch {
     toast.add({ title: 'Error', description: 'Failed to load MPO details', color: 'error' })
   } finally {
     loadingDetail.value = false
-    setTimeout(() => { isDirty.value = false }, 50)
   }
 }
 
-function setupEditableDetails(mpo: Mpo) {
-  editableDetails.value = (mpo.details || []).map(d => ({
+function setupDetailItems(mpo: Mpo) {
+  detailItems.value = (mpo.details || []).map(d => ({
     id: d.id,
     part_id: d.part_id,
     qty: d.qty,
     price: d.price,
-    supplier_id: d.supplier_id,
     notes: d.notes ?? undefined,
     part_number: d.part?.part_number,
     part_name: d.part?.part_name,
     uom_code: d.part?.uom?.code,
-    supplier_name: d.supplier?.name
+    // Supplier info informatif dari Header — bukan per-item
+    supplier_name: (mpo as any).supplier?.name ?? d.supplier?.name ?? '-'
   }))
 }
 
 watch(() => props.mpoId, () => { loadDetail() }, { immediate: true })
 
-// ─── Save details ──────────────────────────────────────────────────────────────
-async function saveChanges() {
-  if (!localDetail.value) return
-  try {
-    await store.updateMpo(localDetail.value.id, {
-      details: editableDetails.value.map(d => ({
-        part_id: d.part_id,
-        qty: d.qty,
-        price: d.price,
-        supplier_id: d.supplier_id,
-        notes: d.notes
-      }))
-    })
-    isDirty.value = false
-    toastSuccess('MPO saved successfully')
-    loadDetail()
-    emit('refreshList')
-  } catch (e: any) {
-    toastError(e)
-  }
-}
-
 // ─── Submit ───────────────────────────────────────────────────────────────────
 async function submitMpo() {
-  if (isDirty.value) {
-    try { await saveChanges() } catch { return }
-  }
   if (!localDetail.value) return
   try {
-    await store.updateStatus(localDetail.value.id, { status: 'Submitted' })
+    await store.updateMpo(localDetail.value.id, { action: 'submit' })
     toastSuccess('MPO submitted successfully')
     loadDetail()
     emit('refreshList')
@@ -245,6 +223,8 @@ async function confirmReview() {
         </div>
 
         <!-- Row 2: Action buttons -->
+        <!-- [REFACTOR] Tombol "Save" dihapus — tidak ada lagi edit per-baris.
+             Edit dilakukan via tombol "Edit" yang membuka MpoCreateModal. -->
         <div class="flex items-center gap-1">
           <UButton
             icon="i-lucide-pencil"
@@ -268,7 +248,7 @@ async function confirmReview() {
           <div class="flex-1" />
 
           <UButton
-            v-if="localDetail.status?.toLowerCase() === 'draft' && editableDetails.length > 0"
+            v-if="localDetail.status?.toLowerCase() === 'draft' && detailItems.length > 0"
             icon="i-lucide-send"
             color="warning"
             variant="subtle"
@@ -286,15 +266,7 @@ async function confirmReview() {
             label="Review"
             @click="openReviewModal"
           />
-          <UButton
-            v-if="isEditable"
-            icon="i-lucide-save"
-            color="primary"
-            size="sm"
-            label="Save"
-            :loading="store.loading"
-            @click="saveChanges"
-          />
+          <!-- [HAPUS] Tombol Save tidak ada lagi karena tabel sudah pure read-only -->
         </div>
       </div>
     </div>
@@ -342,6 +314,22 @@ async function confirmReview() {
           </div>
         </div>
 
+        <!-- [BARU] Supplier Header Card — 1 MPO = 1 Supplier -->
+        <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-default bg-elevated/50">
+          <UIcon name="i-lucide-building-2" class="w-4 h-4 text-primary shrink-0" />
+          <div>
+            <div class="text-xs text-muted mb-0.5 uppercase tracking-wider font-bold">
+              Supplier
+            </div>
+            <div class="text-sm font-semibold">
+              {{ headerSupplierName }}
+            </div>
+          </div>
+          <UBadge color="neutral" variant="outline" size="xs" class="ml-auto" icon="i-lucide-info">
+            1 MPO = 1 Supplier
+          </UBadge>
+        </div>
+
         <!-- Description -->
         <div v-if="localDetail.description" class="bg-elevated/50 rounded-xl border border-default p-4">
           <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">
@@ -383,7 +371,11 @@ async function confirmReview() {
           </div>
         </div>
 
-        <!-- Order Items Table -->
+        <!-- Order Items Table — Pure Read-Only -->
+        <!-- [REFACTOR] Semua cell adalah <span> biasa.
+             Tidak ada UInput, USelectMenu, atau tombol delete per baris.
+             Kolom "Supplier" dihapus dari tabel karena supplier = atribut Header.
+             Kolom "Action" dihapus karena tidak ada aksi per baris. -->
         <div class="overflow-x-auto border border-default rounded-xl">
           <table class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
@@ -397,31 +389,29 @@ async function confirmReview() {
                 <th class="p-3 font-medium border-r border-default w-24 text-center">
                   UOM
                 </th>
-                <th class="p-3 font-medium border-r border-default w-40 text-center">
-                  Price
+                <th class="p-3 font-medium border-r border-default w-40 text-right">
+                  Price/Pcs
                 </th>
-                <th class="p-3 font-medium border-r border-default w-44">
-                  Supplier
+                <th class="p-3 font-medium border-r border-default w-44 text-right">
+                  Subtotal
                 </th>
-                <th class="p-3 font-medium border-r border-default">
+                <th class="p-3 font-medium">
                   Notes
-                </th>
-                <th class="p-3 font-medium w-14 text-center">
-                  Action
                 </th>
               </tr>
             </thead>
             <tbody>
-              <tr v-if="editableDetails.length === 0">
-                <td colspan="7" class="p-8 text-center text-muted text-sm">
+              <tr v-if="detailItems.length === 0">
+                <td colspan="6" class="p-8 text-center text-muted text-sm">
                   No items in this MPO.
                 </td>
               </tr>
               <tr
-                v-for="item in editableDetails"
+                v-for="item in detailItems"
                 :key="item.part_id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
+                <!-- Part -->
                 <td class="p-3 border-r border-default">
                   <div class="font-medium">
                     {{ item.part_number }}
@@ -430,69 +420,34 @@ async function confirmReview() {
                     {{ item.part_name }}
                   </div>
                 </td>
-                <td class="p-2 border-r border-default text-center">
-                  <UInput
-                    v-if="isEditable"
-                    v-model.number="item.qty"
-                    type="number"
-                    size="sm"
-                    min="1"
-                    class="max-w-[90px] mx-auto"
-                  />
-                  <span v-else class="font-mono font-semibold">{{ item.qty }}</span>
+
+                <!-- Qty — read-only span -->
+                <td class="p-3 border-r border-default text-center">
+                  <span class="font-mono font-semibold">{{ item.qty }}</span>
                 </td>
+
+                <!-- UOM -->
                 <td class="p-2 border-r border-default text-center">
                   <UBadge color="neutral" variant="subtle" size="xs">
                     {{ item.uom_code || '-' }}
                   </UBadge>
                 </td>
-                <td class="p-2 border-r border-default text-center">
-                  <UInput
-                    v-if="isEditable"
-                    v-model.number="item.price"
-                    type="number"
-                    size="sm"
-                    min="0"
-                    class="max-w-[110px] mx-auto"
-                  />
-                  <span v-else class="font-mono text-xs">{{ formatCurrency(item.price) }}</span>
+
+                <!-- Price — read-only span -->
+                <td class="p-3 border-r border-default text-right">
+                  <span class="font-mono text-xs">{{ formatCurrency(item.price) }}</span>
                 </td>
-                <td class="p-2 border-r border-default">
-                  <USelectMenu
-                    v-if="isEditable"
-                    :model-value="store.supplierDropdown.find(s => s.id === item.supplier_id)?.name ?? ''"
-                    :items="store.supplierDropdown.map(s => s.name)"
-                    size="sm"
-                    placeholder="Supplier..."
-                    searchable
-                    class="w-full"
-                    @update:model-value="(val: string) => {
-                      const found = store.supplierDropdown.find(s => s.name === val)
-                      item.supplier_id = found?.id
-                      item.supplier_name = found?.name
-                    }"
-                  />
-                  <span v-else class="text-xs">{{ item.supplier_name || '-' }}</span>
+
+                <!-- Subtotal — computed read-only -->
+                <td class="p-3 border-r border-default text-right">
+                  <span class="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400">
+                    {{ formatCurrency(item.qty * item.price) }}
+                  </span>
                 </td>
-                <td class="p-2 border-r border-default">
-                  <UInput
-                    v-if="isEditable"
-                    v-model="item.notes"
-                    size="sm"
-                    placeholder="Notes..."
-                    class="w-full"
-                  />
-                  <span v-else class="text-xs text-muted">{{ item.notes || '-' }}</span>
-                </td>
-                <td class="p-3 text-center">
-                  <UButton
-                    icon="i-lucide-trash"
-                    color="error"
-                    variant="ghost"
-                    size="sm"
-                    :disabled="!isEditable"
-                    @click="editableDetails = editableDetails.filter(d => d.part_id !== item.part_id)"
-                  />
+
+                <!-- Notes — read-only span -->
+                <td class="p-3">
+                  <span class="text-xs text-muted">{{ item.notes || '-' }}</span>
                 </td>
               </tr>
             </tbody>
@@ -511,7 +466,7 @@ async function confirmReview() {
       </template>
     </div>
 
-    <!-- Review Modal -->
+    <!-- ── Review Modal ── -->
     <UModal
       v-model:open="isReviewOpen"
       title="Review MPO"
