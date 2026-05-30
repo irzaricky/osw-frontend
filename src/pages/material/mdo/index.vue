@@ -27,41 +27,64 @@ const selectedOrder = computed(() => store.detail)
 // Filter params
 const selectedWarehouseId = ref<number | null>(null)
 
-function getLocalDateString() {
+function getLocalDateString(offsetDays = 0) {
   const d = new Date()
+  d.setDate(d.getDate() + offsetDays)
   const year = d.getFullYear()
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
-const selectedDate = ref(getLocalDateString())
+// Default: hari ini sampai H+7 (7 hari ke depan)
+const selectedDateStart = ref(getLocalDateString(0))
+const selectedDateEnd   = ref(getLocalDateString(7))
 
-const selectedDateModel = computed({
+// Model untuk picker tanggal mulai
+const selectedDateStartModel = computed({
   get() {
-    if (!selectedDate.value) return null
-    const [y, m, d] = selectedDate.value.split('-').map(Number)
+    if (!selectedDateStart.value) return null
+    const [y, m, d] = selectedDateStart.value.split('-').map(Number)
     return new CalendarDate(y, m, d)
   },
   set(val: CalendarDate | null) {
-    if (!val) { selectedDate.value = ''; return }
-    const yyyy = val.year
-    const mm = String(val.month).padStart(2, '0')
-    const dd = String(val.day).padStart(2, '0')
-    selectedDate.value = `${yyyy}-${mm}-${dd}`
+    if (!val) { selectedDateStart.value = ''; return }
+    selectedDateStart.value = `${val.year}-${String(val.month).padStart(2, '0')}-${String(val.day).padStart(2, '0')}`
   }
 })
 
-async function loadOrders() {
-  const params: Record<string, any> = { page: 1, limit: 100 }
-  if (selectedDate.value) {
-    params.start_date = selectedDate.value
-    params.end_date = selectedDate.value
+// Model untuk picker tanggal akhir
+const selectedDateEndModel = computed({
+  get() {
+    if (!selectedDateEnd.value) return null
+    const [y, m, d] = selectedDateEnd.value.split('-').map(Number)
+    return new CalendarDate(y, m, d)
+  },
+  set(val: CalendarDate | null) {
+    if (!val) { selectedDateEnd.value = ''; return }
+    selectedDateEnd.value = `${val.year}-${String(val.month).padStart(2, '0')}-${String(val.day).padStart(2, '0')}`
   }
+})
+
+// Shortcut: reset ke "hari ini s/d H+7"
+function resetToWeekAhead() {
+  selectedDateStart.value = getLocalDateString(0)
+  selectedDateEnd.value   = getLocalDateString(7)
+}
+
+// selectedDate tetap dipertahankan untuk kompatibilitas timeline yang menampilkan
+// 1 tanggal aktif — default-nya adalah tanggal awal range.
+const selectedDate = computed(() => selectedDateStart.value)
+
+async function loadOrders() {
+  const params: Record<string, any> = { page: 1, limit: 200 }
+  // Gunakan range 7 hari ke depan agar tim gudang bisa melihat jadwal lebih awal
+  if (selectedDateStart.value) params.start_date = selectedDateStart.value
+  if (selectedDateEnd.value)   params.end_date   = selectedDateEnd.value
   await store.fetchMdoList(params)
 }
 
-watch([selectedDate, selectedWarehouseId], () => { loadOrders() })
+watch([selectedDateStart, selectedDateEnd, selectedWarehouseId], () => { loadOrders() })
 
 onMounted(async () => {
   await store.fetchDropdownWarehouses()
@@ -132,9 +155,10 @@ const activeDockIdsForDate = computed(() => {
 })
 
 const activeOrdersForDate = computed(() => {
+  // Tampilkan semua MDO dalam range start–end (bukan hanya 1 hari)
   return orders.value.filter(o => {
     const oDate = (o.target_date || '').split('T')[0]
-    return oDate === selectedDate.value
+    return oDate >= selectedDateStart.value && oDate <= selectedDateEnd.value
   })
 })
 
@@ -155,25 +179,30 @@ function parseTimeToDecimal(timeStr: string | null | undefined): number {
   return hours + minutes / 60
 }
 
-// MDO uses single target_time — render as a 1-hour block on the timeline
+// MDO uses single target_time — render as a 30-minute block on the timeline.
+// Slot interval backend = 30 menit (0.5 jam), bukan 1 jam — agar 07:00 dan 07:30
+// tidak dianggap konflik satu sama lain.
+const MDO_DURATION_HOURS = 0.5
+
 function getOrderStyle(order: any) {
   const start = parseTimeToDecimal(order.target_time)
-  const end = Math.min(18, start + 1)
+  const end = Math.min(18, start + MDO_DURATION_HOURS)
   const leftHour = Math.max(8, Math.min(18, start))
   const rightHour = Math.max(8, Math.min(18, end))
   const leftPct = ((leftHour - 8) / 10) * 100
   const widthPct = ((rightHour - leftHour) / 10) * 100
-  return { left: `${leftPct}%`, width: `${Math.max(widthPct, 6)}%` }
+  return { left: `${leftPct}%`, width: `${Math.max(widthPct, 4)}%` }
 }
 
-// Detect overlapping MDOs on same dock+date
+// Detect overlapping MDOs on same dock+date.
+// Gunakan MDO_DURATION_HOURS (0.5) — konsisten dengan slot 30 menit backend.
 function hasOverlapConflict(order: any): boolean {
   const list = activeOrdersForDate.value.filter(o => o.id !== order.id && o.dock_id === order.dock_id)
   const pStart = parseTimeToDecimal(order.target_time)
-  const pEnd = pStart + 1
+  const pEnd = pStart + MDO_DURATION_HOURS
   return list.some(other => {
     const oStart = parseTimeToDecimal(other.target_time)
-    const oEnd = oStart + 1
+    const oEnd = oStart + MDO_DURATION_HOURS
     return oStart < pEnd && oEnd > pStart
   })
 }
@@ -200,6 +229,19 @@ const statusLabel = (status: string) => {
   if (status === 'in_transit') return 'In Transit'
   if (status === 'arrived') return 'Arrived'
   return status
+}
+
+// ─── Capacity helpers (untuk card timeline & list) ────────────────────────────
+function capacityBarColor(pct: number | null | undefined): string {
+  if (pct == null) return 'bg-muted/40'
+  if (pct > 90) return 'bg-error-500'
+  if (pct > 70) return 'bg-warning-500'
+  return 'bg-success-500'
+}
+
+function capacityBarWidth(pct: number | null | undefined): string {
+  if (pct == null) return '0%'
+  return `${Math.min(100, Math.round(pct))}%`
 }
 </script>
 
@@ -247,10 +289,10 @@ const statusLabel = (status: string) => {
                 placeholder="Pilih Gudang"
               />
             </div>
-            <!-- Date filter -->
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Tanggal:</span>
-              <UInputDate v-model="selectedDateModel" class="w-44">
+            <!-- Date Range filter: Hari Ini s/d H+7 -->
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Jadwal:</span>
+              <UInputDate v-model="selectedDateStartModel" class="w-40">
                 <template #trailing>
                   <UPopover>
                     <UButton
@@ -261,11 +303,31 @@ const statusLabel = (status: string) => {
                       class="px-0"
                     />
                     <template #content>
-                      <UCalendar v-model="selectedDateModel" class="p-2" />
+                      <UCalendar v-model="selectedDateStartModel" class="p-2" />
                     </template>
                   </UPopover>
                 </template>
               </UInputDate>
+              <span class="text-xs text-muted font-semibold shrink-0">s/d</span>
+              <UInputDate v-model="selectedDateEndModel" class="w-40">
+                <template #trailing>
+                  <UPopover>
+                    <UButton color="neutral" variant="link" size="sm" icon="i-lucide-calendar" class="px-0" />
+                    <template #content>
+                      <UCalendar v-model="selectedDateEndModel" class="p-2" />
+                    </template>
+                  </UPopover>
+                </template>
+              </UInputDate>
+              <!-- Shortcut reset ke 7 hari ke depan -->
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-refresh-ccw"
+                label="7 Hari"
+                @click="resetToWeekAhead"
+              />
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -399,6 +461,26 @@ const statusLabel = (status: string) => {
                         <span>{{ (order.target_time || '').slice(0, 5) }}</span>
                       </div>
 
+                      <!-- Capacity mini-bar -->
+                      <div v-if="order.capacity_usage_pct != null" class="mt-1.5">
+                        <div class="flex justify-between items-center mb-0.5">
+                          <span class="text-[8px] text-muted leading-none">Muatan</span>
+                          <span
+                            class="text-[8px] font-bold leading-none"
+                            :class="order.capacity_usage_pct > 90 ? 'text-error-500' : order.capacity_usage_pct > 70 ? 'text-warning-500' : 'text-success-500'"
+                          >
+                            {{ Math.round(order.capacity_usage_pct) }}%
+                          </span>
+                        </div>
+                        <div class="w-full bg-default/60 rounded-full h-1 overflow-hidden">
+                          <div
+                            class="h-full rounded-full transition-all duration-300"
+                            :class="capacityBarColor(order.capacity_usage_pct)"
+                            :style="{ width: capacityBarWidth(order.capacity_usage_pct) }"
+                          />
+                        </div>
+                      </div>
+
                       <!-- Conflict badge -->
                       <div v-if="hasOverlapConflict(order)" class="absolute bottom-1 right-2 flex items-center gap-0.5 text-[8px] font-black uppercase text-error-500 animate-bounce tracking-wide shrink-0">
                         <UIcon name="i-lucide-alert-circle" class="w-2.5 h-2.5 shrink-0" />
@@ -433,7 +515,7 @@ const statusLabel = (status: string) => {
           <div class="p-4 border-b border-default flex items-center justify-between">
             <h4 class="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
               <UIcon name="i-lucide-list" class="w-4 h-4" />
-              Semua MDO — {{ selectedDate }}
+              Semua MDO — {{ selectedDateStart }} s/d {{ selectedDateEnd }}
             </h4>
             <span class="text-xs text-muted">Total: {{ meta.total }}</span>
           </div>
@@ -462,12 +544,20 @@ const statusLabel = (status: string) => {
                 <span v-if="order.target_time" class="text-[10px] font-semibold text-muted">
                   {{ (order.target_time || '').slice(0, 5) }}
                 </span>
-                <UBadge
-                  :color="statusColor(order.status)"
-                  variant="subtle"
-                  size="xs"
-                  class="rounded-full text-[10px]"
+                <!-- Capacity badge in list -->
+                <div
+                  v-if="order.capacity_usage_pct != null"
+                  class="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                  :class="order.capacity_usage_pct > 90
+                    ? 'bg-error-500/10 text-error-600 dark:text-error-400'
+                    : order.capacity_usage_pct > 70
+                      ? 'bg-warning-500/10 text-warning-600 dark:text-warning-400'
+                      : 'bg-success-500/10 text-success-600 dark:text-success-400'"
                 >
+                  <UIcon name="i-lucide-weight" class="w-2.5 h-2.5 shrink-0" />
+                  <span>{{ Math.round(order.capacity_usage_pct) }}%</span>
+                </div>
+                <UBadge :color="statusColor(order.status)" variant="subtle" size="xs" class="rounded-full text-[10px]">
                   {{ statusLabel(order.status) }}
                 </UBadge>
               </div>

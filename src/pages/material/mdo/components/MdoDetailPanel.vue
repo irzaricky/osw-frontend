@@ -54,6 +54,34 @@ const timeOptions = [
   '18:00'
 ]
 
+// ─── Computed: Slot waktu tersedia berdasarkan dock edit yang dipilih ──────────
+// Jika dock dipilih → gunakan slot available dari dock (sama seperti MdoAddModal).
+// Jika dock belum dipilih → fallback ke timeOptions statis 06:00–18:00.
+const availableEditTimeOptions = computed<string[]>(() => {
+  const dock = editSelectedDock.value as any
+  if (!dock) return timeOptions
+  const slots = dock.slots ?? []
+  const available = slots
+    .filter((s: { time: string; available: boolean }) => s.available)
+    .map((s: { time: string; available: boolean }) => s.time)
+  // Pastikan target_time yang sedang tersimpan tetap muncul di list
+  // (agar nilai lama tidak "hilang" saat membuka edit mode).
+  if (editState.target_time && !available.includes(editState.target_time)) {
+    return [editState.target_time, ...available]
+  }
+  return available.length > 0 ? available : timeOptions
+})
+
+// ─── Warning: jam yang dipilih tidak tersedia setelah dock/tanggal diganti ────
+const editTimeConflictWarning = computed<boolean>(() => {
+  const dock = editSelectedDock.value as any
+  if (!editState.target_time || !dock) return false
+  const slots = (dock.slots ?? []) as { time: string; available: boolean }[]
+  if (slots.length === 0) return false
+  const match = slots.find(s => s.time === editState.target_time)
+  return !!match && !match.available
+})
+
 const editSchema = z.object({
   target_date: z.string().min(1, 'Tanggal harus diisi'),
 })
@@ -337,10 +365,25 @@ async function handleAdvanceStatus() {
         <UFormField label="Waktu Kedatangan (Opsional)" name="target_time">
           <USelectMenu
             v-model="editState.target_time"
-            :items="timeOptions"
+            :items="availableEditTimeOptions"
             class="w-full"
-            placeholder="Pilih jam kedatangan"
-          />
+            :placeholder="!editState.dock_id ? 'Pilih jam kedatangan' : 'Pilih jam kedatangan (slot tersedia)'"
+          >
+            <template #empty>
+              <p class="text-xs text-muted p-2">Tidak ada slot waktu tersedia di dock ini</p>
+            </template>
+          </USelectMenu>
+          <!-- Warning: slot yang dipilih sudah terpakai -->
+          <div
+            v-if="editTimeConflictWarning"
+            class="flex items-start gap-2 mt-2 rounded-lg border border-red-400/50 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-red-800 dark:text-red-300"
+          >
+            <UIcon name="i-lucide-clock-alert" class="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-500" />
+            <p class="text-[10px] leading-relaxed">
+              Jam <span class="font-mono font-bold">{{ editState.target_time }}</span> sudah terpakai
+              di dock ini. Silakan pilih slot lain.
+            </p>
+          </div>
         </UFormField>
 
         <!-- Dock -->
@@ -583,22 +626,49 @@ async function handleAdvanceStatus() {
         <!-- Capacity Bar -->
         <div v-if="capacityPct !== null" class="p-3 rounded-xl border border-default bg-elevated/40">
           <div class="flex justify-between items-center mb-1.5">
-            <span class="text-[10px] text-muted font-semibold">Kapasitas Kendaraan Terpakai</span>
-            <span class="text-[10px] font-bold" :class="capacityPct > 90 ? 'text-error-500' : capacityPct > 70 ? 'text-warning-500' : 'text-success-500'">
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-lucide-weight" class="w-3.5 h-3.5 shrink-0"
+                :class="capacityPct > 90 ? 'text-error-500' : capacityPct > 70 ? 'text-warning-500' : 'text-success-500'"
+              />
+              <span class="text-[10px] text-muted font-semibold">Kapasitas Kendaraan Terpakai</span>
+            </div>
+            <span
+              class="text-[11px] font-black tabular-nums"
+              :class="capacityPct > 90 ? 'text-error-500' : capacityPct > 70 ? 'text-warning-500' : 'text-success-500'"
+            >
               {{ capacityPct }}%
             </span>
           </div>
-          <div class="w-full bg-default rounded-full h-2 overflow-hidden">
+          <div class="w-full bg-default rounded-full h-2.5 overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="capacityColor"
               :style="{ width: `${capacityPct}%` }"
             />
           </div>
-          <div class="flex justify-between text-[9px] text-muted mt-1">
-            <span>{{ props.order.total_weight_kg?.toFixed(1) ?? '-' }} kg dipakai</span>
-            <span>{{ props.order.vehicle_capacity_kg ?? '-' }} kg kapasitas</span>
+          <div class="flex justify-between text-[9px] text-muted mt-1.5 font-medium">
+            <span>
+              <span class="font-bold text-default">{{ props.order.total_weight_kg?.toFixed(1) ?? '—' }} kg</span>
+              dipakai
+            </span>
+            <span>
+              kapasitas
+              <span class="font-bold text-default">{{ props.order.vehicle_capacity_kg ?? '—' }} kg</span>
+            </span>
           </div>
+          <!-- Over-capacity warning -->
+          <div
+            v-if="capacityPct >= 100"
+            class="mt-2 flex items-center gap-1.5 text-[10px] text-error-600 dark:text-error-400 font-bold bg-error-500/10 rounded-lg px-2 py-1"
+          >
+            <UIcon name="i-lucide-alert-triangle" class="w-3.5 h-3.5 shrink-0" />
+            Muatan melebihi kapasitas kendaraan!
+          </div>
+        </div>
+        <!-- Kapasitas tidak tersedia (kendaraan belum dipilih) -->
+        <div v-else-if="props.order.vehicle_id && props.order.vehicle_capacity_kg === 0" class="p-3 rounded-xl border border-dashed border-default bg-elevated/20 text-[10px] text-muted flex items-center gap-1.5">
+          <UIcon name="i-lucide-info" class="w-3.5 h-3.5 shrink-0" />
+          Data kapasitas kendaraan belum tersedia.
         </div>
 
         <!-- Description / Remarks -->

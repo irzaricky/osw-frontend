@@ -10,6 +10,26 @@ import type { MdoDropdownMpo, MdoDropdownMpoDetail } from '../../../../types/mat
 const formRef = ref()
 const store = useMdoStore()
 
+// ─── Preview Warning State ─────────────────────────────────────────────────────
+// Diset ke true oleh hasil previewSplit jika ada part dengan weight = null/0
+const previewHasNullWeight = ref(false)
+
+// ─── Cache Berat Barang ────────────────────────────────────────────────────────
+// Menyimpan berat per-unit (kg) masing-masing part setelah previewSplit dipanggil.
+// Key: part_id, Value: weight_per_unit_kg
+// Ini memungkinkan kalkulasi total berat dilakukan 100% di frontend secara reaktif
+// tanpa perlu memanggil API setiap kali user mengubah Qty atau men-ceklis item.
+const partWeights = ref<Record<number, number>>({})
+
+// ─── Preview Capacity State ────────────────────────────────────────────────────
+// Hanya menyimpan kapasitas kendaraan (vehicle_capacity_kg) dari response previewSplit.
+// total_weight_kg tidak lagi disimpan di sini — digantikan oleh liveTotalWeight computed.
+const previewWeight = reactive({
+  total_weight_kg: 0 as number, // ← dipertahankan untuk kompatibilitas template footer
+  vehicle_capacity_kg: 0 as number,
+  loaded: false, // true jika sudah ada data kapasitas kendaraan yang valid
+})
+
 const props = defineProps<{
   open: boolean
   loading: boolean
@@ -20,23 +40,50 @@ const emit = defineEmits<{
   save: [data: any]
 }>()
 
-const timeOptions = [
-  '06:00', '06:30',
-  '07:00', '07:30',
-  '08:00', '08:30',
-  '09:00', '09:30',
-  '10:00', '10:30',
-  '11:00', '11:30',
-  '12:00', '12:30',
-  '13:00', '13:30',
-  '14:00', '14:30',
-  '15:00', '15:30',
-  '16:00', '16:30',
-  '17:00', '17:30',
-  '18:00'
-]
+// ─── Computed: Available Time Options (dari slot dock yang dipilih) ────────────
+// Jika dock sudah dipilih → filter slot yang available === true.
+// Jika dock belum dipilih → kembalikan array kosong (dropdown di-disable).
+const availableTimeOptions = computed<string[]>(() => {
+  if (!selectedDock.value) return []
+  const slots = (selectedDock.value as any).slots ?? []
+  return slots
+    .filter((s: { time: string; available: boolean }) => s.available)
+    .map((s: { time: string; available: boolean }) => s.time)
+})
 
-// ─── Form State ────────────────────────────────────────────────────────────────
+// ─── Warning: Jam yang sudah dipilih menjadi tidak tersedia ────────────────────
+// Muncul ketika user mengganti tanggal/dock dan target_time yang sudah dipilih
+// tidak lagi ada di availableTimeOptions.
+const timeConflictWarning = computed<boolean>(() => {
+  if (!state.target_time || !selectedDock.value) return false
+  return !availableTimeOptions.value.includes(state.target_time)
+})
+
+// ─── Computed: Live Total Weight (Kalkulasi Instan di Frontend) ───────────────
+// Me-loop state.details secara reaktif. Setiap kali user mengubah Qty atau
+// men-ceklis/uncheck item, nilai ini langsung terupdate TANPA memanggil API.
+// Menggunakan cache partWeights yang diisi sekali saat previewSplit pertama kali
+// dipanggil (saat mpo_id & vehicle_id dipilih).
+const liveTotalWeight = computed<number>(() => {
+  return state.details.reduce((total, d) => {
+    if (!d.selected) return total
+    const weight = partWeights.value[d.part_id] ?? 0
+    return total + Number(d.qty) * weight
+  }, 0)
+})
+
+// ─── Computed: Kapasitas Terlampaui ────────────────────────────────────────────
+// Bernilai true jika data preview sudah ada DAN liveTotalWeight > kapasitas kendaraan.
+const isLoadExceeded = computed<boolean>(() => {
+  if (!previewWeight.loaded || previewWeight.vehicle_capacity_kg <= 0) return false
+  return liveTotalWeight.value > previewWeight.vehicle_capacity_kg
+})
+
+// ─── Computed: Disable Tombol Submit ──────────────────────────────────────────
+// Blokir submit jika beban melebihi kapasitas ATAU ada konflik jadwal.
+const isSubmitDisabled = computed<boolean>(() => {
+  return props.loading || isLoadExceeded.value || timeConflictWarning.value
+})
 const state = reactive({
   mpo_id: undefined as number | undefined,
   target_date: '',
@@ -113,16 +160,89 @@ const vehicleLabel = (v: any) =>
   v ? `${v.plate_number} — ${v.vehicle_type?.name || ''} (${v.vehicle_type?.load_capacity ?? '-'} kg)` : ''
 
 // ─── Watch: Reload docks & vehicles when date changes ─────────────────────────
+// Juga reset target_time karena slot availability bisa berubah di tanggal berbeda.
 watch(
   () => state.target_date,
   async (date) => {
     if (!date) return
     state.dock_id = undefined
     state.vehicle_id = undefined
+    state.target_time = undefined  // reset jam agar tidak stale
     await Promise.all([
       store.fetchDropdownDocks({ date }),
       store.fetchDropdownVehicles({ date }),
     ])
+  }
+)
+
+// ─── Watch: Reset target_time jika dock berubah ────────────────────────────────
+// Ketika dock diganti, slot yang tersedia bisa berbeda → jam yang dipilih sebelumnya
+// mungkin sudah terpakai di dock baru.
+watch(
+  () => state.dock_id,
+  () => {
+    // Hanya reset jika jam yang dipilih tidak ada di slot dock baru
+    if (state.target_time && !availableTimeOptions.value.includes(state.target_time)) {
+      state.target_time = undefined
+    }
+  }
+)
+
+// ─── Watch: Auto-call previewSplit HANYA saat MPO atau Vehicle berubah ────────
+// state.details TIDAK lagi dipantau di sini — kalkulasi berat kini dilakukan
+// secara reaktif via liveTotalWeight computed, menggunakan cache partWeights.
+// Ini menghilangkan race condition & spam API saat user mengubah Qty/checkbox.
+watch(
+  [() => state.mpo_id, () => state.vehicle_id],
+  async ([mpoId, vehicleId]) => {
+    previewHasNullWeight.value = false
+    previewWeight.loaded = false
+
+    if (!mpoId || !vehicleId) {
+      previewWeight.total_weight_kg = 0
+      previewWeight.vehicle_capacity_kg = 0
+      partWeights.value = {} // reset cache saat vehicle/MPO di-unset
+      return
+    }
+
+    try {
+      // Kirim minimal payload: hanya mpo_id & vehicle_id.
+      // Backend cukup mengembalikan kapasitas kendaraan + berat per-unit setiap part.
+      const res = await store.previewSplit({
+        mpo_id: mpoId,
+        vehicle_id: vehicleId,
+        details: [], // kosong — backend hanya dipakai untuk seed data berat, bukan kalkulasi
+      })
+
+      // Tahan response berbungkus (res.data) maupun yang sudah di-unwrap (res)
+      const payload = res?.data ?? res
+
+      if (payload && typeof payload.vehicle_capacity_kg !== 'undefined') {
+        previewHasNullWeight.value = !!payload.has_null_weight
+
+        // Simpan kapasitas kendaraan ke previewWeight
+        previewWeight.vehicle_capacity_kg = payload.vehicle_capacity_kg ?? 0
+        previewWeight.loaded = true
+
+        // ── Seed cache berat per-unit ke partWeights ──────────────────────────
+        // Loop suggested_qty_details dari backend untuk mengisi cache lokal.
+        // Setelah ini, semua kalkulasi berat dilakukan murni di frontend via
+        // liveTotalWeight computed — tanpa API call tambahan.
+        const newCache: Record<number, number> = {}
+        if (Array.isArray(payload.suggested_qty_details)) {
+          for (const item of payload.suggested_qty_details) {
+            newCache[item.part_id] = item.weight_per_unit_kg || 0
+          }
+        }
+        partWeights.value = newCache
+      }
+    } catch (error) {
+      // Preview gagal → tidak blok user, cukup reset indikator
+      console.error('Gagal mengambil data kapasitas:', error)
+      previewHasNullWeight.value = false
+      previewWeight.loaded = false
+      partWeights.value = {}
+    }
   }
 )
 
@@ -142,6 +262,11 @@ watch(
     state.remarks = ''
     state.save_as = 'draft'
     state.details = []
+    previewHasNullWeight.value = false
+    previewWeight.total_weight_kg = 0
+    previewWeight.vehicle_capacity_kg = 0
+    previewWeight.loaded = false
+    partWeights.value = {} // reset cache berat saat modal dibuka ulang
     // Load MPO dropdown
     await store.fetchDropdownMpo()
   }
@@ -154,6 +279,14 @@ function submitForm(saveAs: 'draft' | 'scheduled') {
 }
 
 function onSubmit(_event: FormSubmitEvent<any>) {
+  // ── Guard lapis-2: blokir submit jika muatan melebihi kapasitas ─────────────
+  // Ini melengkapi :disabled="isSubmitDisabled" di tombol — mencegah celah
+  // race-condition atau bypass lewat keyboard shortcut / manipulasi DOM.
+  if (isLoadExceeded.value) {
+    alert('Total muatan melebihi kapasitas maksimal kendaraan! Kurangi qty atau pilih kendaraan lain.')
+    return
+  }
+
   if (state.details.length === 0) {
     alert('Pilih MPO yang memiliki detail parts terlebih dahulu.')
     return
@@ -248,17 +381,7 @@ function close() {
               </UInputDate>
             </UFormField>
 
-            <!-- Target Time -->
-            <UFormField label="Waktu Kedatangan (Opsional)" name="target_time">
-              <USelectMenu
-                v-model="state.target_time"
-                :items="timeOptions"
-                class="w-full"
-                placeholder="Pilih jam kedatangan"
-              />
-            </UFormField>
-
-            <!-- Receiving Dock -->
+            <!-- Receiving Dock — harus dipilih dulu sebelum memilih jam -->
             <UFormField label="Receiving Dock" name="dock_id">
               <USelectMenu
                 v-model="selectedDock"
@@ -272,6 +395,9 @@ function close() {
                   <div class="flex flex-col py-0.5">
                     <span class="font-bold text-xs text-default">{{ item.name }}</span>
                     <span v-if="item.area" class="text-[10px] text-muted">Area: {{ item.area.name }}</span>
+                    <span class="text-[10px] text-muted/70">
+                      {{ (item.slots ?? []).filter((s: any) => s.available).length }} slot tersedia
+                    </span>
                   </div>
                 </template>
                 <template #empty>
@@ -280,6 +406,39 @@ function close() {
                   </p>
                 </template>
               </USelectMenu>
+            </UFormField>
+
+            <!-- Warning: jam yang dipilih tidak lagi available setelah dock/tanggal diganti -->
+            <div
+              v-if="timeConflictWarning"
+              class="flex items-start gap-2.5 rounded-xl border border-red-400/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-red-800 dark:text-red-300"
+            >
+              <UIcon name="i-lucide-clock-alert" class="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+              <div class="text-xs leading-relaxed">
+                <span class="font-bold block">Slot Waktu Tidak Tersedia</span>
+                Jam <span class="font-mono font-bold">{{ state.target_time }}</span> yang sebelumnya dipilih
+                sudah tidak tersedia di dock atau tanggal yang baru. Silakan pilih jam lain.
+              </div>
+            </div>
+
+            <!-- Target Time — disabled sampai dock dipilih, hanya tampilkan slot available -->
+            <UFormField label="Jam Kedatangan (Opsional)" name="target_time">
+              <USelectMenu
+                v-model="state.target_time"
+                :items="availableTimeOptions"
+                class="w-full"
+                :placeholder="!state.dock_id ? 'Pilih Receiving Dock terlebih dahulu' : 'Pilih jam kedatangan'"
+                :disabled="!state.dock_id"
+              >
+                <template #empty>
+                  <p class="text-xs text-muted p-2">
+                    {{ !state.dock_id ? 'Pilih dock dulu' : 'Tidak ada slot waktu yang tersedia di dock ini' }}
+                  </p>
+                </template>
+              </USelectMenu>
+              <p v-if="state.dock_id && availableTimeOptions.length === 0" class="text-[10px] text-red-500 mt-1">
+                Semua slot waktu di dock ini sudah penuh pada tanggal tersebut.
+              </p>
             </UFormField>
 
             <!-- Vehicle -->
@@ -345,7 +504,87 @@ function close() {
           </div>
 
           <!-- ── Kolom Kanan: Detail Parts dari MPO ───────────────────────── -->
-          <div class="flex flex-col h-full border border-default rounded-xl overflow-hidden bg-elevated/20">
+          <div class="flex flex-col h-full gap-3">
+
+            <!-- ── Indikator Kapasitas Muatan Real-time ──────────────────── -->
+            <!-- Muncul segera setelah vehicle_id dipilih, sebelum dokumen disimpan -->
+            <Transition name="capacity-fade">
+              <div
+                v-if="state.vehicle_id"
+                class="p-3 rounded-xl border space-y-2 transition-colors duration-300"
+                :class="previewWeight.loaded
+                  ? (isLoadExceeded
+                      ? 'border-red-400/60 bg-red-50 dark:bg-red-900/20'
+                      : 'border-green-400/60 bg-green-50 dark:bg-green-900/20')
+                  : 'border-default bg-elevated/50'"
+              >
+                <!-- Header row: label + angka -->
+                <div class="flex justify-between items-center text-xs font-medium">
+                  <span class="text-muted flex items-center gap-1">
+                    <UIcon name="i-lucide-weight" class="w-3.5 h-3.5" />
+                    Kapasitas Muatan Truk:
+                  </span>
+                  <span
+                    v-if="previewWeight.loaded"
+                    class="font-mono font-bold"
+                    :class="isLoadExceeded ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'"
+                  >
+                    {{ liveTotalWeight.toFixed(1) }} kg
+                    / {{ previewWeight.vehicle_capacity_kg.toFixed(1) }} kg
+                    <span class="ml-1">
+                      ({{ previewWeight.vehicle_capacity_kg > 0
+                        ? Math.round((liveTotalWeight / previewWeight.vehicle_capacity_kg) * 100)
+                        : 0 }}%)
+                    </span>
+                  </span>
+                  <span v-else class="text-muted italic text-[10px]">Menghitung…</span>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="w-full bg-default/20 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    class="h-full rounded-full transition-all duration-500 ease-out"
+                    :class="!previewWeight.loaded
+                      ? 'bg-muted/40 animate-pulse w-full'
+                      : isLoadExceeded ? 'bg-red-500' : 'bg-green-500'"
+                    :style="previewWeight.loaded && previewWeight.vehicle_capacity_kg > 0
+                      ? { width: `${Math.min((liveTotalWeight / previewWeight.vehicle_capacity_kg) * 100, 100)}%` }
+                      : {}"
+                  />
+                </div>
+
+                <!-- Overload warning -->
+                <p
+                  v-if="previewWeight.loaded && isLoadExceeded"
+                  class="text-[11px] text-red-600 dark:text-red-400 font-semibold flex items-center gap-1 animate-pulse"
+                >
+                  ⚠️ Muatan Overload! Kurangi item atau ganti kendaraan yang lebih besar.
+                </p>
+                <!-- OK status -->
+                <p
+                  v-else-if="previewWeight.loaded && !isLoadExceeded"
+                  class="text-[11px] text-green-700 dark:text-green-400 font-medium flex items-center gap-1"
+                >
+                  ✅ Muatan dalam batas aman kendaraan.
+                </p>
+              </div>
+            </Transition>
+
+            <!-- ⚠️ Alert: Peringatan Weight Null/0 dari Preview Split -->
+            <div
+              v-if="previewHasNullWeight"
+              class="flex items-start gap-2.5 rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-amber-800 dark:text-amber-300"
+            >
+              <UIcon name="i-lucide-alert-triangle" class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
+              <div class="text-xs leading-relaxed">
+                <span class="font-bold block">Peringatan: Data Berat Tidak Lengkap</span>
+                Beberapa barang belum memiliki data berat di sistem (Weight = 0).
+                Perhitungan muatan otomatis mungkin tidak akurat.
+                Harap lengkapi data master Parts sebelum menjadwalkan pengiriman.
+              </div>
+            </div>
+
+            <div class="flex flex-col h-full border border-default rounded-xl overflow-hidden bg-elevated/20">
             <div class="p-3 bg-elevated border-b border-default shrink-0 flex items-center justify-between">
               <h4 class="text-sm font-bold text-default flex items-center gap-1.5">
                 <UIcon name="i-lucide-package-2" class="text-primary w-4 h-4" />
@@ -442,11 +681,33 @@ function close() {
               </p>
             </div>
           </div>
+          </div> <!-- /.flex.flex-col.h-full.gap-3 (wrapper kolom kanan) -->
         </div>
       </UForm>
     </template>
 
     <template #footer>
+      <!-- ── Panel Ringkasan Kapasitas Muatan ─────────────────────────────── -->
+      <div
+        v-if="previewWeight.loaded"
+        class="flex items-center gap-2 mr-auto px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors"
+        :class="isLoadExceeded
+          ? 'border-red-400/60 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+          : 'border-green-400/60 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'"
+      >
+        <UIcon
+          :name="isLoadExceeded ? 'i-lucide-weight' : 'i-lucide-check-circle-2'"
+          class="w-3.5 h-3.5 shrink-0"
+        />
+        <span>
+          Planned Load:
+          <span class="font-mono">{{ liveTotalWeight.toFixed(1) }} kg</span>
+          /
+          <span class="font-mono">{{ previewWeight.vehicle_capacity_kg.toFixed(1) }} kg</span>
+        </span>
+        <span v-if="isLoadExceeded" class="font-bold">— Melebihi Kapasitas!</span>
+      </div>
+
       <div class="flex gap-2 justify-end w-full">
         <UButton
           color="neutral"
@@ -460,7 +721,7 @@ function close() {
           label="Simpan Draft"
           icon="i-lucide-save"
           :loading="props.loading && state.save_as === 'draft'"
-          :disabled="props.loading"
+          :disabled="isSubmitDisabled"
           @click="submitForm('draft')"
         />
         <UButton
@@ -468,10 +729,23 @@ function close() {
           label="Jadwalkan (Scheduled)"
           icon="i-lucide-calendar-check"
           :loading="props.loading && state.save_as === 'scheduled'"
-          :disabled="props.loading"
+          :disabled="isSubmitDisabled"
           @click="submitForm('scheduled')"
         />
       </div>
     </template>
   </UModal>
 </template>
+
+<style scoped>
+/* Animasi fade masuk/keluar untuk blok indikator kapasitas */
+.capacity-fade-enter-active,
+.capacity-fade-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.capacity-fade-enter-from,
+.capacity-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+</style>
