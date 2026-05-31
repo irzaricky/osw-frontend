@@ -119,14 +119,11 @@ async function loadPlans() {
     params.start_date = mlStartDate.value
     params.end_date = mlEndDate.value
   }
-  if (selectedStatus.value) {
-    params.status = selectedStatus.value
-  }
   await store.fetchSdpPlans(params)
 }
 
 // Watchers for filtering and loading
-watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId, selectedStatus], () => {
+watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId], () => {
   loadPlans()
 })
 
@@ -237,7 +234,10 @@ const activePlansForDate = computed(() => {
 const filteredMasterList = computed(() => {
   return plans.value.filter(p => {
     const pDate = p.scheduled_date.split('T')[0]
-    return pDate >= mlStartDate.value && pDate <= mlEndDate.value && (!selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value)
+    const matchesDate = pDate >= mlStartDate.value && pDate <= mlEndDate.value
+    const matchesWarehouse = !selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value
+    const matchesStatus = !selectedStatus.value || p.status === selectedStatus.value
+    return matchesDate && matchesWarehouse && matchesStatus
   })
 })
 
@@ -360,18 +360,6 @@ const conflictingDocksNames = computed(() => {
               </UInputDate>
             </div>
 
-            <!-- Status Filter Selector -->
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Status:</span>
-              <USelectMenu
-                v-model="selectedStatus"
-                :items="statusOptions"
-                value-key="value"
-                label-key="label"
-                class="w-40"
-                placeholder="All Status"
-              />
-            </div>
           </div>
           
           <div class="flex items-center gap-2">
@@ -568,6 +556,16 @@ const conflictingDocksNames = computed(() => {
                   </UPopover>
                 </template>
               </UInputDate>
+
+              <USelectMenu
+                v-model="selectedStatus"
+                :items="statusOptions"
+                value-key="value"
+                label-key="label"
+                class="w-40"
+                placeholder="All Status"
+                clear
+              />
             </div>
             <div class="overflow-x-auto border border-default rounded-2xl">
               <table class="w-full text-left border-collapse text-xs">
