@@ -790,76 +790,7 @@ onUnmounted(() => {
                               </div>
                             </div>
 
-                            <!-- POD Confirmation Form -->
-                            <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
-                              <h4 class="text-sm font-bold text-default flex items-center gap-2 border-b border-default pb-3">
-                                <UIcon name="i-lucide-file-check" class="w-4 h-4 text-success" />
-                                Proof Of Delivery (POD) Confirmation
-                              </h4>
 
-                              <form class="space-y-4" @submit.prevent="submitPod(store.detail)">
-                                <!-- Quantities Input -->
-                                <div class="grid grid-cols-1 gap-4">
-                                  <div v-for="item in store.detail.details" :key="item.id" class="space-y-1.5">
-                                    <label class="text-xs font-semibold text-default block">
-                                      Received Qty for: {{ item.planDetail?.spoDetail?.part?.part_name }} (Sent: {{ item.sent_qty }} pcs)
-                                    </label>
-                                    <UInput
-                                      v-model.number="podFormDetails[item.id]"
-                                      type="number"
-                                      size="sm"
-                                      min="0"
-                                      :max="item.sent_qty"
-                                      placeholder="Enter received quantity"
-                                      required
-                                      class="w-full"
-                                    />
-                                  </div>
-                                </div>
-
-                                <!-- Real-time Partial warning -->
-                                <div v-if="isPodPartial" class="p-3 bg-warning/10 border border-warning/30 rounded-xl flex items-start gap-2.5 text-warning text-xs font-semibold">
-                                  <UIcon name="i-lucide-alert-triangle" class="w-4 h-4 mt-0.5 shrink-0" />
-                                  <span>Warning: This will be marked as a Partial Delivery (some items have received quantity less than sent quantity).</span>
-                                </div>
-
-                                <!-- File and Notes Column -->
-                                <div class="grid grid-cols-1 gap-4 pt-2">
-                                  <div class="space-y-1.5">
-                                    <label class="text-xs font-semibold text-default block">Proof of Delivery File (Image/PDF)</label>
-                                    <input
-                                      type="file"
-                                      accept="image/*,application/pdf"
-                                      required
-                                      class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
-                                      @change="handlePodFileChange($event)"
-                                    >
-                                  </div>
-                                  <div class="space-y-1.5">
-                                    <label class="text-xs font-semibold text-default block">Notes</label>
-                                    <UInput
-                                      v-model="podNotes"
-                                      placeholder="Optional receipt notes..."
-                                      size="sm"
-                                      class="w-full"
-                                    />
-                                  </div>
-                                </div>
-
-                                <div class="flex justify-end gap-3 pt-3 border-t border-default/50">
-                                  <UButton
-                                    type="submit"
-                                    color="success"
-                                    variant="solid"
-                                    icon="i-lucide-check-circle"
-                                    size="sm"
-                                    :loading="submittingPodMap[store.detail.id]"
-                                  >
-                                    Confirm Delivery
-                                  </UButton>
-                                </div>
-                              </form>
-                            </div>
                           </div>
 
                           <!-- Case 4: Status is Delivered or Delivered (Partial) (Show completed info: loading photo + dispatch approval + POD details) -->

@@ -24,8 +24,8 @@ const breadcrumbItems = [
 const receivedQuantities = ref<Record<number, number>>({})
 const detailNotes = ref<Record<number, string>>({})
 const overallNotes = ref('')
-const podFile = ref<File | null>(null)
-const podPreviewUrl = ref('')
+const podFiles = ref<File[]>([])
+const podPreviewUrls = ref<string[]>([])
 const isSubmitting = ref(false)
 const isSuccess = ref(false)
 const validationError = ref<string | null>(null)
@@ -68,20 +68,22 @@ function onQtyInput(id: number, val: number, max: number) {
 // Photo File input handler
 async function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
-  if (input.files && input.files[0]) {
-    const file = input.files[0]
-    const compressed = await compressImage(file)
-    podFile.value = compressed
-    podPreviewUrl.value = URL.createObjectURL(compressed)
+  if (input.files && input.files.length > 0) {
+    const files = Array.from(input.files)
+    for (const file of files) {
+      const compressed = await compressImage(file)
+      podFiles.value.push(compressed)
+      podPreviewUrls.value.push(URL.createObjectURL(compressed))
+    }
   }
 }
 
-function clearPhoto() {
-  podFile.value = null
-  if (podPreviewUrl.value) {
-    URL.revokeObjectURL(podPreviewUrl.value)
-    podPreviewUrl.value = ''
+function removePhoto(index: number) {
+  if (podPreviewUrls.value[index]) {
+    URL.revokeObjectURL(podPreviewUrls.value[index])
   }
+  podFiles.value.splice(index, 1)
+  podPreviewUrls.value.splice(index, 1)
 }
 
 // Submit Dispatch Confirmation
@@ -89,8 +91,8 @@ async function submitDelivery() {
   validationError.value = null
   if (!detail.value?.details) return
 
-  // Validate POD Image
-  if (!podFile.value) {
+  // Validate POD Images
+  if (podFiles.value.length === 0) {
     validationError.value = 'Proof of Delivery (POD) photo is required before final submission.'
     return
   }
@@ -106,7 +108,9 @@ async function submitDelivery() {
     const formData = new FormData()
     formData.append('notes', overallNotes.value)
     formData.append('details', JSON.stringify(detailsPayload))
-    formData.append('proof_of_delivery', podFile.value)
+    podFiles.value.forEach(file => {
+      formData.append('proof_of_delivery', file)
+    })
 
     await store.updateSdoStatus(sdoId.value as string, formData)
     isSuccess.value = true
@@ -116,7 +120,6 @@ async function submitDelivery() {
     isSubmitting.value = false
   }
 }
-
 // Compute if there's any discrepancies in items (partial delivery)
 const hasShortages = computed(() => {
   if (!detail.value?.details) return false
@@ -383,18 +386,40 @@ const hasShortages = computed(() => {
 
           <!-- Proof of Delivery Upload Section -->
           <div class="bg-elevated rounded-2xl p-4 border border-default shadow-lg space-y-4">
-            <h3 class="font-bold text-xs uppercase tracking-wider text-muted-foreground px-1">
-              Proof of Delivery (POD)
-            </h3>
+            <div class="flex justify-between items-center px-1">
+              <h3 class="font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                Proof of Delivery (POD)
+              </h3>
+              <UBadge v-if="podFiles.length > 0" color="neutral" variant="subtle" size="xs">
+                {{ podFiles.length }} photos
+              </UBadge>
+            </div>
+
+            <!-- Upload Photo Preview Grid -->
+            <div v-if="podPreviewUrls.length > 0" class="grid grid-cols-2 gap-3">
+              <div v-for="(url, idx) in podPreviewUrls" :key="idx" class="relative border border-default rounded-xl overflow-hidden bg-default/25 aspect-square">
+                <img
+                  :src="url"
+                  class="w-full h-full object-cover"
+                  alt="POD Receipt preview"
+                >
+                <button
+                  class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow cursor-pointer"
+                  @click="removePhoto(idx)"
+                >
+                  <UIcon name="i-lucide-trash-2" class="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
 
             <!-- File selection controls -->
-            <div v-if="!podFile" class="flex flex-col items-center justify-center p-6 border border-dashed border-default rounded-xl bg-default/5 gap-3">
+            <div class="flex flex-col items-center justify-center p-6 border border-dashed border-default rounded-xl bg-default/5 gap-3">
               <div class="w-10 h-10 bg-default/20 rounded-full flex items-center justify-center text-muted-foreground shadow-inner">
                 <UIcon name="i-lucide-camera" class="w-5 h-5" />
               </div>
               <div class="text-center">
                 <p class="text-xs font-bold text-default">
-                  Take POD Photo
+                  {{ podFiles.length > 0 ? 'Add another photo' : 'Take POD Photo' }}
                 </p>
                 <p class="text-[9px] text-muted-foreground mt-0.5">
                   Capture signed Surat Jalan receipt
@@ -407,33 +432,14 @@ const hasShortages = computed(() => {
                   type="file"
                   accept="image/*"
                   capture="environment"
+                  multiple
                   class="hidden"
                   @change="onFileChange"
                 >
                 <div class="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-center py-3 sm:py-3.5 rounded-xl text-sm font-bold transition-all shadow-md">
-                  Capture Receipt Camera
+                  {{ podFiles.length > 0 ? 'Capture Another Photo' : 'Capture Receipt Camera' }}
                 </div>
               </label>
-            </div>
-
-            <!-- Upload Photo Preview Frame -->
-            <div v-else class="space-y-3">
-              <div class="relative border border-default rounded-xl overflow-hidden bg-default/25">
-                <img
-                  :src="podPreviewUrl"
-                  class="w-full h-44 object-cover"
-                  alt="POD Receipt preview"
-                >
-                <button
-                  class="absolute top-2 right-2 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-1.5 shadow cursor-pointer"
-                  @click="clearPhoto"
-                >
-                  <UIcon name="i-lucide-trash-2" class="w-4 h-4" />
-                </button>
-              </div>
-              <p class="text-[10px] text-emerald-500 dark:text-emerald-400 font-semibold text-center">
-                POD Receipt Photo captured successfully!
-              </p>
             </div>
           </div>
 
