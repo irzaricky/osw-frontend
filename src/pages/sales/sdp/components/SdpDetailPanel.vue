@@ -285,7 +285,7 @@ async function handleDownloadPdf() {
           color="primary"
           class="w-full font-bold justify-center"
           icon="i-lucide-printer"
-          label="Print Surat Jalan (PDF)"
+          label="Print Delivery Note"
           :loading="sdoStore.loading"
           @click="handleDownloadPdf"
         />

@@ -274,7 +274,7 @@ function getSlaBadgeConfig(status?: string) {
               @click="router.push(`/sales/sdo/mobile/${sdo.id}`)"
             >
               <UIcon name="i-lucide-file-check" class="w-4 h-4" />
-              Confirm POD
+              See details
             </button>
             <button
               v-else

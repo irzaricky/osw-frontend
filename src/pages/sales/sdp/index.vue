@@ -42,6 +42,13 @@ const confirmDialog = ref({
 
 // Search & filter parameters
 const selectedWarehouseId = ref<number | undefined>(undefined)
+const selectedStatus = ref<string>('')
+const statusOptions = [
+  { label: 'All Status', value: '' },
+  { label: 'Draft', value: 'Draft' },
+  { label: 'Scheduled', value: 'Scheduled' },
+  { label: 'Shipped', value: 'Shipped' }
+]
 
 
 
@@ -112,11 +119,14 @@ async function loadPlans() {
     params.start_date = mlStartDate.value
     params.end_date = mlEndDate.value
   }
+  if (selectedStatus.value) {
+    params.status = selectedStatus.value
+  }
   await store.fetchSdpPlans(params)
 }
 
 // Watchers for filtering and loading
-watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId], () => {
+watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId, selectedStatus], () => {
   loadPlans()
 })
 
@@ -348,6 +358,19 @@ const conflictingDocksNames = computed(() => {
                   </UPopover>
                 </template>
               </UInputDate>
+            </div>
+
+            <!-- Status Filter Selector -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Status:</span>
+              <USelectMenu
+                v-model="selectedStatus"
+                :items="statusOptions"
+                value-key="value"
+                label-key="label"
+                class="w-40"
+                placeholder="All Status"
+              />
             </div>
           </div>
           

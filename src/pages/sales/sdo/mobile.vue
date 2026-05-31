@@ -54,11 +54,15 @@ function matchAllQuantities() {
   })
 }
 
-// Numerical Selector adjustments
-function adjustQty(id: number, delta: number, max: number) {
-  const current = receivedQuantities.value[id] ?? max
-  const newVal = Math.max(0, Math.min(max, current + delta))
-  receivedQuantities.value[id] = newVal
+// Sanitize quantity value to ensure it doesn't exceed sent_qty
+function onQtyInput(id: number, val: number, max: number) {
+  if (val > max) {
+    receivedQuantities.value[id] = max
+  } else if (val < 0 || isNaN(val)) {
+    receivedQuantities.value[id] = 0
+  } else {
+    receivedQuantities.value[id] = val
+  }
 }
 
 // Photo File input handler
@@ -352,24 +356,13 @@ const hasShortages = computed(() => {
                   <span class="text-xs text-muted-foreground font-semibold">Received Qty</span>
                   
                   <div class="flex items-center gap-3">
-                    <UButton
-                      color="neutral"
-                      variant="ghost"
-                      size="md"
-                      icon="i-lucide-minus"
-                      class="rounded-full bg-default/30 text-default h-11 w-11 justify-center shrink-0 border border-default active:bg-default/40 cursor-pointer"
-                      @click="adjustQty(item.id, -1, item.sent_qty)"
-                    />
-                    <span class="w-12 text-center text-base font-black font-mono text-default">
-                      {{ receivedQuantities[item.id] ?? item.sent_qty }}
-                    </span>
-                    <UButton
-                      color="neutral"
-                      variant="ghost"
-                      size="md"
-                      icon="i-lucide-plus"
-                      class="rounded-full bg-default/30 text-default h-11 w-11 justify-center shrink-0 border border-default active:bg-default/40 cursor-pointer"
-                      @click="adjustQty(item.id, 1, item.sent_qty)"
+                    <UInput
+                      type="number"
+                      v-model.number="receivedQuantities[item.id]"
+                      class="w-28 font-bold font-mono"
+                      :max="item.sent_qty"
+                      min="0"
+                      @input="onQtyInput(item.id, receivedQuantities[item.id], item.sent_qty)"
                     />
                   </div>
                 </div>
