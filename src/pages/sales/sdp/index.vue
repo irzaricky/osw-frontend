@@ -42,13 +42,9 @@ const confirmDialog = ref({
 
 // Search & filter parameters
 const selectedWarehouseId = ref<number | undefined>(undefined)
-const selectedStatus = ref<string>('')
-const statusOptions = [
-  { label: 'All Status', value: '' },
-  { label: 'Draft', value: 'Draft' },
-  { label: 'Scheduled', value: 'Scheduled' },
-  { label: 'Shipped', value: 'Shipped' }
-]
+const selectedStatus = ref<string | undefined>(undefined)
+const statusOptions = ['Draft', 'Scheduled', 'Shipped']
+
 
 
 
@@ -560,8 +556,6 @@ const conflictingDocksNames = computed(() => {
               <USelectMenu
                 v-model="selectedStatus"
                 :items="statusOptions"
-                value-key="value"
-                label-key="label"
                 class="w-40"
                 placeholder="All Status"
                 clear
