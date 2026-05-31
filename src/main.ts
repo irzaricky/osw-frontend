@@ -333,72 +333,72 @@ const router = createRouter({
     {
       path: '/warehouse/material-receiving',
       component: () => import('./pages/warehouse/material-receiving/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/material-receiving/set-arrived-process/:id',
       component: () => import('./pages/warehouse/material-receiving/set-arrived-process.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     { 
       path: '/warehouse/material-receiving/view-progress/:id', 
       component: () => import('./pages/warehouse/material-receiving/view-progress/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     { 
       path: '/warehouse/material-receiving/view-progress/:id/quantity-checking/:mdo_detail_id', 
       component: () => import('./pages/warehouse/material-receiving/view-progress/quantity-checking.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     { 
       path: '/warehouse/material-receiving/view-progress/:id/quality-checking/:mdo_detail_id', 
       component: () => import('./pages/warehouse/material-receiving/view-progress/quality-checking.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     { 
       path: '/warehouse/good-receipt', 
       component: () => import('./pages/warehouse/good-receipt/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     { 
       path: '/warehouse/good-receipt/:id', 
       component: () => import('./pages/warehouse/good-receipt/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     { 
       path: '/warehouse/warranty-and-claim', 
       component: () => import('./pages/warehouse/warranty-and-claim/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/work-order-storing',
       component: () => import('./pages/warehouse/work-order-storing/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/work-order-storing/create',
       component: () => import('./pages/warehouse/work-order-storing/create.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/work-order-storing/edit/:id',
       component: () => import('./pages/warehouse/work-order-storing/edit.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/warehouse-layout',
       component: () => import('./pages/warehouse/warehouse-layout/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/warehouse-layout/:id',
       component: () => import('./pages/warehouse/warehouse-layout/[id].vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/warehouse/warehouse-layout/:layoutId/storage-bin/:id',
       component: () => import('./pages/warehouse/warehouse-layout/storage-bin/[id].vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse', 'Warehouse Staff'] }
     },
 
     // error
