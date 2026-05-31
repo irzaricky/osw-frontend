@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth.store'
+import materialReceivingService from '../../services/warehouse/material-receiving.service'
+import goodReceiptService from '../../services/warehouse/good-receipt.service'
+import placementService from '../../services/warehouse/placement.service'
+import takeOutService from '../../services/warehouse/take-out.service'
 import warehouseAnalyticsService from '../../services/warehouse/analytics.service'
 
 const authStore = useAuthStore()
 const router = useRouter()
 
+const isSupervisor = computed(() => {
+  const r = authStore.user?.role?.toLowerCase()
+  return r === 'superadmin' || r === 'admin warehouse' || r === 'supervisor warehouse'
+})
+
+const isStaff = computed(() => {
+  const r = authStore.user?.role?.toLowerCase()
+  return r === 'superadmin' || r === 'admin warehouse' || r === 'warehouse staff'
+})
+
 const quickLinks = [
+  { title: 'Material Receiving', description: 'Receive and inspect materials', icon: 'i-lucide-package-check', to: '/warehouse/material-receiving' },
+  { title: 'Good Receipt', description: 'Approve receipts', icon: 'i-lucide-clipboard-check', to: '/warehouse/good-receipt' },
+  { title: 'Warranty & Claim', description: 'Review claims', icon: 'i-lucide-shield-alert', to: '/warehouse/warranty-and-claim' },
+  { title: 'Work Order Storing', description: 'Store materials for work orders', icon: 'i-lucide-box', to: '/warehouse/work-order-storing' },
   { title: 'Placement', description: 'Place incoming goods', icon: 'i-lucide-package-plus', to: '/warehouse/placement' },
   { title: 'Take Out', description: 'Take goods from warehouse', icon: 'i-lucide-package-minus', to: '/warehouse/take-out' },
   { title: 'Transaction Activity', description: 'Warehouse transactions', icon: 'i-lucide-history', to: '/warehouse/transaction-activity' },
   { title: 'Stock Monitoring', description: 'Monitor stock levels', icon: 'i-lucide-boxes', to: '/warehouse/stock-monitoring' },
+  { title: 'Warehouse Layout', description: 'Manage layout', icon: 'i-lucide-layout-grid', to: '/warehouse/layout' },
   { title: 'Critical Stock', description: 'Check low stock items', icon: 'i-lucide-triangle-alert', to: '/warehouse/critical-stock' },
   { title: 'Analytics', description: 'Warehouse insights', icon: 'i-lucide-bar-chart-2', to: '/warehouse/analytics' }
 ]
@@ -30,6 +49,115 @@ const filteredQuickLinks = computed(() => {
     return true
   })
 })
+
+interface StaffTaskItem {
+  type: 'Incoming' | 'Placement' | 'Take Out'
+  doc_number: string
+  subtitle: string
+  date: string
+  to: string
+}
+
+const staffTasks = ref<StaffTaskItem[]>([])
+const staffTaskLoading =ref(false)
+
+interface ApprovalItem {
+  id: number
+  do_number: string
+  po_number: string
+  supplier: string
+  arrived_at: string | null
+  to: string
+}
+
+const approvalItems = ref<ApprovalItem[]>([])
+const approvalLoading = ref(false)
+
+async function fetchStaffTasks() {
+  staffTaskLoading.value = true
+  try {
+    const [ incomingRes, placementRes, takeOutRes ] = await Promise.allSettled([
+      materialReceivingService.getMaterialReceivings({ status: 'in transit', limit: 5 }),
+      placementService.getPlacements({ wo_status_id: 2, limit: 5 }),
+      takeOutService.getTakeOuts({ wo_status_id: 2, limit: 5 })
+    ])
+
+    const items: StaffTaskItem[] = []
+
+    // Incoming
+    if (incomingRes.status === 'fulfilled') {
+      const rows = incomingRes.value?.data?.data?.rows || incomingRes.value?.data?.data || []
+      for (const row of rows) {
+        items.push({
+          type: 'Incoming',
+          doc_number: row.number,
+          subtitle: row.warehouse,
+          date: row.target_date,
+          to: '/warehouse/material-receiving'
+        })
+      }
+    }
+
+    // Placement
+    if (placementRes.status === 'fulfilled') {
+      const rows = placementRes.value.data?.data?.rows || placementRes.value.data?.data || []
+      for (const row of rows) {
+        items.push({
+          type: 'Placement',
+          doc_number: row.wo_number,
+          subtitle: row.area?.name,
+          date: row.wo_date,
+          to: '/warehouse/placement'
+        })
+      }
+    }
+
+    // Take Out
+    if (takeOutRes.status === 'fulfilled') {
+      const rows = takeOutRes.value.data?.data?.rows || takeOutRes.value.data?.data || []
+      for (const row of rows) {
+        items.push({
+          type: 'Take Out',
+          doc_number: row.wo_number,
+          subtitle: row.area?.name,
+          date: row.wo_date,
+          to: '/warehouse/take-out'
+        })
+      }
+    }
+
+    // Sort by date descending
+    items.sort((a, b) => (a.date < b.date ? 1 : -1))
+    staffTasks.value = items
+  } catch (e) {
+    console.error('Error fetching staff tasks:', e)
+  } finally {
+    staffTaskLoading.value = false
+  }
+}
+
+async function fetchApprovalItems() {
+  approvalLoading.value = true
+  try {
+    const res = await goodReceiptService.getGoodReceipts({status_id: 4, limit: 10})
+
+    const rows = res.data.data?.rows || res.data.data || []
+
+    approvalItems.value =
+      rows.map((row: any) => ({
+        id: row.id,
+        do_number: row.do_number || '-',
+        po_number: row.po_number || '-',
+        supplier: row.supplier || '-',
+        arrived_at: row.arrived_at,
+        to: '/warehouse/good-receipt'
+      }))
+  } catch (e) {
+    console.error('Error fetching approval items:', e)
+  } finally {
+    approvalLoading.value = false
+  }
+}
 
 const filters = reactive({
   date_from: '',
@@ -55,10 +183,6 @@ const inventoryValue = reactive<any>({
 
 const totalInventoryValue = computed(() => {
   return Number(inventoryValue.summary?.total_inventory_value || 0)
-})
-
-const totalStockQty = computed(() => {
-  return Number(inventoryValue.summary?.total_stock_qty || 0)
 })
 
 const movementChartOptions = computed(() => ({
@@ -215,6 +339,14 @@ onMounted(async () => {
     fetchStockMovement(),
     fetchInventoryValue()
   ])
+
+  if (isStaff.value) {
+    fetchStaffTasks()
+  }
+
+  if (isSupervisor.value) {
+    fetchApprovalItems()
+  }
 })
 </script>
 
@@ -240,6 +372,162 @@ onMounted(async () => {
       >
         Role: {{ authStore.user?.role }}
       </UBadge>
+    </div>
+
+    <!-- Operational Queue -->
+    <div v-if="isStaff" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-default flex items-center gap-2 uppercase tracking-wider">
+          <UIcon name="i-lucide-list-todo" class="w-4 h-4 text-primary" />
+          Operational Queue
+        </h2>
+
+        <UBadge
+          v-if="staffTasks.length"
+          color="warning"
+          variant="subtle"
+          size="sm"
+        >
+          {{ staffTasks.length }} pending
+        </UBadge>
+      </div>
+
+      <UCard>
+        <!-- Loading -->
+        <div v-if="staffTaskLoading" class="space-y-3">
+          <USkeleton v-for="i in 3" :key="i" class="h-10 w-full" />
+        </div>
+
+        <!-- Empty -->
+        <div v-else-if="!staffTasks.length" class="text-center py-8 text-muted">
+          <UIcon name="i-lucide-check-circle" class="w-10 h-10 mx-auto mb-2 text-success" />
+          <p class="text-sm font-medium">
+            Operational queue is clear
+          </p>
+          <p class="text-xs mt-1">
+            No pending warehouse operations.
+          </p>
+        </div>
+
+        <!-- Rows -->
+        <div v-else class="divide-y divide-default">
+          <RouterLink
+            v-for="item in staffTasks"
+            :key="`${item.type}-${item.doc_number}`"
+            :to="item.to"
+            class="flex items-center gap-3 py-3 px-2 hover:bg-elevated rounded-lg transition-colors"
+          >
+            <UBadge
+              :color=" item.type === 'Incoming' ? 'warning' : item.type === 'Placement' ? 'success' : 'secondary'"
+              variant="subtle"
+              size="xs"
+              class="w-20 justify-center shrink-0"
+            >
+              {{ item.type }}
+            </UBadge>
+
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate">
+                {{ item.doc_number }}
+              </div>
+
+              <div class="text-xs text-muted truncate">
+                {{ item.subtitle }}
+              </div>
+            </div>
+
+            <div class="text-xs text-muted shrink-0">
+              {{
+                item.date
+                  ? new Date(
+                      item.date
+                    ).toLocaleDateString()
+                  : '-'
+              }}
+            </div>
+
+            <UIcon name="i-lucide-chevron-right" class="w-4 h-4 text-muted shrink-0" />
+          </RouterLink>
+        </div>
+      </UCard>
+    </div>
+
+    <!-- Needs Approval -->
+    <div v-if="isSupervisor" class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-bold text-default flex items-center gap-2 uppercase tracking-wider">
+          <UIcon name="i-lucide-clipboard-check" class="w-4 h-4 text-warning" />
+          Needs Approval
+        </h2>
+
+        <UBadge
+          v-if="approvalItems.length"
+          color="warning"
+          variant="subtle"
+          size="sm"
+        >
+          {{ approvalItems.length }} pending
+        </UBadge>
+      </div>
+
+      <UCard>
+        <!-- Loading -->
+        <div v-if="approvalLoading" class="space-y-3">
+          <USkeleton v-for="i in 3" :key="i" class="h-10 w-full" />
+        </div>
+
+        <!-- Empty -->
+        <div v-else-if="!approvalItems.length" class="text-center py-8 text-muted">
+          <UIcon name="i-lucide-check-circle" class="w-10 h-10 mx-auto mb-2 text-success" />
+          <p class="text-sm font-medium">
+            All approved!
+          </p>
+          <p class="text-xs mt-1">
+            No delivery orders pending approval.
+          </p>
+        </div>
+
+        <!-- Rows -->
+        <div v-else class="divide-y divide-default">
+          <RouterLink
+            v-for="item in approvalItems"
+            :key="item.id"
+            :to="item.to"
+            class="flex items-center gap-3 py-3 px-2 hover:bg-elevated rounded-lg transition-colors"
+          >
+            <UBadge
+              color="warning"
+              variant="subtle"
+              size="xs"
+              class="w-24 justify-center shrink-0"
+            >
+              Waiting GR Approval
+            </UBadge>
+
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-sm truncate">
+                {{ item.do_number }}
+              </div>
+
+              <div class="text-xs text-muted truncate">
+                {{ item.supplier }}
+              </div>
+            </div>
+
+            <div class="text-xs text-muted shrink-0">
+              {{
+                item.arrived_at
+                  ? new Date(
+                      item.arrived_at
+                    ).toLocaleDateString()
+                  : '-'
+              }}
+            </div>
+
+            <UIcon name="i-lucide-chevron-right" class="w-4 h-4 text-muted shrink-0" />
+          </RouterLink>
+        </div>
+      </UCard>
     </div>
 
     <!-- Summary Cards -->
