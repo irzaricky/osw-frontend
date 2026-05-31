@@ -1,12 +1,15 @@
 import { api } from '../../plugins/axios'
 
-const warrantyAndClaimService = {
+export interface WarrantyAndClaimParams {
+  page?: number
+  limit?: number
+  [key: string]: any
+}
 
-  // Get list warranty and claim
-  getWarrantyAndClaims() {
-    return api.get(
-      '/warehouse/warranty-and-claim'
-    )
+const warrantyAndClaimService = {
+  // Warranty and Claim
+  getWarrantyAndClaims(params: WarrantyAndClaimParams) {
+    return api.get('/warehouse/warranty-and-claim', { params })
   }
 }
 

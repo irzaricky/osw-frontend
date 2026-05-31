@@ -101,32 +101,23 @@ export function useGoodReceiptQualityLabelColumns(actions: ColumnActions, compon
               icon: 'i-lucide-image',
               disabled: label.judgement === 'OK' || !hasImages,
               onSelect: () => {
-                if (
-                  label.judgement !== 'OK' && hasImages
-                ) {
-                  actions.onViewImages(
-                    label
-                  )
+                if (label.judgement !== 'OK' && hasImages) {
+                  actions.onViewImages(label)
                 }
               }
             }
           ]
         ]
 
-        return h(
-          UDropdownMenu,
-          {
-            items
-          },
-          {
-            default: () =>
-              h(UButton, {
-                color: 'neutral',
-                variant: 'ghost',
-                icon: 'i-lucide-ellipsis-vertical'
-              })
-          }
-        )
+        return h(UDropdownMenu, {
+          items
+        }, {
+          default: () => h(UButton, {
+            color: 'neutral',
+            variant: 'ghost',
+            icon: 'i-lucide-ellipsis-vertical'
+          })
+        })
       }
     }
   ]

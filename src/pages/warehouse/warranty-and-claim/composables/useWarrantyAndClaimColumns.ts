@@ -1,206 +1,89 @@
-import {
-  h,
-  type Component
-} from 'vue'
+import { h, Ref, type Component } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+import type { WarrantyAndClaim } from '../../../../types/warehouse/warranty-and-claim'
 
-import type {
-  TableColumn
-} from '@nuxt/ui'
-
-import type {
-  WarrantyClaim
-} from '../../../../types/warehouse/warranty-and-claim'
+interface ColumnActions {
+  onViewEvidence: (warrantyAndClaim: WarrantyAndClaim) => void
+}
 
 interface ColumnComponents {
   UBadge: Component | string
+  UButton: Component | string
+  UDropdownMenu: Component | string
 }
 
-function getCategoryColor(
-  category?: string
-):
-  | 'warning'
-  | 'error'
-  | 'neutral' {
-
+function getCategoryColor(category?: string | null): 'warning' | 'error' | 'neutral' {
   if (!category) {
     return 'neutral'
   }
 
-  if (
-    category ===
-    'Quantity'
-  ) {
+  if (category === 'Quantity') {
     return 'warning'
   }
 
-  if (
-    category ===
-    'Quality'
-  ) {
+  if (category === 'Quality') {
     return 'error'
   }
 
   return 'neutral'
 }
 
-export function useWarrantyAndClaimColumns(
-  components: ColumnComponents
-) {
+export function useWarrantyAndClaimColumns(actions: ColumnActions, components: ColumnComponents, pagination: Ref<{ page: number; limit: number }>) {
+  const { UBadge, UButton, UDropdownMenu } = components
 
-  const {
-    UBadge
-  } = components
-
-  const columns:
-    TableColumn<WarrantyClaim>[] = [
-
+  const columns: TableColumn<WarrantyAndClaim>[] = [
     {
-      accessorKey: 'no',
-      header: 'No'
+      header: 'No',
+      cell: ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1
     },
-
     {
-      accessorKey:
-        'ng_ticket_number',
-
-      header:
-        'NG Ticket',
-
-      cell: ({ row }) =>
-        row.original
-          .ng_ticket_number
+      accessorKey: 'ng_ticket_number',
+      header: 'NG Ticket'
     },
-
     {
-      accessorKey:
-        'category',
-
-      header:
-        'Category',
-
+      accessorKey: 'label_number',
+      header: 'Label Number'
+    },
+    {
+      accessorKey: 'category',
+      header: 'Category',
       cell: ({ row }) =>
         h(
           UBadge,
           {
-            color:
-              getCategoryColor(
-                row.original
-                  .category
-              ),
-
+            color: getCategoryColor(row.original.category),
             variant: 'subtle'
           },
-
-          () =>
-            row.original
-              .category
+          () => row.original.category
         )
     },
-
     {
-      accessorKey:
-        'po_number',
-
-      header:
-        'PO Number',
-
-      cell: ({ row }) =>
-        row.original
-          .po_number || '-'
+      accessorKey: 'part_number',
+      header: 'Part Number'
     },
-
     {
-      accessorKey:
-        'do_number',
-
-      header:
-        'DO Number',
-
-      cell: ({ row }) =>
-        row.original
-          .do_number || '-'
+      accessorKey: 'part_name',
+      header: 'Part Name'
     },
-
     {
-      accessorKey:
-        'supplier',
-
-      header:
-        'Supplier',
-
-      cell: ({ row }) =>
-        row.original
-          .supplier || '-'
+      accessorKey: 'supplier',
+      header: 'Supplier'
     },
-
     {
-      accessorKey:
-        'label_number',
-
-      header:
-        'Label Number',
-
-      cell: ({ row }) =>
-        row.original
-          .label_number || '-'
+      accessorKey: 'rejected_info',
+      header: 'Rejected Info'
     },
-
     {
-      accessorKey:
-        'quantity',
-
-      header:
-        'Quantity Detail',
-
-      cell: ({ row }) => {
-
-        const quantity =
-          row.original
-            .quantity
-
-        if (!quantity) {
-          return '-'
-        }
-
-        return `${quantity.actual_qty} / ${quantity.expected_qty}`
-      }
+      accessorKey: 'mpo_number',
+      header: 'MPO Number'
     },
-
     {
-      accessorKey:
-        'defects',
-
-      header:
-        'Defects',
-
-      cell: ({ row }) => {
-
-        const defects =
-          row.original
-            .defects || []
-
-        if (
-          defects.length <= 0
-        ) {
-          return '-'
-        }
-
-        return defects
-          .map(
-            defect =>
-              defect.defect_name
-          )
-          .join(', ')
-      }
+      accessorKey: 'mdo_number',
+      header: 'MDO Number'
     },
-
     {
-      accessorKey:
-        'created_at',
-
-      header:
-        'Created At',
-
+      accessorKey: 'created_at',
+      header: 'Created At',
       cell: ({ row }) =>
         row.original
           .created_at
@@ -209,6 +92,43 @@ export function useWarrantyAndClaimColumns(
                 .created_at
             ).toLocaleString()
           : '-'
+    },
+    {
+      id: 'actions',
+      header: '',
+      cell: ({ row }) => {
+        const warrantyAndClaim = row.original
+
+        const hasImages =
+          (
+            warrantyAndClaim.defects || []
+          ).some(
+            defect => !!defect.image
+          )
+        
+        const items = [
+          {
+            label: 'View Evidence',
+            icon: 'i-lucide-image',
+            disabled: !hasImages,
+            onSelect: () => {
+              if (hasImages) {
+                actions.onViewEvidence(warrantyAndClaim)
+              }
+            }
+          }
+        ]
+
+        return h(UDropdownMenu, {
+          items
+        }, {
+          default: () => h(UButton, {
+            color: 'neutral',
+            variant: 'ghost',
+            icon: 'i-lucide-ellipsis-vertical'
+          })
+        })
+      }
     }
   ]
 

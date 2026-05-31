@@ -1,42 +1,20 @@
-export interface WarrantyClaimQuantity {
-  expected_qty: number
-  actual_qty: number
+export interface WarrantyAndClaimDefect {
+  id: number
+  defect_name: string
+  image: string
 }
 
-export interface WarrantyClaimDefect {
+export interface WarrantyAndClaim {
   id: number
-
-  defect_id: number | null
-
-  defect_name: string | null
-
-  image: string | null
-}
-
-export interface WarrantyClaim {
-  no: number
-
-  id: number
-
-  ng_ticket_number: string
-
-  category:
-    | 'Quantity'
-    | 'Quality'
-
-  po_number: string | null
-
-  do_number: string | null
-
-  supplier: string | null
-
+  ng_ticket_number: string | null
   label_number: string | null
-
-  quantity:
-    WarrantyClaimQuantity | null
-
-  defects:
-    WarrantyClaimDefect[]
-
-  created_at: string
+  category: string | null
+  part_number: string | null
+  part_name: string | null
+  supplier: string | null
+  rejected_info: string | null
+  mpo_number: string | null
+  mdo_number: string | null
+  created_at: string | null
+  defects: WarrantyAndClaimDefect[]
 }
