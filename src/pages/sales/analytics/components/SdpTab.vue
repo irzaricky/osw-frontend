@@ -3,7 +3,6 @@ import { computed, onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSalesAnalyticsStore } from '../../../../stores/sales/analytics.store'
 import DockHeatmap from './DockHeatmap.vue'
-import TrendsCharts from './TrendsCharts.vue'
 
 const props = defineProps<{
   startDate: string
@@ -11,17 +10,14 @@ const props = defineProps<{
 }>()
 
 const salesAnalyticsStore = useSalesAnalyticsStore()
-const { summary, trends, loading } = storeToRefs(salesAnalyticsStore)
+const { summary, loading } = storeToRefs(salesAnalyticsStore)
 
 async function fetchData() {
   const params = {
     start_date: props.startDate,
     end_date: props.endDate
   }
-  await Promise.all([
-    salesAnalyticsStore.fetchSummary(params),
-    salesAnalyticsStore.fetchTrends(params)
-  ])
+  await salesAnalyticsStore.fetchSummary(params)
 }
 
 // Watch filters
@@ -106,13 +102,6 @@ const totalDockHours = computed(() => {
     <DockHeatmap
       v-if="summary"
       :dock-utilization="summary.dock_utilization || []"
-      :loading="loading"
-    />
-
-    <!-- Trends Charts Section -->
-    <TrendsCharts
-      v-if="trends && trends.length"
-      :trends="trends"
       :loading="loading"
     />
   </div>
