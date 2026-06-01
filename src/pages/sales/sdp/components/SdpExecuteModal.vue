@@ -39,8 +39,13 @@ watch(
     if (isOpen) {
       state.driver_id = undefined
       state.vehicle_id = undefined
-      store.fetchDropdownDrivers()
-      store.fetchDropdownVehicles()
+      const params = {
+        date: props.plan?.scheduled_date,
+        time_start: props.plan?.time_start,
+        time_end: props.plan?.time_end
+      }
+      store.fetchDropdownDrivers(params)
+      store.fetchDropdownVehicles(params)
     }
   }
 )

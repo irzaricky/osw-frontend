@@ -69,9 +69,9 @@ export const useSdoStore = defineStore('sdo', () => {
     }
   }
 
-  async function fetchDropdownVehicles() {
+  async function fetchDropdownVehicles(params?: any) {
     try {
-      const response = await sdoService.getDropdownVehicles()
+      const response = await sdoService.getDropdownVehicles(params)
       const data = response.data
       if (data.status) {
         vehicles.value = data.data
@@ -81,9 +81,9 @@ export const useSdoStore = defineStore('sdo', () => {
     }
   }
 
-  async function fetchDropdownDrivers() {
+  async function fetchDropdownDrivers(params?: any) {
     try {
-      const response = await sdoService.getDropdownDrivers()
+      const response = await sdoService.getDropdownDrivers(params)
       const data = response.data
       if (data.status) {
         drivers.value = data.data

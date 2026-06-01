@@ -22,12 +22,12 @@ const sdoService = {
     return api.get(`${BASE}/${id}`)
   },
 
-  getDropdownVehicles() {
-    return api.get(`${BASE}/dd-vehicles`)
+  getDropdownVehicles(params?: any) {
+    return api.get(`${BASE}/dd-vehicles`, { params })
   },
 
-  getDropdownDrivers() {
-    return api.get(`${BASE}/dd-drivers`)
+  getDropdownDrivers(params?: any) {
+    return api.get(`${BASE}/dd-drivers`, { params })
   },
 
   createSdo(data: { delivery_plan_id: number; vehicle_id: number; driver_id: number }) {
