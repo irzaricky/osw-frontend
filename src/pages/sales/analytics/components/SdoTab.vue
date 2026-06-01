@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSalesAnalyticsStore } from '../../../../stores/sales/analytics.store'
 
@@ -7,30 +6,13 @@ import QuantityDeficitChart from './QuantityDeficitChart.vue'
 import SdoStatusChart from './SdoStatusChart.vue'
 import DriverPerformanceTable from './DriverPerformanceTable.vue'
 
-const props = defineProps<{
+defineProps<{
   startDate: string
   endDate: string
 }>()
 
 const salesAnalyticsStore = useSalesAnalyticsStore()
 const { sdoAnalytics, loading } = storeToRefs(salesAnalyticsStore)
-
-async function fetchTabMetrics() {
-  await salesAnalyticsStore.fetchSdoAnalytics({
-    start_date: props.startDate,
-    end_date: props.endDate
-  })
-}
-
-// Fetch on mount
-onMounted(() => {
-  fetchTabMetrics()
-})
-
-// Watch for date range changes
-watch(() => [props.startDate, props.endDate], () => {
-  fetchTabMetrics()
-})
 </script>
 
 <template>
@@ -84,7 +66,7 @@ watch(() => [props.startDate, props.endDate], () => {
             <UIcon name="i-lucide-timer" class="w-5 h-5 text-success" />
           </div>
           <div>
-            <p class="text-3xl font-bold text-black">
+            <p class="text-3xl font-bold">
               {{ (sdoAnalytics.kpis.on_time_rate * 100).toFixed(1) }}%
             </p>
             <p class="text-xs text-muted mt-1">

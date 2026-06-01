@@ -84,9 +84,9 @@ async function fetchData() {
   } else if (activeTab.value === 'spo') {
     await salesAnalyticsStore.fetchSpoAnalytics(params)
   } else if (activeTab.value === 'sdp') {
-    // Fetched inside SdpTab.vue
+    await salesAnalyticsStore.fetchSummary(params)
   } else if (activeTab.value === 'sdo') {
-    // Fetched inside SdoTab.vue
+    await salesAnalyticsStore.fetchSdoAnalytics(params)
   }
 }
 
@@ -118,7 +118,7 @@ onMounted(() => {
 
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-black">
+        <h1 class="text-2xl font-bold">
           Sales Analytics
         </h1>
         <p class="text-sm text-muted">

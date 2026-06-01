@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import dayjs from 'dayjs'
-import 'dayjs/locale/id'
 import type { DockUtilization, DockPlan } from '../../../../types/sales/analytics'
 
 const props = defineProps<{
@@ -22,8 +21,8 @@ function isExpanded(dockId: number, date: string) {
   return !!expandedState.value[key]
 }
 
-function formatDateIndo(dateStr: string) {
-  return dayjs(dateStr).locale('id').format('dddd, DD MMM YYYY')
+function formatDate(dateStr: string) {
+  return dayjs(dateStr).format('dddd, DD MMM YYYY')
 }
 
 function getGroupedPlans(plans?: DockPlan[]) {
@@ -62,27 +61,27 @@ function getDockColorClass(hours: number) {
   if (hours === 0) {
     return {
       bg: 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500',
-      label: 'Idle / Kosong',
+      label: 'Idle',
       bar: 'bg-zinc-300 dark:bg-zinc-800'
     }
   }
   if (hours <= 4.0) {
     return {
       bg: 'bg-white dark:bg-zinc-900 border-emerald-400 dark:border-emerald-600 text-emerald-600 dark:text-emerald-400',
-      label: 'Rendah / Optimal',
+      label: 'Low / Optimal',
       bar: 'bg-emerald-500'
     }
   }
   if (hours <= 8.0) {
     return {
       bg: 'bg-white dark:bg-zinc-900 border-indigo-400 dark:border-indigo-600 text-indigo-600 dark:text-indigo-400',
-      label: 'Sedang / Sibuk',
+      label: 'Medium / Busy',
       bar: 'bg-indigo-500'
     }
   }
   return {
     bg: 'bg-white dark:bg-zinc-900 border-amber-400 dark:border-amber-600 text-amber-600 dark:text-amber-400',
-    label: 'Padat / Penuh',
+    label: 'Heavy / Full',
     bar: 'bg-amber-500'
   }
 }
@@ -108,7 +107,7 @@ watch(() => props.dockUtilization, (newVal) => {
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 class="font-semibold text-base">
-            Utilisasi Loading Dock
+            Loading Dock Utilization
           </h3>
           <p class="text-xs text-muted">
             Daily loading dock occupancy based on operational hours (08:00 - 18:00 WIB).
@@ -127,11 +126,11 @@ watch(() => props.dockUtilization, (newVal) => {
           </div>
           <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-indigo-400 dark:border-indigo-600 bg-white dark:bg-zinc-900 shadow-sm">
             <span class="w-2 h-2 rounded-full bg-indigo-500" />
-            <span class="text-indigo-600 dark:text-indigo-400">Sibuk (&le; 80%)</span>
+            <span class="text-indigo-600 dark:text-indigo-400">Busy (&le; 80%)</span>
           </div>
           <div class="flex items-center gap-1.5 px-2 py-0.5 rounded border border-amber-400 dark:border-amber-600 bg-white dark:bg-zinc-900 shadow-sm">
             <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <span class="text-amber-600 dark:text-amber-400">Padat (&gt; 80%)</span>
+            <span class="text-amber-600 dark:text-amber-400">Full (&gt; 80%)</span>
           </div>
         </div>
       </div>
@@ -143,7 +142,7 @@ watch(() => props.dockUtilization, (newVal) => {
 
     <div v-else-if="!dockUtilization.length" class="h-[120px] flex flex-col items-center justify-center text-center">
       <UIcon name="i-lucide-inbox" class="w-8 h-8 text-muted mb-2" />
-      <span class="text-sm text-muted">Tidak ada data utilisasi loading dock tersedia.</span>
+      <span class="text-sm text-muted">No loading dock utilization data available.</span>
     </div>
 
     <div v-else class="space-y-6">
@@ -166,9 +165,9 @@ watch(() => props.dockUtilization, (newVal) => {
             </div>
           </div>
           <div class="text-right">
-            <span class="text-[10px] uppercase font-bold tracking-wider text-muted">Akumulasi Jam</span>
+            <span class="text-[10px] uppercase font-bold tracking-wider text-muted">Accumulated Hours</span>
             <p class="text-xs font-semibold text-default-primary">
-              {{ dock.total_hours.toFixed(1) }} jam total
+              {{ dock.total_hours.toFixed(1) }} hrs total
             </p>
           </div>
         </div>
@@ -189,7 +188,7 @@ watch(() => props.dockUtilization, (newVal) => {
               <div class="flex items-center gap-2.5">
                 <UIcon name="i-lucide-calendar" class="w-4 h-4 text-muted-foreground" />
                 <span class="text-xs font-semibold text-default-primary">
-                  {{ formatDateIndo(group.date) }}
+                  {{ formatDate(group.date) }}
                 </span>
               </div>
 
@@ -201,7 +200,7 @@ watch(() => props.dockUtilization, (newVal) => {
                   class="border rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-sm"
                   :class="getDockColorClass(group.hours).bg"
                 >
-                  {{ getOccupancyPercent(group.hours).toFixed(0) }}% Terisi
+                  {{ getOccupancyPercent(group.hours).toFixed(0) }}% Occupied
                 </div>
                 <UIcon
                   :name="isExpanded(dock.id, group.date) ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
@@ -217,9 +216,9 @@ watch(() => props.dockUtilization, (newVal) => {
             >
               <!-- Info Title & Status -->
               <div class="flex justify-between items-center text-xs">
-                <span class="text-muted">Durasi Terisi Hari Ini:</span>
+                <span class="text-muted">Occupancy Duration Today:</span>
                 <span class="font-bold text-default-primary">
-                  {{ group.hours.toFixed(1) }} jam / 10 jam ({{ getDockColorClass(group.hours).label }})
+                  {{ group.hours.toFixed(1) }} hrs / 10 hrs ({{ getDockColorClass(group.hours).label }})
                 </span>
               </div>
 
@@ -232,12 +231,12 @@ watch(() => props.dockUtilization, (newVal) => {
                   :style="{ width: `${getOccupancyPercent(group.hours)}%` }"
                 >
                   <span v-if="getOccupancyPercent(group.hours) > 20">
-                    {{ getOccupancyPercent(group.hours).toFixed(0) }}% Terisi
+                    {{ getOccupancyPercent(group.hours).toFixed(0) }}% Occupied
                   </span>
                 </div>
                 <!-- Centered fallback label if occupancy is low -->
                 <div v-if="getOccupancyPercent(group.hours) <= 20" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-muted-foreground/80">
-                  {{ getOccupancyPercent(group.hours).toFixed(0) }}% Terisi
+                  {{ getOccupancyPercent(group.hours).toFixed(0) }}% Occupied
                 </div>
               </div>
 
@@ -284,7 +283,7 @@ watch(() => props.dockUtilization, (newVal) => {
                       color="neutral"
                       class="ml-1 font-sans"
                     >
-                      {{ plan.hours }} jam
+                      {{ plan.hours }} hrs
                     </UBadge>
                   </div>
                 </div>

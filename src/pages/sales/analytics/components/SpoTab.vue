@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useColorMode } from '@vueuse/core'
 import { useSalesAnalyticsStore } from '../../../../stores/sales/analytics.store'
 
-const props = defineProps<{
+defineProps<{
   startDate: string
   endDate: string
 }>()
@@ -11,21 +12,8 @@ const props = defineProps<{
 const salesAnalyticsStore = useSalesAnalyticsStore()
 const { spoAnalytics, loading } = storeToRefs(salesAnalyticsStore)
 
-async function fetchData() {
-  await salesAnalyticsStore.fetchSpoAnalytics({
-    start_date: props.startDate,
-    end_date: props.endDate
-  })
-}
-
-// Watch filters
-watch(() => [props.startDate, props.endDate], () => {
-  fetchData()
-})
-
-onMounted(() => {
-  fetchData()
-})
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
 
 // KPI data
 const totalOrdered = computed(() => spoAnalytics.value?.kpis.total_ordered_items ?? 0)
@@ -33,46 +21,53 @@ const fulfillmentRate = computed(() => spoAnalytics.value?.kpis.fulfillment_rate
 const activeCustomers = computed(() => spoAnalytics.value?.kpis.active_customers ?? 0)
 
 // Chart configuration
-const chartBaseOptions = {
-  theme: { mode: 'dark' },
-  chart: {
-    background: 'transparent',
-    foreColor: '#e4e4e7',
-    toolbar: { show: false }
-  },
-  grid: { borderColor: '#27272a' },
-  tooltip: { theme: 'dark' },
-  xaxis: {
-    labels: { style: { colors: '#e4e4e7' } },
-    axisBorder: { color: '#3f3f46' },
-    axisTicks: { color: '#3f3f46' }
-  },
-  yaxis: {
-    labels: { style: { colors: '#e4e4e7' } }
-  },
-  legend: {
-    labels: {
-      colors: '#f4f4f5'
+const chartBaseOptions = computed(() => {
+  const textColor = isDark.value ? '#e4e4e7' : '#3f3f46'
+  const borderColor = isDark.value ? '#27272a' : '#e2e8f0'
+  const axisColor = isDark.value ? '#3f3f46' : '#cbd5e1'
+  const legendColor = isDark.value ? '#f4f4f5' : '#1f2937'
+
+  return {
+    theme: { mode: isDark.value ? 'dark' : 'light' as const },
+    chart: {
+      background: 'transparent',
+      foreColor: textColor,
+      toolbar: { show: false }
+    },
+    grid: { borderColor },
+    tooltip: { theme: isDark.value ? 'dark' : 'light' },
+    xaxis: {
+      labels: { style: { colors: textColor } },
+      axisBorder: { color: axisColor },
+      axisTicks: { color: axisColor }
+    },
+    yaxis: {
+      labels: { style: { colors: textColor } }
+    },
+    legend: {
+      labels: {
+        colors: legendColor
+      }
     }
   }
-}
+})
 
 // Donut Chart: Status Breakdown
 const donutChartOptions = computed(() => ({
-  ...chartBaseOptions,
+  ...chartBaseOptions.value,
   chart: {
-    ...chartBaseOptions.chart,
+    ...chartBaseOptions.value.chart,
     type: 'donut'
   },
   labels: ['Draft', 'Submitted', 'Locked', 'Processing', 'Completed', 'Rejected'],
   colors: ['#64748b', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ef4444'], // Slate, Amber, Violet, Blue, Emerald, Red
   legend: {
     position: 'bottom',
-    labels: { colors: '#e4e4e7' }
+    labels: { colors: isDark.value ? '#e4e4e7' : '#3f3f46' }
   },
   stroke: {
     show: true,
-    colors: ['#18181b'],
+    colors: [isDark.value ? '#18181b' : '#ffffff'],
     width: 2
   },
   dataLabels: {
@@ -97,9 +92,9 @@ const donutChartSeries = computed(() => {
 
 // Bar Chart: Top Customers by Volume
 const barChartOptions = computed(() => ({
-  ...chartBaseOptions,
+  ...chartBaseOptions.value,
   chart: {
-    ...chartBaseOptions.chart,
+    ...chartBaseOptions.value.chart,
     type: 'bar'
   },
   colors: ['#8b5cf6'], // Violet
@@ -113,11 +108,11 @@ const barChartOptions = computed(() => ({
   },
   dataLabels: {
     enabled: true,
-    style: { colors: ['#e4e4e7'], fontSize: '11px' },
+    style: { colors: [isDark.value ? '#e4e4e7' : '#3f3f46'], fontSize: '11px' },
     formatter: (val: number) => val.toLocaleString()
   },
   xaxis: {
-    ...chartBaseOptions.xaxis,
+    ...chartBaseOptions.value.xaxis,
     categories: spoAnalytics.value?.top_customers.map(r => r.customer_name) || []
   }
 }))
@@ -131,9 +126,9 @@ const barChartSeries = computed(() => [
 
 // Line/Area Chart: Monthly Trends (Ordered vs Sent)
 const trendChartOptions = computed(() => ({
-  ...chartBaseOptions,
+  ...chartBaseOptions.value,
   chart: {
-    ...chartBaseOptions.chart,
+    ...chartBaseOptions.value.chart,
     type: 'area'
   },
   stroke: {
@@ -151,7 +146,7 @@ const trendChartOptions = computed(() => ({
     }
   },
   xaxis: {
-    ...chartBaseOptions.xaxis,
+    ...chartBaseOptions.value.xaxis,
     categories: spoAnalytics.value?.monthly_trends.map(r => r.month) || []
   }
 }))

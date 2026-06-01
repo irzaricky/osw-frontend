@@ -1,33 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSalesAnalyticsStore } from '../../../../stores/sales/analytics.store'
 import DockHeatmap from './DockHeatmap.vue'
 
-const props = defineProps<{
+defineProps<{
   startDate: string
   endDate: string
 }>()
 
 const salesAnalyticsStore = useSalesAnalyticsStore()
 const { summary, loading } = storeToRefs(salesAnalyticsStore)
-
-async function fetchData() {
-  const params = {
-    start_date: props.startDate,
-    end_date: props.endDate
-  }
-  await salesAnalyticsStore.fetchSummary(params)
-}
-
-// Watch filters
-watch(() => [props.startDate, props.endDate], () => {
-  fetchData()
-})
-
-onMounted(() => {
-  fetchData()
-})
 
 const totalDockHours = computed(() => {
   if (!summary.value?.dock_utilization) return '0.0'
@@ -57,7 +40,7 @@ const totalDockHours = computed(() => {
             <UIcon name="i-lucide-calendar" class="w-5 h-5 text-success" />
           </div>
           <div>
-            <p class="text-3xl font-bold text-black">
+            <p class="text-3xl font-bold">
               {{ summary.kpis.active_plans_count }}
             </p>
             <p class="text-xs text-muted mt-1">
@@ -67,7 +50,7 @@ const totalDockHours = computed(() => {
           <div class="border-t border-default pt-3 space-y-2">
             <div class="flex justify-between text-xs">
               <span class="text-muted">Total Plans:</span>
-              <span class="font-semibold text-black">{{ summary.kpis.total_plans_count }} SDP</span>
+              <span class="font-semibold">{{ summary.kpis.total_plans_count }} SDP</span>
             </div>
           </div>
         </div>
@@ -81,8 +64,8 @@ const totalDockHours = computed(() => {
             <UIcon name="i-lucide-anchor" class="w-5 h-5 text-error" />
           </div>
           <div>
-            <p class="text-3xl font-bold text-black">
-              {{ totalDockHours }} jam
+            <p class="text-3xl font-bold">
+              {{ totalDockHours }} hrs
             </p>
             <p class="text-xs text-muted mt-1">
               Total dock utilized hours
@@ -91,7 +74,7 @@ const totalDockHours = computed(() => {
           <div class="border-t border-default pt-3 space-y-2 max-h-[80px] overflow-y-auto">
             <div v-for="dock in summary.dock_utilization" :key="dock.id" class="flex justify-between text-xs">
               <span class="text-muted">{{ dock.name }}:</span>
-              <span class="font-semibold text-black">{{ dock.total_hours.toFixed(1) }} jam ({{ dock.plan_count }} plan)</span>
+              <span class="font-semibold">{{ dock.total_hours.toFixed(1) }} hrs ({{ dock.plan_count }} plans)</span>
             </div>
           </div>
         </div>

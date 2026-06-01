@@ -13,10 +13,10 @@ defineProps<{
       <div class="flex items-center justify-between">
         <div>
           <h3 class="font-semibold text-base">
-            Performa Pengemudi
+            Driver Performance
           </h3>
           <p class="text-xs text-muted">
-            Peringkat pengemudi berdasarkan jumlah SDO diselesaikan (status Delivered)
+            Driver ranking based on completed SDOs (Delivered status)
           </p>
         </div>
         <UIcon name="i-lucide-trophy" class="w-5 h-5 text-yellow-500 animate-pulse" />
@@ -28,7 +28,7 @@ defineProps<{
     </div>
     
     <div v-else-if="!drivers.length" class="h-[250px] flex items-center justify-center text-muted text-sm">
-      Tidak ada data performa pengemudi dalam periode ini
+      No driver performance data available for this range
     </div>
 
     <div v-else class="overflow-x-auto">
@@ -36,8 +36,8 @@ defineProps<{
         <thead>
           <tr class="border-b border-default text-xs text-muted font-medium">
             <th class="py-3 px-4 w-20">Rank</th>
-            <th class="py-3 px-4">Nama Pengemudi</th>
-            <th class="py-3 px-4 text-right w-40">SDO Selesai</th>
+            <th class="py-3 px-4">Driver Name</th>
+            <th class="py-3 px-4 text-right w-40">SDO Completed</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-default">
@@ -67,11 +67,11 @@ defineProps<{
               </span>
               <span v-else class="text-muted pl-2">{{ index + 1 }}</span>
             </td>
-            <td class="py-3 px-4 font-medium text-black">
+            <td class="py-3 px-4 font-medium">
               {{ driver.driver_name }}
             </td>
-            <td class="py-3 px-4 text-right font-semibold text-black">
-              {{ driver.completed_sdos }} SDO
+            <td class="py-3 px-4 text-right font-semibold">
+              {{ driver.completed_sdos }} SDOs
             </td>
           </tr>
         </tbody>

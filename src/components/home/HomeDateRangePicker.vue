@@ -53,13 +53,14 @@ const calendarRange = computed({
     start: CalendarDate | undefined
     end: CalendarDate | undefined
   }) => {
-    selected.value =
-      newValue.start && newValue.end
-        ? {
-            start: newValue.start.toDate(getLocalTimeZone()),
-            end: newValue.end.toDate(getLocalTimeZone())
-          }
-        : undefined
+    if (newValue.start && newValue.end) {
+      selected.value = {
+        start: newValue.start.toDate(getLocalTimeZone()),
+        end: newValue.end.toDate(getLocalTimeZone())
+      }
+    } else if (!newValue.start && !newValue.end) {
+      selected.value = undefined
+    }
   }
 })
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useColorMode } from '@vueuse/core'
 import type { QuantityDeficitItem } from '../../../../stores/sales/analytics.store'
 
 const props = defineProps<{
@@ -7,34 +8,44 @@ const props = defineProps<{
   loading: boolean
 }>()
 
-const chartBaseOptions = {
-  theme: { mode: 'dark' },
-  chart: {
-    background: 'transparent',
-    foreColor: '#a1a1aa',
-    toolbar: { show: false }
-  },
-  grid: { borderColor: '#27272a' },
-  tooltip: { theme: 'dark' },
-  xaxis: {
-    labels: { style: { colors: '#a1a1aa' } },
-    axisBorder: { color: '#3f3f46' },
-    axisTicks: { color: '#3f3f46' }
-  },
-  yaxis: {
-    labels: { style: { colors: '#a1a1aa' } }
-  },
-  legend: {
-    position: 'top',
-    horizontalAlign: 'left',
-    labels: { colors: '#a1a1aa' }
+const colorMode = useColorMode()
+const isDark = computed(() => colorMode.value === 'dark')
+
+const chartBaseOptions = computed(() => {
+  const textColor = isDark.value ? '#a1a1aa' : '#3f3f46'
+  const borderColor = isDark.value ? '#27272a' : '#e2e8f0'
+  const axisColor = isDark.value ? '#3f3f46' : '#cbd5e1'
+  const legendColor = isDark.value ? '#f4f4f5' : '#1f2937'
+
+  return {
+    theme: { mode: isDark.value ? 'dark' : 'light' as const },
+    chart: {
+      background: 'transparent',
+      foreColor: textColor,
+      toolbar: { show: false }
+    },
+    grid: { borderColor },
+    tooltip: { theme: isDark.value ? 'dark' : 'light' },
+    xaxis: {
+      labels: { style: { colors: textColor } },
+      axisBorder: { color: axisColor },
+      axisTicks: { color: axisColor }
+    },
+    yaxis: {
+      labels: { style: { colors: textColor } }
+    },
+    legend: {
+      position: 'top' as const,
+      horizontalAlign: 'left' as const,
+      labels: { colors: legendColor }
+    }
   }
-}
+})
 
 const chartOptions = computed(() => ({
-  ...chartBaseOptions,
+  ...chartBaseOptions.value,
   chart: {
-    ...chartBaseOptions.chart,
+    ...chartBaseOptions.value.chart,
     type: 'bar',
     stacked: true
   },
@@ -48,7 +59,7 @@ const chartOptions = computed(() => ({
         total: {
           enabled: true,
           style: {
-            color: '#a1a1aa',
+            color: isDark.value ? '#a1a1aa' : '#4b5563',
             fontSize: '11px',
             fontWeight: 600
           },
@@ -65,13 +76,13 @@ const chartOptions = computed(() => ({
     formatter: (val: number) => val > 0 ? val.toLocaleString() : ''
   },
   grid: {
-    ...chartBaseOptions.grid,
+    ...chartBaseOptions.value.grid,
     padding: {
       right: 50
     }
   },
   xaxis: {
-    ...chartBaseOptions.xaxis,
+    ...chartBaseOptions.value.xaxis,
     categories: props.data.map(r => r.part_name)
   }
 }))
@@ -97,10 +108,10 @@ const chartSeries = computed(() => [
     <template #header>
       <div>
         <h3 class="font-semibold text-base">
-          Defisit Kuantitas Pengiriman (Sent vs Received)
+          Shipment Quantity Deficit (Sent vs Received)
         </h3>
         <p class="text-xs text-muted">
-          Perbandingan kuantitas kirim vs diterima per part number
+          Comparison of sent vs received quantity per part number
         </p>
       </div>
     </template>
@@ -109,7 +120,7 @@ const chartSeries = computed(() => [
       <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-primary" />
     </div>
     <div v-else-if="!data.length" class="h-[320px] flex items-center justify-center text-muted text-sm">
-      Tidak ada data pengiriman dalam periode ini
+      No shipment data available for this range
     </div>
     <apexchart
       v-else
