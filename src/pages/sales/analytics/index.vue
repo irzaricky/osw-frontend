@@ -7,6 +7,7 @@ import dayjs from 'dayjs'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import HomeDateRangePicker from '../../../components/home/HomeDateRangePicker.vue'
 import ForecastTab from './components/ForecastTab.vue'
+import SprTab from './components/SprTab.vue'
 
 // Import old components for other tabs
 import TrendsCharts from '../analytics-old/components/TrendsCharts.vue'
@@ -81,6 +82,8 @@ async function fetchData() {
 
   if (activeTab.value === 'forecast') {
     await salesAnalyticsStore.fetchForecastAnalytics(params)
+  } else if (activeTab.value === 'spr') {
+    await salesAnalyticsStore.fetchSprAnalytics(params)
   } else if (activeTab.value === 'sdp') {
     await Promise.all([
       salesAnalyticsStore.fetchSummary(params),
@@ -181,10 +184,11 @@ onMounted(() => {
       </div>
 
       <!-- 2. SPR Analytics Tab -->
-      <div v-else-if="activeTab === 'spr'" class="flex flex-col items-center justify-center p-12 bg-white rounded-lg border border-default min-h-[300px]">
-        <UIcon name="i-lucide-file-text" class="w-12 h-12 text-muted mb-3" />
-        <h3 class="text-lg font-semibold text-black">SPR Analytics</h3>
-        <p class="text-sm text-muted">Tab Sales Purchase Request (SPR) Analytics is under construction (Phase 2).</p>
+      <div v-else-if="activeTab === 'spr'">
+        <SprTab
+          :start-date="filters.start_date || ''"
+          :end-date="filters.end_date || ''"
+        />
       </div>
 
       <!-- 3. SPO Analytics Tab -->

@@ -33,6 +33,10 @@ const analyticsService = {
 
   getForecastAnalytics(params?: AnalyticsFilters) {
     return api.get(`${BASE}/forecast`, { params })
+  },
+
+  getSprAnalytics(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/spr`, { params })
   }
 }
 

@@ -52,6 +52,34 @@ export interface ForecastAnalyticsData {
   top_products: ForecastAnalyticsProductItem[]
 }
 
+export interface SprAnalyticsKPIs {
+  active_sprs: number
+  avg_approval_time: number
+  rejection_rate: number
+}
+
+export interface SprAnalyticsStatusBreakdown {
+  Draft: number
+  Submitted: number
+  Approved: number
+  Rejected: number
+}
+
+export interface SprAnalyticsFunnelItem {
+  stage: string
+  count: number
+}
+
+export interface SprAnalyticsData {
+  date_range: {
+    start: string
+    end: string
+  }
+  kpis: SprAnalyticsKPIs
+  status_breakdown: SprAnalyticsStatusBreakdown
+  pipeline_funnel: SprAnalyticsFunnelItem[]
+}
+
 export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   // ─── State ──────────────────────────────────────────────────────────────────
   const summary = ref<AnalyticsSummary | null>(null)
@@ -60,6 +88,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   const forecastVsSpo = ref<ForecastVsSpoItem[]>([])
   const topCustomers = ref<TopCustomerItem[]>([])
   const forecastAnalytics = ref<ForecastAnalyticsData | null>(null)
+  const sprAnalytics = ref<SprAnalyticsData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -153,6 +182,23 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
+  async function fetchSprAnalytics(params: AnalyticsFilters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await analyticsService.getSprAnalytics(params)
+      const data = response.data
+      if (data.status) {
+        sprAnalytics.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching SPR analytics:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadExcel(params: AnalyticsFilters = {}) {
     loading.value = true
     error.value = null
@@ -188,6 +234,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     forecastVsSpo,
     topCustomers,
     forecastAnalytics,
+    sprAnalytics,
     loading,
     error,
     filters,
@@ -198,6 +245,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     fetchForecastVsSpo,
     fetchTopCustomers,
     fetchForecastAnalytics,
+    fetchSprAnalytics,
     downloadExcel
   }
 })
