@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { onMounted, ref, watch, onUnmounted, computed } from 'vue'
+import { onMounted, ref, watch, onUnmounted } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import { useAuthStore } from '../../../stores/auth.store'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -47,7 +47,8 @@ const tabs = [
 // Expanded row state (Option A behavior)
 const expandedSdoId = ref<number | null>(null)
 const printingMap = ref<Record<number, boolean>>({})
-const submittingPodMap = ref<Record<number, boolean>>({})
+
+
 
 // POD form state
 const podFile = ref<File | null>(null)
@@ -173,57 +174,6 @@ async function handlePrint(sdoId: number) {
   }
 }
 
-async function handlePodFileChange(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    const file = target.files[0]
-    podFile.value = await compressImage(file)
-  }
-}
-
-async function submitPod(sdo: any) {
-  if (!podFile.value) {
-    toastError('Please upload a Proof of Delivery file.')
-    return
-  }
-
-  // Construct details payload
-  const detailsPayload = sdo.details.map((item: any) => ({
-    delivery_order_detail_id: item.id,
-    received_qty: podFormDetails.value[item.id] ?? item.sent_qty,
-    notes: ''
-  }))
-
-  const formData = new FormData()
-  formData.append('proof_of_delivery', podFile.value)
-  formData.append('notes', podNotes.value)
-  formData.append('details', JSON.stringify(detailsPayload))
-
-  submittingPodMap.value[sdo.id] = true
-  try {
-    const res = await store.updateSdoStatus(sdo.id, formData)
-    if (res.status) {
-      podFile.value = null
-      podNotes.value = ''
-      podFormDetails.value = {}
-
-      await fetchData(false)
-      await fetchStats()
-
-      expandedSdoId.value = null
-      store.detail = null
-
-      toastSuccess('Proof of Delivery confirmed successfully!')
-    } else {
-      toastError(res.message || 'Failed to confirm delivery.')
-    }
-  } catch (error: any) {
-    console.error('Error submitting POD:', error)
-    toastError(error.response?.data?.message || 'Error occurred while confirming delivery.')
-  } finally {
-    submittingPodMap.value[sdo.id] = false
-  }
-}
 
 // Infinite Scroll Observer
 useIntersectionObserver(
@@ -356,13 +306,6 @@ async function submitStartDelivery(sdoId: number) {
   }
 }
 
-const isPodPartial = computed(() => {
-  if (!store.detail || !store.detail.details) return false
-  return store.detail.details.some(item => {
-    const recQty = podFormDetails.value[item.id]
-    return recQty !== undefined && recQty < item.sent_qty
-  })
-})
 
 function updateCountdown() {
   if (!store.detail || store.detail.delivery_status !== 'In Transit' || !store.detail.deliveryPlan?.time_end) {

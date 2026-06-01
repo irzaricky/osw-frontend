@@ -3,8 +3,9 @@ import { onMounted, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useSalesAnalyticsStore } from '../../../../stores/sales/analytics.store'
 
-import ForecastVsSpoChart from './ForecastVsSpoChart.vue'
-import TopCustomersChart from './TopCustomersChart.vue'
+import QuantityDeficitChart from './QuantityDeficitChart.vue'
+import SdoStatusChart from './SdoStatusChart.vue'
+import DriverPerformanceTable from './DriverPerformanceTable.vue'
 
 const props = defineProps<{
   startDate: string
@@ -35,8 +36,8 @@ watch(() => [props.startDate, props.endDate], () => {
 <template>
   <div class="space-y-6">
     <!-- Loading Skeleton Grid -->
-    <div v-if="loading && !sdoAnalytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <UCard v-for="i in 3" :key="i">
+    <div v-if="loading && !sdoAnalytics" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <UCard v-for="i in 2" :key="i">
         <div class="space-y-3">
           <USkeleton class="h-4 w-1/2" />
           <USkeleton class="h-8 w-3/4" />
@@ -46,40 +47,8 @@ watch(() => [props.startDate, props.endDate], () => {
     </div>
 
     <!-- KPI Metrics Grid -->
-    <div v-else-if="sdoAnalytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- 1. SPO Summary -->
-      <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-muted">Sales Purchase Orders</span>
-            <UIcon name="i-lucide-shopping-cart" class="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <p class="text-3xl font-bold text-black">
-              {{ sdoAnalytics.kpis.total_spos }}
-            </p>
-            <p class="text-xs text-muted mt-1">
-              Dokumen SPO terbit
-            </p>
-          </div>
-          <div class="border-t border-default pt-3 space-y-2">
-            <div class="flex justify-between text-xs">
-              <span class="text-muted">Ordered Items:</span>
-              <span class="font-semibold text-black">{{ sdoAnalytics.kpis.total_ordered_qty }} pcs</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span class="text-muted">Shipped Items:</span>
-              <span class="font-semibold text-black">{{ sdoAnalytics.kpis.total_sent_qty }} pcs</span>
-            </div>
-            <UProgress
-              :model-value="sdoAnalytics.kpis.total_ordered_qty > 0 ? (sdoAnalytics.kpis.total_sent_qty / sdoAnalytics.kpis.total_ordered_qty) * 100 : 0"
-              class="mt-2"
-            />
-          </div>
-        </div>
-      </UCard>
-
-      <!-- 2. SDO Delivery Status counts -->
+    <div v-else-if="sdoAnalytics" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 1. SDO Delivery Status counts -->
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -107,7 +76,7 @@ watch(() => [props.startDate, props.endDate], () => {
         </div>
       </UCard>
 
-      <!-- 3. SLA Performance -->
+      <!-- 2. SLA Performance -->
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
@@ -141,16 +110,29 @@ watch(() => [props.startDate, props.endDate], () => {
       </UCard>
     </div>
 
-    <!-- Charts Grid (Forecast vs SPO & Top Customers) -->
-    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      <ForecastVsSpoChart
-        v-if="sdoAnalytics?.forecast_vs_spo?.length"
-        :forecast-vs-spo="sdoAnalytics.forecast_vs_spo"
-        :loading="loading"
-      />
-      <TopCustomersChart
-        v-if="sdoAnalytics?.top_customers?.length"
-        :top-customers="sdoAnalytics.top_customers"
+    <!-- Charts Grid (Quantity Deficits & Status Distribution) -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div class="xl:col-span-2">
+        <QuantityDeficitChart
+          v-if="sdoAnalytics"
+          :data="sdoAnalytics.quantity_deficits || []"
+          :loading="loading"
+        />
+      </div>
+      <div>
+        <SdoStatusChart
+          v-if="sdoAnalytics"
+          :status-counts="sdoAnalytics.sdo_status_counts"
+          :loading="loading"
+        />
+      </div>
+    </div>
+
+    <!-- Driver Leaderboard Table -->
+    <div class="grid grid-cols-1 gap-6">
+      <DriverPerformanceTable
+        v-if="sdoAnalytics"
+        :drivers="sdoAnalytics.driver_performance || []"
         :loading="loading"
       />
     </div>

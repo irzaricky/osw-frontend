@@ -119,7 +119,6 @@ export interface SpoAnalyticsData {
 }
 
 export interface SdoAnalyticsKPIs {
-  total_spos: number
   total_ordered_qty: number
   total_sent_qty: number
   on_time: number
@@ -134,6 +133,17 @@ export interface SdoAnalyticsStatusCounts {
   Delivered: number
 }
 
+export interface QuantityDeficitItem {
+  part_name: string
+  total_sent: number
+  total_received: number
+}
+
+export interface DriverPerformanceItem {
+  driver_name: string
+  completed_sdos: number
+}
+
 export interface SdoAnalyticsData {
   date_range: {
     start: string
@@ -141,8 +151,8 @@ export interface SdoAnalyticsData {
   }
   kpis: SdoAnalyticsKPIs
   sdo_status_counts: SdoAnalyticsStatusCounts
-  forecast_vs_spo: ForecastVsSpoItem[]
-  top_customers: TopCustomerItem[]
+  quantity_deficits: QuantityDeficitItem[]
+  driver_performance: DriverPerformanceItem[]
 }
 
 export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {

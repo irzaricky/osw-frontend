@@ -99,13 +99,24 @@ const barChartOptions = computed(() => ({
       horizontal: true,
       borderRadius: 4,
       barHeight: '55%',
-      dataLabels: { position: 'right' }
+      dataLabels: {
+        position: 'right',
+        hideOverflowingLabels: false
+      }
     }
   },
   dataLabels: {
     enabled: true,
+    textAnchor: 'start',
+    offsetX: 10,
     style: { colors: ['#e4e4e7'], fontSize: '11px' },
     formatter: (val: number) => val.toLocaleString()
+  },
+  grid: {
+    ...chartBaseOptions.grid,
+    padding: {
+      right: 40
+    }
   },
   xaxis: {
     ...chartBaseOptions.xaxis,
