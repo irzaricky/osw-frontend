@@ -23,6 +23,35 @@ interface TopCustomerItem {
   total_ordered_qty: number
 }
 
+export interface ForecastAnalyticsKPIs {
+  total_volume: number
+  active_versions: number
+  accuracy_rate: number
+}
+
+export interface ForecastAnalyticsTrendItem {
+  month: string
+  temporary_qty: number
+  fix_qty: number
+}
+
+export interface ForecastAnalyticsProductItem {
+  part_id: number
+  part_number: string
+  part_name: string
+  total_qty: number
+}
+
+export interface ForecastAnalyticsData {
+  date_range: {
+    start: string
+    end: string
+  }
+  kpis: ForecastAnalyticsKPIs
+  trends: ForecastAnalyticsTrendItem[]
+  top_products: ForecastAnalyticsProductItem[]
+}
+
 export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   // ─── State ──────────────────────────────────────────────────────────────────
   const summary = ref<AnalyticsSummary | null>(null)
@@ -30,6 +59,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   const slaMetrics = ref<SlaMetrics | null>(null)
   const forecastVsSpo = ref<ForecastVsSpoItem[]>([])
   const topCustomers = ref<TopCustomerItem[]>([])
+  const forecastAnalytics = ref<ForecastAnalyticsData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -106,6 +136,23 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
+  async function fetchForecastAnalytics(params: AnalyticsFilters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await analyticsService.getForecastAnalytics(params)
+      const data = response.data
+      if (data.status) {
+        forecastAnalytics.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching forecast analytics:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadExcel(params: AnalyticsFilters = {}) {
     loading.value = true
     error.value = null
@@ -140,6 +187,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     slaMetrics,
     forecastVsSpo,
     topCustomers,
+    forecastAnalytics,
     loading,
     error,
     filters,
@@ -149,6 +197,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     fetchSlaMetrics,
     fetchForecastVsSpo,
     fetchTopCustomers,
+    fetchForecastAnalytics,
     downloadExcel
   }
 })

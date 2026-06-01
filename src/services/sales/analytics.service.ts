@@ -29,6 +29,10 @@ const analyticsService = {
 
   getTopCustomers(params?: AnalyticsFilters) {
     return api.get(`${BASE}/top-customers`, { params })
+  },
+
+  getForecastAnalytics(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/forecast`, { params })
   }
 }
 
