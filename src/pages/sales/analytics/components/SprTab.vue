@@ -37,18 +37,23 @@ const chartBaseOptions = {
   theme: { mode: 'dark' },
   chart: {
     background: 'transparent',
-    foreColor: '#a1a1aa',
+    foreColor: '#e4e4e7',
     toolbar: { show: false }
   },
   grid: { borderColor: '#27272a' },
   tooltip: { theme: 'dark' },
   xaxis: {
-    labels: { style: { colors: '#a1a1aa' } },
+    labels: { style: { colors: '#e4e4e7' } },
     axisBorder: { color: '#3f3f46' },
     axisTicks: { color: '#3f3f46' }
   },
   yaxis: {
-    labels: { style: { colors: '#a1a1aa' } }
+    labels: { style: { colors: '#e4e4e7' } }
+  },
+  legend: {
+    labels: {
+      colors: '#f4f4f5'
+    }
   }
 }
 
@@ -63,7 +68,7 @@ const donutChartOptions = computed(() => ({
   colors: ['#64748b', '#f59e0b', '#10b981', '#ef4444'], // Slate, Amber, Emerald, Red
   legend: {
     position: 'bottom',
-    labels: { colors: '#a1a1aa' }
+    labels: { colors: '#e4e4e7' }
   },
   stroke: {
     show: true,
@@ -101,8 +106,8 @@ const funnelChartOptions = computed(() => ({
       horizontal: true,
       distributed: true,
       borderRadius: 4,
-      barHeight: '60%',
-      dataLabels: { position: 'right' }
+      barHeight: '80%',
+      isFunnel: true
     }
   },
   dataLabels: {
@@ -145,15 +150,15 @@ const funnelChartSeries = computed(() => [
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted">Total SPR Active</span>
+            <span class="text-sm text-muted">Total Active SPRs</span>
             <UIcon name="i-lucide-file-text" class="w-5 h-5 text-amber-500" />
           </div>
           <div>
             <p class="text-3xl font-bold">
-              {{ activeSprs.toLocaleString() }} SPR
+              {{ activeSprs.toLocaleString() }} SPRs
             </p>
             <p class="text-xs text-muted mt-1">
-              Dokumen SPR dengan status Submitted
+              SPR documents with Submitted status
             </p>
           </div>
         </div>
@@ -168,10 +173,10 @@ const funnelChartSeries = computed(() => [
           </div>
           <div>
             <p class="text-3xl font-bold">
-              {{ avgApprovalTime.toFixed(1) }} jam
+              {{ avgApprovalTime.toFixed(1) }} hours
             </p>
             <p class="text-xs text-muted mt-1">
-              Rata-rata waktu persetujuan (Submitted ke Approved)
+              Average approval time (Submitted to Approved)
             </p>
           </div>
         </div>
@@ -189,7 +194,7 @@ const funnelChartSeries = computed(() => [
               {{ rejectionRate.toFixed(1) }}%
             </p>
             <p class="text-xs text-muted mt-1">
-              Persentase SPR ditolak dari total terbit
+              Percentage of rejected SPRs out of total issued
             </p>
           </div>
         </div>
@@ -206,7 +211,7 @@ const funnelChartSeries = computed(() => [
               SPR Status Breakdown
             </h3>
             <p class="text-xs text-muted">
-              Distribusi dokumen SPR berdasarkan status saat ini
+              Distribution of SPR documents by current status
             </p>
           </div>
         </template>
@@ -234,7 +239,7 @@ const funnelChartSeries = computed(() => [
               Approval Pipeline Funnel
             </h3>
             <p class="text-xs text-muted">
-              Aliran konversi SPR dari pembuatan hingga terbit SPO
+              Conversion flow of SPRs from creation to SPO issuance
             </p>
           </div>
         </template>

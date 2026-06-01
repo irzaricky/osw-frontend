@@ -37,18 +37,23 @@ const chartBaseOptions = {
   theme: { mode: 'dark' },
   chart: {
     background: 'transparent',
-    foreColor: '#a1a1aa',
+    foreColor: '#e4e4e7',
     toolbar: { show: false }
   },
   grid: { borderColor: '#27272a' },
   tooltip: { theme: 'dark' },
   xaxis: {
-    labels: { style: { colors: '#a1a1aa' } },
+    labels: { style: { colors: '#e4e4e7' } },
     axisBorder: { color: '#3f3f46' },
     axisTicks: { color: '#3f3f46' }
   },
   yaxis: {
-    labels: { style: { colors: '#a1a1aa' } }
+    labels: { style: { colors: '#e4e4e7' } }
+  },
+  legend: {
+    labels: {
+      colors: '#f4f4f5'
+    }
   }
 }
 
@@ -63,7 +68,7 @@ const donutChartOptions = computed(() => ({
   colors: ['#64748b', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981', '#ef4444'], // Slate, Amber, Violet, Blue, Emerald, Red
   legend: {
     position: 'bottom',
-    labels: { colors: '#a1a1aa' }
+    labels: { colors: '#e4e4e7' }
   },
   stroke: {
     show: true,
@@ -108,7 +113,7 @@ const barChartOptions = computed(() => ({
   },
   dataLabels: {
     enabled: true,
-    style: { colors: ['#a1a1aa'], fontSize: '11px' },
+    style: { colors: ['#e4e4e7'], fontSize: '11px' },
     formatter: (val: number) => val.toLocaleString()
   },
   xaxis: {
@@ -189,7 +194,7 @@ const trendChartSeries = computed(() => [
               {{ totalOrdered.toLocaleString() }} pcs
             </p>
             <p class="text-xs text-muted mt-1">
-              Volume pesanan masuk (SPO aktif)
+              Inbound order volume (active SPOs)
             </p>
           </div>
         </div>
@@ -207,7 +212,7 @@ const trendChartSeries = computed(() => [
               {{ fulfillmentRate.toFixed(1) }}%
             </p>
             <p class="text-xs text-muted mt-1">
-              Rasio barang terkirim vs dipesan (sent / ordered)
+              Ratio of sent vs ordered items (sent / ordered)
             </p>
           </div>
         </div>
@@ -222,10 +227,10 @@ const trendChartSeries = computed(() => [
           </div>
           <div>
             <p class="text-3xl font-bold">
-              {{ activeCustomers }} customer
+              {{ activeCustomers }} customers
             </p>
             <p class="text-xs text-muted mt-1">
-              Jumlah customer yang bertransaksi
+              Number of transacting customers
             </p>
           </div>
         </div>
@@ -242,7 +247,7 @@ const trendChartSeries = computed(() => [
               SPO Status Breakdown
             </h3>
             <p class="text-xs text-muted">
-              Distribusi dokumen SPO berdasarkan status saat ini
+              Distribution of SPO documents by current status
             </p>
           </div>
         </template>
@@ -270,7 +275,7 @@ const trendChartSeries = computed(() => [
               Top Customers
             </h3>
             <p class="text-xs text-muted">
-              5 Customer teratas berdasarkan total volume pesanan (SPO)
+              Top 5 customers by total order volume (SPO)
             </p>
           </div>
         </template>
@@ -298,7 +303,7 @@ const trendChartSeries = computed(() => [
               Monthly Order Trends
             </h3>
             <p class="text-xs text-muted">
-              Perbandingan total volume dipesan (Ordered) vs terkirim (Sent) bulanan
+              Comparison of monthly ordered vs sent volume
             </p>
           </div>
         </template>

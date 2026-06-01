@@ -37,18 +37,23 @@ const chartBaseOptions = {
   theme: { mode: 'dark' },
   chart: {
     background: 'transparent',
-    foreColor: '#a1a1aa',
+    foreColor: '#e4e4e7',
     toolbar: { show: false }
   },
   grid: { borderColor: '#27272a' },
   tooltip: { theme: 'dark' },
   xaxis: {
-    labels: { style: { colors: '#a1a1aa' } },
+    labels: { style: { colors: '#e4e4e7' } },
     axisBorder: { color: '#3f3f46' },
     axisTicks: { color: '#3f3f46' }
   },
   yaxis: {
-    labels: { style: { colors: '#a1a1aa' } }
+    labels: { style: { colors: '#e4e4e7' } }
+  },
+  legend: {
+    labels: {
+      colors: '#f4f4f5'
+    }
   }
 }
 
@@ -63,7 +68,7 @@ const lineChartOptions = computed(() => ({
     curve: 'smooth',
     width: 3
   },
-  colors: ['#06b6d4', '#e11d48'], // cyan for forecast/temp, rose for actual/fix
+  colors: ['#06b6d4', '#e11d48'], // cyan for forecast, rose for actual
   xaxis: {
     ...chartBaseOptions.xaxis,
     categories: forecastAnalytics.value?.trends.map(r => r.month) || []
@@ -72,11 +77,11 @@ const lineChartOptions = computed(() => ({
 
 const lineChartSeries = computed(() => [
   {
-    name: 'Forecast (Temporary)',
+    name: 'Forecast Volume',
     data: forecastAnalytics.value?.trends.map(r => Number(r.temporary_qty || 0)) || []
   },
   {
-    name: 'Actual Sales (Fix)',
+    name: 'Actual Volume',
     data: forecastAnalytics.value?.trends.map(r => Number(r.fix_qty || 0)) || []
   }
 ])
@@ -99,7 +104,7 @@ const barChartOptions = computed(() => ({
   },
   dataLabels: {
     enabled: true,
-    style: { colors: ['#a1a1aa'], fontSize: '11px' },
+    style: { colors: ['#e4e4e7'], fontSize: '11px' },
     formatter: (val: number) => val.toLocaleString()
   },
   xaxis: {
@@ -142,7 +147,7 @@ const barChartSeries = computed(() => [
               {{ totalVolume.toLocaleString() }} pcs
             </p>
             <p class="text-xs text-muted mt-1">
-              Volume forecast total (status Approved)
+              Total forecast volume (Approved status)
             </p>
           </div>
         </div>
@@ -160,7 +165,7 @@ const barChartSeries = computed(() => [
               {{ accuracyRate.toFixed(1) }}%
             </p>
             <p class="text-xs text-muted mt-1">
-              Rata-rata akurasi Fix vs Temporary
+              Average accuracy of Forecast vs Actual
             </p>
           </div>
         </div>
@@ -175,10 +180,10 @@ const barChartSeries = computed(() => [
           </div>
           <div>
             <p class="text-3xl font-bold">
-              {{ activeVersions }} draf
+              {{ activeVersions }} drafts
             </p>
             <p class="text-xs text-muted mt-1">
-              Draft / Submitted forecast berjalan
+              Active draft / submitted forecasts
             </p>
           </div>
         </div>
@@ -195,7 +200,7 @@ const barChartSeries = computed(() => [
               Forecast vs Actual Sales
             </h3>
             <p class="text-xs text-muted">
-              Trend Temporary Qty vs Fix Qty bulanan
+              Monthly Forecast vs Actual Volume trends
             </p>
           </div>
         </template>
@@ -223,7 +228,7 @@ const barChartSeries = computed(() => [
               Top Forecasted Products
             </h3>
             <p class="text-xs text-muted">
-              5 Produk teratas berdasarkan total volume forecast
+              Top 5 products by total forecast volume
             </p>
           </div>
         </template>
