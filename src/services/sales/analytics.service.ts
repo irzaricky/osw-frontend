@@ -41,6 +41,10 @@ const analyticsService = {
 
   getSpoAnalytics(params?: AnalyticsFilters) {
     return api.get(`${BASE}/spo`, { params })
+  },
+
+  getSdoAnalytics(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/sdo`, { params })
   }
 }
 
