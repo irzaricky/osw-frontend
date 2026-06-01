@@ -8,6 +8,7 @@ import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import HomeDateRangePicker from '../../../components/home/HomeDateRangePicker.vue'
 import ForecastTab from './components/ForecastTab.vue'
 import SprTab from './components/SprTab.vue'
+import SpoTab from './components/SpoTab.vue'
 
 // Import old components for other tabs
 import TrendsCharts from '../analytics-old/components/TrendsCharts.vue'
@@ -84,6 +85,8 @@ async function fetchData() {
     await salesAnalyticsStore.fetchForecastAnalytics(params)
   } else if (activeTab.value === 'spr') {
     await salesAnalyticsStore.fetchSprAnalytics(params)
+  } else if (activeTab.value === 'spo') {
+    await salesAnalyticsStore.fetchSpoAnalytics(params)
   } else if (activeTab.value === 'sdp') {
     await Promise.all([
       salesAnalyticsStore.fetchSummary(params),
@@ -192,10 +195,11 @@ onMounted(() => {
       </div>
 
       <!-- 3. SPO Analytics Tab -->
-      <div v-else-if="activeTab === 'spo'" class="flex flex-col items-center justify-center p-12 bg-white rounded-lg border border-default min-h-[300px]">
-        <UIcon name="i-lucide-shopping-bag" class="w-12 h-12 text-muted mb-3" />
-        <h3 class="text-lg font-semibold text-black">SPO Analytics</h3>
-        <p class="text-sm text-muted">Tab Sales Purchase Order (SPO) Analytics is under construction (Phase 3).</p>
+      <div v-else-if="activeTab === 'spo'">
+        <SpoTab
+          :start-date="filters.start_date || ''"
+          :end-date="filters.end_date || ''"
+        />
       </div>
 
       <!-- 4. SDP Analytics Tab -->

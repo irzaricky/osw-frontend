@@ -37,6 +37,10 @@ const analyticsService = {
 
   getSprAnalytics(params?: AnalyticsFilters) {
     return api.get(`${BASE}/spr`, { params })
+  },
+
+  getSpoAnalytics(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/spo`, { params })
   }
 }
 

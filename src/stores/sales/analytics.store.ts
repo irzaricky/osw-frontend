@@ -80,6 +80,44 @@ export interface SprAnalyticsData {
   pipeline_funnel: SprAnalyticsFunnelItem[]
 }
 
+export interface SpoAnalyticsKPIs {
+  total_ordered_items: number
+  fulfillment_rate: number
+  active_customers: number
+}
+
+export interface SpoAnalyticsStatusBreakdown {
+  Draft: number
+  Submitted: number
+  Locked: number
+  Processing: number
+  Completed: number
+  Rejected: number
+}
+
+export interface SpoAnalyticsCustomerItem {
+  customer_id: number
+  customer_name: string
+  total_ordered_qty: number
+}
+
+export interface SpoAnalyticsTrendItem {
+  month: string
+  ordered_qty: number
+  sent_qty: number
+}
+
+export interface SpoAnalyticsData {
+  date_range: {
+    start: string
+    end: string
+  }
+  kpis: SpoAnalyticsKPIs
+  status_breakdown: SpoAnalyticsStatusBreakdown
+  top_customers: SpoAnalyticsCustomerItem[]
+  monthly_trends: SpoAnalyticsTrendItem[]
+}
+
 export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   // ─── State ──────────────────────────────────────────────────────────────────
   const summary = ref<AnalyticsSummary | null>(null)
@@ -89,6 +127,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
   const topCustomers = ref<TopCustomerItem[]>([])
   const forecastAnalytics = ref<ForecastAnalyticsData | null>(null)
   const sprAnalytics = ref<SprAnalyticsData | null>(null)
+  const spoAnalytics = ref<SpoAnalyticsData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -199,6 +238,23 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
+  async function fetchSpoAnalytics(params: AnalyticsFilters = {}) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await analyticsService.getSpoAnalytics(params)
+      const data = response.data
+      if (data.status) {
+        spoAnalytics.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching SPO analytics:', e)
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function downloadExcel(params: AnalyticsFilters = {}) {
     loading.value = true
     error.value = null
@@ -235,6 +291,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     topCustomers,
     forecastAnalytics,
     sprAnalytics,
+    spoAnalytics,
     loading,
     error,
     filters,
@@ -246,6 +303,7 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     fetchTopCustomers,
     fetchForecastAnalytics,
     fetchSprAnalytics,
+    fetchSpoAnalytics,
     downloadExcel
   }
 })
