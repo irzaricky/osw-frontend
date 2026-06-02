@@ -15,9 +15,6 @@ const { sprAnalytics, loading } = storeToRefs(salesAnalyticsStore)
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
 
-// KPI data
-const activeSprs = computed(() => sprAnalytics.value?.kpis.active_sprs ?? 0)
-const avgApprovalTime = computed(() => sprAnalytics.value?.kpis.avg_approval_time ?? 0)
 const rejectionRate = computed(() => sprAnalytics.value?.kpis.rejection_rate ?? 0)
 
 // Chart configuration
@@ -130,8 +127,8 @@ const funnelChartSeries = computed(() => [
 <template>
   <div class="space-y-6">
     <!-- Metric Cards Grid -->
-    <div v-if="loading && !sprAnalytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <UCard v-for="i in 3" :key="i">
+    <div v-if="loading && !sprAnalytics" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <UCard v-for="i in 2" :key="i">
         <div class="space-y-3">
           <USkeleton class="h-4 w-1/2" />
           <USkeleton class="h-8 w-3/4" />
@@ -140,44 +137,36 @@ const funnelChartSeries = computed(() => [
       </UCard>
     </div>
 
-    <div v-else-if="sprAnalytics" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- 1. Total Active SPRs -->
+    <div v-else-if="sprAnalytics" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 1. SPR Status counts (like Delivery Orders Status) -->
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="text-sm text-muted">Total Active SPRs</span>
+            <span class="text-sm text-muted">SPR Status</span>
             <UIcon name="i-lucide-file-text" class="w-5 h-5 text-amber-500" />
           </div>
-          <div>
-            <p class="text-3xl font-bold">
-              {{ activeSprs.toLocaleString() }} SPRs
-            </p>
-            <p class="text-xs text-muted mt-1">
-              SPR documents with Submitted status
-            </p>
+          <div class="grid grid-cols-2 gap-2 border-t border-default pt-3">
+            <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
+              <span class="text-[10px] text-muted uppercase">Draft</span>
+              <span class="text-sm font-bold text-muted">{{ sprAnalytics.status_breakdown.Draft || 0 }}</span>
+            </div>
+            <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
+              <span class="text-[10px] text-muted uppercase">Submitted</span>
+              <span class="text-sm font-bold text-warning">{{ sprAnalytics.status_breakdown.Submitted || 0 }}</span>
+            </div>
+            <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
+              <span class="text-[10px] text-muted uppercase">Approved</span>
+              <span class="text-sm font-bold text-success">{{ sprAnalytics.status_breakdown.Approved || 0 }}</span>
+            </div>
+            <div class="bg-default/50 p-2 rounded flex flex-col justify-center items-center">
+              <span class="text-[10px] text-muted uppercase">Rejected</span>
+              <span class="text-sm font-bold text-error">{{ sprAnalytics.status_breakdown.Rejected || 0 }}</span>
+            </div>
           </div>
         </div>
       </UCard>
 
-      <!-- 2. Avg Approval Time -->
-      <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-muted">Avg. Approval Time</span>
-            <UIcon name="i-lucide-clock" class="w-5 h-5 text-emerald-500" />
-          </div>
-          <div>
-            <p class="text-3xl font-bold">
-              {{ avgApprovalTime.toFixed(1) }} hours
-            </p>
-            <p class="text-xs text-muted mt-1">
-              Average approval time (Submitted to Approved)
-            </p>
-          </div>
-        </div>
-      </UCard>
-
-      <!-- 3. SPR Rejection Rate -->
+      <!-- 2. SPR Rejection Rate -->
       <UCard class="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         <div class="space-y-4">
           <div class="flex items-center justify-between">

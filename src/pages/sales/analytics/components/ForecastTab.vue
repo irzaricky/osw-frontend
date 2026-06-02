@@ -17,7 +17,7 @@ const isDark = computed(() => colorMode.value === 'dark')
 
 // KPI data
 const totalVolume = computed(() => forecastAnalytics.value?.kpis.total_volume ?? 0)
-const accuracyRate = computed(() => forecastAnalytics.value?.kpis.accuracy_rate ?? 0)
+const accuracyRate = computed(() => forecastAnalytics.value?.kpis.accuracy_rate)
 const activeVersions = computed(() => forecastAnalytics.value?.kpis.active_versions ?? 0)
 
 // Chart configuration
@@ -168,10 +168,10 @@ const barChartSeries = computed(() => [
           </div>
           <div>
             <p class="text-3xl font-bold">
-              {{ accuracyRate.toFixed(1) }}%
+              {{ accuracyRate !== null && accuracyRate !== undefined ? accuracyRate.toFixed(1) + '%' : 'N/A' }}
             </p>
             <p class="text-xs text-muted mt-1">
-              Average accuracy of Forecast vs Actual
+              {{ accuracyRate !== null && accuracyRate !== undefined ? 'Average accuracy of Forecast vs Actual' : 'No locked periods to compare yet' }}
             </p>
           </div>
         </div>
