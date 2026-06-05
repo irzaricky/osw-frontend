@@ -90,6 +90,15 @@ async function handleApprove(
   }
 }
 
+// Download Report
+async function handleDownloadReport(receipt: GoodReceipt) {
+  try {
+    await goodReceiptStore.reportGoodReceipt(receipt.id)
+  } catch (err) {
+    toastError(err)
+  }
+}
+
 // Fetch Data
 async function fetchData() {
   const params: Record<string, any> = {
@@ -105,7 +114,8 @@ async function fetchData() {
 // Columns
 const { columns } = useGoodReceiptColumns({
   onViewDetail: handleDetail,
-  onApprove: handleOpenApprove
+  onApprove: handleOpenApprove,
+  onDownloadReport: handleDownloadReport
 }, uiComponents, pagination)
 
 function handleDetail(row: GoodReceipt) {

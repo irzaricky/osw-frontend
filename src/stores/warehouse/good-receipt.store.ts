@@ -71,6 +71,23 @@ export const useGoodReceiptStore = defineStore('good-receipt', () => {
     }
   }
 
+  async function reportGoodReceipt(mr_id: number | string) {
+    try {
+      const response = await goodReceiptService.reportGoodReceipt(mr_id)
+
+      const blob = new Blob([response.data], { type: 'application/pdf' })
+      const url = window.URL.createObjectURL(blob)
+    
+      window.open(url, '_blank')
+      
+      return { url }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error opening report:', e)
+      throw e
+    }
+  }
+
   return {
     // State
     goodReceipts,
@@ -81,6 +98,7 @@ export const useGoodReceiptStore = defineStore('good-receipt', () => {
     // Actions
     fetchGoodReceipts,
     fetchGoodReceipt,
-    approveGoodReceipt
+    approveGoodReceipt,
+    reportGoodReceipt
   }
 })

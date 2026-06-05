@@ -412,13 +412,12 @@ function handleDeleteItem(index: number) {
 async function handlePrintLabel(index: number) {
   try {
     const itemId = props.workOrder?.items?.[index]?.id
-    const part = props.parts.find(p => p.id === props.workOrder?.items?.[index]?.part_id)
     if (!itemId) {
       toastError('Item ID not found')
       return
     }
     
-    await workOrderStore.printLabel(itemId, part?.part_number || '')
+    await workOrderStore.printLabel(itemId)
   } catch (err) {
     toastError(err)
   }

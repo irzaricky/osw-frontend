@@ -18,6 +18,13 @@ const goodReceiptService = {
   },
   approveGoodReceipt(mr_id: number | string, payload?: { remarks?: string }) {
     return api.post(`/warehouse/good-receipt/approve/${mr_id}`, payload)
+  },
+  reportGoodReceipt(mr_id: number | string) {
+    return api.get(`/warehouse/good-receipt/report/${mr_id}`,
+      { 
+        responseType: 'blob' 
+      }
+    )
   }
 }
 

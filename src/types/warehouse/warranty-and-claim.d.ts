@@ -18,3 +18,14 @@ export interface WarrantyAndClaim {
   created_at: string | null
   defects: WarrantyAndClaimDefect[]
 }
+
+export interface DropdownPart {
+  id: number
+  part_number: string
+  part_name: string
+}
+
+export interface DropdownSupplier {
+  id: number
+  name: string
+}

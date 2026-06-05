@@ -88,21 +88,16 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
-  async function printLabel(mdo_detail_id: number | string, part_number: string) {
+  async function printLabel(mdo_detail_id: number | string) {
     try {
       const response = await materialReceivingService.printLabel(mdo_detail_id)
 
       const blob = new Blob([response.data], { type: 'application/pdf' })
       const url = window.URL.createObjectURL(blob)
-    
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `MDO-${part_number}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+
+      window.open(url, '_blank')
       
-      return { url, fileName: link.download }
+      return { url }
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
       console.error('Error printing label:', e)

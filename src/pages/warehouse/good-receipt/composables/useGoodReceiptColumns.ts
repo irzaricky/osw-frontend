@@ -5,6 +5,7 @@ import type { GoodReceipt } from '../../../../types/warehouse/good-receipt'
 interface ColumnActions {
   onViewDetail: (goodReceipt: GoodReceipt) => void
   onApprove: (goodReceipt: GoodReceipt) => void
+  onDownloadReport: (goodReceipt: GoodReceipt) => void
 }
 
 interface ColumnComponents {
@@ -100,6 +101,16 @@ export function useGoodReceiptColumns(actions: ColumnActions, components: Column
             onSelect: () => {
               if (receipt.gr_status !== 'Good Receipt') {
                 actions.onApprove(receipt)
+              }
+            }
+          },
+          {
+            label: 'View Report',
+            icon: 'i-lucide-file-text',
+            disabled: receipt.gr_status === 'Waiting GR Approval',
+            onSelect: () => {
+              if (receipt.gr_status !== 'Waiting GR Approval') {
+                actions.onDownloadReport(receipt)
               }
             }
           }

@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { onMounted, resolveComponent, computed, ref, reactive } from 'vue'
+import { onMounted, resolveComponent, computed, ref, reactive, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import { useDebounceFn } from '@vueuse/core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import DefectImagePreviewModal from '../good-receipt/components/DefectImagePreviewModal.vue'
+import WarrantyAndClaimFilters from './components/WarrantyAndClaimFilters.vue'
 
-import type { WarrantyAndClaim } from '../../../types/warehouse/warranty-and-claim'
+import type { WarrantyAndClaim, DropdownPart, DropdownSupplier } from '../../../types/warehouse/warranty-and-claim'
 import { useWarrantyAndClaimStore } from '../../../stores/warehouse/warranty-and-claim.store'
 import { useWarrantyAndClaimColumns } from './composables/useWarrantyAndClaimColumns'
 
 // Store
 const warrantyAndClaimStore = useWarrantyAndClaimStore()
-const { warrantyAndClaims, meta, loading } = storeToRefs(warrantyAndClaimStore)
+const { warrantyAndClaims, dropdownParts, dropdownSuppliers, meta, loading } = storeToRefs(warrantyAndClaimStore)
 
 const imagePreview = reactive({
   open: false,
@@ -20,6 +22,14 @@ const imagePreview = reactive({
     image: string
   }[]
 })
+
+const filters = reactive({
+  category: undefined as string | undefined,
+  part: undefined as DropdownPart | undefined,
+  supplier: undefined as DropdownSupplier | undefined
+})
+
+const search = ref('')
 
 // UI Components
 const uiComponents = {
@@ -61,6 +71,19 @@ function handleViewEvidence(
   imagePreview.open = true
 }
 
+function onUpdateSearch(value: string) {
+  search.value = value
+}
+
+function onUpdateFilters(partial: Record<string, any>) {
+  Object.assign(filters, partial)
+}
+
+const debouncedFetch = useDebounceFn(() => {
+  meta.value.page = 1
+  fetchData()
+}, 300)
+
 // Breadcrumbs
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -72,8 +95,13 @@ const breadcrumbItems = [
 async function fetchData() {
   const params: Record<string, any> = {
     page: meta.value.page,
-    limit: meta.value.limit
+    limit: meta.value.limit,
+    search: search.value
   }
+
+  if (filters.category) params.category = filters.category
+  if (filters.part) params.part = filters.part.id
+  if (filters.supplier) params.supplier = filters.supplier.id
 
   await warrantyAndClaimStore.fetchWarrantyAndClaims(params)
 }
@@ -83,8 +111,16 @@ const { columns } = useWarrantyAndClaimColumns({
   onViewEvidence: handleViewEvidence
 }, uiComponents, pagination)
 
+watch(search, () => debouncedFetch())
+watch(filters, () => {
+  meta.value.page = 1
+  fetchData()
+}, { deep: true })
+
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  await warrantyAndClaimStore.fetchPartsDropdown()
+  await warrantyAndClaimStore.fetchSuppliersDropdown()
   fetchData()
 })
 </script>
@@ -102,6 +138,15 @@ onMounted(() => {
         View quantity and quality non-conformance records from material receiving inspections.
       </p>
     </div>
+
+    <WarrantyAndClaimFilters
+      :search="search"
+      :filters="filters"
+      :parts="dropdownParts"
+      :suppliers="dropdownSuppliers"
+      @update:search="onUpdateSearch"
+      @update:filters="onUpdateFilters"
+    />
 
     <UTable
       ref="table"

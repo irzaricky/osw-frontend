@@ -76,10 +76,7 @@ async function handleArrived(remarks: string) {
 // Print label
 async function handlePrintLabel(item: any) {
   try {
-    await materialReceivingStore.printLabel(
-      item.id,
-      item.part?.part_number || ''
-    )
+    await materialReceivingStore.printLabel(item.id)
   } catch (err) {
     toastError(err)
   }
