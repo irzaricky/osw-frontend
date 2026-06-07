@@ -12,7 +12,6 @@ import type { Row }             from '@tanstack/table-core'
 
 import Breadcrumbs       from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog     from '../../../components/ConfirmDialog.vue'
-import WOFilters         from './components/WoFilters.vue'
 import WODailySummary    from './components/WODailySummary.vue'
 
 const router    = useRouter()
