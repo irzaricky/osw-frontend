@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useProductionPlanStore } from '../../../stores/production-plan/plan.store'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { PlanStatus, OverallStatus, AdjustmentType } from '../../../types/production-plan/plan'
+import type { PlanStatus, OverallStatus, AdjustmentType, PlanType } from '../../../types/production-plan/plan'
 import lineService from '../../../services/master-data/line.service'
 import lineCapacityService from '../../../services/master-data/line-capacity.service'
 
@@ -17,10 +17,10 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import RejectDialog from '../../../components/RejectDialog.vue'
 
 // Router & Store
-const router  = useRouter()
-const route   = useRoute()
+const router    = useRouter()
+const route     = useRoute()
 const planStore = useProductionPlanStore()
-const { currentPlan, availableDOs, loading, saving, calculating } = storeToRefs(planStore)
+const { currentPlan, availableDOs, dropdown, loading, saving, calculating } = storeToRefs(planStore)
 const { toastSuccess, toastError } = useAppToast()
 
 // Mode Detection
@@ -40,9 +40,13 @@ const breadcrumbItems = computed(() => [
 ])
 
 // Header Form
+// [+] tambah plan_type dan parent_plan_id ke headerForm
 const headerForm = reactive({
+  plan_month:       '',
+  plan_type:        'ORIGINAL' as PlanType,
+  parent_plan_id:   null as number | null,
   plan_description: '',
-  notes: '',
+  notes:            '',
 })
 
 // DO Selection
@@ -77,29 +81,80 @@ function handleSelectAll(ids: number[], select: boolean) {
   else selectedDOs.value = selectedDOs.value.filter((id) => !ids.includes(id))
 }
 
+// [+] Daftar plan ORIGINAL yang sudah Approved — dipakai dropdown parent saat buat AMENDMENT
+// Diambil dari dropdown store yang sudah di-fetch
+const approvedOriginalPlans = computed(() =>
+  (dropdown.value as any[]).filter(
+    (p) => p.plan_type === 'ORIGINAL',
+  ).map((p) => ({
+    id:          p.id as number,
+    plan_number: p.plan_number as string,
+    plan_month:  p.plan_month as string,
+  }))
+)
+
+// [+] Saat plan_type berubah ke AMENDMENT, fetch dropdown agar approvedOriginalPlans tersedia
+watch(
+  () => headerForm.plan_type,
+  (type) => {
+    if (type === 'AMENDMENT') {
+      planStore.fetchDropdown()
+      // Reset plan_month — untuk AMENDMENT, plan_month diambil dari parent plan
+      headerForm.plan_month     = ''
+      headerForm.parent_plan_id = null
+    }
+    else {
+      // Reset parent saat kembali ke ORIGINAL
+      headerForm.parent_plan_id = null
+    }
+    // Reset DO karena bulan mungkin berubah
+    selectedDOs.value = []
+  },
+)
+
+// [+] Saat parent_plan_id berubah (AMENDMENT), sync plan_month dari parent & fetch DOs
+watch(
+  () => headerForm.parent_plan_id,
+  (parentId) => {
+    if (!parentId || headerForm.plan_type !== 'AMENDMENT') return
+    const parent = approvedOriginalPlans.value.find((p) => p.id === parentId)
+    if (parent) {
+      headerForm.plan_month = parent.plan_month
+      selectedDOs.value     = []
+      planStore.fetchAvailableDOs(parent.plan_month)
+    }
+  },
+)
+
+// Watch plan_month di create ORIGINAL mode — setiap ganti bulan, reset DO & fetch ulang
+watch(
+  () => headerForm.plan_month,
+  (newMonth) => {
+    if (!isCreate.value || !newMonth) return
+    if (headerForm.plan_type !== 'ORIGINAL') return
+    selectedDOs.value = []
+    planStore.fetchAvailableDOs(newMonth)
+  },
+)
+
 // ── Capacity state ───────────────────────────────────────────────────────────
-// selectedLineId: line yang sedang aktif di capacity tab
-// lineParams: data dari /line-capacity/:line_id/params (preview master sebelum save BASE)
-// adjustmentForm: form untuk add adjustment setelah BASE tersimpan
 
 const lines          = ref<any[]>([])
 const selectedLineId = ref<number | undefined>(undefined)
 const lineParams     = ref<any>(null)
 const loadingParams  = ref(false)
 
-// Form adjustment — hanya berisi field yang bisa di-adjust + description
 const adjustmentForm = reactive({
   adjustment_type:        '' as AdjustmentType | '',
   adjusted_value:         0,
   adjustment_description: '',
 })
 
-// Ambil preview params dari master saat user pilih line
 async function fetchLineParams(lineId: number) {
   loadingParams.value = true
   lineParams.value    = null
   try {
-    const res       = await lineCapacityService.getParams(lineId)
+    const res        = await lineCapacityService.getParams(lineId)
     lineParams.value = res.data?.data ?? null
   }
   catch (e) {
@@ -127,10 +182,10 @@ const confirm = reactive({
 const reject = reactive({
   open:        false,
   title:       'Reject Production Plan',
-  description: 'Please provide the reason for rejection.',
+  description: 'Please provide a reason for rejection.',
 })
 
-// Label / Color maps
+// Labels & Colors
 const planStatusLabel: Record<PlanStatus, string> = {
   Draft:            'Draft',
   Pending_Approval: 'Pending Approval',
@@ -163,12 +218,10 @@ const hasImpossible = computed(() =>
   currentPlan.value?.details?.some((d: any) => d.status === 'IMPOSSIBLE'),
 )
 
-// Cek apakah ada detail yang tidak punya detail_lines (tidak ada routing)
 const hasUnrouted = computed(() =>
   currentPlan.value?.details?.some((d: any) => !d.detail_lines?.length),
 )
 
-// BASE param untuk line yang sedang dipilih
 const activeBaseParam = computed(() =>
   currentPlan.value?.capacity_params?.find(
     (p: any) => p.param_type === 'BASE' && p.line_id === selectedLineId.value,
@@ -190,11 +243,27 @@ function fmtNum(n?: number | null) {
 async function handleSaveHeader() {
   try {
     if (isCreate.value) {
+      // Validasi plan_month wajib diisi
+      if (!headerForm.plan_month) {
+        toastError('Please select a plan month first.')
+        return
+      }
       if (selectedDOs.value.length === 0) {
         toastError('Select at least one Delivery Order.')
         return
       }
+      // [+] validasi parent_plan_id wajib diisi jika AMENDMENT
+      if (headerForm.plan_type === 'AMENDMENT' && !headerForm.parent_plan_id) {
+        toastError('Please select a parent plan for Amendment.')
+        return
+      }
+
       const res = await planStore.createPlan({
+        plan_month:       headerForm.plan_month,
+        plan_type:        headerForm.plan_type,                           // [+]
+        parent_plan_id:   headerForm.plan_type === 'AMENDMENT'
+                            ? (headerForm.parent_plan_id ?? undefined)
+                            : undefined,                                  // [+]
         plan_description: headerForm.plan_description || null,
         do_ids:           selectedDOs.value,
         notes:            headerForm.notes || null,
@@ -209,7 +278,7 @@ async function handleSaveHeader() {
     else if (planId.value) {
       await planStore.updatePlan(planId.value, {
         plan_description: headerForm.plan_description || null,
-        notes: headerForm.notes || null,
+        notes:            headerForm.notes || null,
       })
 
       const currentDoIds = currentPlan.value?.do_references?.map((r: any) => r.do_id) ?? []
@@ -228,7 +297,6 @@ async function handleSaveHeader() {
   catch (e) { toastError(e) }
 }
 
-// Simpan BASE: hanya kirim line_id, server copy dari s_line_capacity_params
 async function handleSaveBase() {
   if (!planId.value || !selectedLineId.value) {
     toastError('Please select a production line first.')
@@ -244,7 +312,6 @@ async function handleSaveBase() {
   catch (e) { toastError(e) }
 }
 
-// Tambah adjustment untuk satu parameter saja (per submit)
 async function handleSaveAdjustment() {
   if (!planId.value || !selectedLineId.value) {
     toastError('Please select a line first.')
@@ -266,7 +333,6 @@ async function handleSaveAdjustment() {
       adjustment_description: adjustmentForm.adjustment_description || undefined,
     })
     toastSuccess('Adjustment saved')
-    // Reset form
     adjustmentForm.adjustment_type        = ''
     adjustmentForm.adjusted_value         = 0
     adjustmentForm.adjustment_description = ''
@@ -297,12 +363,10 @@ async function handleCalculateAll() {
     toastError('No lines with BASE parameters to calculate.')
     return
   }
-
   calculatingAll.value = true
+  confirm.open = false
   try {
-    for (const param of baseParams) {
-      await planStore.calculateCapacity(planId.value, { line_id: param.line_id })
-    }
+    await planStore.calculateAllCapacity(planId.value)
     await planStore.fetchPlan(planId.value)
     toastSuccess('All lines calculated successfully.')
   }
@@ -373,9 +437,9 @@ function openConfirm(options: {
 
 function confirmDeleteAdjustment(adjId: number) {
   openConfirm({
-    title:        'Delete Adjustment',
-    description:  'Adjustment will be removed and capacity will be reset.',
-    action:       async () => {
+    title:       'Delete Adjustment',
+    description: 'Adjustment will be removed and capacity will be reset.',
+    action:      async () => {
       await planStore.deleteAdjustment(planId.value!, adjId)
       await planStore.fetchPlan(planId.value!)
       confirm.open = false
@@ -383,7 +447,6 @@ function confirmDeleteAdjustment(adjId: number) {
   })
 }
 
-// Submit can only happen when: overall_status !== Not_Calculated, no IMPOSSIBLE, no unrouted products
 const canSubmit = computed(() =>
   isEditable.value &&
   currentPlan.value?.status === 'Draft' &&
@@ -394,10 +457,6 @@ const canSubmit = computed(() =>
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
 
-onMounted(() => {
-  if (isCreate.value) planStore.fetchAvailableDOs()
-})
-
 watch(
   () => route.params.id,
   async (newId) => {
@@ -406,17 +465,25 @@ watch(
 
     if (isCreate.value) {
       planStore.clearCurrentPlan()
-      planStore.fetchAvailableDOs()
+      // Reset form saat masuk create mode
+      headerForm.plan_month       = ''
+      headerForm.plan_type        = 'ORIGINAL'
+      headerForm.parent_plan_id   = null
+      headerForm.plan_description = ''
+      headerForm.notes            = ''
+      selectedDOs.value           = []
     }
     else if (planId.value) {
       const lineRes = await lineService.getDropdown()
       lines.value = lineRes.data?.data ?? []
 
       planStore.clearCurrentPlan()
-      await Promise.all([
-        planStore.fetchPlan(id),
-        planStore.fetchAvailableDOs(),
-      ])
+      await planStore.fetchPlan(id)
+
+      // Fetch DO pakai plan_month dari plan yang sedang dibuka
+      if (currentPlan.value?.plan_month) {
+        await planStore.fetchAvailableDOs(currentPlan.value.plan_month)
+      }
 
       if (currentPlan.value?.do_references) {
         selectedDOs.value = currentPlan.value.do_references.map((r: any) => r.do_id)
@@ -426,11 +493,9 @@ watch(
         headerForm.plan_description = currentPlan.value.plan_description ?? ''
         headerForm.notes            = currentPlan.value.notes ?? ''
 
-        // Rehydrate selectedLineId dari BASE param yang tersimpan (jika ada)
         const baseParam = currentPlan.value.capacity_params?.find((p: any) => p.param_type === 'BASE')
         if (baseParam) {
           selectedLineId.value = baseParam.line_id
-          // fetchLineParams dipanggil otomatis oleh watcher di atas
         }
       }
     }
@@ -578,6 +643,7 @@ watch(
           :saving="saving"
           :fmt-date="fmtDate"
           :fmt-num="fmtNum"
+          :approved-original-plans="approvedOriginalPlans"
           @open-do-modal="showDOModal = true"
           @remove-pending="toggleDO"
           @remove-do="toggleDO"
