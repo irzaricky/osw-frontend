@@ -149,7 +149,21 @@ const formError = ref('')
 function handleFileChange(event: Event) {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    poFile.value = target.files[0]
+    const file = target.files[0]
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      formError.value = 'Please select a valid PDF file.'
+      poFile.value = null
+      fileInputKey.value++
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      formError.value = 'File size exceeds the 5MB limit.'
+      poFile.value = null
+      fileInputKey.value++
+      return
+    }
+    poFile.value = file
+    formError.value = ''
   }
 }
 
@@ -243,15 +257,16 @@ function close() {
             placeholder="Select customer..."
             searchable
             clear
+            class="w-full"
           />
         </UFormField>
 
         <!-- Customer PO Document -->
-        <UFormField label="Customer PO Document" required>
+        <UFormField label="Customer PO Document" required help="Accepted format: PDF (Max size: 5MB)">
           <input
             :key="fileInputKey"
             type="file"
-            accept="image/*,application/pdf"
+            accept="application/pdf"
             required
             class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
             @change="handleFileChange($event)"

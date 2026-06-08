@@ -40,7 +40,10 @@ const spoService = {
     return api.post(`${BASE}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
 
-  updateSpo(id: number | string, data: Record<string, any>) {
+  updateSpo(id: number | string, data: Record<string, any> | FormData) {
+    if (data instanceof FormData) {
+      return api.put(`${BASE}/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } })
+    }
     return api.put(`${BASE}/${id}`, data)
   },
 

@@ -11,11 +11,13 @@ import { compressImage } from '../../../utils'
 import { useAppToast } from '../../../composables/useAppToast'
 import sdoService from '../../../services/sales/sdo.service'
 
-const getImageUrl = (path: string) => {
+const getImageUrl = (path: any) => {
   if (!path) return ''
-  if (path.startsWith('http')) return path
+  const pathStr = Array.isArray(path) ? path[0] : path
+  if (typeof pathStr !== 'string') return ''
+  if (pathStr.startsWith('http')) return pathStr
   const base = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
-  return `${base}${path}`
+  return `${base}${pathStr}`
 }
 
 const { toastSuccess, toastError } = useAppToast()
@@ -137,6 +139,8 @@ watch(searchQuery, () => {
 
 // Master-detail toggle expand logic (Option A)
 async function toggleExpand(sdo: Sdo) {
+  loadingPhotoFile.value = null
+  loadingPhotoPreview.value = null
   if (expandedSdoId.value === sdo.id) {
     expandedSdoId.value = null
     podFile.value = null
@@ -225,6 +229,7 @@ function getSlaBadgeConfig(status?: string) {
 
 // Granular logistics handler functions
 const loadingPhotoFile = ref<File | null>(null)
+const loadingPhotoPreview = ref<string | null>(null)
 const uploadingLoadingPhoto = ref(false)
 const approvingDispatch = ref(false)
 const startingDelivery = ref(false)
@@ -233,8 +238,37 @@ let countdownInterval: any = null
 
 async function handleLoadingPhotoChange(event: Event) {
   const target = event.target as HTMLInputElement
+  loadingPhotoPreview.value = null
   if (target.files && target.files[0]) {
     const file = target.files[0]
+    
+    // Check format
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase()
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp']
+    
+    if (!allowedTypes.includes(file.type) && !allowedExts.includes(ext)) {
+      toastError('Only image files (.jpg, .jpeg, .png, .webp) are allowed.')
+      target.value = ''
+      loadingPhotoFile.value = null
+      return
+    }
+    
+    // Check size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toastError('Loading photo exceeds the 5MB limit.')
+      target.value = ''
+      loadingPhotoFile.value = null
+      return
+    }
+    
+    // Create preview
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      loadingPhotoPreview.value = e.target?.result as string
+    }
+    reader.readAsDataURL(file)
+
     loadingPhotoFile.value = await compressImage(file)
   }
 }
@@ -252,6 +286,7 @@ async function submitLoadingPhoto(sdoId: number) {
     const res = await store.uploadLoadingPhoto(sdoId, formData)
     if (res.status) {
       loadingPhotoFile.value = null
+      loadingPhotoPreview.value = null
       toastSuccess('Loading photo uploaded successfully!')
       await store.fetchSdoById(sdoId)
       await fetchData(false)
@@ -327,7 +362,7 @@ function updateCountdown() {
   if (hrs >= 24) {
     const days = Math.floor(hrs / 24)
     const remHrs = hrs % 24
-    countdownText.value = `${days} Hari ${remHrs} Jam ${mins} Menit`
+    countdownText.value = `${days} Days ${remHrs} Hours ${mins} Minutes`
   } else {
     countdownText.value = `${hrs}h ${mins}m`
   }
@@ -609,15 +644,22 @@ onUnmounted(() => {
                             </p>
                             
                             <form class="space-y-4" @submit.prevent="submitLoadingPhoto(store.detail.id)">
-                              <div class="space-y-1.5">
+                              <div class="space-y-2">
                                 <label class="text-xs font-semibold text-default block">Loading Photo Evidence</label>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept=".jpg,.jpeg,.png,.webp"
                                   required
                                   class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
                                   @change="handleLoadingPhotoChange($event)"
                                 >
+                                <p class="text-[10px] text-muted-foreground">
+                                  Max size: 5MB. Formats: .jpg, .jpeg, .png, .webp
+                                </p>
+                                <!-- Image Preview -->
+                                <div v-if="loadingPhotoPreview" class="relative rounded-xl overflow-hidden border border-default bg-muted/25 aspect-[4/3] flex items-center justify-center mt-2">
+                                  <img :src="loadingPhotoPreview" alt="Loading Photo Preview" class="object-cover w-full h-full">
+                                </div>
                               </div>
                               
                               <div class="flex justify-end pt-2">

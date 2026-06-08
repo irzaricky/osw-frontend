@@ -10,6 +10,7 @@ import SdpAddModal from './components/SdpAddModal.vue'
 import SdpDetailPanel from './components/SdpDetailPanel.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import { useAppToast } from '../../../composables/useAppToast'
+import HomeDateRangePicker from '../../../components/home/HomeDateRangePicker.vue'
 
 const { toastSuccess, toastError } = useAppToast()
 
@@ -78,31 +79,30 @@ const selectedDateModel = computed({
   }
 })
 
-const mlInputDate = ref<any>(null)
-const mlDateRangeModel = computed({
+function formatDate(date?: Date) {
+  if (!date) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function parseDate(value?: string) {
+  if (!value) return undefined
+  const [year, month, day] = value.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+const mlDateRange = computed({
   get() {
-    const start = mlStartDate.value ? new CalendarDate(...mlStartDate.value.split('-').map(Number) as [number, number, number]) : undefined
-    const end = mlEndDate.value ? new CalendarDate(...mlEndDate.value.split('-').map(Number) as [number, number, number]) : undefined
-    return { start, end }
+    return {
+      start: parseDate(mlStartDate.value),
+      end: parseDate(mlEndDate.value)
+    }
   },
-  set(val: any) {
-    if (!val || (!val.start && !val.end)) {
-      mlStartDate.value = ''
-      mlEndDate.value = ''
-      return
-    }
-    if (val.start) {
-      const yyyy = val.start.year
-      const mm = String(val.start.month).padStart(2, '0')
-      const dd = String(val.start.day).padStart(2, '0')
-      mlStartDate.value = `${yyyy}-${mm}-${dd}`
-    }
-    if (val.end) {
-      const yyyy = val.end.year
-      const mm = String(val.end.month).padStart(2, '0')
-      const dd = String(val.end.day).padStart(2, '0')
-      mlEndDate.value = `${yyyy}-${mm}-${dd}`
-    }
+  set(value: any) {
+    mlStartDate.value = formatDate(value?.start)
+    mlEndDate.value = formatDate(value?.end)
   }
 })
 
@@ -526,37 +526,18 @@ const conflictingDocksNames = computed(() => {
 
           <div v-show="isMasterListOpen" class="space-y-4">
             <div class="flex items-center gap-3">
-              <UInputDate
-                ref="mlInputDate"
-                v-model="mlDateRangeModel"
-                range
-                class="w-64"
-              >
-                <template #trailing>
-                  <UPopover :reference="mlInputDate?.inputsRef?.[0]?.$el">
-                    <UButton
-                      color="neutral"
-                      variant="link"
-                      size="sm"
-                      icon="i-lucide-calendar"
-                      class="px-0"
-                    />
-                    <template #content>
-                      <UCalendar
-                        v-model="mlDateRangeModel"
-                        class="p-2"
-                        :number-of-months="2"
-                        range
-                      />
-                    </template>
-                  </UPopover>
-                </template>
-              </UInputDate>
+              <div class="w-[300px] shrink-0">
+                <HomeDateRangePicker
+                  v-model="mlDateRange as any"
+                  class="w-full"
+                  clear
+                />
+              </div>
 
               <USelectMenu
                 v-model="selectedStatus"
                 :items="statusOptions"
-                class="w-40"
+                class="w-40 shrink-0"
                 placeholder="All Status"
                 clear
               />

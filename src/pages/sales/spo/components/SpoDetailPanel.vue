@@ -61,8 +61,8 @@ function getStatusIcon(status: string): string {
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 const isSupervisor = computed(() => {
-  const role = authStore.user?.role
-  return role === 'Superadmin' || role === 'Supervisor Sales'
+  const role = authStore.user?.role?.toLowerCase()
+  return role === 'superadmin' || role === 'supervisor sales'
 })
 
 // ─── Action Guards ────────────────────────────────────────────────────────────
@@ -134,9 +134,12 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 const isEditOpen = ref(false)
 const savingEdit = ref(false)
 const isMapOpen = ref(false)
+const fileInputKey = ref(0)
+const formError = ref('')
 const editForm = ref({
   delivery_due_date: '',
-  shipping_address: ''
+  shipping_address: '',
+  po_document: null as File | null
 })
 
 const dueDatePickerModel = computed({
@@ -157,10 +160,34 @@ const dueDatePickerModel = computed({
   }
 })
 
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    const file = target.files[0]
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      formError.value = 'Please select a valid PDF file.'
+      editForm.value.po_document = null
+      fileInputKey.value++
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      formError.value = 'File size exceeds the 5MB limit.'
+      editForm.value.po_document = null
+      fileInputKey.value++
+      return
+    }
+    editForm.value.po_document = file
+    formError.value = ''
+  }
+}
+
 function handleEditInfo() {
   if (store.detail) {
     editForm.value.delivery_due_date = store.detail.delivery_due_date ? store.detail.delivery_due_date.substring(0, 10) : ''
     editForm.value.shipping_address = store.detail.shipping_address || ''
+    editForm.value.po_document = null
+    fileInputKey.value++
+    formError.value = ''
     isEditOpen.value = true
   }
 }
@@ -177,10 +204,21 @@ async function saveEdit() {
 
   savingEdit.value = true
   try {
-    await store.updateSpo(props.spoId, {
-      delivery_due_date: editForm.value.delivery_due_date,
-      shipping_address: editForm.value.shipping_address
-    })
+    let payload: Record<string, any> | FormData
+    if (editForm.value.po_document) {
+      const fd = new FormData()
+      fd.append('delivery_due_date', editForm.value.delivery_due_date)
+      fd.append('shipping_address', editForm.value.shipping_address)
+      fd.append('po_document', editForm.value.po_document)
+      payload = fd
+    } else {
+      payload = {
+        delivery_due_date: editForm.value.delivery_due_date,
+        shipping_address: editForm.value.shipping_address
+      }
+    }
+
+    await store.updateSpo(props.spoId, payload)
     toastSuccess('Info updated successfully')
     isEditOpen.value = false
     loadDetail()
@@ -277,9 +315,9 @@ async function handleDownloadPdf() {
 
           <div class="w-px h-5 bg-default mx-1" />
 
-          <!-- Edit Info (Draft only) -->
+          <!-- Edit Info (Draft or (Submitted and Supervisor)) -->
           <UButton
-            v-if="store.detail?.status === 'Draft'"
+            v-if="store.detail?.status === 'Draft' || (store.detail?.status === 'Submitted' && isSupervisor)"
             icon="i-lucide-edit-3"
             color="primary"
             variant="ghost"
@@ -537,6 +575,12 @@ async function handleDownloadPdf() {
     >
       <template #body>
         <div class="space-y-4">
+          <!-- Alert Error -->
+          <div v-if="formError" class="flex items-center gap-2 p-3 rounded-lg bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800 text-error-700 dark:text-error-300 text-sm">
+            <UIcon name="i-lucide-alert-circle" class="w-4 h-4 shrink-0" />
+            {{ formError }}
+          </div>
+
           <UFormField label="Delivery Due Date" required>
             <UInputDate v-model="dueDatePickerModel">
               <template #trailing>
@@ -560,19 +604,31 @@ async function handleDownloadPdf() {
           </UFormField>
           
           <UFormField label="Shipping Address" required>
-            <div class="space-y-2 w-full">
-              <UTextarea v-model="editForm.shipping_address" :rows="3" class="w-full" />
-              <div class="flex justify-end">
-                <UButton
-                  icon="i-lucide-map"
-                  color="neutral"
-                  variant="subtle"
-                  size="xs"
-                  label="Pilih dari Peta"
-                  @click="isMapOpen = true"
+            <div class="space-y-2">
+              <UTextarea 
+                v-model="editForm.shipping_address" 
+                :rows="3" 
+                class="w-full" 
                 />
-              </div>
+              <UButton 
+                icon="i-lucide-map" 
+                color="neutral" 
+                variant="subtle" 
+                size="xs" 
+                label="Pick Location"
+                @click="isMapOpen = true" 
+                />
             </div>
+          </UFormField>
+
+          <UFormField label="Customer PO Document" help="Accepted format: PDF (Max size: 5MB)">
+            <input
+              :key="fileInputKey"
+              type="file"
+              accept="application/pdf"
+              class="block w-full text-xs text-muted-foreground file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/95 cursor-pointer"
+              @change="handleFileChange($event)"
+            >
           </UFormField>
         </div>
       </template>
