@@ -285,9 +285,17 @@ const router = createRouter({
     },
     {
       path: '/master-data/lines',
+      name: 'master-data-lines',
       component: () => import('./pages/master-data/lines/index.vue'),
       meta: { layout: 'default', requiresAuth: true }
     },
+    {
+      path: '/master-data/lines/:line_id/capacity',
+      name: 'master-data-lines-capacity',
+      component: () => import('./pages/master-data/lines/LineCapacityPage.vue'),
+      meta: { title: 'Line Capacity', layout: 'default', requiresAuth:  true,
+      }
+    },    
     {
       path: '/master-data/parts',
       component: () => import('./pages/master-data/parts/index.vue'),

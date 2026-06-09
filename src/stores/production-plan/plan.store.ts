@@ -22,9 +22,11 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
   const plans        = ref<ProductionPlan[]>([])
   const currentPlan  = ref<ProductionPlan | null>(null)
   const availableDOs = ref<AvailableDO[]>([])
+
+  // [~] dropdown include plan_type & parent_plan_id sesuai response BE getDropdown
   const dropdown     = ref<Pick<ProductionPlan,
-    'id' | 'plan_number' | 'plan_description' |
-    'earliest_delivery_date' | 'latest_delivery_date'
+    'id' | 'plan_number' | 'plan_month' | 'plan_type' | 'parent_plan_id' | 'parent_plan' |
+    'plan_description' | 'earliest_delivery_date' | 'latest_delivery_date'
   >[]>([])
   const calculationResult = ref<CalculationResult | null>(null)
 
@@ -86,11 +88,12 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  async function fetchAvailableDOs() {
+  // [~] plan_month wajib dikirim — BE filter DO berdasarkan bulan tersebut
+  async function fetchAvailableDOs(plan_month: string) {
     loading.value = true
     try {
-      const { data } = await productionPlanService.getAvailableDeliveryOrders()
-      if (data.status) availableDOs.value = data.data
+      const { data } = await productionPlanService.getAvailableDeliveryOrders(plan_month)
+      if (data.status) availableDOs.value = data.data?.delivery_orders ?? []
     }
     catch (e: any) {
       error.value = e.response?.data?.error || e.message
@@ -119,6 +122,7 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
 
   // ── CRUD ───────────────────────────────────────────────────────────────────
 
+  // [~] payload sekarang support plan_type & parent_plan_id
   async function createPlan(payload: CreatePlanPayload) {
     saving.value = true
     error.value  = null
@@ -209,6 +213,26 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     error.value       = null
     try {
       const { data } = await productionPlanService.calculateCapacity(id, payload)
+      if (data.status) {
+        calculationResult.value = data.data
+        await fetchPlan(id)
+      }
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      calculating.value = false
+    }
+  }
+
+  async function calculateAllCapacity(id: number | string) {
+    calculating.value = true
+    error.value       = null
+    try {
+      const { data } = await productionPlanService.calculateAllCapacity(id)
       if (data.status) {
         calculationResult.value = data.data
         await fetchPlan(id)
@@ -348,6 +372,7 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     deletePlan,
     saveCapacityParams,
     calculateCapacity,
+    calculateAllCapacity,
     addAdjustment,
     deleteAdjustment,
     submitForApproval,

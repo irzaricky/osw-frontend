@@ -1,11 +1,13 @@
 import { api } from '../../plugins/axios'
 import type {
   WorkOrderListParams,
+  DailySummaryParams,
   AddProgressPayload,
   ReportIssuePayload,
   ResolveIssuePayload,
   CompleteWorkOrderPayload,
   UpdateStationJobStatusPayload,
+  ScanOperatorPayload,          // [BARU]
 } from '../../types/production-plan/work-order'
 
 const BASE = '/production-plan/work-order'
@@ -22,8 +24,10 @@ const workOrderService = {
     return api.get(`${BASE}/${id}`)
   },
 
-  getDailySummary(work_date?: string) {
-    return api.get(`${BASE}/daily-summary`, { params: work_date ? { work_date } : undefined })
+  // [PERUBAHAN] getDailySummary kini menerima objek params lengkap (bukan hanya string tanggal)
+  // agar bisa meneruskan filter shift_id dan stage ke BE
+  getDailySummary(params?: DailySummaryParams) {
+    return api.get(`${BASE}/daily-summary`, { params })
   },
 
   // ── Execution ──────────────────────────────────────────────────────────────
@@ -71,6 +75,21 @@ const workOrderService = {
     data:       UpdateStationJobStatusPayload,
   ) {
     return api.put(`${BASE}/${wo_id}/stations/${station_id}/jobs/${job_id}/status`, data)
+  },
+
+  // ── [FITUR BARU] Scan Operator ────────────────────────────────────────────
+  //
+  // Memanggil endpoint POST /work-orders/:id/stations/:station_id/jobs/:job_id/scan-operator
+  // Payload: { operator_id } — ID operator yang didapat dari scan QR Code di lapangan.
+  // BE akan memvalidasi urutan (sequence enforcer) dan mengupdate status job ke In_Progress
+  // jika sebelumnya masih Pending.
+  scanOperator(
+    wo_id:      number | string,
+    station_id: number | string,
+    job_id:     number | string,
+    data:       ScanOperatorPayload,
+  ) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/jobs/${job_id}/scan-operator`, data)
   },
 }
 

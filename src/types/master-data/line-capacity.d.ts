@@ -1,12 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// Line Capacity Params — Type Definitions
-// Endpoint base: /master-data/line-capacity
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ── Saved master params (s_line_capacity_params) ──────────────────────────────
-
+// ── Saved master params (satu baris per bulan) ────────────────────────────────
 export interface LineCapacitySavedParams {
   id:                              number
+  param_year:                      number
+  param_month:                     number
+  period:                          string   // "YYYY-MM"
   default_working_days:            number
   default_shifts_per_day:          number
   default_working_hours_per_shift: number
@@ -14,33 +11,33 @@ export interface LineCapacitySavedParams {
   default_overtime_hours:          number
   default_manpower:                number
   default_max_takt_time:           number   // detik
-  last_updated_at?:                string | null
+  calculated_at:                   string | null
 }
-
+ 
 // ── Aktual line — kondisi saat ini (stations, jobs, group) ────────────────────
-
+ 
 export interface LineActualStation {
   station_id:        number
   station_code:      string
   name:              string
   sequence:          number
   total_jobs:        number
-  takt_time_seconds: number  // SUM standard_time semua job di station ini
+  takt_time_seconds: number
   jobs: {
     id:            number
     job_code:      string
     name:          string
-    standard_time: number   // detik
+    standard_time: number
   }[]
 }
-
+ 
 export interface LineActualGroup {
   group_id:        number
   group_name:      string
   total_members:   number
   total_operators: number
 }
-
+ 
 export interface LineActualSummary {
   total_active_stations: number
   total_active_jobs:     number
@@ -51,20 +48,7 @@ export interface LineActualSummary {
   groups:                LineActualGroup[]
   stations:              LineActualStation[]
 }
-
-// ── Response GET /line-capacity/:line_id/params ───────────────────────────────
-
-export interface LineCapacityParamsResponse {
-  line: {
-    id:        number
-    line_code: string
-    name:      string
-  }
-  saved_params:    LineCapacitySavedParams | null
-  calendar_params: LineCalendarParams | null  // ← tambah
-  actual:          LineActualSummary
-}
-
+ 
 export interface LineCalendarParams {
   working_days:             number
   shifts_per_day:           number
@@ -75,6 +59,10 @@ export interface LineCalendarParams {
     start: string | null
     end:   string | null
   }
+  requested_range: {
+    start: string
+    end:   string
+  }
   breakdown: {
     avg_net_minutes_per_working_day:  number
     avg_net_minutes_per_overtime_day: number
@@ -82,29 +70,77 @@ export interface LineCalendarParams {
     overtime_day_count:               number
   }
 }
-
+ 
+// ── Response GET /line-capacity/:line_id/params ───────────────────────────────
+// Sekarang mengembalikan array params (multi-baris per bulan)
+ 
+export interface LineCapacityParamsResponse {
+  line: {
+    id:        number
+    line_code: string
+    name:      string
+  }
+  actual:       LineActualSummary
+  total_params: number
+  params:       LineCapacitySavedParams[]
+}
+ 
+// ── Response GET /line-capacity/:line_id/params/preview ──────────────────────
+ 
+export interface LineCapacityPreviewResponse {
+  line: {
+    id:        number
+    line_code: string
+    name:      string
+  }
+  preview_period: {
+    year:      number
+    month:     number
+    period:    string
+    startDate: string
+    endDate:   string
+  }
+  already_calculated: boolean
+  existing_param:     LineCapacitySavedParams | null
+  calendar_params:    LineCalendarParams | null
+  actual:             LineActualSummary
+}
+ 
 // ── Response POST /line-capacity/:line_id/calculate ───────────────────────────
-
+ 
 export interface LineCapacityCalculateResponse {
   line: {
     id:        number
     line_code: string
     name:      string
   }
-  saved_params:     LineCapacitySavedParams
-  calculated_from:  LineActualSummary
+  period: {
+    year:      number
+    month:     number
+    period:    string
+    startDate: string
+    endDate:   string
+  }
+  created:      boolean
+  saved_params: LineCapacitySavedParams
+  derived_from: {
+    calendar:    LineCalendarParams
+    actual_line: {
+      total_active_stations: number
+      total_active_jobs:     number
+      default_manpower:      number
+      max_takt_time_seconds: number
+    }
+  }
 }
-
+ 
 // ── Request payload POST /line-capacity/:line_id/calculate ───────────────────
-
+ 
 export interface LineCapacityCalculatePayload {
-  working_days?:            number   // default: nilai tersimpan atau 22
-  shifts_per_day?:          number   // default: nilai tersimpan atau 1
-  working_hours_per_shift?: number   // default: nilai tersimpan atau 7
-  efficiency_factor?:       number   // default: nilai tersimpan atau 0.85
-  overtime_hours?:          number   // default: nilai tersimpan atau 0
+  year?:             number   // default: tahun berjalan
+  month?:            number   // default: bulan berjalan
+  efficiency_factor?: number  // default: dari baris terbaru atau 0.85
 }
-
-// Alias untuk konsistensi naming (saved_params bisa keduanya)
-export type LineCapitySavedParams  = LineCapacitySavedParams
-export type LineCapacityParams     = LineCapacityParamsResponse
+ 
+// Alias
+export type LineCapacityParams = LineCapacityParamsResponse

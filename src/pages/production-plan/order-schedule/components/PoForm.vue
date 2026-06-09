@@ -347,19 +347,19 @@ onMounted(() => {
         @click="emit('cancel')"
       />
       <UButton
-        color="neutral"
-        variant="outline"
-        label="Save as Draft"
+        color="primary"
+        variant="solid"
+        label="Create PO"
         :loading="props.loading"
         @click="handleSubmit('draft')"
       />
-      <UButton
+      <!-- <UButton
         color="primary"
         variant="solid"
         label="Submit for Approval"
         :loading="props.loading"
         @click="handleSubmit('submit')"
-      />
+      /> -->
     </div>
   </div>
 </template>

@@ -1,5 +1,5 @@
 import { h } from 'vue'
-import type { ProductionPlan, PlanStatus, OverallStatus } from '../../../../types/production-plan/plan'
+import type { ProductionPlan, PlanStatus, OverallStatus, PlanType } from '../../../../types/production-plan/plan'
 import type { ColumnDef } from '@tanstack/table-core'
 
 interface UIComponents {
@@ -40,6 +40,24 @@ const overallStatusLabel: Record<OverallStatus, string> = {
   IMPOSSIBLE: 'Impossible',
 }
 
+// [+] Label & warna untuk plan_type
+const planTypeLabel: Record<PlanType, string> = {
+  ORIGINAL:  'Original',
+  AMENDMENT: 'Amendment',
+}
+
+const planTypeColor: Record<PlanType, 'neutral' | 'info' | 'warning'> = {
+  ORIGINAL:  'neutral',
+  AMENDMENT: 'warning',
+}
+
+// Format YYYY-MM menjadi label yang lebih mudah dibaca, misal "2025-05" → "May 2025"
+function fmtPlanMonth(plan_month: string): string {
+  const [year, month] = plan_month.split('-')
+  const date = new Date(Number(year), Number(month) - 1, 1)
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
 export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
   const columns: ColumnDef<ProductionPlan>[] = [
     {
@@ -76,6 +94,33 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
           },
           row.original.plan_number,
         ),
+    },
+    // Kolom Plan Month — tampil setelah Plan Number
+    {
+      accessorKey: 'plan_month',
+      header: 'Plan Month',
+      cell: ({ row }) =>
+        h('div', { class: 'text-sm font-mono' }, fmtPlanMonth(row.original.plan_month)),
+    },
+    // [+] Kolom Plan Type — ORIGINAL | AMENDMENT
+    {
+      accessorKey: 'plan_type',
+      header: 'Type',
+      cell: ({ row }) => {
+        const type = (row.original.plan_type ?? 'ORIGINAL') as PlanType
+        return h('div', { class: 'flex flex-col gap-0.5' }, [
+          h(ui.UBadge, {
+            label:   planTypeLabel[type] ?? type,
+            color:   planTypeColor[type] ?? 'neutral',
+            variant: 'soft',
+            size:    'sm',
+          }),
+          // Tampilkan plan_number parent jika AMENDMENT
+          row.original.plan_type === 'AMENDMENT' && row.original.parent_plan
+            ? h('span', { class: 'text-xs text-muted font-mono' }, `↳ ${row.original.parent_plan.plan_number}`)
+            : null,
+        ])
+      },
     },
     {
       accessorKey: 'plan_description',

@@ -2,13 +2,13 @@
 import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
+import { useRouter } from 'vue-router'
 import { useLineStore } from '../../../stores/master-data/line.store'
 import { useFactoryStore } from '../../../stores/master-data/factory.store'
 import { useLineCapacityStore } from '../../../stores/master-data/line-capacity.store'
 import { useLineColumns } from './composables/useLineColumns'
 import { useAppToast } from '../../../composables/useAppToast'
 import type { Line } from '../../../types/master-data/line'
-import type { LineCapacityParamsResponse } from '../../../types/master-data/line-capacity'
 import type { Row } from '@tanstack/table-core'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
@@ -17,22 +17,24 @@ import LineFilters from './components/LineFilters.vue'
 import LineBulkActions from './components/LineBulkActions.vue'
 import LineFormModal from './components/LineFormModal.vue'
 import UploadExcelModal from '../../../components/UploadExcelModal.vue'
-import LineCapacityPanel from './components/LineCapacityPanel.vue'
+
+// ── Router ─────────────────────────────────────────────────────────────────
+const router = useRouter()
 
 // ── Stores ─────────────────────────────────────────────────────────────────
 const lineStore         = useLineStore()
 const factoryStore      = useFactoryStore()
 const lineCapacityStore = useLineCapacityStore()
 
-const { lines, meta, loading }    = storeToRefs(lineStore)
-const { dropdown: factories }     = storeToRefs(factoryStore)
+const { lines, meta, loading }     = storeToRefs(lineStore)
+const { dropdown: factories }      = storeToRefs(factoryStore)
 const { toastSuccess, toastError } = useAppToast()
 const table = useTemplateRef('table')
 
 // ── UI Components ──────────────────────────────────────────────────────────
 const uiComponents = {
-  UCheckbox:    resolveComponent('UCheckbox') as any,
-  UButton:      resolveComponent('UButton') as any,
+  UCheckbox:     resolveComponent('UCheckbox') as any,
+  UButton:       resolveComponent('UButton') as any,
   UDropdownMenu: resolveComponent('UDropdownMenu') as any
 }
 
@@ -69,67 +71,20 @@ const confirmDialog = reactive({
 
 // ── Table state ────────────────────────────────────────────────────────────
 const rowSelection = ref({})
-const expanded     = ref<Record<string, boolean>>({})
 
-// ── Capacity state ─────────────────────────────────────────────────────────
-
-/** Cache lokal: lineId → hasil fetchParams / calculate */
-const capacityParamsMap = ref<Record<number, LineCapacityParamsResponse>>({})
-
-/** Set of line IDs yang sedang proses calculate */
-const calculatingIds = ref<Set<number>>(new Set())
-
-function hasCapacityParams(lineId: number): boolean {
-  return !!capacityParamsMap.value[lineId]
-}
-
-function isCalculating(lineId: number): boolean {
-  return calculatingIds.value.has(lineId)
-}
-
-async function handleCalculate(line: Line, efficiencyFactor = 0.85) {
-  calculatingIds.value.add(line.id)
-  try {
-    await lineCapacityStore.calculate(line.id, { efficiency_factor: efficiencyFactor })
-    // Store sudah fetch ulang dan update paramsCache — ambil dari sana
-    const cached = lineCapacityStore.getCached(line.id)
-    if (cached) {
-      capacityParamsMap.value[line.id] = cached
-    }
-    toastSuccess(`Capacity params for "${line.name}" calculated successfully`)
-  } catch (err) {
-    toastError(err)
-  } finally {
-    calculatingIds.value.delete(line.id)
-    calculatingIds.value = new Set(calculatingIds.value)
-  }
-}
-
-/** Fetch capacity params semua line di halaman saat ini */
-async function fetchAllCapacityParams() {
-  await Promise.allSettled(
-    (lines.value ?? []).map(async (line) => {
-      try {
-        const cached = lineCapacityStore.getCached(line.id)
-        if (cached) { capacityParamsMap.value[line.id] = cached; return }
-        const res = await lineCapacityStore.fetchParams(line.id)
-        if (res?.status && res?.data) {
-          capacityParamsMap.value[line.id] = res.data
-        }
-      } catch {
-        // Line belum punya capacity params — abaikan
-      }
-    })
-  )
+// ── Navigasi ke halaman Line Capacity ─────────────────────────────────────
+function handleViewLineCapacity(line: Line) {
+  router.push({
+    name: 'master-data-lines-capacity',
+    params: { line_id: line.id }
+  })
 }
 
 // ── Columns ────────────────────────────────────────────────────────────────
 const { columns } = useLineColumns({
-  onEdit:            openEditModal,
-  onDelete:          handleDelete,
-  onCalculate:       handleCalculate,
-  hasCapacityParams,
-  isCalculating
+  onEdit:              openEditModal,
+  onDelete:            handleDelete,
+  onViewLineCapacity:  handleViewLineCapacity,
 }, uiComponents)
 
 // ── Computed ───────────────────────────────────────────────────────────────
@@ -146,7 +101,6 @@ async function fetchData() {
   }
   if (filters.factory_id) params.factory_id = filters.factory_id
   await lineStore.fetchLines(params)
-  await fetchAllCapacityParams()
 }
 
 // ── Download / Upload ──────────────────────────────────────────────────────
@@ -214,7 +168,6 @@ function handleDelete(row: Line) {
       const res = await lineStore.deleteLine(row.id)
       toastSuccess(res.message || 'Line deleted')
       lineCapacityStore.invalidate(row.id)
-      delete capacityParamsMap.value[row.id]
       fetchData()
       confirmDialog.open = false
     } catch (err) { toastError(err); confirmDialog.open = false }
@@ -267,27 +220,9 @@ onMounted(() => { fetchData(); factoryStore.fetchDropdown() })
     />
 
     <div class="flex gap-2">
-      <UButton
-        icon="i-lucide-download"
-        color="neutral"
-        variant="ghost"
-        label="Export"
-        @click="handleDownload"
-      />
-      <UButton
-        icon="i-lucide-upload"
-        color="neutral"
-        variant="ghost"
-        label="Import"
-        @click="isUploadModalOpen = true"
-      />
-      <UButton
-        icon="i-lucide-plus"
-        color="primary"
-        variant="solid"
-        label="Add Line"
-        @click="openAddModal"
-      />
+      <UButton icon="i-lucide-download" color="neutral" variant="ghost" label="Export"   @click="handleDownload" />
+      <UButton icon="i-lucide-upload"   color="neutral" variant="ghost" label="Import"   @click="isUploadModalOpen = true" />
+      <UButton icon="i-lucide-plus"     color="primary" variant="solid" label="Add Line" @click="openAddModal" />
     </div>
 
     <LineBulkActions :count="selectedCount" @delete="handleBulkDelete" />
@@ -295,20 +230,11 @@ onMounted(() => { fetchData(); factoryStore.fetchDropdown() })
     <UTable
       ref="table"
       v-model:row-selection="rowSelection"
-      v-model:expanded="expanded"
       :data="lines"
       :columns="columns"
       :loading="loading"
       class="w-full"
-    >
-      <template #expanded="{ row }">
-        <LineCapacityPanel
-          :params="capacityParamsMap[row.original.id]"
-          :calculating="isCalculating(row.original.id)"
-          @calculate="(ef) => handleCalculate(row.original, ef)"
-        />
-      </template>
-    </UTable>
+    />
 
     <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
       <div class="text-sm text-muted">
