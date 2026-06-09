@@ -4,6 +4,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { useSpoStore } from '../../../../stores/sales/spo.store'
 import { storeToRefs } from 'pinia'
 import type { Spo } from '../../../../types/sales/spo'
+import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
 
 const props = defineProps<{
   status: string
@@ -24,9 +25,40 @@ const items = computed(() => kanbanSpos.value[props.status] || [])
 const meta = computed(() => kanbanMeta.value[props.status] || { page: 1, total: 0, totalPages: 0, loading: false })
 
 const columnFilter = computed({
-  get: () => kanbanFilters.value[props.status] || { customer_id: null, start_date: '', end_date: '' },
-  set: (val) => { kanbanFilters.value[props.status] = val }
+  get() {
+    if (!kanbanFilters.value[props.status]) {
+      kanbanFilters.value[props.status] = { customer_id: undefined, start_date: '', end_date: '' }
+    }
+    return kanbanFilters.value[props.status]
+  },
+  set(val) {
+    kanbanFilters.value[props.status] = val
+  }
 })
+
+const dateRange = computed<any>({
+  get() {
+    const start = columnFilter.value.start_date ? new Date(columnFilter.value.start_date) : undefined
+    const end = columnFilter.value.end_date ? new Date(columnFilter.value.end_date) : undefined
+    return { start, end }
+  },
+  set(val) {
+    if (val) {
+      columnFilter.value.start_date = val.start ? formatDateToYYYYMMDD(val.start) : ''
+      columnFilter.value.end_date = val.end ? formatDateToYYYYMMDD(val.end) : ''
+    } else {
+      columnFilter.value.start_date = ''
+      columnFilter.value.end_date = ''
+    }
+  }
+})
+
+function formatDateToYYYYMMDD(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 const hasActiveFilter = computed(() => !!columnFilter.value.customer_id || !!columnFilter.value.start_date || !!columnFilter.value.end_date)
 
@@ -37,7 +69,7 @@ function applyFilter() {
 }
 
 function clearFilter() {
-  columnFilter.value = { customer_id: null, start_date: '', end_date: '' }
+  columnFilter.value = { customer_id: undefined, start_date: '', end_date: '' }
   applyFilter()
 }
 
@@ -100,21 +132,19 @@ function formatDate(dateStr: string | null | undefined) {
               <UFormField label="Customer" size="sm">
                 <USelectMenu
                   v-model="columnFilter.customer_id"
-                  :options="customersDropdown"
-                  value-attribute="id"
-                  option-attribute="name"
+                  :items="customersDropdown"
+                  value-key="id"
+                  label-key="name"
                   placeholder="All Customers"
                   searchable
-                  clearable
+                  clear
                 />
               </UFormField>
-              
-              <UFormField label="Start Date" size="sm">
-                <UInput v-model="columnFilter.start_date" type="date" />
-              </UFormField>
-              
-              <UFormField label="End Date" size="sm">
-                <UInput v-model="columnFilter.end_date" type="date" />
+              <UFormField label="Date Range" size="sm">
+                <HomeDateRangePicker
+                  v-model="dateRange"
+                  clear
+                />
               </UFormField>
 
               <div class="flex justify-end gap-2 pt-2 border-t border-default/50">

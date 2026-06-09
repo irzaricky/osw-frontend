@@ -12,7 +12,7 @@ export const useSpoStore = defineStore('spo', () => {
   // ─── Kanban State ───────────────────────────────────────────────────────────
   const kanbanSpos = ref<Record<string, Spo[]>>({})
   const kanbanMeta = ref<Record<string, { page: number; total: number; totalPages: number; loading: boolean }>>({})
-  const kanbanFilters = ref<Record<string, { customer_id?: number | null; start_date?: string; end_date?: string }>>({})
+  const kanbanFilters = ref<Record<string, { customer_id?: number; start_date?: string; end_date?: string }>>({})
 
   // ─── Dropdowns ──────────────────────────────────────────────────────────────
   const statusDropdown = ref<string[]>([])
