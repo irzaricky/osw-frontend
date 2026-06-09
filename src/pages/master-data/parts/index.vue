@@ -49,7 +49,7 @@ const filters = reactive({
   part_type_code: undefined as string | undefined
 })
 const partTypes = ref<{ code: string; name: string }[]>([])
-const partCategories = ref<{ id: number; code: string; name: string }[]>([])
+// const partCategories = ref<{ id: number; code: string; name: string }[]>([])
 const packages = ref<{ id: number; package_code: string; name: string }[]>([])
 
 // Modal state — Form
@@ -129,16 +129,16 @@ async function fetchPartTypes() {
   }
 }
 
-async function fetchPartCategories() {
-  try {
-    const res = await partService.ddCategories()
-    if (res.data.status) {
-      partCategories.value = res.data.data
-    }
-  } catch (e) {
-    console.error('Error fetching part categories:', e)
-  }
-}
+// async function fetchPartCategories() {
+//   try {
+//     const res = await partService.ddCategories()
+//     if (res.data.status) {
+//       partCategories.value = res.data.data
+//     }
+//   } catch (e) {
+//     console.error('Error fetching part categories:', e)
+//   }
+// }
 
 async function fetchPackages() {
   try {
@@ -297,7 +297,7 @@ watch(filters, () => {
 onMounted(() => {
   fetchData()
   fetchPartTypes()
-  fetchPartCategories()
+  // fetchPartCategories()
   fetchPackages()
   supplierStore.fetchDropdown()
   uomStore.fetchDropdown()
@@ -389,7 +389,6 @@ onMounted(() => {
           :part="currentPart"
           :suppliers="suppliers"
           :part-types="partTypes"
-          :part-categories="partCategories"
           :uoms="uom"
           :packages="packages"
           :loading="loading"

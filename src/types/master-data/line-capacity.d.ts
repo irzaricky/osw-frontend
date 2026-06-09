@@ -31,21 +31,11 @@ export interface LineActualStation {
   }[]
 }
  
-export interface LineActualGroup {
-  group_id:        number
-  group_name:      string
-  total_members:   number
-  total_operators: number
-}
- 
 export interface LineActualSummary {
   total_active_stations: number
   total_active_jobs:     number
   max_takt_time_seconds: number
   bottleneck_station:    LineActualStation | null
-  default_manpower:      number
-  total_all_members:     number
-  groups:                LineActualGroup[]
   stations:              LineActualStation[]
 }
  
@@ -104,6 +94,7 @@ export interface LineCapacityPreviewResponse {
   existing_param:     LineCapacitySavedParams | null
   calendar_params:    LineCalendarParams | null
   actual:             LineActualSummary
+  suggested_manpower:      number | null
 }
  
 // ── Response POST /line-capacity/:line_id/calculate ───────────────────────────
@@ -140,6 +131,7 @@ export interface LineCapacityCalculatePayload {
   year?:             number   // default: tahun berjalan
   month?:            number   // default: bulan berjalan
   efficiency_factor?: number  // default: dari baris terbaru atau 0.85
+  manpower?:          number  // default: dari baris terbaru atau aktual line
 }
  
 // Alias

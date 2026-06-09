@@ -10,7 +10,7 @@ const props = defineProps<{
   part: Partial<Parts>
   suppliers: SupplierDropdown[]
   partTypes: { code: string; name: string }[]
-  partCategories: { id: number; code: string; name: string }[]
+  // partCategories: { id: number; code: string; name: string }[]
   uoms: UomDropdownItem[]
   packages: { id: number; package_code: string; name: string }[]
   loading?: boolean
@@ -82,7 +82,7 @@ const selectedPartType = computed({
 })
 
 // Computed: Part Category select
-const partCategoryItems = computed(() => props.partCategories.map(c => c.name))
+// const partCategoryItems = computed(() => props.partCategories.map(c => c.name))
 
 // const selectedPartCategory = computed({
 //   get() {
