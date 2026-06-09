@@ -381,7 +381,7 @@ onMounted(() => {
 
           <UInput
             v-model="scanLabel"
-            placeholder="Scan/Input Label Number"
+            placeholder="Input or scan label number"
             icon="i-lucide-scan-line"
             class="flex-1"
             :disabled="isSubmitted"

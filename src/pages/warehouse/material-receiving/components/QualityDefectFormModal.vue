@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, watch, ref } from 'vue'
+import * as z from 'zod'
 import type { QualityCheckingLabel } from '../../../../types/warehouse/material-receiving'
 
 const props = defineProps<{
@@ -26,12 +27,27 @@ type DefectForm = {
   file: File | null
 }
 
-const state = reactive({
+const formRef = ref()
+
+const schema = z.object({
+  defects: z
+    .array(
+      z.object({
+        defect_id: z.union([z.number(), z.undefined()])
+          .refine((value) => value !== undefined, {
+            message: 'Defect is required'
+          })
+      })
+    )
+    .min(1, 'At least one defect is required')
+})
+
+const state = reactive<{ defects: DefectForm[] }>({
   defects: [
     {
       defect_id: undefined,
       file: null
-    } as DefectForm
+    }
   ]
 })
 
@@ -77,10 +93,11 @@ function setFile(
   state.defects[index].file = file || null
 }
 
+function submitForm() {
+  formRef.value?.submit()
+}
 
-
-function onSubmit(event: Event) {
-  event.preventDefault()
+function onSubmit() {
   const formData = new FormData()
   const defectsPayload = state.defects.map(defect => ({
     defect_id: defect.defect_id
@@ -92,7 +109,6 @@ function onSubmit(event: Event) {
     }
   })
   emit('save', formData)
-  emit('update:open', false)
 }
 
 function close() {
@@ -108,9 +124,9 @@ function close() {
     @update:open="emit('update:open', $event)"
   >
     <template #body>
-      <form class="space-y-4" @submit.prevent="onSubmit">
+      <UForm ref="formRef" :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
         <UFormField label="Label Number">
-          <UInput :model-value=" props.label?.label_number || '-'" disabled class="w-full" />
+          <UInput :model-value="props.label?.label_number || '-'" disabled class="w-full" />
         </UFormField>
 
         <div class="space-y-4">
@@ -165,7 +181,7 @@ function close() {
             </UFormField>
           </div>
         </div>
-      </form>
+      </UForm>
     </template>
 
     <template #footer>
@@ -181,7 +197,7 @@ function close() {
           icon="i-lucide-shield-alert"
           label="Submit Defect"
           :loading="props.loading"
-          @click="onSubmit"
+          @click="submitForm"
         />
       </div>
     </template>

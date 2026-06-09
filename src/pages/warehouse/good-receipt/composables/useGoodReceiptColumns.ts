@@ -53,7 +53,7 @@ export function useGoodReceiptColumns(actions: ColumnActions, components: Column
     {
       accessorKey: 'arrived_at',
       header: 'Arrived At',
-      cell: ({ row }) => row.original.arrived_at ? new Date(row.original.arrived_at).toLocaleDateString() : '-'
+      cell: ({ row }) => row.original.arrived_at ? new Date(row.original.arrived_at).toLocaleString() : '-'
     },
     {
       accessorKey: 'total_part',
