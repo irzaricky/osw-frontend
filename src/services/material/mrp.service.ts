@@ -45,6 +45,10 @@ const mrpService = {
     return api.post(`${BASE}/`, data)
   },
 
+  getDashboardCriticalParts() {
+    return api.get(`${BASE}/dashboard/critical-parts`)
+  },
+
   updateMrp(id: number | string, data: Partial<Mrp> & { save_as_draft?: boolean }) {
     return api.put(`${BASE}/${id}`, data)
   },

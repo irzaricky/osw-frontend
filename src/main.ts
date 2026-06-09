@@ -168,22 +168,22 @@ const router = createRouter({
     {
       path: '/material/mrp',
       component: () => import('./pages/material/mrp/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material']}
     },
     {
       path: '/material/mpr',
       component: () => import('./pages/material/mpr/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
     },
     {
       path: '/material/mpo',
       component: () => import('./pages/material/mpo/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
     },
     {
       path: '/material/mdo',
       component: () => import('./pages/material/mdo/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
     },
     //WAREHOUSE
     {
