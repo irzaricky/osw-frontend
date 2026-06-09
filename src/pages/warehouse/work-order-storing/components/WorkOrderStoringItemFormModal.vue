@@ -141,7 +141,7 @@ function close() {
             :items="partItems"
             placeholder="Select Part"
             class="w-full"
-            clear
+            :clear="!props.partDisabled"
             :disabled="props.partDisabled"
           />
         </UFormField>

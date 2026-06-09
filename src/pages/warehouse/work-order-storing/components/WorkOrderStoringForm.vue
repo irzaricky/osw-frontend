@@ -586,7 +586,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           :items="typeItems"
           placeholder="Select Work Order Type"
           class="w-full"
-          clear
+          :clear="isEditable"
           :disabled="!isEditable"
         />
       </UFormField>
@@ -624,7 +624,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           option-attribute="label"
           placeholder="Select Delivery Order"
           class="w-full"
-          clear
+          :clear="isEditable"
           :disabled="!isEditable || !showReferenceSource || state.ref_source !== 'delivery_order'"
         />
 
@@ -669,7 +669,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           placeholder="Select Warehouse Area"
           class="w-full"
           :disabled="!state.wo_type_id || !isEditable"
-          clear
+          :clear="isEditable"
         />
       </UFormField>
 
