@@ -282,6 +282,13 @@ watch(
       })
     })
 
+    if (isTakeOut) {
+      state.ref_source = 'manual'
+      state.ref_doc_id = undefined
+      state.ref_doc_number = ''
+      state.ref_doc_name = ''
+    }
+
     state.items = []
   }
 )
@@ -719,7 +726,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
       :loading="loading"
       :part-disabled="!isEditable || !state.wo_type_id || (state.wo_category === 'Take Out' && !state.warehouse_area_id) || (state.ref_source === 'delivery_order' && !state.ref_doc_id)"
       :kanban-disabled="!isEditable"
-      :show-stock-field="state.wo_category === 'Take Out'"
+      :show-stock-field="state.wo_category === 'Take Out' && state.ref_source !== 'delivery_order'"
       :show-remaining-qty-field="state.ref_source === 'delivery_order'"
       :item="selectedItemIndex !== null ? state.items[selectedItemIndex] : null"
       @save="handleAddItem"

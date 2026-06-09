@@ -45,6 +45,7 @@ export function useMaterialReceivingItemColumns(
       header: '',
       cell: ({ row }) =>
         h(UButton, {
+          class: 'cursor-pointer',
           label: 'Print Label',
           color: 'primary',
           variant: 'subtle',
