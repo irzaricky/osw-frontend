@@ -173,7 +173,6 @@ function close() {
         @submit="onSubmit"
       >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Description -->
           <UFormField
             label="Description"
             name="description"
@@ -188,7 +187,6 @@ function close() {
             />
           </UFormField>
 
-          <!-- Request Date -->
           <UFormField label="Request Date" name="request_date" required>
             <UInputDate v-model="requestDateModel" :disabled="isAutoType">
               <template #trailing>
@@ -209,7 +207,6 @@ function close() {
             </UInputDate>
           </UFormField>
 
-          <!-- Remarks -->
           <UFormField label="Remarks" name="remarks">
             <UInput
               v-model="state.remarks"
@@ -220,7 +217,6 @@ function close() {
           </UFormField>
         </div>
 
-        <!-- Part Details -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <label class="text-sm font-medium">Parts & Quantities</label>
@@ -236,16 +232,16 @@ function close() {
           </div>
 
           <div class="border border-default rounded-lg overflow-hidden">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm table-fixed">
               <thead class="bg-elevated/50">
                 <tr>
-                  <th class="p-2.5 text-left font-medium border-b border-default">
+                  <th class="p-2.5 text-left font-medium border-b border-default w-[35%]">
                     Part
                   </th>
                   <th class="p-2.5 text-center font-medium border-b border-default w-24">
                     Qty
                   </th>
-                  <th class="p-2.5 text-left font-medium border-b border-default w-36">
+                  <th class="p-2.5 text-left font-medium border-b border-default w-40">
                     Required Date
                   </th>
                   <th class="p-2.5 text-left font-medium border-b border-default">
