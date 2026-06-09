@@ -38,6 +38,7 @@ const localPart = reactive<Partial<Parts>>({
   generation:       '',
   color:            '',
   color_code:       '',
+  min_qty_sell:     10,
 })
 
 watch(
@@ -60,6 +61,7 @@ watch(
       generation:       newVal.generation       || '',
       color:            newVal.color            || '',
       color_code:       newVal.color_code       || '',
+      min_qty_sell:     newVal.min_qty_sell     ?? 10,
     })
   },
   { deep: true, immediate: true }
@@ -250,8 +252,8 @@ function handleClose() {
           </UFormField>
         </div>
 
-        <!-- Row 5: UOM & Package -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Row 5: UOM, Package & Min Qty Sell -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <UFormField label="UOM" required>
             <USelectMenu
               v-model="selectedUom"
@@ -269,6 +271,17 @@ function handleClose() {
               placeholder="Select package (optional)"
               class="w-full"
               :disabled="loading"
+            />
+          </UFormField>
+
+          <UFormField label="Min Qty Sell" required>
+            <UInput
+              v-model.number="localPart.min_qty_sell"
+              type="number"
+              placeholder="10"
+              class="w-full"
+              :disabled="loading"
+              :min="0"
             />
           </UFormField>
         </div>

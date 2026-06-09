@@ -300,6 +300,37 @@ function removePart(partId: number) {
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
 async function saveChanges() {
+  // Validate min_qty_sell before saving
+  for (const part of parts.value) {
+    const minQty = (part as any).min_qty_sell !== undefined ? (part as any).min_qty_sell : 10
+    if (is4Month.value) {
+      for (const period of periods.value) {
+        const entry = dataEntry.value[part.id]?.[period.date]
+        if (entry && (entry.forecast_qty || 0) < minQty) {
+          toast.add({
+            title: 'Validation Error',
+            description: `Forecast quantity for part ${part.part_number} in ${period.label} (${entry.forecast_qty || 0}) is less than the minimum sales quantity of ${minQty}.`,
+            color: 'error'
+          })
+          return
+        }
+      }
+    } else {
+      const firstPeriod = periods.value[0]
+      if (firstPeriod) {
+        const entry = dataEntry.value[part.id]?.[firstPeriod.date]
+        if (entry && (entry.forecast_qty || 0) < minQty) {
+          toast.add({
+            title: 'Validation Error',
+            description: `Forecast quantity for part ${part.part_number} (${entry.forecast_qty || 0}) is less than the minimum sales quantity of ${minQty}.`,
+            color: 'error'
+          })
+          return
+        }
+      }
+    }
+  }
+
   const detailsToSave: any[] = []
 
   parts.value.forEach(part => {

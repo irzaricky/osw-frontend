@@ -132,6 +132,22 @@ function submitForm() {
 
 function onSubmit(event: FormSubmitEvent<Schema>) {
   const validDetails = state.details.filter(d => d.part_id && d.qty > 0)
+
+  // Validate min_qty_sell
+  const toast = useToast()
+  for (const d of validDetails) {
+    const part = store.partsDropdown.find(p => p.id === d.part_id)
+    const minQty = part?.min_qty_sell !== undefined ? part.min_qty_sell : 10
+    if (d.qty < minQty) {
+      toast.add({
+        title: 'Validation Error',
+        description: `Quantity for part ${part?.part_number} (${d.qty}) is less than the minimum sales quantity of ${minQty}.`,
+        color: 'error'
+      })
+      return
+    }
+  }
+
   emit('save', {
     spr_name: event.data.spr_name,
     required_date: event.data.required_date,

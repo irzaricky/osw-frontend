@@ -8,6 +8,7 @@ export interface PartDropdown {
   part_type_code?: string | null
   available_stock?: number
   remaining_qty?: number
+  min_qty_sell?: number
   uom?: {
     id: number
     code: string
@@ -49,6 +50,7 @@ export interface Parts {
   generation?: string | null
   color?: string | null
   color_code?: string | null
+  min_qty_sell?: number
 
   // Relations (dari include)
   part_type?: PartType

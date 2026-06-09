@@ -10,7 +10,7 @@ export const useSprStore = defineStore('spr', () => {
   const logs = ref<any[]>([])
 
   // Dropdowns
-  const partsDropdown = ref<{ id: number; part_number: string; part_name: string }[]>([])
+  const partsDropdown = ref<{ id: number; part_number: string; part_name: string; min_qty_sell?: number }[]>([])
   const statusDropdown = ref<string[]>([])
   const sourceDropdown = ref<string[]>([])
 

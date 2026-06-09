@@ -13,7 +13,7 @@ export const useForecastStore = defineStore('forecast', () => {
   const customersDropdown = ref<{ id: number; customer_code: string; name: string }[]>([])
   const forecastTypesDropdown = ref<string[]>([])
   const statusDropdown = ref<string[]>([])
-  const partsDropdown = ref<{ id: number; part_number: string; part_name: string }[]>([])
+  const partsDropdown = ref<{ id: number; part_number: string; part_name: string; min_qty_sell?: number }[]>([])
 
   const meta = ref({
     page: 1,
