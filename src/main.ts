@@ -71,8 +71,8 @@ const router = createRouter({
       component: () => import('./pages/sales/sdp/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales', 'Staff Sales Delivery'] }
     },
-    { 
-      path: '/sales/analytics', 
+    {
+      path: '/sales/analytics',
       component: () => import('./pages/sales/analytics/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales'] }
     },
@@ -89,73 +89,73 @@ const router = createRouter({
     {
       path: '/production-plan',
       component: () => import('./pages/production-plan.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/bom', 
+    {
+      path: '/production-plan/bom',
       name: 'bom-list',
       component: () => import('./pages/production-plan/bom/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
+    {
       path: '/production-plan/bom/create',
       name: 'bom-create',
       component: () => import('./pages/production-plan/bom/BomFormPage.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/bom/:id', 
+    {
+      path: '/production-plan/bom/:id',
       name: 'bom-detail-edit',
       component: () => import('./pages/production-plan/bom/BomFormPage.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
+    {
       path: '/production-plan/plan',
       name: 'production-plan-list',
       component: () => import('./pages/production-plan/production-plan/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/plan/:id', 
+    {
+      path: '/production-plan/plan/:id',
       name: 'production-plan-detail-edit',
       component: () => import('./pages/production-plan/production-plan/PlanFormPage.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/plan/create', 
+    {
+      path: '/production-plan/plan/create',
       name: 'production-plan-create',
       component: () => import('./pages/production-plan/production-plan/PlanFormPage.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
+    {
       path: '/production-plan/order-schedule',
       name: 'order-schedule-list',
       component: () => import('./pages/production-plan/order-schedule/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/order-schedule/:id', 
+    {
+      path: '/production-plan/order-schedule/:id',
       name: 'order-schedule-detail-edit',
       component: () => import('./pages/production-plan/order-schedule/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/order-schedule/create', 
+    {
+      path: '/production-plan/order-schedule/create',
       name: 'order-schedule-create',
       component: () => import('./pages/production-plan/order-schedule/create.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
+    {
       path: '/production-plan/work-order',
       name: 'work-order-list',
       component: () => import('./pages/production-plan/work-order/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
-    { 
-      path: '/production-plan/work-order/:id', 
+    {
+      path: '/production-plan/work-order/:id',
       name: 'work-order-detail-edit',
       component: () => import('./pages/production-plan/work-order/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
     // { 
     //   path: '/production-plan/work-order/create', 
@@ -163,12 +163,12 @@ const router = createRouter({
     //   component: () => import('./pages/production-plan/work-order/create.vue'),
     //   meta: { layout: 'default', requiresAuth: true }
     // },
-    
+
     //MATERIAL
     {
       path: '/material/mrp',
       component: () => import('./pages/material/mrp/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material']}
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
     },
     {
       path: '/material/mpr',
@@ -236,105 +236,104 @@ const router = createRouter({
     {
       path: '/master-data/users',
       component: () => import('./pages/master-data/users/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Admin Warehouse', 'Admin PPIC', 'Admin Material'] }
     },
     {
       path: '/master-data/vehicles',
       component: () => import('./pages/master-data/vehicles/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse', 'Warehouse Staff'] }
     },
     {
       path: '/master-data/defects',
       component: () => import('./pages/master-data/defects/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/warehouses',
       component: () => import('./pages/master-data/warehouses/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     {
       path: '/master-data/warehouse-areas',
       component: () => import('./pages/master-data/warehouse-areas/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     {
       path: '/master-data/storage-bins',
       component: () => import('./pages/master-data/storage-bins/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     {
       path: '/master-data/docks',
       component: () => import('./pages/master-data/docks/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
     {
       path: '/master-data/audit-logs',
       component: () => import('./pages/master-data/audit-logs/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Admin Warehouse', 'Admin PPIC', 'Admin Material'] }
     },
     {
       path: '/master-data/customers',
       component: () => import('./pages/master-data/customers/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin sales', 'Supervisor Sales'] }
     },
     {
       path: '/master-data/factories',
       component: () => import('./pages/master-data/factories/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/lines',
       name: 'master-data-lines',
       component: () => import('./pages/master-data/lines/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/lines/:line_id/capacity',
       name: 'master-data-lines-capacity',
       component: () => import('./pages/master-data/lines/LineCapacityPage.vue'),
-      meta: { title: 'Line Capacity', layout: 'default', requiresAuth:  true,
-      }
-    },    
+      meta: { title: 'Line Capacity', layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
+    },
     {
       path: '/master-data/parts',
       component: () => import('./pages/master-data/parts/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Supervisor Material', 'Admin PPIC'] }
     },
     {
       path: '/master-data/suppliers',
       component: () => import('./pages/master-data/suppliers/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Supervisor Material'] }
     },
     {
       path: '/master-data/calendar',
       component: () => import('./pages/master-data/calendar/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/stations',
       component: () => import('./pages/master-data/stations/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/stations/:id/jobs',
       component: () => import('./pages/master-data/stations/[id]/jobs/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/jobs',
       component: () => import('./pages/master-data/jobs/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/shifts',
       component: () => import('./pages/master-data/shifts/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
     {
       path: '/master-data/shift-calendars',
       component: () => import('./pages/master-data/shift-calendars/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC'] }
     },
 
     // warehouse
@@ -348,33 +347,33 @@ const router = createRouter({
       component: () => import('./pages/warehouse/material-receiving/set-arrived-process.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
-    { 
-      path: '/warehouse/material-receiving/view-progress/:id', 
+    {
+      path: '/warehouse/material-receiving/view-progress/:id',
       component: () => import('./pages/warehouse/material-receiving/view-progress/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
-    { 
-      path: '/warehouse/material-receiving/view-progress/:id/quantity-checking/:mdo_detail_id', 
+    {
+      path: '/warehouse/material-receiving/view-progress/:id/quantity-checking/:mdo_detail_id',
       component: () => import('./pages/warehouse/material-receiving/view-progress/quantity-checking.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
-    { 
-      path: '/warehouse/material-receiving/view-progress/:id/quality-checking/:mdo_detail_id', 
+    {
+      path: '/warehouse/material-receiving/view-progress/:id/quality-checking/:mdo_detail_id',
       component: () => import('./pages/warehouse/material-receiving/view-progress/quality-checking.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
-    { 
-      path: '/warehouse/good-receipt', 
+    {
+      path: '/warehouse/good-receipt',
       component: () => import('./pages/warehouse/good-receipt/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
-    { 
-      path: '/warehouse/good-receipt/:id', 
+    {
+      path: '/warehouse/good-receipt/:id',
       component: () => import('./pages/warehouse/good-receipt/detail.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Supervisor Warehouse'] }
     },
-    { 
-      path: '/warehouse/warranty-and-claim', 
+    {
+      path: '/warehouse/warranty-and-claim',
       component: () => import('./pages/warehouse/warranty-and-claim/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Warehouse', 'Warehouse Staff'] }
     },
