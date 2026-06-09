@@ -129,7 +129,7 @@ const nextStatusLabel = computed(() => {
 const canEdit = computed(() => props.order?.status === 'draft')
 const canDelete = computed(() => props.order?.status === 'draft')
 const canAdvance = computed(() =>
-  props.order?.status === 'scheduled' || props.order?.status === 'in_transit'
+  props.order?.status === 'scheduled'
 )
 
 // ─── Capacity bar ──────────────────────────────────────────────────────────────

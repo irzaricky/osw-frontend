@@ -250,13 +250,13 @@ function close() {
       >
         <!-- Sales Plan (Add only) -->
         <template v-if="mode === 'add'">
-          <UFormField label="Sales Plan" name="spr_id">
+          <UFormField label="Sales Plan" name="spr_id" required>
             <div class="flex gap-2">
               <USelectMenu
                 v-model="selectedSalesPlan"
                 :items="salesPlanItems"
                 class="flex-1"
-                placeholder="Select approved sales plan (optional)"
+                placeholder="Select approved sales plan"
                 searchable
                 clear
               />
