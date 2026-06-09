@@ -561,6 +561,9 @@ const conflictingDocksNames = computed(() => {
                     <th class="p-3">
                       Destination
                     </th>
+                    <th class="p-3">
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-default/40">
