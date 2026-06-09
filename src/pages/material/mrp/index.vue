@@ -135,8 +135,8 @@ function toggleStatusCollapse(status: string) {
 // ─── Bulk Review (Supervisor) ────────────────────────────────────────────────
 const selectedIds = ref<number[]>([])
 const isBulkReviewOpen = ref(false)
-const bulkReviewForm = ref<{ action: 'approve' | 'reject'; notes: string }>({
-  action: 'approve',
+const bulkReviewForm = ref<{ action: 'Approve' | 'Reject'; notes: string }>({
+  action: 'Approve',
   notes: ''
 })
 
@@ -158,13 +158,13 @@ function toggleSelectAll() {
   }
 }
 
-function openBulkReview(action: 'approve' | 'reject') {
+function openBulkReview(action: 'Approve' | 'Reject') {
   bulkReviewForm.value = { action, notes: '' }
   isBulkReviewOpen.value = true
 }
 
 async function confirmBulkReview() {
-  if (bulkReviewForm.value.action === 'reject' && !bulkReviewForm.value.notes.trim()) {
+  if (bulkReviewForm.value.action === 'Reject' && !bulkReviewForm.value.notes.trim()) {
     return
   }
   try {
@@ -173,7 +173,7 @@ async function confirmBulkReview() {
       action: bulkReviewForm.value.action,
       notes: bulkReviewForm.value.notes || undefined
     })
-    toastSuccess(`${selectedIds.value.length} MRP(s) ${bulkReviewForm.value.action === 'approve' ? 'approved' : 'rejected'}`)
+    toastSuccess(`${selectedIds.value.length} MRP(s) ${bulkReviewForm.value.action === 'Approve' ? 'approved' : 'rejected'}`)
     selectedIds.value = []
     isBulkReviewOpen.value = false
     fetchData()
@@ -331,7 +331,7 @@ onMounted(() => {
               variant="outline"
               size="sm"
               label="Approve Selected"
-              @click="openBulkReview('approve')"
+              @click="openBulkReview('Approve')"
             />
             <UButton
               icon="i-lucide-x"
@@ -339,7 +339,7 @@ onMounted(() => {
               variant="outline"
               size="sm"
               label="Reject Selected"
-              @click="openBulkReview('reject')"
+              @click="openBulkReview('Reject')"
             />
           </template>
 
@@ -505,20 +505,20 @@ onMounted(() => {
     <!-- Bulk Review Modal -->
     <UModal
       v-model:open="isBulkReviewOpen"
-      :title="bulkReviewForm.action === 'approve' ? 'Bulk Approve MRP' : 'Bulk Reject MRP'"
-      :description="`You are about to ${bulkReviewForm.action} ${selectedIds.length} MRP document(s).`"
+      :title="bulkReviewForm.action === 'Approve' ? 'Bulk Approve MRP' : 'Bulk Reject MRP'"
+      :description="`You are about to ${bulkReviewForm.action.toLowerCase()} ${selectedIds.length} MRP document(s).`"
     >
       <template #body>
         <div class="space-y-4">
           <div
             class="flex items-center gap-3 p-3 rounded-lg"
-            :class="bulkReviewForm.action === 'approve'
+            :class="bulkReviewForm.action === 'Approve'
               ? 'bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800'
               : 'bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800'"
           >
             <UIcon
-              :name="bulkReviewForm.action === 'approve' ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
-              :class="bulkReviewForm.action === 'approve' ? 'text-success-500' : 'text-error-500'"
+              :name="bulkReviewForm.action === 'Approve' ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
+              :class="bulkReviewForm.action === 'Approve' ? 'text-success-500' : 'text-error-500'"
               class="w-5 h-5 shrink-0"
             />
             <div class="text-sm">
@@ -532,12 +532,12 @@ onMounted(() => {
           </div>
 
           <UFormField
-            :label="bulkReviewForm.action === 'reject' ? 'Rejection Notes' : 'Notes (Optional)'"
-            :required="bulkReviewForm.action === 'reject'"
+            :label="bulkReviewForm.action === 'Reject' ? 'Rejection Notes' : 'Notes (Optional)'"
+            :required="bulkReviewForm.action === 'Reject'"
           >
             <UTextarea
               v-model="bulkReviewForm.notes"
-              :placeholder="bulkReviewForm.action === 'reject'
+              :placeholder="bulkReviewForm.action === 'Reject'
                 ? 'Explain the reason for rejection...'
                 : 'Add notes if needed...'"
               class="w-full"
@@ -555,11 +555,11 @@ onMounted(() => {
             @click="isBulkReviewOpen = false"
           />
           <UButton
-            :color="bulkReviewForm.action === 'approve' ? 'success' : 'error'"
-            :label="bulkReviewForm.action === 'approve' ? 'Approve All' : 'Reject All'"
-            :icon="bulkReviewForm.action === 'approve' ? 'i-lucide-check' : 'i-lucide-x'"
+            :color="bulkReviewForm.action === 'Approve' ? 'success' : 'error'"
+            :label="bulkReviewForm.action === 'Approve' ? 'Approve All' : 'Reject All'"
+            :icon="bulkReviewForm.action === 'Approve' ? 'i-lucide-check' : 'i-lucide-x'"
             :loading="loading"
-            :disabled="bulkReviewForm.action === 'reject' && !bulkReviewForm.notes.trim()"
+            :disabled="bulkReviewForm.action === 'Reject' && !bulkReviewForm.notes.trim()"
             @click="confirmBulkReview"
           />
         </div>
