@@ -27,11 +27,11 @@ function docStatusColor(
   code?: string
 ): "neutral" | "warning" | "success" | "error" {
   switch (code) {
-    case "APPROVED":
+    case "Approved":
       return "success";
-    case "PENDING_APPROVAL":
+    case "Pending_Approval":
       return "warning";
-    case "REJECTED":
+    case "Rejected":
       return "error";
     default:
       return "neutral";
@@ -39,7 +39,7 @@ function docStatusColor(
 }
 
 function activationColor(code?: string): "success" | "neutral" {
-  return code === "ACTIVE" ? "success" : "neutral";
+  return code === "Active" ? "success" : "neutral";
 }
 
 export function useBomColumns(actions: Actions, ui: UIComponents) {
@@ -153,8 +153,8 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
         const s = row.original.doc_status;
         if (!s) return h("span", { class: "text-muted" }, "—");
         return h(ui.UBadge, {
-          label: s.name,
-          color: docStatusColor(s.code),
+          label: s,
+          color: docStatusColor(s),
           variant: "subtle",
         });
       },
@@ -168,8 +168,8 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
         const s = row.original.activation_status;
         if (!s) return h("span", { class: "text-muted" }, "—");
         return h(ui.UBadge, {
-          label: s.name,
-          color: activationColor(s.code),
+          label: s,
+          color: activationColor(s),
           variant: "soft",
         });
       },
@@ -180,13 +180,13 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
       id: "actions",
       header: "",
       cell: ({ row }) => {
-        const status     = row.original.doc_status?.code
-        const activation = row.original.activation_status?.code
+        const status     = row.original.doc_status
+        const activation = row.original.activation_status
     
-        const isDraft     = status === "DRAFT"
-        const isSubmitted = status === "PENDING_APPROVAL"
-        const isApproved  = status === "APPROVED"
-        const isActive    = activation === "ACTIVE"
+        const isDraft     = status === "Draft"
+        const isSubmitted = status === "Pending_Approval"
+        const isApproved  = status === "Approved"
+        const isActive    = activation === "Active"
     
         // Build groups, only push non-empty ones to avoid separator gaps
         const groups: any[][] = []

@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import type { BomDocStatus, BomActivationStatus } from '../../../../types/production-plan/bom'
 
 interface Filters {
-  doc_status_id: number | undefined
-  activation_status_id: number | undefined
+  doc_status: string | undefined
+  activation_status: string | undefined
 }
 
 const props = defineProps<{
@@ -24,29 +24,27 @@ const emit = defineEmits<{
 const docStatusItems = computed(() =>
   props.docStatuses
     .slice()
-    .sort((a, b) => a.sequence - b.sequence)
-    .map(s => ({ label: s.name, value: s.id })),
+    .map(s => ({ label: s.name, value: s.code })),
 )
 
 const activationItems = computed(() =>
   props.activationStatuses
     .slice()
-    .sort((a, b) => a.sequence - b.sequence)
-    .map(s => ({ label: s.name, value: s.id })),
+    .map(s => ({ label: s.name, value: s.code })),
 )
 
 // ── Gunakan pola value-key + modelValue sebagai primitive (id number),
 //    konsisten dengan cara USelectMenu di Nuxt UI v3 bekerja. ─────────────────
 const selectedDocStatusId = computed({
-  get: () => props.filters.doc_status_id ?? undefined,
-  set: (v: number | null) =>
-    emit('update:filters', { ...props.filters, doc_status_id: v ?? undefined }),
+  get: () => props.filters.doc_status ?? undefined,
+  set: (v: string | undefined) =>
+    emit('update:filters', { ...props.filters, doc_status: v ?? undefined }),
 })
 
 const selectedActivationId = computed({
-  get: () => props.filters.activation_status_id ?? undefined,
-  set: (v: number | null) =>
-    emit('update:filters', { ...props.filters, activation_status_id: v ?? undefined }),
+  get: () => props.filters.activation_status ?? undefined,
+  set: (v: string | undefined) =>
+    emit('update:filters', { ...props.filters, activation_status: v ?? undefined }),
 })
 </script>
 

@@ -89,8 +89,8 @@ const breadcrumbItems = [
 // ── Filters ────────────────────────────────────────────────────────────────────
 const search = ref('')
 const filters = reactive({
-  doc_status_id: undefined as number | undefined,
-  activation_status_id: undefined as number | undefined,
+  doc_status: undefined as string | undefined,
+  activation_status: undefined as string | undefined,
 })
 
 // ── Row selection ──────────────────────────────────────────────────────────────
@@ -113,8 +113,8 @@ async function fetchData() {
     page: meta.value.page,
     limit: meta.value.limit,
     search: search.value || undefined,
-    doc_status_id: filters.doc_status_id,
-    activation_status_id: filters.activation_status_id,
+    doc_status: filters.doc_status,
+    activation_status: filters.activation_status,
   })
 }
 

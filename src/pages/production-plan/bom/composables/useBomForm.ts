@@ -65,8 +65,8 @@ export function useBomForm() {
   const isEditable = computed(
     () =>
       isCreate.value ||
-      currentBom.value?.doc_status?.code === "DRAFT" ||
-      currentBom.value?.doc_status?.code === "REJECTED"
+      currentBom.value?.doc_status === "Draft" ||
+      currentBom.value?.doc_status === "Rejected"
   );
 
   function fmtDate(d?: string | null) {
@@ -391,7 +391,7 @@ export function useBomForm() {
   }
 
   function openActivationConfirm() {
-    const isActive = currentBom.value?.activation_status?.code === "ACTIVE";
+    const isActive = currentBom.value?.activation_status === "Active";
     Object.assign(wfModal, {
       title: isActive ? "Deactivate BOM" : "Activate BOM",
       description: isActive
