@@ -315,9 +315,9 @@ async function handleDownloadPdf() {
 
           <div class="w-px h-5 bg-default mx-1" />
 
-          <!-- Edit Info (Draft or (Submitted and Supervisor)) -->
+          <!-- Edit Info (Draft or (Submitted and Supervisor) or Admin Sales) -->
           <UButton
-            v-if="store.detail?.status === 'Draft' || (store.detail?.status === 'Submitted' && isSupervisor)"
+            v-if="store.detail?.status === 'Draft' || (store.detail?.status === 'Submitted' && isSupervisor) || authStore.user?.role?.toLowerCase() === 'admin sales'"
             icon="i-lucide-edit-3"
             color="primary"
             variant="ghost"

@@ -80,7 +80,11 @@ const isSupervisorSales = computed(() => {
 })
 
 // ─── Computed State Guards ────────────────────────────────────────────────────
-const isEditable = computed(() => store.detail?.status === 'Draft')
+const isEditable = computed(() => {
+  const isDraft = store.detail?.status === 'Draft'
+  const isAdminSales = authStore.user?.role?.toLowerCase() === 'admin sales'
+  return isDraft || isAdminSales
+})
 
 const canSubmit = computed(() =>
   store.detail?.status === 'Draft' &&
