@@ -94,7 +94,7 @@ async function handleDownloadExcel() {
   await salesAnalyticsStore.downloadExcel({
     start_date: filters.value.start_date,
     end_date: filters.value.end_date
-  })
+  }, activeTab.value)
 }
 
 // Watch active tab to trigger fetch
@@ -128,7 +128,6 @@ onMounted(() => {
 
       <UButton
         v-slot:default
-        v-if="activeTab === 'sdo' || activeTab === 'sdp'"
         color="primary"
         size="lg"
         icon="i-lucide-download"

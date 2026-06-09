@@ -310,11 +310,38 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
     }
   }
 
-  async function downloadExcel(params: AnalyticsFilters = {}) {
+  async function downloadExcel(params: AnalyticsFilters = {}, activeTab: 'forecast' | 'spr' | 'spo' | 'sdp' | 'sdo') {
     loading.value = true
     error.value = null
     try {
-      const response = await analyticsService.exportExcel(params)
+      let response: any
+      let fileNamePrefix = ''
+
+      switch (activeTab) {
+        case 'forecast':
+          response = await analyticsService.exportForecastExcel(params)
+          fileNamePrefix = 'Forecast_Analytics_Report'
+          break
+        case 'spr':
+          response = await analyticsService.exportSprExcel(params)
+          fileNamePrefix = 'SPR_Analytics_Report'
+          break
+        case 'spo':
+          response = await analyticsService.exportSpoExcel(params)
+          fileNamePrefix = 'SPO_Analytics_Report'
+          break
+        case 'sdp':
+          response = await analyticsService.exportSdpExcel(params)
+          fileNamePrefix = 'SDP_Analytics_Report'
+          break
+        case 'sdo':
+          response = await analyticsService.exportSdoExcel(params)
+          fileNamePrefix = 'SDO_Analytics_Report'
+          break
+        default:
+          throw new Error('Invalid active tab specified')
+      }
+
       const blob = new Blob([response.data], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       })
@@ -323,14 +350,14 @@ export const useSalesAnalyticsStore = defineStore('salesAnalytics', () => {
 
       const start = params.start_date || 'report'
       const end = params.end_date || 'report'
-      link.download = `Laporan_Pengiriman_SDO_${start}_${end}.xlsx`
+      link.download = `${fileNamePrefix}_${start}_${end}.xlsx`
 
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
-      console.error('Error exporting SDO excel:', e)
+      console.error(`Error exporting ${activeTab} excel:`, e)
       throw e
     } finally {
       loading.value = false

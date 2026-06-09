@@ -12,8 +12,36 @@ const analyticsService = {
     return api.get(`${BASE}/trends`, { params })
   },
 
-  exportExcel(params?: AnalyticsFilters) {
-    return api.get(`${BASE}/export`, {
+  exportForecastExcel(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/forecast-export`, {
+      params,
+      responseType: 'blob'
+    })
+  },
+
+  exportSprExcel(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/spr-export`, {
+      params,
+      responseType: 'blob'
+    })
+  },
+
+  exportSpoExcel(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/spo-export`, {
+      params,
+      responseType: 'blob'
+    })
+  },
+
+  exportSdpExcel(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/sdp-export`, {
+      params,
+      responseType: 'blob'
+    })
+  },
+
+  exportSdoExcel(params?: AnalyticsFilters) {
+    return api.get(`${BASE}/sdo-export`, {
       params,
       responseType: 'blob'
     })
