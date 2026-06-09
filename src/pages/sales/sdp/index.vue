@@ -586,6 +586,9 @@ const conflictingDocksNames = computed(() => {
                     <td class="p-3">
                       {{ plan.destination }}
                     </td>
+                    <td class ="p-3">
+                      {{ plan.status }}
+                    </td>
                   </tr>
                   <tr v-if="filteredMasterList.length === 0">
                     <td colspan="5" class="p-4 text-center text-muted">
