@@ -4,6 +4,7 @@ import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CalendarDate } from '@internationalized/date'
 import { useSdpStore } from '../../../stores/sales/sdp.store'
+import sdpService from '../../../services/sales/sdp.service'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
 import SdpAddModal from './components/SdpAddModal.vue'
@@ -106,27 +107,56 @@ const mlDateRange = computed({
   }
 })
 
-async function loadPlans() {
+const masterPlans = ref<any[]>([])
+const masterLoading = ref(false)
+
+async function loadGanttPlans() {
   const params: Record<string, any> = {
     page: 1,
     limit: 100 // load active plans for calendar scheduling mapping
   }
-  if (mlStartDate.value && mlEndDate.value) {
-    params.start_date = mlStartDate.value
-    params.end_date = mlEndDate.value
+  if (selectedDate.value) {
+    params.start_date = selectedDate.value
+    params.end_date = selectedDate.value
   }
   await store.fetchSdpPlans(params)
 }
 
+async function loadMasterPlans() {
+  if (!mlStartDate.value || !mlEndDate.value) return
+  masterLoading.value = true
+  try {
+    const params = {
+      page: 1,
+      limit: 100,
+      start_date: mlStartDate.value,
+      end_date: mlEndDate.value
+    }
+    const res = await sdpService.getSdpPlans(params)
+    if (res.data?.status) {
+      masterPlans.value = res.data.data.rows
+    }
+  } catch (e) {
+    console.error('Failed to load master plans', e)
+  } finally {
+    masterLoading.value = false
+  }
+}
+
 // Watchers for filtering and loading
-watch([selectedDate, mlStartDate, mlEndDate, selectedWarehouseId], () => {
-  loadPlans()
+watch([selectedDate, selectedWarehouseId], () => {
+  loadGanttPlans()
+})
+
+watch([mlStartDate, mlEndDate], () => {
+  loadMasterPlans()
 })
 
 onMounted(async () => {
   await store.fetchDropdownWarehouses()
   await store.fetchDropdownDocks()
-  await loadPlans()
+  await loadGanttPlans()
+  await loadMasterPlans()
   
   if (store.warehouses.length > 0) {
     selectedWarehouseId.value = store.warehouses[0].id
@@ -169,7 +199,8 @@ async function handleSavePlan(payload: any) {
         router.replace({ path: '/sales/sdp', query: {} })
         presetSpoId.value = null
       }
-      await loadPlans()
+      await loadGanttPlans()
+      await loadMasterPlans()
       toastSuccess('Sales Delivery Plan scheduled successfully!')
     } else {
       toastError(res.message || 'Failed to schedule plan.')
@@ -197,7 +228,8 @@ async function executeDeletePlan() {
     if (res.status) {
       selectedPlanId.value = null
       store.detail = null
-      await loadPlans()
+      await loadGanttPlans()
+      await loadMasterPlans()
       toastSuccess('Plan deleted successfully.')
     } else {
       toastError(res.message || 'Failed to delete plan.')
@@ -228,7 +260,7 @@ const activePlansForDate = computed(() => {
 })
 
 const filteredMasterList = computed(() => {
-  return plans.value.filter(p => {
+  return masterPlans.value.filter(p => {
     const pDate = p.scheduled_date.split('T')[0]
     const matchesDate = pDate >= mlStartDate.value && pDate <= mlEndDate.value
     const matchesWarehouse = !selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value
@@ -612,7 +644,7 @@ const conflictingDocksNames = computed(() => {
           :loading="loading"
           @close="selectedPlanId = null; store.detail = null"
           @delete="handleDeletePlan"
-          @refresh="loadPlans(); selectPlan(selectedPlanId!)"
+          @refresh="loadGanttPlans(); loadMasterPlans(); selectPlan(selectedPlanId!)"
         />
       </div>
 
