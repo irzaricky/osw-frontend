@@ -115,7 +115,7 @@ function close() {
         @submit="onSubmit"
       >
         <UFormField label="Defect Name" name="name" required>
-          <UInput v-model="state.name" placeholder="e.g. Retak" class="w-full" />
+          <UInput v-model="state.name" placeholder="e.g. Crack" class="w-full" />
         </UFormField>
 
         <UFormField label="Category" name="defect_category_id" required>

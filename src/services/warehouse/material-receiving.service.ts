@@ -42,6 +42,9 @@ const materialReceivingService = {
   scanQuantityLabel(mr_item_id: number | string, payload: { label_number: string }) {
     return api.post(`/warehouse/material-receiving/quantity-checking/scan/${mr_item_id}`, payload)
   },
+  addAllQuantityLabels(mr_item_id: number | string) {
+    return api.post(`/warehouse/material-receiving/quantity-checking/add-all/${mr_item_id}`)
+  },
   markQuantityIncomplete(mr_item_label_id: number | string, payload: { actual_qty: number }) {
     return api.patch(`/warehouse/material-receiving/quantity-checking/incomplete/${mr_item_label_id}`, payload)
   },

@@ -156,7 +156,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6 relative">
+  <div class="p-6 space-y-8 relative">
     
     <div v-if="loading" class="absolute inset-0 z-10 bg-white/50 dark:bg-gray-900/50 flex items-center justify-center rounded-xl">
       <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-primary" />

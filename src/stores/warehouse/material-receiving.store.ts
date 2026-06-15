@@ -136,6 +136,21 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
     }
   }
 
+  async function addAllQuantityLabels(mr_item_id: number | string) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await materialReceivingService.addAllQuantityLabels(mr_item_id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error adding all quantity labels:', e)
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function markQuantityIncomplete(mr_item_label_id: number | string, payload: { actual_qty: number }) {
     loading.value = true
     error.value = null
@@ -272,6 +287,7 @@ export const useMaterialReceivingStore = defineStore('material-receiving', () =>
 
     fetchQuantityCheckingDetail,
     scanQuantityLabel,
+    addAllQuantityLabels,
     markQuantityIncomplete,
     submitQuantityChecking,
 

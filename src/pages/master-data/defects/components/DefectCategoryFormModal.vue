@@ -82,7 +82,7 @@ function close() {
         @submit="onSubmit"
       >
         <UFormField label="Defect Category Name" name="name" required>
-          <UInput v-model="state.name" placeholder="e.g. Kerusakan Fisik" class="w-full" />
+          <UInput v-model="state.name" placeholder="e.g. Physical Damage" class="w-full" />
         </UFormField>
 
         <UFormField label="Description" name="description">

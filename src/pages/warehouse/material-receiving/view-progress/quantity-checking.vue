@@ -29,6 +29,7 @@ const uiComponents = {
 const pageLoading = ref(false)
 const scanLoading = ref(false)
 const submitLoading = ref(false)
+const addAllLoading = ref(false)
 const incompleteLoading = ref(false)
 
 // State
@@ -39,6 +40,7 @@ const confirmDialog = reactive({
   open: false,
   title: '',
   description: '',
+  confirmLabel: 'Confirm',
   action: null as (() => Promise<void>) | null
 })
 
@@ -170,11 +172,11 @@ async function handleSubmitChecking() {
   if (hasRemainingQty.value) {
     confirmDialog.title = 'Incomplete Quantity Confirmation'
     confirmDialog.description = `There are still ${detail.value?.part.remaining_qty || 0} quantities that have not been scanned. Are you sure you want to continue submitting quantity checking?`
-    confirmDialog.action =
-      async () => {
-        await submitQuantityChecking()
-        confirmDialog.open = false
-      }
+    confirmDialog.confirmLabel = 'Submit Anyway'
+    confirmDialog.action = async () => {
+      await submitQuantityChecking()
+      confirmDialog.open = false
+    }
     confirmDialog.open = true
     return
   }
@@ -193,6 +195,37 @@ async function submitQuantityChecking() {
     submitLoading.value = false
   }
 }
+
+async function handleAddAllLabels() {
+  confirmDialog.title = 'Add All Labels'
+  confirmDialog.description = 'Are you sure you want to add all remaining quantity labels for this material receiving item?'
+  confirmDialog.confirmLabel = 'Add All Labels'
+  confirmDialog.action = async () => {
+    await submitAddAllLabels()
+    confirmDialog.open = false
+  }
+  confirmDialog.open = true
+}
+
+async function submitAddAllLabels() {
+  if (!detail.value?.mr_item_id) {
+    toastError('Unable to add all labels: missing item identifier.')
+    return
+  }
+
+  try {
+    addAllLoading.value = true
+    const res = await materialReceivingStore.addAllQuantityLabels(detail.value.mr_item_id)
+    toastSuccess(res.message || 'All labels added successfully.')
+    await fetchDetail()
+  } catch (err) {
+    toastError(err)
+  } finally {
+    addAllLoading.value = false
+  }
+}
+
+const confirmLoading = computed(() => submitLoading.value || addAllLoading.value)
 
 // Columns
 const { columns } =
@@ -370,12 +403,12 @@ onMounted(() => {
       </div>
 
       <div class="mb-6">
-        <div class="flex gap-3">
+        <div class="flex gap-3 flex-wrap">
           <UButton
             color="neutral"
             variant="soft"
             icon="i-lucide-camera"
-            :disabled="isSubmitted"
+            :disabled="isSubmitted || !hasRemainingQty"
             @click="scannerModal.open = true"
           />
 
@@ -383,18 +416,27 @@ onMounted(() => {
             v-model="scanLabel"
             placeholder="Input or scan label number"
             icon="i-lucide-scan-line"
-            class="flex-1"
-            :disabled="isSubmitted"
+            class="flex-1 min-w-[240px]"
+            :disabled="isSubmitted || !hasRemainingQty"
             @keyup.enter="handleScan"
           />
 
           <UButton
             color="primary"
             :loading="scanLoading"
-            :disabled="isSubmitted"
+            :disabled="isSubmitted || !hasRemainingQty"
             @click="handleScan"
           >
             Add Label
+          </UButton>
+
+          <UButton
+            color="neutral"
+            :loading="addAllLoading"
+            :disabled="isSubmitted || !hasRemainingQty"
+            @click="handleAddAllLabels"
+          >
+            Add All Labels ({{ detail.part.remaining_qty || 0 }} remaining)
           </UButton>
         </div>
       </div>
@@ -437,8 +479,8 @@ onMounted(() => {
       v-model:open="confirmDialog.open"
       :title="confirmDialog.title"
       :description="confirmDialog.description"
-      confirm-label="Submit Anyway"
-      :loading="submitLoading"
+      :confirm-label="confirmDialog.confirmLabel"
+      :loading="confirmLoading"
       @confirm="confirmDialog.action?.()"
     />
   </div>
