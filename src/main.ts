@@ -231,6 +231,40 @@ const router = createRouter({
       component: () => import('./pages/warehouse/analytics/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff', 'supervisor warehouse'] }
     },
+    {
+      path: '/warehouse/station-buffer',
+      component: () => import('./pages/warehouse/station-buffer/index.vue'),
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin'] }
+    },
+    {
+      path: '/production/production-material-control/production-result',
+      component: () => import('./pages/production/production-material-control/production-result/index.vue'),
+      meta: {
+        layout: 'default',
+        requiresAuth: true,
+        allowedRoles: ['Superadmin', 'Admin production', 'Staff production', 'Supervisor production']
+      }
+    },
+    {
+      path: '/production/production-material-control/replacement',
+      component: () => import('./pages/production/production-material-control/replacement/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/production/production-material-control/scrap',
+      component: () => import('./pages/production/production-material-control/scrap/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/production/production-material-control/buffer-status',
+      component: () => import('./pages/production/production-material-control/buffer-status/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
+    {
+      path: '/production/production-material-control/dashboard',
+      component: () => import('./pages/production/production-material-control/dashboard/index.vue'),
+      meta: { layout: 'default', requiresAuth: true }
+    },
 
     // master data
     {

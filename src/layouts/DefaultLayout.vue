@@ -277,7 +277,56 @@ const staticLinks = [[{
       }
     }
   ]
-}, {
+}, 
+{
+  label: 'Production Material Control',
+  icon: 'i-lucide-factory',
+  defaultOpen: route.path.startsWith('/production/production-material-control'),
+  children: [
+    {
+      label: 'Dashboard',
+      icon: 'i-lucide-layout-dashboard',
+      to: '/production/production-material-control/dashboard',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Production Result',
+      icon: 'i-lucide-clipboard-check',
+      to: '/production/production-material-control/production-result',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Material Replacement',
+      icon: 'i-lucide-refresh-cw',
+      to: '/production/production-material-control/replacement',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Scrap / Crusher',
+      icon: 'i-lucide-trash-2',
+      to: '/production/production-material-control/scrap',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Buffer Status',
+      icon: 'i-lucide-package-check',
+      to: '/production/production-material-control/buffer-status',
+      onSelect: () => {
+        open.value = false
+      }
+    }
+  ]
+},
+
+{
   label: 'Warehouse',
   icon: 'i-lucide-box',
   defaultOpen: route.path.startsWith('/warehouse'),
@@ -366,6 +415,15 @@ const staticLinks = [[{
       label: 'Warehouse Analytics',
       icon: 'i-lucide-chart-column-big',
       to: '/warehouse/analytics',
+
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Station Buffer',
+      icon: 'i-lucide-factory',
+      to: '/warehouse/station-buffer',
 
       onSelect: () => {
         open.value = false
