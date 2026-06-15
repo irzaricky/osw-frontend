@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
+import { useAuthStore } from '../../../../stores/auth.store'
 import type { WorkOrder, AddProgressPayload } from '../../../../types/production-plan/work-order'
 
 const props = defineProps<{
@@ -13,47 +14,65 @@ const emit = defineEmits<{
   'submit':      [payload: AddProgressPayload]
 }>()
 
+const authStore = useAuthStore()
+
 const form = reactive({
-  cumulative_qty: 0,
-  reported_by:    '',
+  qty_good:   0,
+  qty_reject: 0,
+  qty_scrap:  0,
 })
 
 const errors = reactive({
-  cumulative_qty: '',
-  reported_by:    '',
+  qty_good:   '',
+  qty_reject: '',
+  qty_scrap:  '',
 })
+
+const currentCumulative = computed(() =>
+  props.wo.cumulative_qty_good ?? props.wo.actual_quantity ?? 0,
+)
 
 watch(() => props.open, (v) => {
   if (v) {
-    form.cumulative_qty = props.wo.actual_quantity
-    form.reported_by    = ''
-    errors.cumulative_qty = ''
-    errors.reported_by    = ''
+    form.qty_good   = 0
+    form.qty_reject = 0
+    form.qty_scrap  = 0
+    errors.qty_good   = ''
+    errors.qty_reject = ''
+    errors.qty_scrap  = ''
   }
 })
+
+const newCumulative = computed(() => currentCumulative.value + form.qty_good)
+const maxAllowed    = computed(() => Math.ceil(props.wo.planned_quantity * 1.1))
 
 const progressPct = computed(() => {
   if (!props.wo.planned_quantity) return 0
-  return Math.min(100, Math.round((form.cumulative_qty / props.wo.planned_quantity) * 100))
+  return Math.min(110, Math.round((newCumulative.value / props.wo.planned_quantity) * 100))
 })
 
-const maxAllowed = computed(() => props.wo.planned_quantity)
+const progressBarColor = computed(() => {
+  if (progressPct.value >= 100) return 'bg-success-500'
+  if (progressPct.value >= 60)  return 'bg-primary-500'
+  if (progressPct.value >= 30)  return 'bg-warning-500'
+  return 'bg-error-400'
+})
 
 function validate(): boolean {
   let valid = true
-  errors.cumulative_qty = ''
-  errors.reported_by    = ''
+  errors.qty_good   = ''
+  errors.qty_reject = ''
+  errors.qty_scrap  = ''
 
-  if (form.cumulative_qty < props.wo.actual_quantity) {
-    errors.cumulative_qty = `Cannot be less than current actual quantity (${props.wo.actual_quantity}). Progress cannot go backward.`
+  if (form.qty_good < 0)   { errors.qty_good = 'Cannot be negative.'; valid = false }
+  if (form.qty_reject < 0) { errors.qty_reject = 'Cannot be negative.'; valid = false }
+  if (form.qty_scrap < 0)  { errors.qty_scrap = 'Cannot be negative.'; valid = false }
+  if (form.qty_good === 0 && form.qty_reject === 0 && form.qty_scrap === 0) {
+    errors.qty_good = 'At least one quantity field must be greater than 0.'
     valid = false
   }
-  if (form.cumulative_qty > props.wo.planned_quantity) {
-    errors.cumulative_qty = `Cannot exceed planned quantity (${props.wo.planned_quantity}). Use Complete WO to finalize.`
-    valid = false
-  }
-  if (!form.reported_by.trim()) {
-    errors.reported_by = 'Reporter name is required.'
+  if (newCumulative.value > maxAllowed.value) {
+    errors.qty_good = `This would bring cumulative good qty to ${newCumulative.value}, exceeding 110% of planned (max: ${maxAllowed.value}). Use Complete WO instead.`
     valid = false
   }
   return valid
@@ -61,10 +80,18 @@ function validate(): boolean {
 
 function handleSubmit() {
   if (!validate()) return
-  emit('submit', {
-    cumulative_qty: form.cumulative_qty,
-    reported_by:    form.reported_by.trim(),
-  })
+  const userId = authStore.user?.id
+  if (!userId) {
+    errors.qty_good = 'User session not found. Please refresh and try again.'
+    return
+  }
+  const payload: AddProgressPayload = {
+    qty_good:            form.qty_good,
+    qty_reject:          form.qty_reject || undefined,
+    qty_scrap:           form.qty_scrap  || undefined,
+    reported_by_user_id: userId,
+  }
+  emit('submit', payload)
 }
 </script>
 
@@ -72,63 +99,82 @@ function handleSubmit() {
   <UModal
     :open="open"
     title="Report Progress"
-    description="Record cumulative production quantity for this Work Order."
+    description="Record production output for this batch or time period."
     :ui="{ content: 'sm:max-w-md' }"
     @update:open="emit('update:open', $event)"
   >
     <template #body>
       <div class="space-y-4">
-        <!-- Current status -->
-        <div class="flex items-center justify-between p-3 bg-elevated rounded-lg text-sm">
-          <span class="text-muted">Current Actual Qty</span>
-          <span class="font-mono font-semibold">{{ wo.actual_quantity.toLocaleString() }} / {{ wo.planned_quantity.toLocaleString() }}</span>
+        <!-- Current status bar -->
+        <div class="p-3 bg-elevated rounded-lg space-y-2">
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-muted">Cumulative Good Qty</span>
+            <span class="font-mono font-semibold">
+              {{ currentCumulative.toLocaleString() }} / {{ wo.planned_quantity.toLocaleString() }}
+            </span>
+          </div>
+          <div class="w-full h-1.5 bg-default rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-300"
+              :class="progressBarColor"
+              :style="{ width: `${Math.min(100, Math.round((currentCumulative / wo.planned_quantity) * 100))}%` }"
+            />
+          </div>
         </div>
 
-        <!-- Cumulative Qty -->
-        <UFormField label="Cumulative Quantity" :error="errors.cumulative_qty" required>
+        <!-- Qty Good -->
+        <UFormField label="Qty Good (OK Units)" :error="errors.qty_good" required>
           <UInput
-            v-model.number="form.cumulative_qty"
+            v-model.number="form.qty_good"
             type="number"
-            :min="wo.actual_quantity"
-            :max="maxAllowed"
-            placeholder="Enter cumulative quantity..."
+            min="0"
+            placeholder="0"
             class="w-full font-mono"
           />
           <template #hint>
             <span class="text-xs text-muted">
-              Range: {{ wo.actual_quantity }} – {{ wo.planned_quantity }}
-              <span class="ml-2 font-semibold">{{ progressPct }}%</span>
+              New cumulative:
+              <span
+                class="font-semibold"
+                :class="newCumulative > wo.planned_quantity ? 'text-warning-600' : 'text-default'"
+              >
+                {{ newCumulative.toLocaleString() }}
+              </span>
+              ({{ progressPct }}% of planned)
             </span>
           </template>
         </UFormField>
 
-        <!-- Progress preview -->
-        <div class="h-1.5 w-full bg-elevated rounded-full overflow-hidden">
-          <div
-            class="h-full bg-primary rounded-full transition-all duration-300"
-            :style="{ width: `${progressPct}%` }"
-          />
+        <!-- Qty Reject + Scrap -->
+        <div class="grid grid-cols-2 gap-3">
+          <UFormField label="Qty Reject (NG)" :error="errors.qty_reject">
+            <UInput v-model.number="form.qty_reject" type="number" min="0" placeholder="0" class="w-full font-mono" />
+          </UFormField>
+          <UFormField label="Qty Scrap" :error="errors.qty_scrap">
+            <UInput v-model.number="form.qty_scrap" type="number" min="0" placeholder="0" class="w-full font-mono" />
+          </UFormField>
         </div>
 
-        <!-- Reported By -->
-        <UFormField label="Reported By" :error="errors.reported_by" required>
-          <UInput
-            v-model="form.reported_by"
-            placeholder="Your name or employee ID..."
-            class="w-full"
-          />
-        </UFormField>
+        <!-- Preview progress bar -->
+        <div class="space-y-1">
+          <div class="flex items-center justify-between text-xs text-muted">
+            <span>After this report</span>
+            <span class="font-mono font-semibold">{{ progressPct }}%</span>
+          </div>
+          <div class="w-full h-2 bg-elevated rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :class="progressBarColor"
+              :style="{ width: `${Math.min(100, progressPct)}%` }"
+            />
+          </div>
+        </div>
       </div>
     </template>
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
-        <UButton
-          label="Cancel"
-          color="neutral"
-          variant="ghost"
-          @click="emit('update:open', false)"
-        />
+        <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
         <UButton
           label="Record Progress"
           icon="i-lucide-trending-up"

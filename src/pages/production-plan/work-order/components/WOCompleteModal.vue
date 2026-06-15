@@ -19,52 +19,56 @@ const form = reactive({
 })
 
 const errors = reactive({
-  actual_quantity:         '',
-  under_production_reason: '',
+  actual_quantity:          '',
+  under_production_reason:  '',
+})
+
+const currentGoodQty = computed(() =>
+  props.wo.cumulative_qty_good ?? props.wo.actual_quantity ?? 0,
+)
+
+const maxAllowed = computed(() => Math.ceil(props.wo.planned_quantity * 1.1))
+
+const isUnder = computed(() => form.actual_quantity < props.wo.planned_quantity && form.actual_quantity > 0)
+
+const completionPct = computed(() => {
+  if (!props.wo.planned_quantity) return 0
+  return Math.round((form.actual_quantity / props.wo.planned_quantity) * 100)
 })
 
 watch(() => props.open, (v) => {
   if (v) {
-    form.actual_quantity         = props.wo.actual_quantity || props.wo.planned_quantity
+    form.actual_quantity         = currentGoodQty.value
     form.under_production_reason = ''
     errors.actual_quantity         = ''
     errors.under_production_reason = ''
   }
 })
 
-const maxAllowed    = computed(() => Math.ceil(props.wo.planned_quantity * 1.1))
-const isUnder       = computed(() => form.actual_quantity < props.wo.planned_quantity)
-const isOver        = computed(() => form.actual_quantity > props.wo.planned_quantity)
-const progressPct   = computed(() => {
-  if (!props.wo.planned_quantity) return 0
-  return Math.round((form.actual_quantity / props.wo.planned_quantity) * 100)
-})
-
 function validate(): boolean {
-  let valid = true
   errors.actual_quantity         = ''
   errors.under_production_reason = ''
 
-  if (form.actual_quantity < 1) {
+  if (!form.actual_quantity || form.actual_quantity < 1) {
     errors.actual_quantity = 'Actual quantity must be at least 1.'
-    valid = false
+    return false
   }
   if (form.actual_quantity > maxAllowed.value) {
-    errors.actual_quantity = `Actual quantity cannot exceed 110% of planned (max: ${maxAllowed.value}).`
-    valid = false
+    errors.actual_quantity = `Actual quantity (${form.actual_quantity}) exceeds 110% of planned (max: ${maxAllowed.value}).`
+    return false
   }
   if (isUnder.value && !form.under_production_reason.trim()) {
-    errors.under_production_reason = 'Reason is required when actual quantity is less than planned.'
-    valid = false
+    errors.under_production_reason = 'Reason is required when actual qty is less than planned.'
+    return false
   }
-  return valid
+  return true
 }
 
 function handleSubmit() {
   if (!validate()) return
   emit('submit', {
     actual_quantity:          form.actual_quantity,
-    under_production_reason:  isUnder.value ? form.under_production_reason.trim() : undefined,
+    under_production_reason:  isUnder.value ? form.under_production_reason.trim() : null,
   })
 }
 </script>
@@ -79,28 +83,48 @@ function handleSubmit() {
   >
     <template #body>
       <div class="space-y-4">
-        <!-- Summary -->
-        <div class="grid grid-cols-2 gap-3 p-3 bg-elevated rounded-lg text-sm">
-          <div>
-            <p class="text-xs text-muted">
-              Planned Qty
-            </p>
-            <p class="font-mono font-semibold">
-              {{ wo.planned_quantity.toLocaleString() }}
+
+        <!-- Current progress summary -->
+        <div class="grid grid-cols-3 gap-3 p-4 bg-elevated rounded-lg">
+          <div class="text-center">
+            <p class="text-xs text-muted mb-1">Planned</p>
+            <p class="text-lg font-bold font-mono">{{ wo.planned_quantity.toLocaleString() }}</p>
+          </div>
+          <div class="text-center">
+            <p class="text-xs text-muted mb-1">Good Qty (Progress)</p>
+            <p
+              class="text-lg font-bold font-mono"
+              :class="{
+                'text-success-600': currentGoodQty >= wo.planned_quantity,
+                'text-warning-600': currentGoodQty > 0 && currentGoodQty < wo.planned_quantity,
+                'text-error-600':   currentGoodQty === 0,
+              }"
+            >
+              {{ currentGoodQty.toLocaleString() }}
             </p>
           </div>
-          <div>
-            <p class="text-xs text-muted">
-              Max Allowed (110%)
-            </p>
-            <p class="font-mono font-semibold">
-              {{ maxAllowed.toLocaleString() }}
+          <div class="text-center">
+            <p class="text-xs text-muted mb-1">Achievement</p>
+            <p
+              class="text-lg font-bold font-mono"
+              :class="{
+                'text-success-600': completionPct >= 100,
+                'text-warning-600': completionPct >= 80 && completionPct < 100,
+                'text-error-600':   completionPct < 80,
+              }"
+            >
+              {{ completionPct }}%
             </p>
           </div>
         </div>
 
-        <!-- Actual Quantity -->
-        <UFormField label="Final Actual Quantity" :error="errors.actual_quantity" required>
+        <!-- Actual Quantity input -->
+        <UFormField
+          label="Actual Quantity (Final)"
+          :error="errors.actual_quantity"
+          required
+          description="Enter the final actual quantity produced. Maximum 110% of planned."
+        >
           <UInput
             v-model.number="form.actual_quantity"
             type="number"
@@ -108,19 +132,6 @@ function handleSubmit() {
             :max="maxAllowed"
             class="w-full font-mono"
           />
-          <template #hint>
-            <span
-              class="text-xs"
-              :class="{
-                'text-success-600': progressPct >= 100,
-                'text-warning-600': progressPct >= 80 && progressPct < 100,
-                'text-error-600': progressPct < 80,
-              }"
-            >
-              {{ progressPct }}% of planned
-              <span v-if="isOver" class="ml-1 text-warning-600">(Over-production)</span>
-            </span>
-          </template>
         </UFormField>
 
         <!-- Under-production reason -->
@@ -132,30 +143,24 @@ function handleSubmit() {
         >
           <UTextarea
             v-model="form.under_production_reason"
-            placeholder="Explain why actual quantity is less than planned..."
+            placeholder="Explain why actual qty is less than planned..."
             :rows="3"
             class="w-full"
           />
         </UFormField>
 
-        <!-- Warning -->
         <UAlert
           color="error"
           variant="soft"
           icon="i-lucide-alert-triangle"
-          description="Completing this Work Order is irreversible. All stations and jobs will be marked as Completed. The Production Order will be auto-completed if all Work Orders are done."
+          description="Completing this Work Order is irreversible. All stations will be marked as Completed."
         />
       </div>
     </template>
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
-        <UButton
-          label="Cancel"
-          color="neutral"
-          variant="ghost"
-          @click="emit('update:open', false)"
-        />
+        <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
         <UButton
           label="Complete Work Order"
           icon="i-lucide-check-circle"

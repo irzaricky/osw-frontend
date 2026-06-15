@@ -5,6 +5,7 @@ import type {
   WorkOrder,
   WorkOrderProgress,
   WorkOrderIssue,
+  WorkOrderMaterial,
   DailySummary,
   WorkOrderListParams,
   DailySummaryParams,
@@ -12,26 +13,25 @@ import type {
   ReportIssuePayload,
   ResolveIssuePayload,
   CompleteWorkOrderPayload,
-  UpdateStationJobStatusPayload,
-  ScanOperatorPayload,          // [BARU]
+  UpdateStationStatusPayload,
+  UpdateMaterialActualPayload,
 } from '../../types/production-plan/work-order'
 
 export const useWorkOrderStore = defineStore('workOrder', () => {
 
   // ── State ──────────────────────────────────────────────────────────────────
-
   const workOrders   = ref<WorkOrder[]>([])
   const currentWO    = ref<WorkOrder | null>(null)
   const dailySummary = ref<DailySummary | null>(null)
   const progresses   = ref<WorkOrderProgress[]>([])
   const issues       = ref<WorkOrderIssue[]>([])
+  const materials    = ref<WorkOrderMaterial[]>([])
 
   const meta = ref({ page: 1, limit: 10, total: 0, totalPages: 0 })
 
-  const loading      = ref(false)
-  const saving       = ref(false)
-  const scanLoading  = ref(false)   // [BARU] state loading khusus untuk aksi scan operator
-  const error        = ref<string | null>(null)
+  const loading = ref(false)
+  const saving  = ref(false)
+  const error   = ref<string | null>(null)
 
   // ── List & Detail ──────────────────────────────────────────────────────────
 
@@ -49,11 +49,9 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
           totalPages: data.data.totalPages,
         }
       }
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
-    }
-    finally {
+    } finally {
       loading.value = false
     }
   }
@@ -65,18 +63,14 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       const { data } = await workOrderService.getWorkOrder(id)
       if (data.status) currentWO.value = data.data
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
-    }
-    finally {
+    } finally {
       loading.value = false
     }
   }
 
-  // [PERUBAHAN] fetchDailySummary kini menerima objek params lengkap (DailySummaryParams)
-  // agar bisa meneruskan filter shift_id, stage, dan line_id ke service secara konsisten.
   async function fetchDailySummary(params?: DailySummaryParams) {
     loading.value = true
     error.value   = null
@@ -84,11 +78,9 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       const { data } = await workOrderService.getDailySummary(params)
       if (data.status) dailySummary.value = data.data
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
-    }
-    finally {
+    } finally {
       loading.value = false
     }
   }
@@ -101,15 +93,39 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     try {
       const { data } = await workOrderService.startWorkOrder(id)
       if (data.status && currentWO.value) {
-        currentWO.value = { ...currentWO.value, status: 'In_Progress' }
+        currentWO.value = {
+          ...currentWO.value,
+          status:            'In_Progress',
+          actual_start_time: data.data?.actual_start_time ?? new Date().toISOString(),
+        }
       }
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
+    } finally {
+      saving.value = false
     }
-    finally {
+  }
+
+  async function completeWorkOrder(id: number | string, payload: CompleteWorkOrderPayload) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await workOrderService.completeWorkOrder(id, payload)
+      if (data.status && currentWO.value) {
+        currentWO.value = {
+          ...currentWO.value,
+          status:           'Completed',
+          actual_quantity:  data.data?.actual_quantity ?? payload.actual_quantity,
+          actual_end_time:  data.data?.actual_end_time ?? new Date().toISOString(),
+        }
+      }
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
       saving.value = false
     }
   }
@@ -123,11 +139,9 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       const { data } = await workOrderService.getProgresses(id)
       if (data.status) progresses.value = data.data
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
-    }
-    finally {
+    } finally {
       loading.value = false
     }
   }
@@ -140,16 +154,18 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       if (data.status) {
         progresses.value = [data.data, ...progresses.value]
         if (currentWO.value) {
-          currentWO.value = { ...currentWO.value, actual_quantity: payload.cumulative_qty }
+          currentWO.value = {
+            ...currentWO.value,
+            actual_quantity:     data.data.cumulative_qty_good ?? currentWO.value.actual_quantity,
+            cumulative_qty_good: data.data.cumulative_qty_good,
+          }
         }
       }
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
-    }
-    finally {
+    } finally {
       saving.value = false
     }
   }
@@ -163,11 +179,9 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       const { data } = await workOrderService.getIssues(id, resolved)
       if (data.status) issues.value = data.data
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
-    }
-    finally {
+    } finally {
       loading.value = false
     }
   }
@@ -177,21 +191,21 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     error.value  = null
     try {
       const { data } = await workOrderService.reportIssue(id, payload)
-      if (data.status) {
-        issues.value = [data.data, ...issues.value]
-      }
+      if (data.status) issues.value = [data.data, ...issues.value]
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
-    }
-    finally {
+    } finally {
       saving.value = false
     }
   }
 
-  async function resolveIssue(id: number | string, issue_id: number | string, payload: ResolveIssuePayload) {
+  async function resolveIssue(
+    id:       number | string,
+    issue_id: number | string,
+    payload:  ResolveIssuePayload,
+  ) {
     saving.value = true
     error.value  = null
     try {
@@ -199,115 +213,79 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
       if (data.status) {
         const idx = issues.value.findIndex((i) => i.id === Number(issue_id))
         if (idx !== -1) issues.value[idx] = data.data
-      }
-      return data
-    }
-    catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    }
-    finally {
-      saving.value = false
-    }
-  }
-
-  // ── Complete ──────────────────────────────────────────────────────────────
-
-  async function completeWorkOrder(id: number | string, payload: CompleteWorkOrderPayload) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await workOrderService.completeWorkOrder(id, payload)
-      if (data.status && currentWO.value) {
-        currentWO.value = {
-          ...currentWO.value,
-          status:          'Completed',
-          actual_quantity: payload.actual_quantity,
+        if (currentWO.value?.issues) {
+          const issueIdx = currentWO.value.issues.findIndex((i) => i.id === Number(issue_id))
+          if (issueIdx !== -1) currentWO.value.issues[issueIdx] = data.data
         }
       }
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
-    }
-    finally {
+    } finally {
       saving.value = false
     }
   }
 
-  // ── Station Job ───────────────────────────────────────────────────────────
+  // ── Station Status ────────────────────────────────────────────────────────
 
-  async function updateStationJobStatus(
+  async function updateStationStatus(
     wo_id:      number | string,
     station_id: number | string,
-    job_id:     number | string,
-    payload:    UpdateStationJobStatusPayload,
+    payload:    UpdateStationStatusPayload,
   ) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await workOrderService.updateStationJobStatus(wo_id, station_id, job_id, payload)
+      const { data } = await workOrderService.updateStationStatus(wo_id, station_id, payload)
       if (data.status && currentWO.value?.stations) {
-        const station = currentWO.value.stations.find((s) => s.id === Number(station_id))
-        if (station?.jobs) {
-          const jobIdx = station.jobs.findIndex((j) => j.id === Number(job_id))
-          if (jobIdx !== -1) station.jobs[jobIdx] = { ...station.jobs[jobIdx], ...data.data }
-        }
+        const idx = currentWO.value.stations.findIndex((s) => s.id === Number(station_id))
+        if (idx !== -1) currentWO.value.stations[idx] = { ...currentWO.value.stations[idx], ...data.data }
       }
       return data
-    }
-    catch (e: any) {
+    } catch (e: any) {
       error.value = e.response?.data?.error || e.message
       throw e
-    }
-    finally {
+    } finally {
       saving.value = false
     }
   }
 
-  // ── [FITUR BARU] Scan Operator ────────────────────────────────────────────
-  //
-  // Mengirim operator_id hasil scan QR ke endpoint BE.
-  // Setelah sukses, state lokal diperbarui secara reaktif:
-  //   - job.operator_id di-set ke operator_id yang baru
-  //   - job.status di-ubah ke 'In_Progress' jika sebelumnya 'Pending'
-  //
-  // Menggunakan `scanLoading` terpisah dari `saving` agar UI tombol lain
-  // tidak ikut ter-disable saat proses scan berlangsung.
-  async function scanOperator(
-    wo_id:      number | string,
-    station_id: number | string,
-    job_id:     number | string,
-    payload:    ScanOperatorPayload,
-  ) {
-    scanLoading.value = true
-    error.value       = null
-    try {
-      const { data } = await workOrderService.scanOperator(wo_id, station_id, job_id, payload)
+  // ── Materials ─────────────────────────────────────────────────────────────
 
-      // Perbarui state lokal secara reaktif tanpa perlu re-fetch seluruh WO
-      if (data.status && currentWO.value?.stations) {
-        const station = currentWO.value.stations.find((s) => s.id === Number(station_id))
-        if (station?.jobs) {
-          const jobIdx = station.jobs.findIndex((j) => j.id === Number(job_id))
-          if (jobIdx !== -1) {
-            // Merge seluruh field yang dikembalikan BE (termasuk operator_id dan status baru)
-            station.jobs[jobIdx] = { ...station.jobs[jobIdx], ...data.data }
-          }
-        }
+  async function fetchMaterials(id: number | string) {
+    loading.value = true
+    error.value   = null
+    try {
+      const { data } = await workOrderService.getMaterials(id)
+      if (data.status) materials.value = data.data
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function updateMaterialActual(
+    wo_id:       number | string,
+    material_id: number | string,
+    payload:     UpdateMaterialActualPayload,
+  ) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await workOrderService.updateMaterialActual(wo_id, material_id, payload)
+      if (data.status) {
+        const idx = materials.value.findIndex((m) => m.id === Number(material_id))
+        if (idx !== -1) materials.value[idx] = { ...materials.value[idx], ...data.data }
       }
       return data
-    }
-    catch (e: any) {
-      // Lempar error agar komponen pemanggil bisa menampilkan toast error
-      // dengan pesan yang tepat dari BE (termasuk pesan Sequence Enforcer)
-      const errMsg = e.response?.data?.error || e.message
-      error.value = errMsg
-      throw new Error(errMsg)
-    }
-    finally {
-      scanLoading.value = false
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
+      saving.value = false
     }
   }
 
@@ -317,6 +295,7 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     currentWO.value  = null
     progresses.value = []
     issues.value     = []
+    materials.value  = []
   }
 
   function clearList() {
@@ -324,32 +303,30 @@ export const useWorkOrderStore = defineStore('workOrder', () => {
     meta.value       = { page: 1, limit: 10, total: 0, totalPages: 0 }
   }
 
-  // ── Expose ─────────────────────────────────────────────────────────────────
-
   return {
     workOrders,
     currentWO,
     dailySummary,
     progresses,
     issues,
+    materials,
     meta,
     loading,
     saving,
-    scanLoading,   // [BARU]
     error,
-
     fetchWorkOrders,
     fetchWorkOrder,
     fetchDailySummary,
     startWorkOrder,
+    completeWorkOrder,
     fetchProgresses,
     addProgress,
     fetchIssues,
     reportIssue,
     resolveIssue,
-    completeWorkOrder,
-    updateStationJobStatus,
-    scanOperator,   // [BARU]
+    updateStationStatus,
+    fetchMaterials,
+    updateMaterialActual,
     clearCurrentWO,
     clearList,
   }

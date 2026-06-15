@@ -31,13 +31,13 @@ export interface ProductionOrder {
   created_by?:             number | null
   created_at?:             string
   updated_at?:             string
-  plan?:             { id: number; plan_number: string; plan_description?: string | null }
-  creator?:          { id: number; email: string }
-  releaser?:         { id: number; email: string }
-  rejector?:         { id: number; email: string }
-  products?:         POProduct[]
-  schedules?:        POSchedule[]
-  reschedule_logs?:  RescheduleLog[]
+  plan?:            { id: number; plan_number: string; plan_description?: string | null }
+  creator?:         { id: number; email: string }
+  releaser?:        { id: number; email: string }
+  rejector?:        { id: number; email: string }
+  products?:        POProduct[]
+  schedules?:       POSchedule[]
+  reschedule_logs?: RescheduleLog[]
 }
 
 export interface POProduct {
@@ -91,12 +91,23 @@ export interface RescheduleLog {
   rescheduled_at:    string
 }
 
+export interface CapacityViolation {
+  line_id:                number
+  line_name:              string
+  severity:               'FATAL' | 'OVERCOMMIT'
+  total_demand:           number
+  total_capacity:         number
+  shortage:               number
+  additional_days_needed?: number
+  message:                string
+}
+
 export interface PODropdownItem {
-  id:                    number
-  po_number:             string
-  status:                POStatus
-  production_start_date: string
-  production_end_date:   string
+  id:                     number
+  po_number:              string
+  status:                 POStatus
+  production_start_date:  string
+  production_end_date:    string
 }
 
 export interface POListParams {

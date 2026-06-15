@@ -11,6 +11,7 @@ import type {
   ReschedulePayload,
   ApprovePOPayload,
   RejectPOPayload,
+  CapacityViolation,
 } from '../../types/production-plan/order-schedule'
 
 export const useOrderScheduleStore = defineStore('orderSchedule', () => {
@@ -23,6 +24,7 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
   const loading      = ref(false)
   const saving       = ref(false)
   const error        = ref<string | null>(null)
+  const scheduleViolations = ref<CapacityViolation[]>([])
 
   // ── List & Detail ──────────────────────────────────────────────────────────
   async function fetchOrders(params: POListParams = {}) {
@@ -117,11 +119,16 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
   async function generateSchedule(id: number | string) {
     saving.value = true
     error.value  = null
+    scheduleViolations.value = []
     try {
       const { data } = await orderScheduleService.generateSchedule(id)
       return data
     } catch (e: any) {
-      error.value = e.response?.data?.error || e.message
+      const responseData = e.response?.data
+      error.value = responseData?.error || e.message
+      if (responseData?.violations?.length) {
+        scheduleViolations.value = responseData.violations
+      }
       throw e
     } finally {
       saving.value = false
@@ -230,13 +237,14 @@ export const useOrderScheduleStore = defineStore('orderSchedule', () => {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function clearCurrentOrder() {
-    currentOrder.value = null
-    error.value        = null
+    currentOrder.value       = null
+    error.value              = null
+    scheduleViolations.value = []
   }
 
   return {
     orders, currentOrder, dropdown, meta,
-    loading, saving, error,
+    loading, saving, error, scheduleViolations,
     fetchOrders, fetchOrder, fetchDropdown,
     createOrder, updateOrder, deleteOrder,
     generateSchedule, updateSchedule,

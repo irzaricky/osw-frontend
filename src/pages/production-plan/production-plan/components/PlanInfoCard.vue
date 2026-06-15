@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { AvailableDO, PlanType } from '../../../../types/production-plan/plan'
 
-defineProps<{
+const props = defineProps<{
   isCreate:    boolean
   isDetail:    boolean
   currentPlan: any
-  // [~] tambah plan_type ke headerForm
   headerForm:  {
     plan_month:       string
     plan_type:        PlanType
@@ -18,7 +18,6 @@ defineProps<{
   fmtNum:      (n?: number | null) => string
   pendingDos:  AvailableDO[]
   doReferences: any[]
-  // [+] daftar plan ORIGINAL Approved untuk dropdown parent (saat create AMENDMENT)
   approvedOriginalPlans?: { id: number; plan_number: string; plan_month: string }[]
 }>()
 
@@ -28,7 +27,6 @@ const emit = defineEmits<{
   (e: 'remove-do', id: number): void
 }>()
 
-// Format YYYY-MM ke label yang mudah dibaca, misal "2025-05" → "May 2025"
 function fmtPlanMonth(plan_month?: string): string {
   if (!plan_month) return '-'
   const [year, month] = plan_month.split('-')
@@ -36,7 +34,6 @@ function fmtPlanMonth(plan_month?: string): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-// Generate opsi bulan: bulan ini + 3 bulan ke depan (sesuai batasan BE untuk ORIGINAL)
 function getPlanMonthOptions() {
   const options: { label: string; value: string }[] = []
   const now = new Date()
@@ -51,22 +48,24 @@ function getPlanMonthOptions() {
 
 const planMonthOptions = getPlanMonthOptions()
 
-// [+] Opsi plan type — sesuai enum BE
 const planTypeOptions: { label: string; value: PlanType }[] = [
-  { label: 'Original', value: 'ORIGINAL' },
+  { label: 'Original',  value: 'ORIGINAL' },
   { label: 'Amendment', value: 'AMENDMENT' },
 ]
 
-// [+] Label plan type untuk info bar
 const planTypeLabel: Record<PlanType, string> = {
   ORIGINAL:  'Original',
   AMENDMENT: 'Amendment',
 }
+
+const uniqueDoIds = computed(() => {
+  if (!props.currentPlan?.details?.length) return []
+  return [...new Set((props.currentPlan.details as any[]).map((d: any) => d.do_id))]
+})
 </script>
 
 <template>
   <div class="bg-default border border-default rounded-xl">
-    <!-- Card header -->
     <div class="flex items-center justify-between px-5 py-4 border-b border-default">
       <h2 class="font-semibold text-sm flex items-center gap-2">
         <UIcon name="i-lucide-clipboard-list" class="w-4 h-4 text-primary" />
@@ -76,22 +75,19 @@ const planTypeLabel: Record<PlanType, string> = {
       <UBadge v-else-if="isDetail" label="Edit Mode" color="warning" variant="soft" size="sm" />
     </div>
 
-    <!-- Info bar (detail/edit mode only) -->
+    <!-- Info bar (detail/edit mode) -->
     <div
       v-if="!isCreate && currentPlan"
       class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-8 divide-x divide-default border-b border-default"
     >
-      <!-- Plan Month -->
       <div class="px-4 py-3 space-y-0.5">
         <p class="text-xs text-muted">Plan Month</p>
         <p class="text-sm font-semibold">{{ fmtPlanMonth(currentPlan.plan_month) }}</p>
       </div>
-      <!-- [+] Plan Type -->
       <div class="px-4 py-3 space-y-0.5">
         <p class="text-xs text-muted">Type</p>
         <div class="flex items-center gap-1.5">
           <p class="text-sm font-semibold">{{ planTypeLabel[currentPlan.plan_type as PlanType] ?? currentPlan.plan_type }}</p>
-          <!-- Tampilkan link ke parent plan jika AMENDMENT -->
           <UTooltip
             v-if="currentPlan.plan_type === 'AMENDMENT' && currentPlan.parent_plan"
             :text="`Parent: ${currentPlan.parent_plan.plan_number}`"
@@ -138,7 +134,6 @@ const planTypeLabel: Record<PlanType, string> = {
     <div class="px-5 py-4 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-        <!-- Plan Type — hanya tampil saat create -->
         <UFormField v-if="isCreate" label="Plan Type" required>
           <USelect
             v-model="headerForm.plan_type"
@@ -151,7 +146,6 @@ const planTypeLabel: Record<PlanType, string> = {
           />
         </UFormField>
 
-        <!-- Plan Month — hanya tampil & wajib diisi saat create ORIGINAL -->
         <UFormField
           v-if="isCreate && headerForm.plan_type === 'ORIGINAL'"
           label="Plan Month"
@@ -168,7 +162,6 @@ const planTypeLabel: Record<PlanType, string> = {
           />
         </UFormField>
 
-        <!-- [+] Parent Plan — wajib diisi saat plan_type === 'AMENDMENT' -->
         <UFormField
           v-if="isCreate && headerForm.plan_type === 'AMENDMENT'"
           label="Parent Plan (Original Approved)"
@@ -212,24 +205,24 @@ const planTypeLabel: Record<PlanType, string> = {
         </UFormField>
       </div>
 
-      <!-- DO reference row (detail/edit) -->
-      <div v-if="!isCreate && doReferences.length" class="space-y-1.5">
+      <!-- DO reference row (detail/edit mode) -->
+      <div v-if="!isCreate && uniqueDoIds.length" class="space-y-1.5">
         <p class="text-xs text-muted font-medium flex items-center gap-1.5">
           <UIcon name="i-lucide-link-2" class="w-3.5 h-3.5" />
           Delivery Order References
         </p>
         <div class="flex flex-wrap gap-2">
           <span
-            v-for="ref in doReferences"
-            :key="ref.id"
+            v-for="doId in uniqueDoIds"
+            :key="doId"
             class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border border-default text-default"
           >
-            {{ ref.delivery_order?.do_number ?? `DO #${ref.do_id}` }}
+            DO #{{ doId }}
             <UIcon
               v-if="isDetail"
               name="i-lucide-x"
               class="w-3 h-3 cursor-pointer text-muted hover:text-error-500"
-              @click="$emit('remove-do', ref.do_id)"
+              @click="$emit('remove-do', doId)"
             />
           </span>
           <UBadge

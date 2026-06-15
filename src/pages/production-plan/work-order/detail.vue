@@ -6,33 +6,32 @@ import { useWorkOrderStore }   from '../../../stores/production-plan/work-order.
 import { useAppToast }         from '../../../composables/useAppToast'
 import { WO_STATUS_COLOR, WO_STATUS_LABEL } from './composables/useWorkOrderColumns'
 import type {
-  WorkOrderStatus,
+  WorkOrderStation,
   AddProgressPayload,
   ReportIssuePayload,
   ResolveIssuePayload,
   CompleteWorkOrderPayload,
-  UpdateStationJobStatusPayload,
-  JobStatus,
-  IssueType,
+  UpdateStationStatusPayload,
 } from '../../../types/production-plan/work-order'
 
-import Breadcrumbs        from '../../../components/Breadcrumbs.vue'
-import ConfirmDialog      from '../../../components/ConfirmDialog.vue'
-import WOInfoBar          from './components/WOInfoBar.vue'
-import WOStationsPanel    from './components/WOStationsPanel.vue'
-import WOProgressPanel    from './components/WOProgressPanel.vue'
-import WOIssuesPanel      from './components/WOIssuesPanel.vue'
-import WOStartModal       from './components/WOStartModal.vue'
-import WOProgressModal    from './components/WOProgressModal.vue'
-import WOIssueModal       from './components/WOIssueModal.vue'
-import WOCompleteModal    from './components/WOCompleteModal.vue'
-import WOResolveModal     from './components/WOResolveModal.vue'
+import Breadcrumbs     from '../../../components/Breadcrumbs.vue'
+import ConfirmDialog   from '../../../components/ConfirmDialog.vue'
+import WOInfoBar       from './components/WOInfoBar.vue'
+import WOStationsPanel from './components/WOStationsPanel.vue'
+import WOProgressPanel from './components/WOProgressPanel.vue'
+import WOIssuesPanel   from './components/WOIssuesPanel.vue'
+import WOMaterialsPanel from './components/WOMaterialsPanel.vue'
+import WOStartModal    from './components/WOStartModal.vue'
+import WOProgressModal from './components/WOProgressModal.vue'
+import WOIssueModal    from './components/WOIssueModal.vue'
+import WOCompleteModal from './components/WOCompleteModal.vue'
+import WOResolveModal  from './components/WOResolveModal.vue'
 
 const route  = useRoute()
 const router = useRouter()
 const store  = useWorkOrderStore()
 const { currentWO, loading, saving } = storeToRefs(store)
-const { toastSuccess, toastError }   = useAppToast()
+const { toastSuccess, toastError } = useAppToast()
 
 const woId = computed(() => Number(route.params.id))
 
@@ -42,7 +41,8 @@ const showProgressModal = ref(false)
 const showIssueModal    = ref(false)
 const showCompleteModal = ref(false)
 const showResolveModal  = ref(false)
-const resolveTargetId   = ref<number | null>(null)
+
+const resolveTargetId = ref<number | null>(null)
 
 // ── Confirm dialog ────────────────────────────────────────────────────────────
 const confirm = reactive({
@@ -55,11 +55,11 @@ const confirm = reactive({
 })
 
 function openConfirm(opts: {
-  title:        string
-  description:  string
+  title:         string
+  description:   string
   confirmLabel?: string
   confirmColor?: 'primary' | 'error' | 'success'
-  action:       () => Promise<void>
+  action:        () => Promise<void>
 }) {
   confirm.title        = opts.title
   confirm.description  = opts.description
@@ -73,11 +73,11 @@ function openConfirm(opts: {
 const breadcrumbItems = computed(() => [
   { label: 'Home', to: '/' },
   { label: 'Production Plan' },
-  { label: 'Work Orders', to: {name: 'work-order-list'} },
+  { label: 'Work Orders', to: { name: 'work-order-list' } },
   { label: currentWO.value?.wo_number ?? '...' },
 ])
 
-// ── Actions ───────────────────────────────────────────────────────────────────
+// ── Execution actions ─────────────────────────────────────────────────────────
 
 async function handleStart() {
   try {
@@ -85,8 +85,7 @@ async function handleStart() {
     toastSuccess(res.message || 'Work Order started')
     showStartModal.value = false
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
+  } catch (e) { toastError(e) }
 }
 
 async function handleAddProgress(payload: AddProgressPayload) {
@@ -95,8 +94,7 @@ async function handleAddProgress(payload: AddProgressPayload) {
     toastSuccess(res.message || 'Progress recorded')
     showProgressModal.value = false
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
+  } catch (e) { toastError(e) }
 }
 
 async function handleReportIssue(payload: ReportIssuePayload) {
@@ -105,8 +103,12 @@ async function handleReportIssue(payload: ReportIssuePayload) {
     toastSuccess(res.message || 'Issue reported')
     showIssueModal.value = false
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
+  } catch (e) { toastError(e) }
+}
+
+function openResolveModal(issueId: number) {
+  resolveTargetId.value  = issueId
+  showResolveModal.value = true
 }
 
 async function handleResolveIssue(payload: ResolveIssuePayload) {
@@ -117,13 +119,7 @@ async function handleResolveIssue(payload: ResolveIssuePayload) {
     showResolveModal.value = false
     resolveTargetId.value  = null
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
-}
-
-function openResolveModal(issueId: number) {
-  resolveTargetId.value  = issueId
-  showResolveModal.value = true
+  } catch (e) { toastError(e) }
 }
 
 async function handleComplete(payload: CompleteWorkOrderPayload) {
@@ -132,21 +128,15 @@ async function handleComplete(payload: CompleteWorkOrderPayload) {
     toastSuccess(res.message || 'Work Order completed')
     showCompleteModal.value = false
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
+  } catch (e) { toastError(e) }
 }
 
-async function handleUpdateJobStatus(
-  stationId: number,
-  jobId:     number,
-  payload:   UpdateStationJobStatusPayload,
-) {
+async function handleUpdateStationStatus(stationId: number, payload: UpdateStationStatusPayload) {
   try {
-    const res = await store.updateStationJobStatus(woId.value, stationId, jobId, payload)
-    toastSuccess(res.message || 'Job status updated')
+    const res = await store.updateStationStatus(woId.value, stationId, payload)
+    toastSuccess(res.message || 'Station status updated')
     await store.fetchWorkOrder(woId.value)
-  }
-  catch (e) { toastError(e) }
+  } catch (e) { toastError(e) }
 }
 
 // ── Computed helpers ──────────────────────────────────────────────────────────
@@ -154,18 +144,21 @@ async function handleUpdateJobStatus(
 const canStart    = computed(() => currentWO.value?.status === 'Released')
 const canProgress = computed(() => currentWO.value?.status === 'In_Progress')
 const canComplete = computed(() => currentWO.value?.status === 'In_Progress')
-const canIssue    = computed(() =>
-  currentWO.value?.status === 'In_Progress' || currentWO.value?.status === 'Released',
-)
+const canIssue    = computed(() => ['Released', 'In_Progress'].includes(currentWO.value?.status ?? ''))
 
 const progressPct = computed(() => {
   const wo = currentWO.value
   if (!wo || wo.planned_quantity === 0) return 0
-  return Math.min(100, Math.round((wo.actual_quantity / wo.planned_quantity) * 100))
+  const good = wo.cumulative_qty_good ?? wo.actual_quantity
+  return Math.min(100, Math.round((good / wo.planned_quantity) * 100))
 })
 
 const activeIssues = computed(() =>
   (currentWO.value?.issues ?? []).filter((i) => !i.resolved_time),
+)
+
+const blockedByIssues = computed(() =>
+  activeIssues.value.some((i) => i.severity === 'HIGH' || i.severity === 'CRITICAL'),
 )
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -203,7 +196,7 @@ watch(
       <div v-else-if="!currentWO && !loading" class="flex flex-col items-center justify-center py-24 gap-4">
         <UIcon name="i-lucide-file-x-2" class="w-12 h-12 text-muted" />
         <p class="text-sm text-muted">Work Order not found</p>
-        <UButton label="Back to List" color="neutral" variant="soft" @click="router.push({name: 'work-order-list'})" />
+        <UButton label="Back to List" color="neutral" variant="soft" @click="router.push({ name: 'work-order-list' })" />
       </div>
 
       <div v-else-if="currentWO" class="space-y-6">
@@ -217,13 +210,11 @@ watch(
               color="neutral"
               variant="ghost"
               size="sm"
-              @click="router.push({name: 'work-order-list'})"
+              @click="router.push({ name: 'work-order-list' })"
             />
             <div>
               <div class="flex items-center gap-2 flex-wrap">
-                <h1 class="text-2xl font-bold font-mono">
-                  {{ currentWO.wo_number }}
-                </h1>
+                <h1 class="text-2xl font-bold font-mono">{{ currentWO.wo_number }}</h1>
                 <UBadge
                   :label="WO_STATUS_LABEL[currentWO.status]"
                   :color="WO_STATUS_COLOR[currentWO.status]"
@@ -276,19 +267,30 @@ watch(
               icon="i-lucide-check-circle"
               color="success"
               :loading="saving"
+              :disabled="blockedByIssues"
               @click="showCompleteModal = true"
             />
           </div>
         </div>
 
-        <!-- Alert: Active Issues -->
+        <!-- Alert: HIGH/CRITICAL issue blocks complete -->
         <UAlert
-          v-if="activeIssues.length > 0"
+          v-if="blockedByIssues"
           color="error"
           variant="soft"
+          icon="i-lucide-shield-x"
+          title="Completion Blocked"
+          :description="`${activeIssues.filter(i => i.severity === 'HIGH' || i.severity === 'CRITICAL').length} unresolved HIGH/CRITICAL issue(s) must be resolved before completing this Work Order.`"
+        />
+
+        <!-- Alert: Active issues (non-blocking) -->
+        <UAlert
+          v-else-if="activeIssues.length > 0"
+          color="warning"
+          variant="soft"
           icon="i-lucide-alert-triangle"
-          :title="`${activeIssues.length} Unresolved Issue${activeIssues.length > 1 ? 's' : ''}`"
-          :description="`There ${activeIssues.length > 1 ? 'are' : 'is'} ${activeIssues.length} active issue${activeIssues.length > 1 ? 's' : ''} on this Work Order. Resolve them before completing.`"
+          :title="`${activeIssues.length} Active Issue${activeIssues.length > 1 ? 's' : ''}`"
+          :description="`There ${activeIssues.length > 1 ? 'are' : 'is'} ${activeIssues.length} open issue${activeIssues.length > 1 ? 's' : ''} on this Work Order.`"
         />
 
         <!-- Info Bar -->
@@ -297,9 +299,10 @@ watch(
         <!-- Tabs -->
         <UTabs
           :items="[
-            { slot: 'stations' as const, label: 'Process Stations', icon: 'i-lucide-layout-grid' },
-            { slot: 'progress' as const, label: 'Progress History', icon: 'i-lucide-trending-up' },
-            { slot: 'issues' as const, label: 'Issues', icon: 'i-lucide-alert-triangle' },
+            { slot: 'stations'  as const, label: 'Process Stations', icon: 'i-lucide-layout-grid' },
+            { slot: 'progress'  as const, label: 'Progress History', icon: 'i-lucide-trending-up' },
+            { slot: 'issues'    as const, label: 'Issues',           icon: 'i-lucide-alert-triangle' },
+            { slot: 'materials' as const, label: 'Materials',        icon: 'i-lucide-package' },
           ]"
           variant="link"
           class="w-full"
@@ -309,7 +312,7 @@ watch(
               :stations="currentWO.stations ?? []"
               :wo-status="currentWO.status"
               :saving="saving"
-              @update-job-status="handleUpdateJobStatus"
+              @update-station-status="handleUpdateStationStatus"
             />
           </template>
 
@@ -317,7 +320,7 @@ watch(
             <WOProgressPanel
               :progresses="currentWO.progresses ?? []"
               :planned-qty="currentWO.planned_quantity"
-              :actual-qty="currentWO.actual_quantity"
+              :actual-qty="currentWO.cumulative_qty_good ?? currentWO.actual_quantity"
               :loading="loading"
             />
           </template>
@@ -330,10 +333,17 @@ watch(
               @resolve="openResolveModal"
             />
           </template>
+
+          <template #materials>
+            <WOMaterialsPanel
+              :wo-id="currentWO.id"
+              :wo-status="currentWO.status"
+              :saving="saving"
+            />
+          </template>
         </UTabs>
 
-        <!-- ── Modals ──────────────────────────────────────────────────── -->
-
+        <!-- Modals -->
         <WOStartModal
           v-model:open="showStartModal"
           :wo="currentWO"
@@ -368,7 +378,6 @@ watch(
           @submit="handleResolveIssue"
         />
 
-        <!-- Confirm Dialog -->
         <ConfirmDialog
           v-model:open="confirm.open"
           :title="confirm.title"

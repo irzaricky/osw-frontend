@@ -33,7 +33,7 @@ const route  = useRoute()
 const router = useRouter()
 const store  = useOrderScheduleStore()
 const planStore = useProductionPlanStore()
-const { currentOrder, loading, saving } = storeToRefs(store)
+const { currentOrder, loading, saving, scheduleViolations } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
 const UBadge = resolveComponent('UBadge')
 
@@ -71,7 +71,6 @@ const editState = reactive({
 
 const editDateRange = ref<Range | undefined>(undefined)
 
-// Sync dateRange → editState
 watch(editDateRange, (val) => {
   editState.production_start_date = val?.start ? formatLocalDate(val.start) : ''
   editState.production_end_date   = val?.end   ? formatLocalDate(val.end)   : ''
@@ -108,7 +107,7 @@ function cancelEditInfo() {
   isEditingInfo.value = false
 }
 
-// Zod schema for edit
+// BE _getPoEditable hanya mengizinkan status 'Draft' untuk diedit
 const editSchema = z.object({
   priority:              z.enum(['Low', 'Medium', 'High']),
   production_start_date: z.string().min(1, 'Start date is required.'),
@@ -193,8 +192,9 @@ const canApprove    = computed(() => order.value?.status === 'Pending_Approval')
 const canReject     = computed(() => order.value?.status === 'Pending_Approval')
 const canRelease    = computed(() => order.value?.status === 'Approved')
 const canReschedule = computed(() => order.value?.status === 'Released')
-const canEditInfo   = computed(() => order.value?.status === 'Draft' || order.value?.status === 'Approved')
-const isEditable    = computed(() => order.value?.status === 'Draft' || order.value?.status === 'Approved')
+// BE _getPoEditable hanya mengizinkan edit saat status 'Draft'
+const canEditInfo   = computed(() => order.value?.status === 'Draft')
+const isEditable    = computed(() => order.value?.status === 'Draft')
 
 const pct = computed(() => scheduledPct(order.value?.total_planned_qty ?? 0, order.value?.total_scheduled_qty ?? 0))
 
@@ -203,13 +203,9 @@ const ganttDates = computed(() => {
   return dateRangeColumns(order.value.production_start_date, order.value.production_end_date)
 })
 
-// ── PERBAIKAN: Gantt — satu tanggal bisa punya beberapa shift, jadi
-//   kita kumpulkan array schedule per tanggal, bukan overwrite dengan satu entry.
-//   Key: production_date → POSchedule[]  (semua shift di tanggal itu untuk product ini)
 const ganttRows = computed(() => {
   if (!order.value?.products || !order.value?.schedules) return []
   return order.value.products.map(product => {
-    // Kumpulkan semua shift per tanggal untuk product ini
     const schedsByDate: Record<string, POSchedule[]> = {}
     order.value!.schedules!
       .filter(s => s.po_product_id === product.id)
@@ -221,51 +217,30 @@ const ganttRows = computed(() => {
   })
 })
 
-// ── PERBAIKAN: Resource Allocation — karena line_capacity_per_day sekarang
-//   adalah kapasitas per shift, kita harus group per (line, date, shift) dan
-//   menghitung utilisasi per-shift, lalu tampilkan agregat harian yang benar.
-//
-//   Struktur: Map<lineName, Map<date, { shifts: ShiftCell[]; totalQty: number }>>
-//   ShiftCell: { shiftName: string; qty: number; capacity: number; pct: number | null }
-// Ganti resourceRows computed
 const resourceRows = computed(() => {
   if (!order.value?.schedules) return []
 
-  // Map<lineName, Map<date, Map<shiftId, { shiftName, totalQty, capacity }>>>
   const map: Record<string, Record<string, Record<string, {
     shiftName: string
     totalQty:  number
-    capacity:  number   // kapasitas shift (bukan per-produk)
+    capacity:  number
   }>>> = {}
 
   order.value.schedules.forEach(s => {
     const lineKey   = s.line?.name ?? s.line_name_snapshot ?? `Line ${s.line_id}`
     const shiftKey  = String(s.shift_id)
     const shiftName = s.shift?.name ?? s.shift_name_snapshot ?? `Shift ${s.shift_id}`
-    // line_capacity_per_day = kapasitas shift tersebut (sudah dibagi per shift di BE)
     const cap = s.line_capacity_per_day ?? 0
 
     if (!map[lineKey]) map[lineKey] = {}
     if (!map[lineKey][s.production_date]) map[lineKey][s.production_date] = {}
 
     if (!map[lineKey][s.production_date][shiftKey]) {
-      map[lineKey][s.production_date][shiftKey] = {
-        shiftName,
-        totalQty: 0,
-        // PERBAIKAN: capacity diambil sekali dari record pertama,
-        // karena semua produk berbagi kapasitas shift yang sama.
-        // Jangan dijumlah tiap record!
-        capacity: cap,
-      }
+      map[lineKey][s.production_date][shiftKey] = { shiftName, totalQty: 0, capacity: cap }
     }
 
-    // Hanya update qty (akumulasi semua produk di shift ini)
-    // Capacity TIDAK diakumulasi — sudah di-set saat inisialisasi
     map[lineKey][s.production_date][shiftKey].totalQty += s.planned_qty_per_day
 
-    // Koreksi: jika capacity yang tersimpan < dari record sebelumnya
-    // (akibat sisa kapasitas setelah produk pertama mengisi), ambil yang terbesar
-    // karena kapasitas shift = max yang pernah tercatat
     if (cap > map[lineKey][s.production_date][shiftKey].capacity) {
       map[lineKey][s.production_date][shiftKey].capacity = cap
     }
@@ -324,11 +299,6 @@ async function handleGenerateSchedule() {
   } catch (err) { toastError(err) }
 }
 
-// Regenerate not refresh
-// async function handleRecalculate() {
-//   await fetchOrder()
-//   toastSuccess('Schedule data refreshed.')
-// }
 async function handleRecalculate() {
   try {
     const res = await store.generateSchedule(poId.value)
@@ -381,16 +351,16 @@ async function handleReject(payload: RejectPOPayload) {
 }
 
 function openReleaseConfirm() {
-  const wos = order.value?.schedules?.length ?? 0
-  const stations = order.value?.products?.length ?? 0
-  releaseConfirm.description = `Release this PO will create ${wos} Work Order(s) for ${stations} Production Line(s). This action is irreversible. Continue?`
+  const woCount = order.value?.schedules?.length ?? 0
+  releaseConfirm.description = `Release this PO will create ${woCount} Work Order(s). This action is irreversible. Continue?`
   releaseConfirm.open = true
 }
 
 async function handleRelease() {
   try {
     const res = await store.release(poId.value)
-    toastSuccess(res.message || 'Production order released.')
+    const woCreated = res.data?.work_orders_created ?? ''
+    toastSuccess(res.message || `Production order released. ${woCreated} Work Order(s) generated.`)
     releaseConfirm.open = false
     await fetchOrder()
   } catch (err) { toastError(err); releaseConfirm.open = false }
@@ -464,6 +434,24 @@ onUnmounted(() => store.clearCurrentOrder())
     <!-- Rejection notice -->
     <UAlert v-if="order?.status === 'Rejected' && order.notes" icon="i-lucide-alert-triangle" color="error" variant="soft" :title="`Rejected: ${order.notes}`" description="Please revise this production order before resubmitting." />
 
+    <!-- Capacity violations alert -->
+    <UAlert
+      v-if="scheduleViolations.length"
+      icon="i-lucide-alert-circle"
+      color="error"
+      variant="soft"
+      title="Kapasitas tidak mencukupi"
+    >
+      <template #description>
+        <ul class="mt-1 space-y-1 text-xs">
+          <li v-for="v in scheduleViolations" :key="v.line_id">
+            <span class="font-semibold">{{ v.line_name }}</span> —
+            {{ v.message }}
+          </li>
+        </ul>
+      </template>
+    </UAlert>
+
     <!-- Inline Edit Panel -->
     <Transition name="slide-down">
       <div v-if="isEditingInfo" class="bg-default border border-primary/40 rounded-xl p-5 space-y-4 shadow-sm">
@@ -534,45 +522,29 @@ onUnmounted(() => store.clearCurrentOrder())
       <!-- KPI Cards -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">
-            Production Range
-          </p>
+          <p class="text-xs text-muted uppercase tracking-wide">Production Range</p>
           <p class="text-sm font-medium font-mono">
             {{ fmtDate(order.production_start_date) }} – {{ fmtDate(order.production_end_date) }}
           </p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">
-            Delivery Window
-          </p>
+          <p class="text-xs text-muted uppercase tracking-wide">Delivery Window</p>
           <p class="text-sm font-medium font-mono">
             {{ fmtDate(order.earliest_delivery_date) }} – {{ fmtDate(order.latest_delivery_date) }}
           </p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">
-            Total Products
-          </p>
-          <p class="text-2xl font-bold">
-            {{ order.total_products }}
-          </p>
+          <p class="text-xs text-muted uppercase tracking-wide">Total Products</p>
+          <p class="text-2xl font-bold">{{ order.total_products }}</p>
         </div>
         <div class="bg-default border border-default rounded-lg p-4 space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide">
-            Scheduled / Planned Qty
-          </p>
+          <p class="text-xs text-muted uppercase tracking-wide">Scheduled / Planned Qty</p>
           <div class="flex items-end gap-2">
-            <p class="text-2xl font-bold">
-              {{ fmtNum(order.total_scheduled_qty) }}
-            </p>
-            <p class="text-sm text-muted pb-0.5">
-              / {{ fmtNum(order.total_planned_qty) }}
-            </p>
+            <p class="text-2xl font-bold">{{ fmtNum(order.total_scheduled_qty) }}</p>
+            <p class="text-sm text-muted pb-0.5">/ {{ fmtNum(order.total_planned_qty) }}</p>
           </div>
           <UProgress :value="pct" size="xs" :color="pct >= 100 ? 'success' : 'warning'" />
-          <p class="text-xs text-muted">
-            {{ pct }}% scheduled
-          </p>
+          <p class="text-xs text-muted">{{ pct }}% scheduled</p>
         </div>
       </div>
 
@@ -594,9 +566,7 @@ onUnmounted(() => store.clearCurrentOrder())
       <!-- TAB: Summary -->
       <div v-show="activeTab === 'summary'" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-default border border-default rounded-lg p-5 space-y-4">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">
-            Order Info
-          </h3>
+          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">Order Info</h3>
           <dl class="space-y-3 text-sm">
             <div class="flex justify-between"><dt class="text-muted">PO Number</dt><dd class="font-mono font-semibold">{{ order.po_number }}</dd></div>
             <div class="flex justify-between"><dt class="text-muted">Plan</dt><dd class="font-mono">{{ order.plan?.plan_number ?? '—' }}</dd></div>
@@ -614,9 +584,7 @@ onUnmounted(() => store.clearCurrentOrder())
         </div>
 
         <div class="bg-default border border-default rounded-lg p-5 space-y-4">
-          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">
-            Timeline & Audit
-          </h3>
+          <h3 class="font-semibold text-sm uppercase tracking-wide text-muted">Timeline & Audit</h3>
           <dl class="space-y-3 text-sm">
             <div class="flex justify-between"><dt class="text-muted">Start Date</dt><dd class="font-mono">{{ fmtDate(order.production_start_date) }}</dd></div>
             <div class="flex justify-between"><dt class="text-muted">End Date</dt><dd class="font-mono">{{ fmtDate(order.production_end_date) }}</dd></div>
@@ -633,19 +601,15 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'products'">
         <div v-if="!order.products?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-package-x" class="size-12 opacity-40" />
-          <p class="text-sm">
-            No products found in this production order.
-          </p>
+          <p class="text-sm">No products found in this production order.</p>
         </div>
         <UTable
-          v-else :data="order.products"
+          v-else
+          :data="order.products"
           :columns="[
             { header: '#', cell: ({ row }) => row.index + 1 },
             { accessorKey: 'part', header: 'Part', cell: ({ row }) => `${row.original.part?.part_number ?? '—'} — ${row.original.part?.part_name ?? ''}` },
-            { header: '#', cell: ({ row }) => row.index + 1 },
-            { accessorKey: 'part', header: 'Part', cell: ({ row }) => `${row.original.part?.part_number ?? '—'} — ${row.original.part?.part_name ?? ''}` },
             { accessorKey: 'customer', header: 'Customer', cell: ({ row }) => row.original.customer?.name ?? '—' },
-            { accessorKey: 'line', header: 'Line', cell: ({ row }) => row.original.line?.name ?? '—' },
             { accessorKey: 'line', header: 'Line', cell: ({ row }) => row.original.line?.name ?? '—' },
             { accessorKey: 'delivery_date', header: 'Delivery Date', cell: ({ row }) => fmtDate(row.original.delivery_date) },
             { accessorKey: 'planned_qty', header: 'Planned Qty', cell: ({ row }) => fmtNum(row.original.planned_qty) },
@@ -677,7 +641,6 @@ onUnmounted(() => store.clearCurrentOrder())
                   <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Date</th>
                   <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Plan Qty</th>
                   <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Actual Qty</th>
-                  <!-- PERBAIKAN: label "Capacity" → "Cap/Shift" agar jelas ini kapasitas per shift -->
                   <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Cap/Shift</th>
                   <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Util %</th>
                   <th class="px-3 py-2 text-center font-semibold text-muted text-xs uppercase tracking-wide">Status</th>
@@ -690,16 +653,12 @@ onUnmounted(() => store.clearCurrentOrder())
                   class="hover:bg-elevated/50 transition-colors"
                   :class="{ 'bg-amber-50 dark:bg-amber-950/20': isWeekend(sched.production_date) }"
                 >
-                  <td class="px-3 py-2 text-muted text-xs font-mono">
-                    {{ sched.sequence }}
-                  </td>
+                  <td class="px-3 py-2 text-muted text-xs font-mono">{{ sched.sequence }}</td>
                   <td class="px-3 py-2 font-mono text-xs">
                     {{ sched.part?.part_number ?? '—' }}
                     <span class="text-muted block">{{ sched.part?.part_name ?? '' }}</span>
                   </td>
-                  <td class="px-3 py-2 text-xs">
-                    {{ sched.line?.name ?? sched.line_name_snapshot ?? '—' }}
-                  </td>
+                  <td class="px-3 py-2 text-xs">{{ sched.line?.name ?? sched.line_name_snapshot ?? '—' }}</td>
                   <td class="px-3 py-2 text-xs">
                     {{ sched.shift?.name ?? sched.shift_name_snapshot ?? '—' }}
                     <span v-if="sched.shift" class="text-muted block font-mono text-xs">{{ sched.shift.start_time }}–{{ sched.shift.end_time }}</span>
@@ -707,7 +666,6 @@ onUnmounted(() => store.clearCurrentOrder())
                   <td class="px-3 py-2 font-mono text-xs" :class="isWeekend(sched.production_date) ? 'text-warning-600 dark:text-warning-400' : ''">{{ fmtDate(sched.production_date) }}</td>
                   <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(sched.planned_qty_per_day) }}</td>
                   <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(sched.actual_qty_per_day) }}</td>
-                  <!-- PERBAIKAN: nilai line_capacity_per_day sudah per shift dari BE -->
                   <td class="px-3 py-2 text-right font-mono text-xs text-muted">{{ sched.line_capacity_per_day != null ? fmtNum(sched.line_capacity_per_day) : '—' }}</td>
                   <td class="px-3 py-2 text-right font-mono text-xs" :class="utilClass(sched.utilization_pct)">{{ sched.utilization_pct != null ? `${sched.utilization_pct}%` : '—' }}</td>
                   <td class="px-3 py-2 text-center">
@@ -724,13 +682,10 @@ onUnmounted(() => store.clearCurrentOrder())
       </div>
 
       <!-- TAB: Gantt Chart -->
-      <!-- PERBAIKAN: satu sel tanggal bisa berisi beberapa shift, tampilkan semua -->
       <div v-show="activeTab === 'gantt'">
         <div v-if="!hasSchedule" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-gantt-chart-square" class="size-12 opacity-40" />
-          <p class="text-sm">
-            Generate a schedule first to view the Gantt chart.
-          </p>
+          <p class="text-sm">Generate a schedule first to view the Gantt chart.</p>
         </div>
         <div v-else class="overflow-x-auto rounded-lg border border-default">
           <table class="text-xs min-w-max">
@@ -743,31 +698,22 @@ onUnmounted(() => store.clearCurrentOrder())
                   :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/30 text-warning-600' : ''"
                 >
                   <div>{{ new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }}</div>
-                  <div class="text-muted/60 font-normal">
-                    {{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}
-                  </div>
+                  <div class="text-muted/60 font-normal">{{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}</div>
                 </th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default">
               <tr v-for="{ product, schedsByDate } in ganttRows" :key="product.id" class="hover:bg-elevated/40 transition-colors">
                 <td class="px-3 py-2 sticky left-0 bg-default z-10 border-r border-default">
-                  <div class="font-mono font-semibold">
-                    {{ product.part?.part_number }}
-                  </div>
-                  <div class="text-muted truncate max-w-[160px]">
-                    {{ product.part?.part_name }}
-                  </div>
-                  <div class="text-muted/60">
-                    {{ product.customer?.name }}
-                  </div>
+                  <div class="font-mono font-semibold">{{ product.part?.part_number }}</div>
+                  <div class="text-muted truncate max-w-[160px]">{{ product.part?.part_name }}</div>
+                  <div class="text-muted/60">{{ product.customer?.name }}</div>
                 </td>
                 <td
                   v-for="date in ganttDates" :key="date"
                   class="px-1 py-1 text-center align-top"
                   :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/20' : ''"
                 >
-                  <!-- PERBAIKAN: tampilkan satu pill per shift di tanggal ini -->
                   <template v-if="schedsByDate[date]?.length">
                     <div
                       v-for="sched in schedsByDate[date]" :key="sched.id"
@@ -795,13 +741,10 @@ onUnmounted(() => store.clearCurrentOrder())
       </div>
 
       <!-- TAB: Resource Allocation -->
-      <!-- PERBAIKAN: utilisasi dihitung per shift, roll-up harian juga ditampilkan -->
       <div v-show="activeTab === 'resource'">
         <div v-if="!hasSchedule || !resourceRows.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-bar-chart-2" class="size-12 opacity-40" />
-          <p class="text-sm">
-            No resource data available yet.
-          </p>
+          <p class="text-sm">No resource data available yet.</p>
         </div>
         <div v-else class="overflow-x-auto rounded-lg border border-default">
           <table class="text-xs min-w-max">
@@ -826,12 +769,10 @@ onUnmounted(() => store.clearCurrentOrder())
                   :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/20' : ''"
                 >
                   <template v-if="row.byDate[date]">
-                    <!-- Roll-up harian: total utilisasi semua shift -->
                     <div :class="utilClass(row.byDate[date].dailyPct)" class="font-mono font-semibold">
                       {{ row.byDate[date].dailyPct != null ? `${row.byDate[date].dailyPct}%` : '—' }}
                     </div>
                     <div class="text-muted/60 font-mono">{{ fmtNum(row.byDate[date].totalQty) }}</div>
-                    <!-- Breakdown per shift (tooltip-style di bawah) -->
                     <div
                       v-for="sh in row.byDate[date].shifts" :key="sh.shiftName"
                       class="text-muted/50 font-mono mt-0.5"
@@ -852,32 +793,18 @@ onUnmounted(() => store.clearCurrentOrder())
       <div v-show="activeTab === 'logs'">
         <div v-if="!order.reschedule_logs?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-history" class="size-12 opacity-40" />
-          <p class="text-sm">
-            No reschedule history found.
-          </p>
+          <p class="text-sm">No reschedule history found.</p>
         </div>
         <div v-else class="overflow-x-auto rounded-lg border border-default">
           <table class="w-full text-sm">
             <thead class="bg-elevated">
               <tr>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
-                  #
-                </th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
-                  Old Range
-                </th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
-                  New Range
-                </th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
-                  Reason
-                </th>
-                <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">
-                  Impacted WOs
-                </th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">
-                  Rescheduled At
-                </th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">#</th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Old Range</th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">New Range</th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Reason</th>
+                <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Impacted WOs</th>
+                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Rescheduled At</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default">

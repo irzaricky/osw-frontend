@@ -2,20 +2,20 @@
 import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
 import { storeToRefs }    from 'pinia'
 import { useRouter }      from 'vue-router'
-import { useWorkOrderStore }    from '../../../stores/production-plan/work-order.store'
-import { useWorkOrderColumns }  from './composables/useWorkOrderColumns'
-import { useWorkOrderFilters }  from './composables/useWorkOrderFilters'
-import { useWorkOrderActions }  from './composables/useWorkOrderActions'
-import { useAppToast }          from '../../../composables/useAppToast'
-import type { WorkOrder }       from '../../../types/production-plan/work-order'
-import type { Row }             from '@tanstack/table-core'
+import { useWorkOrderStore }   from '../../../stores/production-plan/work-order.store'
+import { useWorkOrderColumns } from './composables/useWorkOrderColumns'
+import { useWorkOrderFilters } from './composables/useWorkOrderFilters'
+import { useWorkOrderActions } from './composables/useWorkOrderActions'
+import { useAppToast }         from '../../../composables/useAppToast'
+import type { WorkOrder }      from '../../../types/production-plan/work-order'
 
-import Breadcrumbs       from '../../../components/Breadcrumbs.vue'
-import ConfirmDialog     from '../../../components/ConfirmDialog.vue'
-import WODailySummary    from './components/WODailySummary.vue'
+import Breadcrumbs    from '../../../components/Breadcrumbs.vue'
+import ConfirmDialog  from '../../../components/ConfirmDialog.vue'
+import WOFilters      from './components/WOFilters.vue'
+import WODailySummary from './components/WODailySummary.vue'
 
-const router    = useRouter()
-const woStore   = useWorkOrderStore()
+const router  = useRouter()
+const woStore = useWorkOrderStore()
 const { workOrders, meta, loading, dailySummary } = storeToRefs(woStore)
 const { toastSuccess, toastError } = useAppToast()
 
@@ -41,6 +41,8 @@ async function fetchData() {
     status:    filters.status,
     work_date: filters.work_date,
     line_id:   filters.line_id,
+    shift_id:  filters.shift_id,
+    stage:     filters.stage,
   })
 }
 
@@ -71,7 +73,7 @@ const breadcrumbItems = [
 const summaryDate = ref(new Date().toISOString().split('T')[0])
 
 async function refreshSummary() {
-  await woStore.fetchDailySummary(summaryDate.value)
+  await woStore.fetchDailySummary({ work_date: summaryDate.value })
 }
 
 watch(summaryDate, refreshSummary)
@@ -95,19 +97,13 @@ onMounted(async () => {
       <div class="space-y-5">
         <Breadcrumbs :items="breadcrumbItems" />
 
-        <!-- Page Header -->
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 class="text-2xl font-bold">
-              Work Orders
-            </h1>
-            <p class="text-sm text-muted mt-0.5">
-              Manage and monitor shop floor Work Orders
-            </p>
+            <h1 class="text-2xl font-bold">Work Orders</h1>
+            <p class="text-sm text-muted mt-0.5">Manage and monitor shop floor Work Orders</p>
           </div>
         </div>
 
-        <!-- Daily Summary -->
         <WODailySummary
           v-model:work-date="summaryDate"
           :summary="dailySummary"
@@ -115,7 +111,6 @@ onMounted(async () => {
           @refresh="refreshSummary"
         />
 
-        <!-- Filters -->
         <WOFilters
           :search="search"
           :filters="filters"
@@ -124,19 +119,11 @@ onMounted(async () => {
           @reset="resetFilters"
         />
 
-        <!-- Bulk Actions -->
         <div v-if="selectedCount > 0" class="flex items-center gap-3 px-4 py-2.5 bg-elevated border border-default rounded-lg">
           <span class="text-sm font-medium">{{ selectedCount }} selected</span>
-          <UButton
-            label="Clear Selection"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            @click="rowSelection = {}"
-          />
+          <UButton label="Clear Selection" color="neutral" variant="ghost" size="xs" @click="rowSelection = {}" />
         </div>
 
-        <!-- Table -->
         <UTable
           ref="table"
           v-model:row-selection="rowSelection"
@@ -146,30 +133,18 @@ onMounted(async () => {
           class="w-full"
         />
 
-        <!-- Empty state -->
         <div
           v-if="!loading && workOrders.length === 0"
           class="flex flex-col items-center justify-center py-16 text-center text-muted gap-3"
         >
           <UIcon name="i-lucide-clipboard-x" class="w-10 h-10" />
           <div>
-            <p class="text-sm font-medium">
-              No Work Orders found
-            </p>
-            <p class="text-xs mt-1">
-              Try adjusting your filters or search.
-            </p>
+            <p class="text-sm font-medium">No Work Orders found</p>
+            <p class="text-xs mt-1">Try adjusting your filters or search.</p>
           </div>
-          <UButton
-            label="Reset Filters"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            @click="resetFilters"
-          />
+          <UButton label="Reset Filters" color="neutral" variant="soft" size="sm" @click="resetFilters" />
         </div>
 
-        <!-- Pagination -->
         <div
           v-if="meta.total > 0"
           class="flex items-center justify-between gap-3 border-t border-default pt-4"
@@ -186,7 +161,6 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Confirm Dialog (Start) -->
         <ConfirmDialog
           v-model:open="confirm.open"
           :title="confirm.title"

@@ -3,44 +3,43 @@ import type { ProductionPlan, PlanStatus, OverallStatus, PlanType } from '../../
 import type { ColumnDef } from '@tanstack/table-core'
 
 interface UIComponents {
-  UCheckbox: any
-  UButton: any
+  UCheckbox:    any
+  UButton:      any
   UDropdownMenu: any
-  UBadge: any
+  UBadge:       any
 }
 
 interface Actions {
-  onView: (plan: ProductionPlan) => void
+  onView:   (plan: ProductionPlan) => void
   onDelete: (plan: ProductionPlan) => void
 }
 
 const planStatusColor: Record<PlanStatus, 'neutral' | 'info' | 'warning' | 'success' | 'error'> = {
-  Draft: 'neutral',
+  Draft:            'neutral',
   Pending_Approval: 'warning',
-  Approved: 'success',
-  Rejected: 'error',
+  Approved:         'success',
+  Rejected:         'error',
 }
 
 const planStatusLabel: Record<PlanStatus, string> = {
-  Draft: 'Draft',
+  Draft:            'Draft',
   Pending_Approval: 'Pending Approval',
-  Approved: 'Approved',
-  Rejected: 'Rejected',
+  Approved:         'Approved',
+  Rejected:         'Rejected',
 }
 
 const overallStatusColor: Record<OverallStatus, 'neutral' | 'success' | 'error'> = {
   Not_Calculated: 'neutral',
-  POSSIBLE: 'success',
-  IMPOSSIBLE: 'error',
+  POSSIBLE:       'success',
+  IMPOSSIBLE:     'error',
 }
 
 const overallStatusLabel: Record<OverallStatus, string> = {
   Not_Calculated: 'Not Calculated',
-  POSSIBLE: 'Possible',
-  IMPOSSIBLE: 'Impossible',
+  POSSIBLE:       'Possible',
+  IMPOSSIBLE:     'Impossible',
 }
 
-// [+] Label & warna untuk plan_type
 const planTypeLabel: Record<PlanType, string> = {
   ORIGINAL:  'Original',
   AMENDMENT: 'Amendment',
@@ -51,7 +50,6 @@ const planTypeColor: Record<PlanType, 'neutral' | 'info' | 'warning'> = {
   AMENDMENT: 'warning',
 }
 
-// Format YYYY-MM menjadi label yang lebih mudah dibaca, misal "2025-05" → "May 2025"
 function fmtPlanMonth(plan_month: string): string {
   const [year, month] = plan_month.split('-')
   const date = new Date(Number(year), Number(month) - 1, 1)
@@ -76,7 +74,7 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
           ariaLabel: 'Select row',
         }),
       enableSorting: false,
-      enableHiding: false,
+      enableHiding:  false,
     },
     {
       header: 'No',
@@ -89,20 +87,18 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
         h(
           'button',
           {
-            class: 'font-semibold text-primary hover:underline text-left',
+            class:   'font-semibold text-primary hover:underline text-left',
             onClick: () => actions.onView(row.original),
           },
           row.original.plan_number,
         ),
     },
-    // Kolom Plan Month — tampil setelah Plan Number
     {
       accessorKey: 'plan_month',
       header: 'Plan Month',
       cell: ({ row }) =>
         h('div', { class: 'text-sm font-mono' }, fmtPlanMonth(row.original.plan_month)),
     },
-    // [+] Kolom Plan Type — ORIGINAL | AMENDMENT
     {
       accessorKey: 'plan_type',
       header: 'Type',
@@ -115,7 +111,6 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
             variant: 'soft',
             size:    'sm',
           }),
-          // Tampilkan plan_number parent jika AMENDMENT
           row.original.plan_type === 'AMENDMENT' && row.original.parent_plan
             ? h('span', { class: 'text-xs text-muted font-mono' }, `↳ ${row.original.parent_plan.plan_number}`)
             : null,
@@ -133,7 +128,7 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
       header: 'Delivery Range',
       cell: ({ row }) => {
         const earliest = row.original.earliest_delivery_date
-        const latest = row.original.latest_delivery_date
+        const latest   = row.original.latest_delivery_date
         if (!earliest && !latest) return h('span', { class: 'text-muted' }, '-')
         const fmt = (d?: string | null) =>
           d ? new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '?'
@@ -151,8 +146,11 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
         h('div', { class: 'font-mono text-sm' }, [
           h('span', row.original.total_qty_request.toLocaleString()),
           h('span', { class: 'text-muted mx-1' }, '/'),
-          h('span', { class: row.original.total_qty_capacity >= row.original.total_qty_request ? 'text-success-500' : 'text-error-500' },
-            row.original.total_qty_capacity.toLocaleString()),
+          h('span', {
+            class: row.original.total_qty_capacity >= row.original.total_qty_request
+              ? 'text-success-500'
+              : 'text-error-500',
+          }, row.original.total_qty_capacity.toLocaleString()),
         ]),
     },
     {
@@ -160,8 +158,8 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
       header: 'Capacity',
       cell: ({ row }) =>
         h(ui.UBadge, {
-          label: overallStatusLabel[row.original.overall_status],
-          color: overallStatusColor[row.original.overall_status],
+          label:   overallStatusLabel[row.original.overall_status],
+          color:   overallStatusColor[row.original.overall_status],
           variant: 'soft',
         }),
     },
@@ -170,8 +168,8 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
       header: 'Status',
       cell: ({ row }) =>
         h(ui.UBadge, {
-          label: planStatusLabel[row.original.status],
-          color: planStatusColor[row.original.status],
+          label:   planStatusLabel[row.original.status],
+          color:   planStatusColor[row.original.status],
           variant: 'subtle',
         }),
     },
@@ -189,9 +187,9 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
                 ],
                 [
                   {
-                    label: 'Delete',
-                    icon: 'i-lucide-trash-2',
-                    color: 'error' as const,
+                    label:    'Delete',
+                    icon:     'i-lucide-trash-2',
+                    color:    'error' as const,
                     onSelect: () => actions.onDelete(row.original),
                     disabled: row.original.status !== 'Draft',
                   },
@@ -201,10 +199,10 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
             },
             () =>
               h(ui.UButton, {
-                icon: 'i-lucide-more-vertical',
-                color: 'neutral',
+                icon:    'i-lucide-more-vertical',
+                color:   'neutral',
                 variant: 'ghost',
-                class: 'h-8 w-8 p-0',
+                class:   'h-8 w-8 p-0',
               }),
           ),
         ]),

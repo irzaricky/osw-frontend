@@ -4,26 +4,24 @@ import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useProductionPlanStore } from '../../../stores/production-plan/plan.store'
 import { useAppToast } from '../../../composables/useAppToast'
-import type { PlanStatus, OverallStatus, AdjustmentType, PlanType } from '../../../types/production-plan/plan'
+import type { PlanStatus, OverallStatus, PlanType } from '../../../types/production-plan/plan'
 import lineService from '../../../services/master-data/line.service'
 import lineCapacityService from '../../../services/master-data/line-capacity.service'
 
-import Breadcrumbs from '../../../components/Breadcrumbs.vue'
-import PlanInfoCard from './components/PlanInfoCard.vue'
-import PlanDOSection from './components/PlanDOSection.vue'
+import Breadcrumbs    from '../../../components/Breadcrumbs.vue'
+import PlanInfoCard   from './components/PlanInfoCard.vue'
+import PlanDOSection  from './components/PlanDOSection.vue'
 import PlanTabsSection from './components/PlanTabsSection.vue'
-import PlanDOModal from './components/PlanDOModal.vue'
-import ConfirmDialog from '../../../components/ConfirmDialog.vue'
-import RejectDialog from '../../../components/RejectDialog.vue'
+import PlanDOModal    from './components/PlanDOModal.vue'
+import ConfirmDialog  from '../../../components/ConfirmDialog.vue'
+import RejectDialog   from '../../../components/RejectDialog.vue'
 
-// Router & Store
 const router    = useRouter()
 const route     = useRoute()
 const planStore = useProductionPlanStore()
 const { currentPlan, availableDOs, dropdown, loading, saving, calculating } = storeToRefs(planStore)
 const { toastSuccess, toastError } = useAppToast()
 
-// Mode Detection
 const isCreate   = computed(() => route.name === 'production-plan-create')
 const isEditable = computed(() =>
   !isCreate.value &&
@@ -31,7 +29,6 @@ const isEditable = computed(() =>
 )
 const planId = computed(() => route.params.id ? Number(route.params.id) : null)
 
-// Breadcrumbs
 const breadcrumbItems = computed(() => [
   { label: 'Home', to: '/' },
   { label: 'Production Plan' },
@@ -39,8 +36,6 @@ const breadcrumbItems = computed(() => [
   { label: isCreate.value ? 'Create New Plan' : 'Plan Details' },
 ])
 
-// Header Form
-// [+] tambah plan_type dan parent_plan_id ke headerForm
 const headerForm = reactive({
   plan_month:       '',
   plan_type:        'ORIGINAL' as PlanType,
@@ -49,25 +44,11 @@ const headerForm = reactive({
   notes:            '',
 })
 
-// DO Selection
 const selectedDOs  = ref<number[]>([])
 const showDOModal  = ref(false)
 
 const selectedDOItems = computed(() =>
   availableDOs.value.filter((d) => selectedDOs.value.includes(d.id)),
-)
-
-const pendingDOs = computed(() =>
-  availableDOs.value.filter((d) =>
-    selectedDOs.value.includes(d.id) &&
-    !currentPlan.value?.do_references?.some((r) => r.do_id === d.id)
-  )
-)
-
-const visibleDOReferences = computed(() =>
-  currentPlan.value?.do_references?.filter((r: any) =>
-    selectedDOs.value.includes(r.do_id)
-  ) ?? []
 )
 
 function toggleDO(id: number) {
@@ -81,38 +62,31 @@ function handleSelectAll(ids: number[], select: boolean) {
   else selectedDOs.value = selectedDOs.value.filter((id) => !ids.includes(id))
 }
 
-// [+] Daftar plan ORIGINAL yang sudah Approved — dipakai dropdown parent saat buat AMENDMENT
-// Diambil dari dropdown store yang sudah di-fetch
 const approvedOriginalPlans = computed(() =>
-  (dropdown.value as any[]).filter(
-    (p) => p.plan_type === 'ORIGINAL',
-  ).map((p) => ({
-    id:          p.id as number,
-    plan_number: p.plan_number as string,
-    plan_month:  p.plan_month as string,
-  }))
+  (dropdown.value as any[])
+    .filter((p) => p.plan_type === 'ORIGINAL')
+    .map((p) => ({
+      id:          p.id as number,
+      plan_number: p.plan_number as string,
+      plan_month:  p.plan_month as string,
+    }))
 )
 
-// [+] Saat plan_type berubah ke AMENDMENT, fetch dropdown agar approvedOriginalPlans tersedia
 watch(
   () => headerForm.plan_type,
   (type) => {
     if (type === 'AMENDMENT') {
       planStore.fetchDropdown()
-      // Reset plan_month — untuk AMENDMENT, plan_month diambil dari parent plan
       headerForm.plan_month     = ''
       headerForm.parent_plan_id = null
     }
     else {
-      // Reset parent saat kembali ke ORIGINAL
       headerForm.parent_plan_id = null
     }
-    // Reset DO karena bulan mungkin berubah
     selectedDOs.value = []
   },
 )
 
-// [+] Saat parent_plan_id berubah (AMENDMENT), sync plan_month dari parent & fetch DOs
 watch(
   () => headerForm.parent_plan_id,
   (parentId) => {
@@ -126,7 +100,6 @@ watch(
   },
 )
 
-// Watch plan_month di create ORIGINAL mode — setiap ganti bulan, reset DO & fetch ulang
 watch(
   () => headerForm.plan_month,
   (newMonth) => {
@@ -137,17 +110,21 @@ watch(
   },
 )
 
-// ── Capacity state ───────────────────────────────────────────────────────────
+// ── Capacity state ─────────────────────────────────────────────────────────
 
 const lines          = ref<any[]>([])
 const selectedLineId = ref<number | undefined>(undefined)
 const lineParams     = ref<any>(null)
 const loadingParams  = ref(false)
 
-const adjustmentForm = reactive({
-  adjustment_type:        '' as AdjustmentType | '',
-  adjusted_value:         0,
-  adjustment_description: '',
+const editParamForm = reactive({
+  working_days:            0,
+  shifts_per_day:          0,
+  working_hours_per_shift: 0,
+  manpower:                0,
+  efficiency_factor:       0,
+  overtime_hours:          0,
+  max_takt_time:           0,
 })
 
 async function fetchLineParams(lineId: number) {
@@ -166,11 +143,28 @@ async function fetchLineParams(lineId: number) {
 }
 
 watch(selectedLineId, (id) => {
-  if (id) fetchLineParams(id)
-  else lineParams.value = null
+  if (id) {
+    fetchLineParams(id)
+    syncEditParamForm(id)
+  }
+  else {
+    lineParams.value = null
+  }
 })
 
-// Dialog
+function syncEditParamForm(lineId: number) {
+  const param = currentPlan.value?.capacity_params?.find((p: any) => p.line_id === lineId)
+  if (param) {
+    editParamForm.working_days            = param.working_days
+    editParamForm.shifts_per_day          = param.shifts_per_day
+    editParamForm.working_hours_per_shift = Number(param.working_hours_per_shift)
+    editParamForm.manpower                = param.manpower
+    editParamForm.efficiency_factor       = Number(param.efficiency_factor)
+    editParamForm.overtime_hours          = Number(param.overtime_hours)
+    editParamForm.max_takt_time           = param.max_takt_time
+  }
+}
+
 const confirm = reactive({
   open:         false,
   title:        '',
@@ -185,7 +179,6 @@ const reject = reactive({
   description: 'Please provide a reason for rejection.',
 })
 
-// Labels & Colors
 const planStatusLabel: Record<PlanStatus, string> = {
   Draft:            'Draft',
   Pending_Approval: 'Pending Approval',
@@ -219,16 +212,9 @@ const hasImpossible = computed(() =>
 )
 
 const hasUnrouted = computed(() =>
-  currentPlan.value?.details?.some((d: any) => !d.detail_lines?.length),
+  currentPlan.value?.details?.some((d: any) => !d.assigned_line_id),
 )
 
-const activeBaseParam = computed(() =>
-  currentPlan.value?.capacity_params?.find(
-    (p: any) => p.param_type === 'BASE' && p.line_id === selectedLineId.value,
-  ),
-)
-
-// Formatting helpers
 function fmtDate(d?: string | null) {
   if (!d) return '-'
   return new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -238,12 +224,11 @@ function fmtNum(n?: number | null) {
   return n.toLocaleString('en-US')
 }
 
-// ── CRUD Actions ─────────────────────────────────────────────────────────────
+// ── CRUD Actions ──────────────────────────────────────────────────────────
 
 async function handleSaveHeader() {
   try {
     if (isCreate.value) {
-      // Validasi plan_month wajib diisi
       if (!headerForm.plan_month) {
         toastError('Please select a plan month first.')
         return
@@ -252,7 +237,6 @@ async function handleSaveHeader() {
         toastError('Select at least one Delivery Order.')
         return
       }
-      // [+] validasi parent_plan_id wajib diisi jika AMENDMENT
       if (headerForm.plan_type === 'AMENDMENT' && !headerForm.parent_plan_id) {
         toastError('Please select a parent plan for Amendment.')
         return
@@ -260,10 +244,10 @@ async function handleSaveHeader() {
 
       const res = await planStore.createPlan({
         plan_month:       headerForm.plan_month,
-        plan_type:        headerForm.plan_type,                           // [+]
+        plan_type:        headerForm.plan_type,
         parent_plan_id:   headerForm.plan_type === 'AMENDMENT'
                             ? (headerForm.parent_plan_id ?? undefined)
-                            : undefined,                                  // [+]
+                            : undefined,
         plan_description: headerForm.plan_description || null,
         do_ids:           selectedDOs.value,
         notes:            headerForm.notes || null,
@@ -281,14 +265,18 @@ async function handleSaveHeader() {
         notes:            headerForm.notes || null,
       })
 
-      const currentDoIds = currentPlan.value?.do_references?.map((r: any) => r.do_id) ?? []
-      const added   = selectedDOs.value.filter(id => !currentDoIds.includes(id))
+      const currentDoIds = currentPlan.value?.details
+        ? [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
+        : []
+      const added   = selectedDOs.value.filter((id) => !currentDoIds.includes(id))
       const removed = currentDoIds.filter((id: number) => !selectedDOs.value.includes(id))
 
       if (added.length > 0 || removed.length > 0) {
         await planStore.syncDOs(planId.value, { do_ids: selectedDOs.value })
         await planStore.fetchPlan(planId.value)
-        selectedDOs.value = currentPlan.value?.do_references?.map((r: any) => r.do_id) ?? []
+        selectedDOs.value = currentPlan.value?.details
+          ? [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
+          : []
       }
       confirm.open = false
       toastSuccess('Plan updated successfully')
@@ -303,40 +291,30 @@ async function handleSaveBase() {
     return
   }
   try {
-    const res = await planStore.saveCapacityParams(planId.value, {
-      line_id: selectedLineId.value,
-    })
+    const res = await planStore.saveCapacityParams(planId.value, { line_id: selectedLineId.value })
     toastSuccess(res.message || 'BASE parameters saved from line master')
-    await planStore.fetchPlan(planId.value)
+    syncEditParamForm(selectedLineId.value)
   }
   catch (e) { toastError(e) }
 }
 
-async function handleSaveAdjustment() {
+async function handleSaveParamEdit() {
   if (!planId.value || !selectedLineId.value) {
-    toastError('Please select a line first.')
-    return
-  }
-  if (!adjustmentForm.adjustment_type || adjustmentForm.adjusted_value === undefined) {
-    toastError('Please fill in adjustment type and value.')
-    return
-  }
-  if (!activeBaseParam.value) {
-    toastError('BASE parameters not found. Save BASE first.')
+    toastError('Please select a production line first.')
     return
   }
   try {
-    await planStore.addAdjustment(planId.value, {
-      line_id:                selectedLineId.value,
-      adjustment_type:        adjustmentForm.adjustment_type as AdjustmentType,
-      adjusted_value:         adjustmentForm.adjusted_value,
-      adjustment_description: adjustmentForm.adjustment_description || undefined,
+    const res = await planStore.updateCapacityParams(planId.value, {
+      line_id:                 selectedLineId.value,
+      working_days:            editParamForm.working_days,
+      shifts_per_day:          editParamForm.shifts_per_day,
+      working_hours_per_shift: editParamForm.working_hours_per_shift,
+      manpower:                editParamForm.manpower,
+      efficiency_factor:       editParamForm.efficiency_factor,
+      overtime_hours:          editParamForm.overtime_hours,
+      max_takt_time:           editParamForm.max_takt_time,
     })
-    toastSuccess('Adjustment saved')
-    adjustmentForm.adjustment_type        = ''
-    adjustmentForm.adjusted_value         = 0
-    adjustmentForm.adjustment_description = ''
-    await planStore.fetchPlan(planId.value)
+    toastSuccess(res.message || 'Parameters updated. Run Calculate to apply.')
   }
   catch (e) { toastError(e) }
 }
@@ -358,9 +336,9 @@ const calculatingAll = ref(false)
 
 async function handleCalculateAll() {
   if (!planId.value) return
-  const baseParams = currentPlan.value?.capacity_params?.filter((p: any) => p.param_type === 'BASE') ?? []
-  if (baseParams.length === 0) {
-    toastError('No lines with BASE parameters to calculate.')
+  const params = currentPlan.value?.capacity_params ?? []
+  if (params.length === 0) {
+    toastError('No lines with parameters to calculate.')
     return
   }
   calculatingAll.value = true
@@ -378,7 +356,7 @@ async function handleCalculateAll() {
   }
 }
 
-// ── Approval Workflow ────────────────────────────────────────────────────────
+// ── Approval Workflow ──────────────────────────────────────────────────────
 
 function openSubmitConfirm() {
   confirm.title        = 'Submit for Approval'
@@ -424,27 +402,11 @@ async function handleReject(reason: string) {
   catch (e) { toastError(e) }
 }
 
-function openConfirm(options: {
-  title: string
-  description: string
-  action: () => Promise<void>
-}) {
+function openConfirm(options: { title: string; description: string; action: () => Promise<void> }) {
   confirm.title        = options.title
   confirm.description  = options.description
   confirm.action       = options.action
   confirm.open         = true
-}
-
-function confirmDeleteAdjustment(adjId: number) {
-  openConfirm({
-    title:       'Delete Adjustment',
-    description: 'Adjustment will be removed and capacity will be reset.',
-    action:      async () => {
-      await planStore.deleteAdjustment(planId.value!, adjId)
-      await planStore.fetchPlan(planId.value!)
-      confirm.open = false
-    },
-  })
 }
 
 const canSubmit = computed(() =>
@@ -455,7 +417,7 @@ const canSubmit = computed(() =>
   !hasUnrouted.value,
 )
 
-// ── Lifecycle ────────────────────────────────────────────────────────────────
+// ── Lifecycle ──────────────────────────────────────────────────────────────
 
 watch(
   () => route.params.id,
@@ -465,7 +427,6 @@ watch(
 
     if (isCreate.value) {
       planStore.clearCurrentPlan()
-      // Reset form saat masuk create mode
       headerForm.plan_month       = ''
       headerForm.plan_type        = 'ORIGINAL'
       headerForm.parent_plan_id   = null
@@ -480,22 +441,21 @@ watch(
       planStore.clearCurrentPlan()
       await planStore.fetchPlan(id)
 
-      // Fetch DO pakai plan_month dari plan yang sedang dibuka
       if (currentPlan.value?.plan_month) {
         await planStore.fetchAvailableDOs(currentPlan.value.plan_month)
       }
 
-      if (currentPlan.value?.do_references) {
-        selectedDOs.value = currentPlan.value.do_references.map((r: any) => r.do_id)
+      if (currentPlan.value?.details) {
+        selectedDOs.value = [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
       }
 
       if (currentPlan.value) {
         headerForm.plan_description = currentPlan.value.plan_description ?? ''
         headerForm.notes            = currentPlan.value.notes ?? ''
 
-        const baseParam = currentPlan.value.capacity_params?.find((p: any) => p.param_type === 'BASE')
-        if (baseParam) {
-          selectedLineId.value = baseParam.line_id
+        const firstParam = currentPlan.value.capacity_params?.[0]
+        if (firstParam) {
+          selectedLineId.value = firstParam.line_id
         }
       }
     }
@@ -549,7 +509,6 @@ watch(
             </div>
           </div>
 
-          <!-- Action buttons -->
           <div class="flex items-center gap-2 flex-wrap">
             <template v-if="isCreate">
               <UButton
@@ -613,7 +572,7 @@ watch(
           variant="soft"
           icon="i-lucide-alert-triangle"
           title="Status Overall: IMPOSSIBLE"
-          description="Capacity is insufficient to meet all requests. Add adjustments in the Capacity tab and recalculate."
+          description="Capacity is insufficient to meet all requests. Edit parameters in the Capacity tab and recalculate."
         />
         <UAlert
           v-if="!isCreate && hasUnrouted && isEditable"
@@ -637,8 +596,8 @@ watch(
           :is-create="isCreate"
           :is-detail="isEditable"
           :current-plan="currentPlan"
-          :pending-dos="pendingDOs"
-          :do-references="visibleDOReferences"
+          :pending-dos="selectedDOItems"
+          :do-references="[]"
           :header-form="headerForm"
           :saving="saving"
           :fmt-date="fmtDate"
@@ -667,7 +626,7 @@ watch(
           :lines="lines"
           :line-params="lineParams"
           :loading-params="loadingParams"
-          :adjustment-form="adjustmentForm"
+          :edit-param-form="editParamForm"
           :loading="loading"
           :saving="saving"
           :calculating="calculating"
@@ -681,21 +640,19 @@ watch(
           :detail-status-color="detailStatusColor"
           @update:selected-line-id="selectedLineId = $event"
           @save-base="handleSaveBase"
-          @save-adjustment="handleSaveAdjustment"
+          @save-param-edit="handleSaveParamEdit"
           @calculate="openConfirm({
             title: 'Recalculate Capacity',
-            description: 'Capacity will be recalculated based on the current BASE and adjustments. Do you want to proceed?',
+            description: 'Capacity will be recalculated for this line. Do you want to proceed?',
             action: handleCalculate,
           })"
           @calculate-all="openConfirm({
             title: 'Recalculate All Lines',
-            description: 'All lines with BASE parameters will be recalculated. This may take some time. Do you want to proceed?',
+            description: 'All lines will be recalculated. This may take some time. Do you want to proceed?',
             action: handleCalculateAll,
           })"
-          @delete-adjustment="confirmDeleteAdjustment"
         />
 
-        <!-- MODAL: PILIH DELIVERY ORDERS -->
         <PlanDOModal
           v-model:open="showDOModal"
           :available-dos="availableDOs"
@@ -706,7 +663,6 @@ watch(
           @select-all="handleSelectAll"
         />
 
-        <!-- CONFIRM DIALOG -->
         <ConfirmDialog
           v-model:open="confirm.open"
           :title="confirm.title"

@@ -5,10 +5,10 @@ import CapacityTab from './PlanCapacityTabs.vue'
 defineProps<{
   currentPlan:      any
   selectedLineId:   number | undefined
-  lines: any
+  lines:            any
   lineParams:       any
   loadingParams:    boolean
-  adjustmentForm:   any
+  editParamForm:    any
   loading:          boolean
   saving:           boolean
   calculating:      boolean
@@ -25,10 +25,9 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'update:selectedLineId', val: number | undefined): void
   (e: 'save-base'): void
-  (e: 'save-adjustment'): void
+  (e: 'save-param-edit'): void
   (e: 'calculate'): void
   (e: 'calculate-all'): void
-  (e: 'delete-adjustment', adjId: number): void
 }>()
 
 const tabs = [
@@ -59,7 +58,7 @@ const tabs = [
         :lines="lines"
         :line-params="lineParams"
         :loading-params="loadingParams"
-        :adjustment-form="adjustmentForm"
+        :edit-param-form="editParamForm"
         :saving="saving"
         :calculating="calculating"
         :calculating-all="calculatingAll"
@@ -70,10 +69,9 @@ const tabs = [
         :overall-status-color="overallStatusColor"
         @update:selected-line-id="emit('update:selectedLineId', $event)"
         @save-base="emit('save-base')"
-        @save-adjustment="emit('save-adjustment')"
+        @save-param-edit="emit('save-param-edit')"
         @calculate="emit('calculate')"
         @calculate-all="emit('calculate-all')"
-        @delete-adjustment="(id) => emit('delete-adjustment', id)"
       />
     </template>
   </UTabs>
