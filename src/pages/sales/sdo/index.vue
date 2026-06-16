@@ -10,6 +10,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { compressImage } from '../../../utils'
 import { useAppToast } from '../../../composables/useAppToast'
 import sdoService from '../../../services/sales/sdo.service'
+import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 
 const getImageUrl = (path: any) => {
   if (!path) return ''
@@ -210,6 +211,16 @@ function getStatusColor(status: string) {
   }
 }
 
+function getWoStatusColor(statusName?: string) {
+  if (!statusName) return 'neutral'
+  const name = statusName.toLowerCase()
+  if (name.includes('complete') || name.includes('selesai')) return 'success'
+  if (name.includes('progress') || name.includes('active') || name.includes('mulai')) return 'primary'
+  if (name.includes('draft')) return 'neutral'
+  if (name.includes('cancel')) return 'error'
+  return 'primary'
+}
+
 function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -321,21 +332,53 @@ async function submitApproveDispatch(sdoId: number) {
   }
 }
 
-async function submitStartDelivery(sdoId: number) {
+const confirmDialog = ref({
+  open: false,
+  title: '',
+  description: '',
+  confirmLabel: 'Confirm',
+  action: null as (() => Promise<void>) | null,
+  loading: false
+})
+
+async function submitStartDelivery(sdoId: number, bypass = false) {
   startingDelivery.value = true
   try {
-    const res = await store.startDelivery(sdoId)
+    const res = await store.startDelivery(sdoId, { bypass })
     if (res.status) {
       toastSuccess('Delivery started successfully! Status is now In Transit.')
       await store.fetchSdoById(sdoId)
       await fetchData(false)
       await fetchStats()
+      confirmDialog.value.open = false
     } else {
       toastError(res.message || 'Failed to start delivery.')
     }
   } catch (e: any) {
     console.error('Error starting delivery:', e)
-    toastError(e.response?.data?.message || 'Error starting delivery.')
+    const errData = e.response?.data
+    if (errData?.require_bypass === true) {
+      const allowedBypassRoles = ['Admin sales', 'Superadmin', 'Supervisor Sales']
+      const isAuthorized = authStore.user?.role && allowedBypassRoles.includes(authStore.user?.role)
+      if (isAuthorized) {
+        confirmDialog.value.title = 'Bypass Take Out Validation'
+        confirmDialog.value.description = errData.message + ' Do you want to bypass this and start delivery?'
+        confirmDialog.value.confirmLabel = 'Bypass & Start'
+        confirmDialog.value.action = async () => {
+          confirmDialog.value.loading = true
+          try {
+            await submitStartDelivery(sdoId, true)
+          } finally {
+            confirmDialog.value.loading = false
+          }
+        }
+        confirmDialog.value.open = true
+      } else {
+        toastError(errData.message || 'Cannot start delivery: Take Out items are not completed.')
+      }
+    } else {
+      toastError(e.response?.data?.message || 'Error starting delivery.')
+    }
   } finally {
     startingDelivery.value = false
   }
@@ -558,76 +601,130 @@ onUnmounted(() => {
                     <div v-else-if="store.detail && store.detail.id === sdo.id" class="space-y-6">
                       <!-- Grid container for SDO Details (Left) and Logistics Actions/Forms (Right) -->
                       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        <!-- Shipment Item Details (Left / Main side) -->
-                        <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-7">
-                          <div class="flex items-center justify-between border-b border-default pb-3">
-                            <h4 class="text-sm font-bold text-default flex items-center gap-2">
-                              <UIcon name="i-lucide-package-open" class="w-4 h-4 text-primary" />
-                              Shipment Item Details
-                            </h4>
-                            <div class="flex items-center gap-3">
-                              <!-- Print PDF Surat Jalan -->
-                              <UButton
-                                icon="i-lucide-printer"
-                                size="xs"
-                                color="primary"
-                                variant="solid"
-                                :loading="printingMap[sdo.id]"
-                                @click.stop="handlePrint(sdo.id)"
-                              >
-                                Print Delivery Note
-                              </UButton>
+                        <!-- Shipment Item Details & Take Out Items (Left / Main side) -->
+                        <div class="lg:col-span-7 space-y-6">
+                          <!-- Shipment Item Details Card -->
+                          <div class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-default pb-3">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2">
+                                <UIcon name="i-lucide-package-open" class="w-4 h-4 text-primary" />
+                                Shipment Item Details
+                              </h4>
+                              <div class="flex items-center gap-3">
+                                <!-- Print PDF Surat Jalan -->
+                                <UButton
+                                  icon="i-lucide-printer"
+                                  size="xs"
+                                  color="primary"
+                                  variant="solid"
+                                  :loading="printingMap[sdo.id]"
+                                  @click.stop="handlePrint(sdo.id)"
+                                >
+                                  Print Delivery Note
+                                </UButton>
+                              </div>
+                            </div>
+
+                            <!-- Sub-table of items -->
+                            <div class="overflow-x-auto">
+                              <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr class="border-b border-default text-muted-foreground font-semibold">
+                                    <th class="pb-2 pr-4 w-12">
+                                      No.
+                                    </th>
+                                    <th class="pb-2 pr-4">
+                                      Part Number
+                                    </th>
+                                    <th class="pb-2 pr-4">
+                                      Part Name
+                                    </th>
+                                    <th class="pb-2 pr-4 text-right">
+                                      Planned Qty
+                                    </th>
+                                    <th class="pb-2 pr-4 text-right">
+                                      Sent Qty
+                                    </th>
+                                    <th class="pb-2 text-right">
+                                      Received Qty
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody class="divide-y divide-default/10">
+                                  <tr v-for="(item, idx) in store.detail.details" :key="item.id" class="hover:bg-default/10">
+                                    <td class="py-2 pr-4 text-muted-foreground">
+                                      {{ idx + 1 }}
+                                    </td>
+                                    <td class="py-2 pr-4 font-mono font-semibold">
+                                      {{ item.planDetail?.spoDetail?.part?.part_number || '-' }}
+                                    </td>
+                                    <td class="py-2 pr-4">
+                                      {{ item.planDetail?.spoDetail?.part?.part_name || '-' }}
+                                    </td>
+                                    <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">
+                                      {{ item.planDetail?.planned_qty || 0 }} pcs
+                                    </td>
+                                    <td class="py-2 pr-4 text-right font-bold text-primary">
+                                      {{ item.sent_qty }} pcs
+                                    </td>
+                                    <td class="py-2 text-right font-bold" :class="item.received_qty !== null ? 'text-success' : 'text-muted-foreground'">
+                                      {{ item.received_qty !== null ? `${item.received_qty} pcs` : '-' }}
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
                             </div>
                           </div>
 
-                          <!-- Sub-table of items -->
-                          <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                              <thead>
-                                <tr class="border-b border-default text-muted-foreground font-semibold">
-                                  <th class="pb-2 pr-4 w-12">
-                                    No.
-                                  </th>
-                                  <th class="pb-2 pr-4">
-                                    Part Number
-                                  </th>
-                                  <th class="pb-2 pr-4">
-                                    Part Name
-                                  </th>
-                                  <th class="pb-2 pr-4 text-right">
-                                    Planned Qty
-                                  </th>
-                                  <th class="pb-2 pr-4 text-right">
-                                    Sent Qty
-                                  </th>
-                                  <th class="pb-2 text-right">
-                                    Received Qty
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody class="divide-y divide-default/10">
-                                <tr v-for="(item, idx) in store.detail.details" :key="item.id" class="hover:bg-default/10">
-                                  <td class="py-2 pr-4 text-muted-foreground">
-                                    {{ idx + 1 }}
-                                  </td>
-                                  <td class="py-2 pr-4 font-mono font-semibold">
-                                    {{ item.planDetail?.spoDetail?.part?.part_number || '-' }}
-                                  </td>
-                                  <td class="py-2 pr-4">
-                                    {{ item.planDetail?.spoDetail?.part?.part_name || '-' }}
-                                  </td>
-                                  <td class="py-2 pr-4 text-right font-semibold text-muted-foreground">
-                                    {{ item.planDetail?.planned_qty || 0 }} pcs
-                                  </td>
-                                  <td class="py-2 pr-4 text-right font-bold text-primary">
-                                    {{ item.sent_qty }} pcs
-                                  </td>
-                                  <td class="py-2 text-right font-bold" :class="item.received_qty !== null ? 'text-success' : 'text-muted-foreground'">
-                                    {{ item.received_qty !== null ? `${item.received_qty} pcs` : '-' }}
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
+                          <!-- Take Out Items Detail Card (Only shown when SDO status is Loading / when take_out_wos exists) -->
+                          <div v-if="store.detail.delivery_status === 'Loading' && store.detail.take_out_wos && store.detail.take_out_wos.length > 0" class="bg-elevated border border-default rounded-2xl p-5 shadow-sm space-y-4">
+                            <div class="flex items-center justify-between border-b border-default pb-3">
+                              <h4 class="text-sm font-bold text-default flex items-center gap-2">
+                                <UIcon name="i-lucide-truck" class="w-4 h-4 text-warning" />
+                                Take out Items Detail
+                              </h4>
+                            </div>
+
+                            <div v-for="wo in store.detail.take_out_wos" :key="wo.id" class="border border-default rounded-xl p-4 space-y-3 bg-default/10">
+                              <!-- Work Order Header -->
+                              <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-default/40">
+                                <div class="flex items-center gap-2">
+                                  <span class="font-mono font-bold text-xs text-primary">{{ wo.wo_number }}</span>
+                                  <span class="text-[11px] text-muted-foreground bg-elevated px-2 py-0.5 rounded border border-default">
+                                    {{ wo.area?.name || wo.area?.area_code || '-' }}
+                                  </span>
+                                </div>
+                                <UBadge :color="getWoStatusColor(wo.status?.name)" variant="subtle" size="xs" class="font-bold rounded-full">
+                                  {{ wo.status?.name || 'Draft' }}
+                                </UBadge>
+                              </div>
+
+                              <!-- Work Order Items Sub-table -->
+                              <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse text-xs">
+                                  <thead>
+                                    <tr class="border-b border-default/40 text-muted-foreground font-semibold">
+                                      <th class="pb-1.5 pr-2">Part Number</th>
+                                      <th class="pb-1.5 pr-2">Part Name</th>
+                                      <th class="pb-1.5 pr-2 text-right">Total Kanban</th>
+                                      <th class="pb-1.5 text-right">Scan Out</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody class="divide-y divide-default/10">
+                                    <tr v-for="item in wo.items" :key="item.id" class="hover:bg-default/10">
+                                      <td class="py-1.5 pr-2 font-mono text-[11px]">{{ item.part?.part_number || '-' }}</td>
+                                      <td class="py-1.5 pr-2 text-[11px]">{{ item.part?.part_name || '-' }}</td>
+                                      <td class="py-1.5 pr-2 text-right font-semibold">{{ item.total_kanban }}</td>
+                                      <td class="py-1.5 text-right">
+                                        <UBadge :color="item.is_scanned_out ? 'success' : 'neutral'" variant="subtle" size="xs" class="font-bold">
+                                          {{ item.is_scanned_out ? 'Scanned Out' : 'Pending' }}
+                                        </UBadge>
+                                      </td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
@@ -851,6 +948,16 @@ onUnmounted(() => {
       </div>
     </div>
   </div>
+
+  <!-- Confirm Dialog for Bypass -->
+  <ConfirmDialog
+    v-model:open="confirmDialog.open"
+    :title="confirmDialog.title"
+    :description="confirmDialog.description"
+    :confirm-label="confirmDialog.confirmLabel"
+    :loading="confirmDialog.loading"
+    @confirm="confirmDialog.action?.()"
+  />
 </template>
 
 <style scoped>

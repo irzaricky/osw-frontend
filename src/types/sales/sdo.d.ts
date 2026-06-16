@@ -60,6 +60,7 @@ export interface Sdo {
       full_name: string
     }
   }
+  take_out_wos?: any[]
 }
 
 export interface SdoDropdownVehicle {
