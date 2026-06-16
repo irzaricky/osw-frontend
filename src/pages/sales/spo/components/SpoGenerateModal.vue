@@ -126,6 +126,17 @@ const dueDatePickerModel = computed({
   }
 })
 
+const monthNames = ['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember']
+
+function formatDateIndo(dateStr: string) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = monthNames[d.getMonth()]
+  const year = d.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 // ─── Reset on open ────────────────────────────────────────────────────────────
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
@@ -304,7 +315,7 @@ function close() {
           <UFormField label="SPO Date" required>
             <div class="flex items-center gap-2 px-3 py-2 rounded-lg border border-default bg-elevated/40 text-sm">
               <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-muted shrink-0" />
-              <span class="font-medium">{{ state.spo_date }}</span>
+              <span class="font-medium">{{ formatDateIndo(state.spo_date) }}</span>
             </div>
           </UFormField>
           <UFormField label="Delivery Due Date" required>
