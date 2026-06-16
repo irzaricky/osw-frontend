@@ -81,16 +81,18 @@ const productionMaterialControlService = {
   getDropdowns() {
     return api.get('/production/production-material-control/dropdowns')
   },
-  getProductionWos() {
-    return api.get(
-      '/production/production-material-control/production-wos'
-    )
-  },
   getBomMaterials(productPartId: number | string) {
     return api.get(`/production/production-material-control/bom-materials/${productPartId}`)
   },
   getReplacementsByProductionResult(productionResultId: number | string) {
     return api.get(`/production/production-material-control/production-results/${productionResultId}/replacements`)
+  },
+  getProductionWos() {
+    return api.get('/production/production-material-control/production-wos')
+  },
+
+  getProductionWoMaterialLabels(productionWoId: number | string) {
+    return api.get(`/production/production-material-control/production-wos/${productionWoId}/material-labels`)
   },
 }
 

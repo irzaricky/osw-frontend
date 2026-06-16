@@ -37,23 +37,25 @@ const submitLoading = ref(false)
 const bomMaterials = ref<any[]>([])
 const bomLoading = ref(false)
 const productionWos = ref<any[]>([])
+const materialLabels = ref<any[]>([])
+const materialLabelLoading = ref(false)
 
 async function fetchProductionWos() {
     const res = await productionMaterialControlService.getProductionWos()
-
     productionWos.value = res.data.data || []
 }
 
-async function handleSelectProduct(partId: number) {
-    bomLoading.value = true
+async function handleSelectProductionWo(productionWoId: number) {
+    materialLabelLoading.value = true
 
     try {
-        const res = await productionMaterialControlService.getBomMaterials(partId)
-        bomMaterials.value = res.data.data || []
+        const res = await productionMaterialControlService.getProductionWoMaterialLabels(productionWoId)
+        materialLabels.value = res.data.data || []
     } finally {
-        bomLoading.value = false
+        materialLabelLoading.value = false
     }
 }
+
 
 async function fetchData() {
     const params: Record<string, any> = {
@@ -154,7 +156,8 @@ onMounted(() => {
                 @update:page="fetchData" />
         </div>
         <ProductionResultFormModal v-model:open="showFormModal" :loading="submitLoading" :shifts="shifts"
-            :stations="stations" :products="products" :production-wos="productionWos" :bom-materials="bomMaterials"
-            :bom-loading="bomLoading" @select-product="handleSelectProduct" @save="handleCreate" />
+            :stations="stations" :products="products" :production-wos="productionWos" :material-labels="materialLabels"
+            :material-label-loading="materialLabelLoading" @select-production-wo="handleSelectProductionWo"
+            @save="handleCreate" />
     </div>
 </template>
