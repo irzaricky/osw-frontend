@@ -33,6 +33,7 @@ export interface Forecast {
   createdAt?: string
   updatedAt?: string
   deleted_at?: string | null
+  fill_completeness?: number | string
   customer?: {
     id: number
     customer_code: string

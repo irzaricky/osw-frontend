@@ -29,6 +29,14 @@ const searchFilter = ref('')
 const customerFilter = ref<number | undefined>(undefined)
 const forecastTypeFilter = ref<string | undefined>(undefined)
 const statusFilter = ref<string | undefined>(undefined)
+const sortBy = ref<string>('Date (Newest)')
+const sortOptions = [
+  'Date (Newest)',
+  'Date (Oldest)',
+  'Forecast No.',
+  'Completeness',
+  'Period Start'
+]
 
 const activeTab = ref<'current' | 'archive'>('current')
 const sentinel = ref<HTMLElement | null>(null)
@@ -193,6 +201,36 @@ const groupedForecasts = computed<GroupedForecast[]>(() => {
   // Sort customers within each status group
   result.forEach(g => {
     g.customers.sort((a, b) => a.customer.localeCompare(b.customer))
+    
+    // Sort items within each customer group
+    g.customers.forEach(customerGroup => {
+      customerGroup.items.sort((a, b) => {
+        let valA: any
+        let valB: any
+        
+        switch (sortBy.value) {
+          case 'Date (Oldest)':
+            valA = new Date(a.createdAt || 0).getTime()
+            valB = new Date(b.createdAt || 0).getTime()
+            return valA - valB
+          case 'Forecast No.':
+            return a.forecast_number.localeCompare(b.forecast_number)
+          case 'Completeness':
+            valA = Number(a.fill_completeness || 0)
+            valB = Number(b.fill_completeness || 0)
+            return valB - valA
+          case 'Period Start':
+            valA = new Date(a.start_period).getTime()
+            valB = new Date(b.start_period).getTime()
+            return valA - valB
+          case 'Date (Newest)':
+          default:
+            valA = new Date(a.createdAt || 0).getTime()
+            valB = new Date(b.createdAt || 0).getTime()
+            return valB - valA
+        }
+      })
+    })
   })
 
   return result
@@ -403,14 +441,33 @@ onMounted(() => {
               clear
             />
           </div>
-          <USelectMenu
-            v-model="selectedStatus"
-            :items="statusItems"
-            placeholder="All Status"
-            class="w-full"
-            size="sm"
-            clear
-          />
+          <div class="flex gap-2">
+            <USelectMenu
+              v-model="selectedStatus"
+              :items="statusItems"
+              placeholder="All Status"
+              class="flex-1"
+              size="sm"
+              clear
+            />
+            <div class="flex items-center gap-1">
+              <USelectMenu
+                v-model="sortBy"
+                :items="sortOptions"
+                placeholder="Sort By"
+                class="w-28"
+                size="sm"
+              />
+              <UButton
+                :icon="sortBy === 'Date (Newest)' || sortBy === 'Completeness' ? 'i-lucide-arrow-down-wide-narrow' : 'i-lucide-arrow-up-narrow-wide'"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                square
+                title="Sort Direction"
+              />
+            </div>
+          </div>
         </div>
 
         <!-- Tabs -->
@@ -434,8 +491,24 @@ onMounted(() => {
         <!-- List -->
         <div ref="scrollContainer" class="flex-1 overflow-y-auto">
           <template v-if="groupedForecasts.length === 0">
-            <div class="p-6 text-center text-sm text-muted">
-              No forecasts found.
+            <div class="flex flex-col items-center justify-center p-8 text-center gap-3">
+              <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                <UIcon name="i-lucide-folder-open" class="w-6 h-6" />
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-highlighted">No Forecasts Found</p>
+                <p class="text-xs text-muted max-w-[200px] mx-auto mt-1">
+                  Create a new sales forecast or adjust your filter settings to get started.
+                </p>
+              </div>
+              <UButton
+                v-if="!searchFilter && !customerFilter && !forecastTypeFilter && !statusFilter"
+                icon="i-lucide-plus"
+                color="primary"
+                size="xs"
+                label="Add Forecast"
+                @click="openAddModal"
+              />
             </div>
           </template>
 
@@ -490,7 +563,17 @@ onMounted(() => {
                           {{ formatPeriodDate(forecast.start_period) }} — {{ formatPeriodDate(forecast.end_period) }}
                         </p>
                       </div>
-                      <span class="text-xs text-muted shrink-0">{{ forecast.forecast_type }}</span>
+                      <div class="flex flex-col items-end gap-1 shrink-0">
+                        <span class="text-xs text-muted">{{ forecast.forecast_type }}</span>
+                        <UBadge
+                          v-if="forecast.fill_completeness !== undefined && forecast.fill_completeness !== null"
+                          :color="Number(forecast.fill_completeness) === 100 ? 'success' : Number(forecast.fill_completeness) >= 50 ? 'warning' : 'error'"
+                          variant="subtle"
+                          size="xs"
+                        >
+                          {{ Math.round(Number(forecast.fill_completeness)) }}% filled
+                        </UBadge>
+                      </div>
                     </div>
                   </button>
                 </div>
