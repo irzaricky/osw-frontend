@@ -28,12 +28,72 @@ const dataEntry = ref<Record<number, Record<string, { forecast_qty: number; qty_
 const loadingDetail = ref(false)
 const loadingRecommendation = ref(false)
 const isDirty = ref(false)
+const initialDataEntry = ref<Record<number, Record<string, number>>>({})
+const searchQuery = ref('')
 
-// Watch for any changes in dataEntry or parts to set isDirty to true
-watch([dataEntry, parts], () => {
-  if (!loadingDetail.value) {
-    isDirty.value = true
+// Compute dirty cells (manually edited or newly added)
+const dirtyCells = computed(() => {
+  const keys = new Set<string>()
+  parts.value.forEach(part => {
+    periods.value.forEach(period => {
+      const current = dataEntry.value[part.id]?.[period.date]?.forecast_qty
+      const initial = initialDataEntry.value[part.id]?.[period.date]
+      if (initial !== undefined && current !== initial) {
+        keys.add(`${part.id}:${period.date}`)
+      } else if (initial === undefined && current !== undefined) {
+        keys.add(`${part.id}:${period.date}`)
+      }
+    })
+  })
+  return keys
+})
+
+// Tooltip helper for save button
+const saveTooltip = computed(() => {
+  if (dirtyCells.value.size === 0) return 'Save forecast details'
+  const lines: string[] = []
+  dirtyCells.value.forEach(key => {
+    const [partIdStr, dateStr] = key.split(':')
+    const partId = Number(partIdStr)
+    const part = parts.value.find(p => p.id === partId)
+    const partNum = part ? part.part_number : `Part #${partId}`
+    const periodLabel = formatPeriodDate(dateStr)
+    const current = dataEntry.value[partId]?.[dateStr]?.forecast_qty || 0
+    const initial = initialDataEntry.value[partId]?.[dateStr] || 0
+    lines.push(`${partNum} (${periodLabel}): ${initial} -> ${current}`)
+  })
+  return `Unsaved changes:\n${lines.join('\n')}`
+})
+
+// Filter parts by query
+const filteredParts = computed(() => {
+  if (!searchQuery.value) return parts.value
+  const q = searchQuery.value.toLowerCase()
+  return parts.value.filter(p =>
+    p.part_number.toLowerCase().includes(q) ||
+    p.part_name.toLowerCase().includes(q)
+  )
+})
+
+// Scroll to the first empty cell
+function scrollToFirstEmptyCell() {
+  for (const part of parts.value) {
+    for (const period of periods.value) {
+      if (isCellEmpty(part.id, period.date)) {
+        const el = document.querySelector(`.cell-input-${part.id}-${period.date} input`) as HTMLElement
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          el.focus()
+          return
+        }
+      }
+    }
   }
+}
+
+// Watch dirtyCells to update isDirty
+watch(dirtyCells, (newVal) => {
+  isDirty.value = newVal.size > 0
 }, { deep: true })
 
 defineExpose({
@@ -129,7 +189,9 @@ async function loadDetail() {
   } finally {
     loadingDetail.value = false
     // Ensure isDirty is reset after initial load setup
-    setTimeout(() => { isDirty.value = false }, 50)
+    setTimeout(() => {
+      isDirty.value = false
+    }, 100)
   }
 }
 
@@ -183,6 +245,16 @@ async function setupAdaptableTable(forecast: any) {
   if (isEditable.value && parts.value.length > 0) {
     await autoFillEmptyParts()
   }
+
+  // Store initial baseline for dirty state tracking
+  initialDataEntry.value = {}
+  Object.keys(dataEntry.value).forEach(partIdStr => {
+    const partId = Number(partIdStr)
+    initialDataEntry.value[partId] = {}
+    Object.keys(dataEntry.value[partId]).forEach(dateStr => {
+      initialDataEntry.value[partId][dateStr] = dataEntry.value[partId][dateStr].forecast_qty
+    })
+  })
 }
 
 async function autoFillEmptyParts() {
@@ -580,6 +652,9 @@ const excelActions = computed(() => [
   ]
 ])
 
+
+
+
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 watch(() => props.forecastId, () => {
   loadDetail()
@@ -600,37 +675,65 @@ onMounted(() => {
       </div>
       <div v-else-if="store.detail" class="space-y-3">
         <!-- Row 1: Title, Status, Fill Indicator -->
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="min-w-0">
-            <h2 class="text-lg font-bold truncate">
-              {{ store.detail.forecast_number }}
-            </h2>
-            <p class="text-sm text-muted">
-              {{ store.detail.customer?.name }}
-            </p>
+        <div class="flex items-center justify-between gap-3 min-w-0">
+          <div class="min-w-0 flex items-center gap-2">
+            <div>
+              <h2 class="text-lg font-bold truncate">
+                {{ store.detail.forecast_number }}
+              </h2>
+              <p class="text-sm text-muted">
+                {{ store.detail.customer?.name }}
+              </p>
+            </div>
           </div>
-          <div
-            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm"
-            :class="{
-              'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
-              'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
-              'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300': store.detail.status === 'Approved',
-              'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300': store.detail.status === 'Rejected',
-            }"
-          >
-            <UIcon :name="getStatusIcon(store.detail.status)" class="w-3.5 h-3.5" />
-            {{ store.detail.status }}
-          </div>
-          <div
-            v-if="parts.length > 0"
-            class="flex items-center gap-1.5 shrink-0 ml-auto"
-            :class="fillStats.pct === 100 ? 'text-success-500' : fillStats.pct >= 50 ? 'text-warning-500' : 'text-error-500'"
-          >
-            <UIcon
-              :name="fillStats.pct === 100 ? 'i-lucide-check-circle-2' : 'i-lucide-alert-circle'"
-              class="w-4 h-4"
-            />
-            <span class="text-xs font-medium">{{ fillStats.filled }}/{{ fillStats.total }} filled</span>
+          <div class="flex items-center gap-3">
+            <UBadge
+              v-if="dirtyCells.size > 0"
+              color="warning"
+              variant="subtle"
+              size="md"
+              class="shrink-0"
+            >
+              Unsaved Changes
+            </UBadge>
+            <div
+              class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm"
+              :class="{
+                'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
+                'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
+                'bg-success-100 text-success-700 dark:bg-success-900/40 dark:text-success-300': store.detail.status === 'Approved',
+                'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300': store.detail.status === 'Rejected',
+              }"
+            >
+              <UIcon :name="getStatusIcon(store.detail.status)" class="w-3.5 h-3.5" />
+              {{ store.detail.status }}
+            </div>
+            
+            <!-- Progress Bar inside Header -->
+            <div v-if="parts.length > 0" class="flex flex-col gap-1 shrink-0 min-w-[150px] max-w-[200px]">
+              <div class="flex items-center justify-between text-[10px] font-semibold">
+                <span class="text-muted">Fill Completeness</span>
+                <span :class="fillStats.pct === 100 ? 'text-emerald-500' : fillStats.pct >= 80 ? 'text-emerald-500' : fillStats.pct >= 50 ? 'text-amber-500' : 'text-red-500'">
+                  {{ fillStats.pct }}% ({{ fillStats.filled }}/{{ fillStats.total }})
+                </span>
+              </div>
+              <div
+                class="w-full bg-neutral-200 dark:bg-neutral-800 rounded-full h-2 overflow-hidden cursor-pointer"
+                title="Click to jump to first empty cell"
+                @click="scrollToFirstEmptyCell"
+              >
+                <div
+                  class="h-full transition-all duration-300"
+                  :class="{
+                    'bg-emerald-505': false, // Just placeholder inside transition to allow custom class mapping
+                    'bg-emerald-500': fillStats.pct >= 80,
+                    'bg-amber-500': fillStats.pct >= 50 && fillStats.pct < 80,
+                    'bg-red-500': fillStats.pct < 50
+                  }"
+                  :style="{ width: `${fillStats.pct}%` }"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -707,10 +810,11 @@ onMounted(() => {
           <UButton
             v-if="store.detail.status === 'Draft' || store.detail.status === 'Rejected'"
             icon="i-lucide-save"
-            color="primary"
+            :color="dirtyCells.size > 0 ? 'warning' : 'primary'"
             size="sm"
-            label="Save"
+            :label="dirtyCells.size > 0 ? `Save (${dirtyCells.size} changes)` : 'Save'"
             :loading="store.loading"
+            :title="saveTooltip"
             @click="saveChanges"
           />
         </div>
@@ -724,6 +828,63 @@ onMounted(() => {
       </div>
 
       <template v-else-if="store.detail">
+        <!-- Progress Stepper -->
+        <div class="bg-elevated/30 rounded-xl border border-default p-4 flex items-center justify-between gap-4">
+          <div class="flex items-center justify-between w-full max-w-xl mx-auto relative px-4">
+
+            <!-- Step 1: Draft -->
+            <div class="flex flex-col items-center gap-1.5 relative z-10">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                :class="store.detail.status === 'Draft' ? 'bg-primary text-white ring-4 ring-primary/20'
+                  : 'bg-primary text-white'"
+              >
+                <UIcon v-if="store.detail.status !== 'Draft'" name="i-lucide-check" class="w-4 h-4" />
+                <span v-else>1</span>
+              </div>
+              <span class="text-xs font-semibold" :class="store.detail.status === 'Draft' ? 'text-primary' : 'text-muted'">Draft</span>
+            </div>
+
+            <!-- Step 2: Submitted -->
+            <div class="flex flex-col items-center gap-1.5 relative z-10">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                :class="store.detail.status === 'Submitted' ? 'bg-primary text-white ring-4 ring-primary/20'
+                  : store.detail.status === 'Approved' || store.detail.status === 'Rejected' ? 'bg-primary text-white'
+                  : 'bg-default text-muted border border-default'"
+              >
+                <UIcon v-if="store.detail.status === 'Approved' || store.detail.status === 'Rejected'" name="i-lucide-check" class="w-4 h-4" />
+                <span v-else>2</span>
+              </div>
+              <span class="text-xs font-semibold" :class="store.detail.status === 'Submitted' ? 'text-primary' : 'text-muted'">Submitted</span>
+            </div>
+
+            <!-- Step 3: Approve / Reject -->
+            <div class="flex flex-col items-center gap-1.5 relative z-10">
+              <div
+                class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300"
+                :class="store.detail.status === 'Approved' ? 'bg-success text-white ring-4 ring-success/20'
+                  : store.detail.status === 'Rejected' ? 'bg-error text-white ring-4 ring-error/20'
+                  : 'bg-default text-muted border border-default'"
+              >
+                <UIcon v-if="store.detail.status === 'Approved'" name="i-lucide-check" class="w-4 h-4" />
+                <UIcon v-else-if="store.detail.status === 'Rejected'" name="i-lucide-x" class="w-4 h-4" />
+                <span v-else>3</span>
+              </div>
+              <span
+                class="text-xs font-semibold"
+                :class="{
+                  'text-success': store.detail.status === 'Approved',
+                  'text-error': store.detail.status === 'Rejected',
+                  'text-muted': store.detail.status !== 'Approved' && store.detail.status !== 'Rejected'
+                }"
+              >
+                {{ store.detail.status === 'Rejected' ? 'Rejected' : 'Approved' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
@@ -802,10 +963,6 @@ onMounted(() => {
               <span class="font-semibold">{{ fillStats.total - fillStats.filled }} cell(s) not yet filled.</span>
             </p>
           </div>
-          <div
-            v-if="parts.length > 0"
-            class="flex items-center gap-2 p-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-          />
         </div>
 
         <!-- Add Part -->
@@ -830,6 +987,24 @@ onMounted(() => {
             :disabled="selectedNewParts.length === 0 || !isEditable"
             @click="addNewPart"
           />
+        </div>
+
+        <!-- Part Search Filter -->
+        <div class="flex items-center justify-between gap-3 bg-elevated/10 p-3 rounded-xl border border-default">
+          <div class="flex items-center gap-2 flex-1 max-w-sm">
+            <UInput
+              v-model="searchQuery"
+              icon="i-lucide-search"
+              placeholder="Search part by number or name..."
+              class="w-full"
+              clear
+            />
+          </div>
+          <div class="flex items-center gap-3">
+            <div v-if="parts.length > 0" class="text-xs text-muted font-medium">
+              Showing {{ filteredParts.length }} of {{ parts.length }} parts
+            </div>
+          </div>
         </div>
 
         <!-- Adaptable Table -->
@@ -875,8 +1050,13 @@ onMounted(() => {
                   No parts added to this forecast yet.
                 </td>
               </tr>
+              <tr v-else-if="filteredParts.length === 0">
+                <td :colspan="periods.length + 2" class="p-8 text-center text-muted text-sm">
+                  No parts match your search query.
+                </td>
+              </tr>
               <tr
-                v-for="part in parts"
+                v-for="part in filteredParts"
                 :key="part.id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
@@ -894,8 +1074,10 @@ onMounted(() => {
                   class="p-2 border-r border-default align-top transition-colors"
                   :class="{
                     'bg-primary/5': period.isCurrent,
-                    'bg-error-300 dark:bg-error-900/70': dataEntry[part.id] && isCellEmpty(part.id, period.date),
+                    'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800': dataEntry[part.id] && isCellEmpty(part.id, period.date),
+                    'border-2 border-amber-500 dark:border-amber-400': dataEntry[part.id] && dirtyCells.has(`${part.id}:${period.date}`),
                   }"
+                  :title="dataEntry[part.id] && isCellEmpty(part.id, period.date) ? 'This cell has not been filled yet' : undefined"
                 >
                   <div v-if="dataEntry[part.id]" class="flex flex-col gap-1.5">
                     {{ (() => {
@@ -914,12 +1096,14 @@ onMounted(() => {
                       size="sm"
                       placeholder="Qty"
                       min="0"
+                      :class="`cell-input-${part.id}-${period.date}`"
                       :disabled="!isEditable"
                       @update:model-value="(val) => {
                         const entry = dataEntry[part.id][period.date];
                         entry.isRecommended = entry.recommended_qty !== undefined && entry.recommended_qty > 0 && Number(val) === entry.recommended_qty;
                       }"
                     />
+
                     <div class="flex flex-col gap-1 items-center">
                       <UBadge
                         v-if="dataEntry[part.id][period.date].isRecommended"
@@ -979,8 +1163,13 @@ onMounted(() => {
                   No parts added to this forecast yet.
                 </td>
               </tr>
+              <tr v-else-if="filteredParts.length === 0">
+                <td colspan="4" class="p-8 text-center text-muted text-sm">
+                  No parts match your search query.
+                </td>
+              </tr>
               <tr
-                v-for="part in parts"
+                v-for="part in filteredParts"
                 :key="part.id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
@@ -993,8 +1182,12 @@ onMounted(() => {
                   </div>
                 </td>
                 <td
-                  class="p-2 border-r border-default text-center"
-                  :class="{ 'bg-error-300 dark:bg-error-900/70': dataEntry[part.id] && isCellEmpty(part.id, periods[0]?.date || '') }"
+                  class="p-2 border-r border-default text-center align-top transition-colors"
+                  :class="{
+                    'bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800': dataEntry[part.id] && isCellEmpty(part.id, periods[0]?.date || ''),
+                    'border-2 border-amber-500 dark:border-amber-400': dataEntry[part.id] && periods[0] && dirtyCells.has(`${part.id}:${periods[0].date}`),
+                  }"
+                  :title="dataEntry[part.id] && periods[0] && isCellEmpty(part.id, periods[0].date) ? 'This cell has not been filled yet' : undefined"
                 >
                   <!-- For Yearly/Half-Year, use the first period as representative key -->
                   <div v-if="dataEntry[part.id] && periods.length > 0">
@@ -1016,12 +1209,14 @@ onMounted(() => {
                       placeholder="Qty"
                       min="0"
                       class="max-w-[120px] mx-auto"
+                      :class="`cell-input-${part.id}-${periods[0].date}`"
                       :disabled="!isEditable"
                       @update:model-value="(val) => {
                         const entry = dataEntry[part.id][periods[0].date];
                         entry.isRecommended = entry.recommended_qty !== undefined && entry.recommended_qty > 0 && Number(val) === entry.recommended_qty;
                       }"
                     />
+
                     <div v-if="dataEntry[part.id][periods[0].date].isRecommended" class="flex justify-center mt-1">
                       <UBadge color="primary" variant="subtle" size="xs">
                         Recommended

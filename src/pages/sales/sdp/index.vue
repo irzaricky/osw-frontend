@@ -109,11 +109,12 @@ const mlDateRange = computed({
 
 const masterPlans = ref<any[]>([])
 const masterLoading = ref(false)
+const masterMeta = ref({ page: 1, limit: 10, total: 0 })
 
 async function loadGanttPlans() {
   const params: Record<string, any> = {
     page: 1,
-    limit: 100 // load active plans for calendar scheduling mapping
+    limit: 100
   }
   if (selectedDate.value) {
     params.start_date = selectedDate.value
@@ -126,15 +127,18 @@ async function loadMasterPlans() {
   if (!mlStartDate.value || !mlEndDate.value) return
   masterLoading.value = true
   try {
-    const params = {
-      page: 1,
-      limit: 100,
+    const params: Record<string, any> = {
+      page: masterMeta.value.page,
+      limit: masterMeta.value.limit,
       start_date: mlStartDate.value,
       end_date: mlEndDate.value
     }
+    if (selectedStatus.value) params.status = selectedStatus.value
+    if (selectedWarehouseId.value) params.warehouse_id = selectedWarehouseId.value
     const res = await sdpService.getSdpPlans(params)
     if (res.data?.status) {
       masterPlans.value = res.data.data.rows
+      masterMeta.value.total = res.data.data.count
     }
   } catch (e) {
     console.error('Failed to load master plans', e)
@@ -148,7 +152,8 @@ watch([selectedDate, selectedWarehouseId], () => {
   loadGanttPlans()
 })
 
-watch([mlStartDate, mlEndDate], () => {
+watch([mlStartDate, mlEndDate, selectedStatus, selectedWarehouseId], () => {
+  masterMeta.value.page = 1
   loadMasterPlans()
 })
 
@@ -255,19 +260,11 @@ const activeDocks = computed(() => {
 const activePlansForDate = computed(() => {
   return plans.value.filter(p => {
     const pDate = p.scheduled_date.split('T')[0]
-    return pDate === selectedDate.value && p.warehouse_id === selectedWarehouseId.value
+    return pDate === selectedDate.value && (!selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value)
   })
 })
 
-const filteredMasterList = computed(() => {
-  return masterPlans.value.filter(p => {
-    const pDate = p.scheduled_date.split('T')[0]
-    const matchesDate = pDate >= mlStartDate.value && pDate <= mlEndDate.value
-    const matchesWarehouse = !selectedWarehouseId.value || p.warehouse_id === selectedWarehouseId.value
-    const matchesStatus = !selectedStatus.value || p.status === selectedStatus.value
-    return matchesDate && matchesWarehouse && matchesStatus
-  })
-})
+const filteredMasterList = computed(() => masterPlans.value)
 
 function parseTimeToDecimal(timeStr: string): number {
   if (!timeStr) return 8
@@ -632,6 +629,12 @@ const conflictingDocksNames = computed(() => {
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div class="flex items-center justify-between gap-3 pt-4">
+              <div class="text-sm text-muted">
+                Total {{ masterMeta.total }} plan(s)
+              </div>
+              <UPagination v-model:page="masterMeta.page" :total="masterMeta.total" :items-per-page="masterMeta.limit" @update:page="loadMasterPlans" />
             </div>
           </div>
         </div>

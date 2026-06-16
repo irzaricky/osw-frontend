@@ -54,8 +54,8 @@ const sdoService = {
     return api.put(`${BASE}/${id}/approve-dispatch`)
   },
 
-  startDelivery(id: number | string) {
-    return api.put(`${BASE}/${id}/start-delivery`)
+  startDelivery(id: number | string, data?: { bypass?: boolean }) {
+    return api.put(`${BASE}/${id}/start-delivery`, data)
   },
 
   downloadSdoPdf(id: number | string) {

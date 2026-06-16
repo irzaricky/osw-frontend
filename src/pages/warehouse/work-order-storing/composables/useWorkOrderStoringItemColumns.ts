@@ -64,14 +64,14 @@ export function useWorkOrderStoringItemColumns(
     {
       header: 'Part Number',
       cell: ({ row }) => {
-        const part = partsRef.value.find(p => p.id === row.original.part_id)
+        const part = row.original.part || partsRef.value.find(p => p.id === row.original.part_id)
         return part?.part_number || '-'
       }
     },
     {
       header: 'Part Name',
       cell: ({ row }) => {
-        const part = partsRef.value.find(p => p.id === row.original.part_id)
+        const part = row.original.part || partsRef.value.find(p => p.id === row.original.part_id)
         return part?.part_name || '-'
       }
     },

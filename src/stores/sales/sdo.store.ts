@@ -153,11 +153,11 @@ export const useSdoStore = defineStore('sdo', () => {
     }
   }
 
-  async function startDelivery(id: number | string) {
+  async function startDelivery(id: number | string, data?: { bypass?: boolean }) {
     loading.value = true
     error.value = null
     try {
-      const response = await sdoService.startDelivery(id)
+      const response = await sdoService.startDelivery(id, data)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
