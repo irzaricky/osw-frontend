@@ -159,7 +159,8 @@ watch(
 
     state.items = val.items?.map(item => ({
       part_id: item.part_id,
-      total_kanban: item.total_kanban
+      total_kanban: item.total_kanban,
+      part: item.part
     })) || []
   },
   { immediate: true }
