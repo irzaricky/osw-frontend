@@ -299,6 +299,12 @@ async function submitLoadingPhoto(sdoId: number) {
       loadingPhotoFile.value = null
       loadingPhotoPreview.value = null
       toastSuccess('Loading photo uploaded successfully!')
+      
+      if (activeTab.value !== 'all') {
+        activeTab.value = 'Loading'
+      }
+      expandedSdoId.value = sdoId
+
       await store.fetchSdoById(sdoId)
       await fetchData(false)
       await fetchStats()
@@ -347,6 +353,12 @@ async function submitStartDelivery(sdoId: number, bypass = false) {
     const res = await store.startDelivery(sdoId, { bypass })
     if (res.status) {
       toastSuccess('Delivery started successfully! Status is now In Transit.')
+      
+      if (activeTab.value !== 'all') {
+        activeTab.value = 'In Transit'
+      }
+      expandedSdoId.value = sdoId
+
       await store.fetchSdoById(sdoId)
       await fetchData(false)
       await fetchStats()
