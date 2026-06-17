@@ -129,8 +129,8 @@ function formatDate(dateStr: string | null | undefined) {
                 Filter {{ status }}
               </h4>
               
-              <UFormField label="Customer" size="sm">
-                <USelectMenu
+              <UFormField label="Customer" size="sm" class="w-full">
+                <USelectMenu class="w-full"
                   v-model="columnFilter.customer_id"
                   :items="customersDropdown"
                   value-key="id"

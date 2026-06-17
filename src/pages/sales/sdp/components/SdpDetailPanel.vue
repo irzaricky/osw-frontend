@@ -94,10 +94,10 @@ async function handleDownloadPdf() {
           <UIcon name="i-lucide-scroll" class="w-4 h-4" />
         </div>
         <div>
-          <h3 class="text-sm font-bold text-default">
+          <h3 class="text-base font-extrabold text-default">
             Plan Details
           </h3>
-          <p class="text-[10px] text-muted">
+          <p class="text-xs text-muted">
             {{ props.plan?.dp_number || 'Select a plan' }}
           </p>
         </div>
@@ -119,10 +119,10 @@ async function handleDownloadPdf() {
         <!-- Premium Radial Glow -->
         <div class="absolute -right-20 -bottom-20 w-44 h-44 bg-primary/5 rounded-full blur-2xl" />
         
-        <span class="text-[10px] font-semibold text-muted uppercase tracking-wider block mb-1">
+        <span class="text-xs font-bold text-muted uppercase tracking-wider block mb-1">
           Delivery Plan Code
         </span>
-        <h2 class="text-2xl font-black text-default tracking-tight">
+        <h2 class="text-3xl font-black text-default tracking-tight">
           {{ props.plan.dp_number }}
         </h2>
         
@@ -130,11 +130,11 @@ async function handleDownloadPdf() {
           <UBadge
             :color="props.plan.status === 'Draft' ? 'warning' : props.plan.status === 'Scheduled' ? 'primary' : 'success'"
             variant="subtle"
-            class="rounded-full font-bold px-2 py-0.5 text-[10px]"
+            class="rounded-full font-bold px-2.5 py-0.5 text-xs"
           >
             {{ props.plan.status }}
           </UBadge>
-          <span class="text-[10px] text-muted font-medium">
+          <span class="text-xs text-muted font-medium">
             Created on {{ new Date(props.plan.createdAt).toLocaleDateString('id-ID') }}
           </span>
         </div>
@@ -142,26 +142,26 @@ async function handleDownloadPdf() {
 
       <!-- General Slot Metadata Information -->
       <div class="space-y-4">
-        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+        <h4 class="text-sm font-extrabold text-muted uppercase tracking-wider">
           Slot Allocations
         </h4>
         
         <div class="grid grid-cols-2 gap-4">
           <!-- Source Warehouse -->
           <div class="p-4 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Warehouse</span>
-            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
-              <UIcon name="i-lucide-warehouse" class="w-3.5 h-3.5 text-primary shrink-0" />
+            <span class="text-xs text-muted font-bold block mb-1">Warehouse</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-sm mt-1">
+              <UIcon name="i-lucide-warehouse" class="w-4 h-4 text-primary shrink-0" />
               <span>{{ props.plan.warehouse?.name || '-' }}</span>
             </div>
-            <span class="text-[9px] text-muted block mt-0.5">Code: {{ props.plan.warehouse?.code || '-' }}</span>
+            <span class="text-xs text-muted block mt-0.5">Code: {{ props.plan.warehouse?.code || '-' }}</span>
           </div>
 
           <!-- Loading Dock -->
           <div class="p-4 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Loading Dock</span>
-            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
-              <UIcon name="i-lucide-navigation" class="w-3.5 h-3.5 text-secondary shrink-0" />
+            <span class="text-xs text-muted font-bold block mb-1">Loading Dock</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-sm mt-1">
+              <UIcon name="i-lucide-navigation" class="w-4 h-4 text-secondary shrink-0" />
               <span>{{ props.plan.dock?.name || '-' }}</span>
             </div>
           </div>
@@ -170,18 +170,18 @@ async function handleDownloadPdf() {
         <div class="grid grid-cols-2 gap-4">
           <!-- Scheduled Date -->
           <div class="p-4 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Scheduled Date</span>
-            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
-              <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+            <span class="text-xs text-muted font-bold block mb-1">Scheduled Date</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-sm mt-1">
+              <UIcon name="i-lucide-calendar" class="w-4 h-4 text-indigo-500 shrink-0" />
               <span>{{ new Date(props.plan.scheduled_date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) }}</span>
             </div>
           </div>
 
           <!-- Time Slot -->
           <div class="p-4 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Time Slot</span>
-            <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
-              <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span class="text-xs text-muted font-bold block mb-1">Time Slot</span>
+            <div class="flex items-center gap-1.5 font-bold text-default text-sm mt-1">
+              <UIcon name="i-lucide-clock" class="w-4 h-4 text-amber-500 shrink-0" />
               <span>{{ props.plan.time_start.slice(0, 5) }} – {{ props.plan.time_end.slice(0, 5) }}</span>
             </div>
           </div>
@@ -189,41 +189,41 @@ async function handleDownloadPdf() {
 
         <!-- Destination Address -->
         <div class="p-4 rounded-xl border border-default bg-elevated/40">
-          <span class="text-[10px] text-muted font-semibold block mb-1">Destination Address</span>
-          <div class="flex items-start gap-1.5 font-bold text-default text-xs mt-1">
-            <UIcon name="i-lucide-map-pin" class="w-3.5 h-3.5 text-rose-500 mt-0.5 shrink-0" />
+          <span class="text-xs text-muted font-bold block mb-1">Destination Address</span>
+          <div class="flex items-start gap-1.5 font-bold text-default text-sm mt-1">
+            <UIcon name="i-lucide-map-pin" class="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
             <span class="leading-relaxed">{{ props.plan.destination }}</span>
           </div>
         </div>
 
         <!-- Associated SDO Details if Scheduled -->
         <div v-if="associatedSdo" class="p-4 rounded-xl border border-primary/20 bg-primary/5">
-          <span class="text-[10px] text-primary font-bold block mb-1">Active SDO Shipment</span>
-          <div class="grid grid-cols-2 gap-2 mt-2">
+          <span class="text-xs text-primary font-black block mb-1">Active SDO Shipment</span>
+          <div class="grid grid-cols-2 gap-3 mt-2">
             <div>
-              <span class="text-[9px] text-muted block">DO Number</span>
-              <span class="text-xs font-bold text-default">{{ associatedSdo.do_number }}</span>
+              <span class="text-xs text-muted block">DO Number</span>
+              <span class="text-sm font-bold text-default">{{ associatedSdo.do_number }}</span>
             </div>
             <div>
-              <span class="text-[9px] text-muted block">Driver</span>
-              <span class="text-xs font-bold text-default">{{ associatedSdo.driver?.full_name || '-' }}</span>
+              <span class="text-xs text-muted block">Driver</span>
+              <span class="text-sm font-bold text-default">{{ associatedSdo.driver?.full_name || '-' }}</span>
             </div>
             <div>
-              <span class="text-[9px] text-muted block">Vehicle Plate</span>
-              <span class="text-xs font-bold text-default">{{ associatedSdo.vehicle?.license_plate || '-' }}</span>
+              <span class="text-xs text-muted block">Vehicle Plate</span>
+              <span class="text-sm font-bold text-default">{{ associatedSdo.vehicle?.license_plate || '-' }}</span>
             </div>
             <div>
-              <span class="text-[9px] text-muted block">Status</span>
-              <span class="text-xs font-black text-primary">{{ associatedSdo.delivery_status }}</span>
+              <span class="text-xs text-muted block">Status</span>
+              <span class="text-sm font-black text-primary">{{ associatedSdo.delivery_status }}</span>
             </div>
           </div>
         </div>
 
         <!-- Created By -->
         <div class="p-4 rounded-xl border border-default bg-elevated/40">
-          <span class="text-[10px] text-muted font-semibold block mb-1">Scheduled By</span>
-          <div class="flex items-center gap-1.5 font-bold text-default text-xs mt-1">
-            <UIcon name="i-lucide-user" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          <span class="text-xs text-muted font-bold block mb-1">Scheduled By</span>
+          <div class="flex items-center gap-1.5 font-bold text-default text-sm mt-1">
+            <UIcon name="i-lucide-user" class="w-4 h-4 text-emerald-500 shrink-0" />
             <span>{{ props.plan.creator?.user_detail?.full_name || props.plan.creator?.email || 'System' }}</span>
           </div>
         </div>
@@ -231,7 +231,7 @@ async function handleDownloadPdf() {
 
       <!-- Scheduled Parts list table -->
       <div class="space-y-4">
-        <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
+        <h4 class="text-sm font-extrabold text-muted uppercase tracking-wider">
           Scheduled Delivery Items
         </h4>
         
@@ -243,21 +243,21 @@ async function handleDownloadPdf() {
               class="p-4 hover:bg-elevated/40 transition-colors"
             >
               <div class="flex justify-between items-start gap-3">
-                <div class="space-y-1">
-                  <span class="text-[9px] font-bold text-muted bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded">
+                <div class="space-y-1.5">
+                  <span class="text-xs font-bold text-muted bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded">
                     SPO: {{ detail.spoDetail?.order?.spo_number || '-' }}
                   </span>
-                  <h5 class="text-xs font-bold text-default mt-1.5">
+                  <h5 class="text-sm font-bold text-default mt-2">
                     {{ detail.spoDetail?.part?.part_name || '-' }}
                   </h5>
-                  <p class="text-[10px] text-muted">
+                  <p class="text-xs text-muted">
                     Part No: {{ detail.spoDetail?.part?.part_number || '-' }}
                   </p>
                 </div>
 
                 <div class="text-right shrink-0">
-                  <span class="text-[9px] font-semibold text-muted block mb-0.5">Planned Qty</span>
-                  <span class="text-sm font-black text-primary">
+                  <span class="text-xs font-bold text-muted block mb-0.5">Planned Qty</span>
+                  <span class="text-base font-black text-primary">
                     {{ detail.planned_qty }} pcs
                   </span>
                 </div>

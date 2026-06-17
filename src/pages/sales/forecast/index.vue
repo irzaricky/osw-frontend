@@ -522,7 +522,7 @@ onMounted(() => {
                 :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                 class="w-4 h-4 text-muted transition-transform"
               />
-              <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
+              <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="sm">
                 {{ statusGroup.status }}
               </UBadge>
               <span class="ml-auto text-xs text-muted shrink-0">{{ statusGroup.customers.reduce((n, c) => n + c.items.length, 0) }}</span>
@@ -558,18 +558,18 @@ onMounted(() => {
                         <p class="text-sm font-medium truncate">
                           {{ forecast.forecast_number }}
                         </p>
-                        <p class="text-xs text-muted">
+                        <p class="text-sm text-muted">
                           <UIcon name="i-lucide-calendar" class="w-3 h-3 inline" />
                           {{ formatPeriodDate(forecast.start_period) }} — {{ formatPeriodDate(forecast.end_period) }}
                         </p>
                       </div>
                       <div class="flex flex-col items-end gap-1 shrink-0">
-                        <span class="text-xs text-muted">{{ forecast.forecast_type }}</span>
+                        <span class="text-sm text-muted">{{ forecast.forecast_type }}</span>
                         <UBadge
                           v-if="forecast.fill_completeness !== undefined && forecast.fill_completeness !== null"
                           :color="Number(forecast.fill_completeness) === 100 ? 'success' : Number(forecast.fill_completeness) >= 50 ? 'warning' : 'error'"
                           variant="subtle"
-                          size="xs"
+                          size="sm"
                         >
                           {{ Math.round(Number(forecast.fill_completeness)) }}% filled
                         </UBadge>

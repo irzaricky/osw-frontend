@@ -279,7 +279,7 @@ const hasShortages = computed(() => {
                 variant="subtle"
                 class="w-full text-xs font-bold justify-center"
                 icon="i-lucide-navigation"
-                label="Navigate in OpenStreetMap"
+                label="Navigate"
                 :to="`https://www.openstreetmap.org/search?query=${encodeURIComponent(detail.deliveryPlan.destination)}`"
                 target="_blank"
               />
@@ -419,27 +419,46 @@ const hasShortages = computed(() => {
               </div>
               <div class="text-center">
                 <p class="text-xs font-bold text-default">
-                  {{ podFiles.length > 0 ? 'Add another photo' : 'Take POD Photo' }}
+                  {{ podFiles.length > 0 ? 'Add another photo' : 'Select POD Photo' }}
                 </p>
                 <p class="text-[9px] text-muted-foreground mt-0.5">
-                  Capture signed Surat Jalan receipt
+                  Choose photo upload method below
                 </p>
               </div>
 
-              <!-- Real native camera/file selector trigger wrapper -->
-              <label class="w-full cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  multiple
-                  class="hidden"
-                  @change="onFileChange"
-                >
-                <div class="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-center py-3 sm:py-3.5 rounded-xl text-sm font-bold transition-all shadow-md">
-                  {{ podFiles.length > 0 ? 'Capture Another Photo' : 'Capture Receipt Camera' }}
-                </div>
-              </label>
+              <!-- Action buttons for Camera vs Gallery -->
+              <div class="flex gap-3 w-full mt-2">
+                <label for="camera-input" class="flex-1">
+                  <div class="w-full bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white text-center py-3 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                    <UIcon name="i-lucide-camera" class="w-4 h-4" />
+                    Camera
+                  </div>
+                </label>
+                <label for="gallery-input" class="flex-1">
+                  <div class="w-full bg-default/30 hover:bg-default/45 active:bg-default/55 text-default text-center py-3 border border-default rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <UIcon name="i-lucide-image" class="w-4 h-4 text-emerald-400" />
+                    Gallery
+                  </div>
+                </label>
+              </div>
+
+              <!-- Hidden file selectors -->
+              <input
+                id="camera-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="hidden"
+                @change="onFileChange"
+              >
+              <input
+                id="gallery-input"
+                type="file"
+                accept="image/*"
+                multiple
+                class="hidden"
+                @change="onFileChange"
+              >
             </div>
           </div>
 
