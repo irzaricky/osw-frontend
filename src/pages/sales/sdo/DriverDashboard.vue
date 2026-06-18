@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useSdoStore } from '../../../stores/sales/sdo.store'
 import { useAuthStore } from '../../../stores/auth.store'
 import { storeToRefs } from 'pinia'
@@ -8,25 +8,56 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const authStore = useAuthStore()
 const sdoStore = useSdoStore()
-const { sdos, loading } = storeToRefs(sdoStore)
+const { sdos, loading, meta } = storeToRefs(sdoStore)
 
 const activeTab = ref<'transit' | 'delivered'>('transit')
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+const activeCount = ref(0)
+const completedCount = ref(0)
 
-onMounted(async () => {
+async function fetchDriverSdos() {
   try {
-    await sdoStore.fetchSdos({ limit: 100 })
+    const status = activeTab.value === 'transit' ? 'In Transit' : 'Delivered'
+    await sdoStore.fetchSdos({
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      delivery_status: status
+    })
+    if (activeTab.value === 'transit') {
+      activeCount.value = meta.value.total
+    } else {
+      completedCount.value = meta.value.total
+    }
   } catch (err) {
     console.error('Error fetching driver SDOs:', err)
   }
+}
+
+async function fetchCounts() {
+  try {
+    await sdoStore.fetchSdos({ limit: 1, delivery_status: 'In Transit' })
+    activeCount.value = sdoStore.meta.total
+
+    await sdoStore.fetchSdos({ limit: 1, delivery_status: 'Delivered' })
+    completedCount.value = sdoStore.meta.total
+  } catch (err) {
+    console.error('Error fetching driver SDO counts:', err)
+  }
+}
+
+watch(activeTab, () => {
+  currentPage.value = 1
+  fetchDriverSdos()
 })
 
-// Filter SDOs locally just in case
-const transitSdos = computed(() => {
-  return sdos.value.filter(sdo => sdo.delivery_status === 'In Transit')
+watch(currentPage, () => {
+  fetchDriverSdos()
 })
 
-const deliveredSdos = computed(() => {
-  return sdos.value.filter(sdo => sdo.delivery_status === 'Delivered')
+onMounted(async () => {
+  await fetchCounts()
+  await fetchDriverSdos()
 })
 
 const driverEmail = computed(() => authStore.user?.email || 'Driver')
@@ -105,11 +136,11 @@ function getSlaBadgeConfig(status?: string) {
         <div class="grid grid-cols-2 gap-3 mt-4">
           <div class="bg-default/20 p-3 rounded-xl border border-default flex flex-col justify-between">
             <span class="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Active</span>
-            <span class="text-2xl font-black mt-1 text-amber-500">{{ transitSdos.length }} SDO</span>
+            <span class="text-2xl font-black mt-1 text-amber-500">{{ activeCount }} SDO</span>
           </div>
           <div class="bg-default/20 p-3 rounded-xl border border-default flex flex-col justify-between">
             <span class="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Completed</span>
-            <span class="text-2xl font-black mt-1 text-emerald-500">{{ deliveredSdos.length }} SDO</span>
+            <span class="text-2xl font-black mt-1 text-emerald-500">{{ completedCount }} SDO</span>
           </div>
         </div>
       </div>
@@ -122,7 +153,7 @@ function getSlaBadgeConfig(status?: string) {
           @click="activeTab = 'transit'"
         >
           <UIcon name="i-lucide-truck" class="w-4 h-4" />
-          Active ({{ transitSdos.length }})
+          Active ({{ activeCount }})
         </button>
         <button
           class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
@@ -130,7 +161,7 @@ function getSlaBadgeConfig(status?: string) {
           @click="activeTab = 'delivered'"
         >
           <UIcon name="i-lucide-check-circle" class="w-4 h-4" />
-          Completed ({{ deliveredSdos.length }})
+          Completed ({{ completedCount }})
         </button>
       </div>
 
@@ -141,7 +172,7 @@ function getSlaBadgeConfig(status?: string) {
       </div>
 
       <!-- Empty States -->
-      <div v-else-if="activeTab === 'transit' && transitSdos.length === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center gap-3 bg-default/10 border border-dashed border-default rounded-2xl">
+      <div v-else-if="activeTab === 'transit' && activeCount === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center gap-3 bg-default/10 border border-dashed border-default rounded-2xl">
         <div class="w-16 h-16 bg-default rounded-full flex items-center justify-center text-muted-foreground">
           <UIcon name="i-lucide-clipboard-list" class="w-8 h-8" />
         </div>
@@ -155,7 +186,7 @@ function getSlaBadgeConfig(status?: string) {
         </div>
       </div>
 
-      <div v-else-if="activeTab === 'delivered' && deliveredSdos.length === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center gap-3 bg-default/10 border border-dashed border-default rounded-2xl">
+      <div v-else-if="activeTab === 'delivered' && completedCount === 0" class="flex flex-col items-center justify-center py-16 px-4 text-center gap-3 bg-default/10 border border-dashed border-default rounded-2xl">
         <div class="w-16 h-16 bg-default rounded-full flex items-center justify-center text-muted-foreground">
           <UIcon name="i-lucide-history" class="w-8 h-8" />
         </div>
@@ -172,7 +203,7 @@ function getSlaBadgeConfig(status?: string) {
       <!-- SDO Items -->
       <div v-else class="space-y-4">
         <div
-          v-for="sdo in (activeTab === 'transit' ? transitSdos : deliveredSdos)"
+          v-for="sdo in sdos"
           :key="sdo.id"
           class="bg-elevated border border-default rounded-2xl p-4 shadow-sm hover:border-default/80 transition-colors space-y-3"
         >
@@ -285,6 +316,18 @@ function getSlaBadgeConfig(status?: string) {
               View Detail
             </button>
           </div>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="meta.totalPages > 1" class="flex justify-center pt-4">
+          <UPagination
+            v-model:page="currentPage"
+            :total="meta.total"
+            :items-per-page="itemsPerPage"
+            :max="5"
+            size="sm"
+            class="font-semibold"
+          />
         </div>
       </div>
     </div>

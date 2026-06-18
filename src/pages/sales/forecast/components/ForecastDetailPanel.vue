@@ -749,7 +749,7 @@ onMounted(() => {
               icon="i-lucide-file-spreadsheet"
               color="neutral"
               variant="ghost"
-              size="sm"
+              size="md"
               trailing-icon="i-lucide-chevron-down"
             />
           </UDropdownMenu>
@@ -758,7 +758,7 @@ onMounted(() => {
             icon="i-lucide-history"
             color="neutral"
             variant="ghost"
-            size="sm"
+            size="md"
             label="Logs"
             @click="handleViewLogs"
           />
@@ -770,7 +770,7 @@ onMounted(() => {
             icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
-            size="sm"
+            size="md"
             label="Edit"
             :disabled="!isEditable"
             @click="forecastSummary && emit('edit', forecastSummary)"
@@ -779,7 +779,7 @@ onMounted(() => {
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"
-            size="sm"
+            size="md"
             label="Delete"
             :disabled="store.detail?.status !== 'Draft'"
             @click="emit('delete', forecastId)"
@@ -793,7 +793,7 @@ onMounted(() => {
             icon="i-lucide-send"
             color="warning"
             variant="subtle"
-            size="sm"
+            size="md"
             label="Submit"
             :loading="store.loading"
             @click="submitForecast"
@@ -803,7 +803,7 @@ onMounted(() => {
             icon="i-lucide-check-square"
             color="success"
             variant="subtle"
-            size="sm"
+            size="md"
             label="Review"
             @click="openReviewModal"
           />
@@ -965,43 +965,22 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Add Part -->
-        <div class="flex items-end gap-2 bg-elevated/30 p-4 rounded-xl border border-default">
-          <UFormField label="Add Part to Forecast" class="flex-1 max-w-sm">
-            <USelectMenu
-              v-model="selectedPartLabels"
-              :items="partItems"
-              placeholder="Search and select parts..."
-              class="w-full"
-              clear
-              searchable
-              multiple
-              :disabled="!isEditable"
-            />
-          </UFormField>
-          <UButton
-            label="Add"
-            color="neutral"
-            variant="outline"
-            icon="i-lucide-plus"
-            :disabled="selectedNewParts.length === 0 || !isEditable"
-            @click="addNewPart"
-          />
-        </div>
-
-        <!-- Part Search Filter -->
-        <div class="flex items-center justify-between gap-3 bg-elevated/10 p-3 rounded-xl border border-default">
-          <div class="flex items-center gap-2 flex-1 max-w-sm">
-            <UInput
-              v-model="searchQuery"
-              icon="i-lucide-search"
-              placeholder="Search part by number or name..."
-              class="w-full"
-              clear
-            />
+        <div class="flex items-center gap-4 p-4 bg-elevated/30 rounded-xl border border-default">
+          <!-- Bagian Add Part (kiri) -->
+          <div class="flex items-end gap-2 flex-1">
+            <UFormField label="Add Part to Forecast" class="flex-1 max-w-sm">
+              <USelectMenu v-model="selectedPartLabels" :items="partItems" placeholder="Search and select parts..."
+                class="w-full" clear searchable multiple :disabled="!isEditable" />
+            </UFormField>
+            <UButton label="Add" color="neutral" variant="outline" icon="i-lucide-plus"
+              :disabled="selectedNewParts.length === 0 || !isEditable" @click="addNewPart" />
           </div>
-          <div class="flex items-center gap-3">
-            <div v-if="parts.length > 0" class="text-xs text-muted font-medium">
+
+          <!-- Bagian Search (kanan) -->
+          <div class="flex items-center gap-3 flex-shrink-0">
+            <UInput v-model="searchQuery" icon="i-lucide-search" placeholder="Search part by number or name..."
+              class="w-64" clear />
+            <div v-if="parts.length > 0" class="text-xs text-muted font-medium whitespace-nowrap">
               Showing {{ filteredParts.length }} of {{ parts.length }} parts
             </div>
           </div>
@@ -1109,15 +1088,15 @@ onMounted(() => {
                         v-if="dataEntry[part.id][period.date].isRecommended"
                         color="primary"
                         variant="subtle"
-                        size="xs"
+                        size="sm"
                         class="w-full justify-center"
                       >
-                        Recommended
+                        Recommendation QTY
                       </UBadge>
                       <UBadge
                         :color="getQtyStatusColor(dataEntry[part.id][period.date].qty_status)"
                         variant="subtle"
-                        size="xs"
+                        size="sm"
                         class="w-full justify-center"
                       >
                         {{ dataEntry[part.id][period.date].qty_status }}
@@ -1229,7 +1208,7 @@ onMounted(() => {
                     <UBadge
                       :color="getQtyStatusColor(dataEntry[part.id][periods[0].date]?.qty_status || 'Temporary')"
                       variant="subtle"
-                      size="xs"
+                      size="sm"
                     >
                       {{ dataEntry[part.id][periods[0].date]?.qty_status || 'Temporary' }}
                     </UBadge>

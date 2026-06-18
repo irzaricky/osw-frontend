@@ -343,10 +343,10 @@ onMounted(() => {
                 :name="collapsedStatuses[group.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                 class="w-4 h-4 text-muted transition-transform"
               />
-              <UBadge :color="getStatusColor(group.status)" variant="subtle" size="xs">
+              <UBadge :color="getStatusColor(group.status)" variant="subtle" size="sm">
                 {{ group.status }}
               </UBadge>
-              <span class="ml-auto text-xs text-muted shrink-0">{{ group.items.length }}</span>
+              <span class="ml-auto text-sm text-muted shrink-0">{{ group.items.length }}</span>
             </div>
 
             <!-- SPR Items -->
@@ -374,7 +374,7 @@ onMounted(() => {
                       <UBadge
                         :color="spr.source === 'Automatic' ? 'info' : 'neutral'"
                         variant="subtle"
-                        size="xs"
+                        size="sm"
                         class="rounded-full"
                       >
                         {{ spr.source }}
@@ -396,7 +396,7 @@ onMounted(() => {
             v-model:page="meta.page"
             :items-per-page="meta.limit"
             :total="meta.total"
-            size="xs"
+            size="sm"
             @update:page="fetchData"
           />
         </div>

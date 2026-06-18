@@ -160,6 +160,7 @@ watch([mlStartDate, mlEndDate, selectedStatus, selectedWarehouseId], () => {
 onMounted(async () => {
   await store.fetchDropdownWarehouses()
   await store.fetchDropdownDocks()
+  await store.fetchShifts()
   await loadGanttPlans()
   await loadMasterPlans()
   
@@ -246,7 +247,44 @@ async function executeDeletePlan() {
 
 // --- Scheduler Timeline Helpers ---
 
-const hoursList = ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00']
+const minHour = computed(() => {
+  if (!store.shifts || store.shifts.length === 0) return 8
+  const hours = store.shifts.map(s => {
+    const time = s.start_time
+    const hr = parseInt(time.split(':')[0], 10)
+    return isNaN(hr) ? 8 : hr
+  })
+  return Math.min(...hours)
+})
+
+const maxHour = computed(() => {
+  if (!store.shifts || store.shifts.length === 0) return 18
+  const hours = store.shifts.map(s => {
+    const time = s.end_time
+    const hr = Math.ceil(parseTimeToDecimal(time))
+    return isNaN(hr) ? 18 : hr
+  })
+  return Math.max(...hours)
+})
+
+const totalHours = computed(() => {
+  return maxHour.value - minHour.value
+})
+
+const timelineMinWidth = computed(() => {
+  return 192 + totalHours.value * 120
+})
+
+const hoursList = computed(() => {
+  const list = []
+  const start = minHour.value
+  const end = maxHour.value
+  for (let h = start; h <= end; h++) {
+    const pad = String(h).padStart(2, '0')
+    list.push(`${pad}:00`)
+  }
+  return list
+})
 
 const activeWarehouse = computed(() => {
   return store.warehouses.find(w => w.id === selectedWarehouseId.value)
@@ -278,12 +316,12 @@ function getPlanStyle(plan: any) {
   const start = parseTimeToDecimal(plan.time_start)
   const end = parseTimeToDecimal(plan.time_end)
   
-  // Constrain hours to 08:00 - 18:00 timeline span
-  const leftHour = Math.max(8, Math.min(18, start))
-  const rightHour = Math.max(8, Math.min(18, end))
+  // Constrain hours to dynamic timeline span
+  const leftHour = Math.max(minHour.value, Math.min(maxHour.value, start))
+  const rightHour = Math.max(minHour.value, Math.min(maxHour.value, end))
   
-  const leftPct = ((leftHour - 8) / 10) * 100
-  const widthPct = ((rightHour - leftHour) / 10) * 100
+  const leftPct = ((leftHour - minHour.value) / totalHours.value) * 100
+  const widthPct = ((rightHour - leftHour) / totalHours.value) * 100
   
   return {
     left: `${leftPct}%`,
@@ -394,18 +432,7 @@ const conflictingDocksNames = computed(() => {
           </div>
         </div>
 
-        <!-- Overlap Conflicts Banner Alert -->
-        <div v-if="conflictingDocksNames.length > 0" class="bg-error-500/10 border border-error-500/30 text-error-700 dark:text-error-300 px-4 py-3 rounded-2xl flex items-start gap-2.5 shrink-0 shadow-sm">
-          <UIcon name="i-lucide-alert-triangle" class="w-5 h-5 shrink-0 text-error-500 mt-0.5" />
-          <div>
-            <h5 class="text-xs font-bold uppercase tracking-wider">
-              Overlap Conflict Detected!
-            </h5>
-            <p class="text-xs mt-0.5 leading-relaxed">
-              Multiple shipments overlap on Dock slot(s): <span class="font-bold font-mono">{{ conflictingDocksNames.join(', ') }}</span>. Overlapping blocks are highlighted below in pulsing red.
-            </p>
-          </div>
-        </div>
+
 
         <!-- Timeline Grid Board -->
         <div class="flex-1 bg-elevated border border-default rounded-3xl p-6 flex flex-col min-w-[700px] shadow-sm relative overflow-hidden">
@@ -431,18 +458,19 @@ const conflictingDocksNames = computed(() => {
 
           <!-- Gantt Schedule Timeline -->
           <div v-else class="flex-1 flex flex-col h-full overflow-x-auto select-none">
+            <div :style="{ minWidth: `${timelineMinWidth}px` }" class="flex-1 flex flex-col h-full min-w-max pb-2">
             <!-- Timeline X-Axis Grid Hours Header Row -->
             <div class="flex border-b border-default/70 pb-3 shrink-0 font-bold uppercase tracking-wider text-[10px] text-muted">
               <div class="w-48 shrink-0 flex items-center">
-                <span>Loading Docks ({{ activeWarehouse?.name }})</span>
+                <span class="text-sm text-default font-extrabold normal-case">Loading Docks ({{ activeWarehouse?.name }})</span>
               </div>
-              <div class="flex-1 grid grid-cols-10 text-center relative pr-4">
-                <div v-for="hour in hoursList.slice(0, 10)" :key="hour" class="border-l border-default/30 first:border-0 py-0.5 text-center">
+              <div class="flex-1 grid text-center relative pr-4" :style="{ gridTemplateColumns: `repeat(${totalHours}, minmax(0, 1fr))` }">
+                <div v-for="hour in hoursList.slice(0, totalHours)" :key="hour" class="border-l border-default/30 first:border-0 py-0.5 text-center">
                   {{ hour }}
                 </div>
-                <!-- 18:00 end border align pointer -->
+                <!-- Dynamic end border align pointer -->
                 <div class="absolute right-0 top-0 bottom-0 text-[10px] font-bold text-muted -mr-2 select-none pointer-events-none">
-                  18:00
+                  {{ hoursList[hoursList.length - 1] }}
                 </div>
               </div>
             </div>
@@ -452,14 +480,14 @@ const conflictingDocksNames = computed(() => {
               <div
                 v-for="dock in activeDocks"
                 :key="dock.id"
-                class="flex items-center min-h-[90px] group transition-all"
+                class="flex items-center min-h-[120px] group transition-all"
               >
                 <!-- Dock Sticky Left Label -->
                 <div class="w-48 shrink-0 pr-4 flex flex-col justify-center">
-                  <span class="text-sm font-bold text-default group-hover:text-primary transition-colors">
+                  <span class="text-lg font-black text-default group-hover:text-primary transition-colors">
                     {{ dock.name }}
                   </span>
-                  <span class="text-[10px] font-medium text-muted mt-0.5">
+                  <span class="text-xs font-semibold text-muted mt-1">
                     Warehouse: {{ activeWarehouse?.name }}
                   </span>
                 </div>
@@ -467,9 +495,9 @@ const conflictingDocksNames = computed(() => {
                 <!-- Relative Timeline Bar Container -->
                 <div class="flex-1 h-full py-3 relative min-h-[64px]">
                   <!-- Grid vertical background hour slot indicators -->
-                  <div class="grid grid-cols-10 h-full w-full absolute top-0 left-0 pointer-events-none z-0 pr-4">
+                  <div class="grid h-full w-full absolute top-0 left-0 pointer-events-none z-0 pr-4" :style="{ gridTemplateColumns: `repeat(${totalHours}, minmax(0, 1fr))` }">
                     <div
-                      v-for="idx in 10"
+                      v-for="idx in totalHours"
                       :key="idx"
                       class="border-l border-dashed border-default/20 h-full"
                     />
@@ -480,7 +508,7 @@ const conflictingDocksNames = computed(() => {
                     <div
                       v-for="plan in activePlansForDate.filter(p => p.dock_id === dock.id)"
                       :key="plan.id"
-                      class="absolute top-1/2 -translate-y-1/2 rounded-2xl p-3 flex flex-col justify-center min-h-[58px] cursor-pointer transition-all border shadow-sm select-none hover:shadow-md hover:brightness-105 active:scale-[0.98] group/item overflow-hidden"
+                      class="absolute top-1/2 -translate-y-1/2 rounded-2xl p-4 flex flex-col justify-center min-h-[72px] cursor-pointer transition-all border shadow-sm select-none hover:shadow-md hover:brightness-105 active:scale-[0.98] group/item overflow-hidden"
                       :style="getPlanStyle(plan)"
                       :class="[
                         selectedPlanId === plan.id
@@ -493,16 +521,16 @@ const conflictingDocksNames = computed(() => {
                     >
                       <!-- Custom Tooltip Content inside the block -->
                       <div class="flex items-center justify-between gap-1 min-w-0">
-                        <span class="text-[9px] font-mono font-bold tracking-tight uppercase truncate">
+                        <span class="text-xs font-mono font-bold tracking-tight uppercase truncate">
                           {{ plan.dp_number }}
                         </span>
-                        <div class="flex items-center gap-0.5 text-[9px] text-muted group-hover/item:text-primary shrink-0 font-bold">
-                          <UIcon name="i-lucide-clock" class="w-3 h-3 text-amber-500 shrink-0" />
+                        <div class="flex items-center gap-1 text-xs text-muted group-hover/item:text-primary shrink-0 font-bold">
+                          <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500 shrink-0" />
                           <span>{{ plan.time_start.slice(0, 5) }} – {{ plan.time_end.slice(0, 5) }}</span>
                         </div>
                       </div>
 
-                      <h4 class="text-[11px] font-bold leading-tight mt-1 truncate">
+                      <h4 class="text-sm font-bold leading-tight mt-1.5 truncate">
                         {{ plan.destination }}
                       </h4>
 
@@ -518,21 +546,18 @@ const conflictingDocksNames = computed(() => {
             </div>
 
             <!-- Legend Info Row -->
-            <div class="border-t border-default/70 pt-4 flex flex-wrap gap-4 items-center justify-end text-[10px] text-muted font-semibold mt-4">
-              <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 rounded bg-elevated border border-default" />
+            <div class="border-t border-default/70 pt-4 flex flex-wrap gap-4 items-center justify-end text-sm text-muted font-bold mt-4">
+              <div class="flex items-center gap-2">
+                <div class="w-3.5 h-3.5 rounded bg-elevated border border-default" />
                 <span>Normal Slot</span>
               </div>
-              <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 rounded bg-primary/10 border border-primary" />
+              <div class="flex items-center gap-2">
+                <div class="w-3.5 h-3.5 rounded bg-primary/10 border border-primary" />
                 <span>Selected Schedule</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <div class="w-3 h-3 rounded bg-error-500/10 border border-error-500 animate-pulse" />
-                <span>Overlap Conflict</span>
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         <!-- Collapsible Master List Panel -->
@@ -599,7 +624,7 @@ const conflictingDocksNames = computed(() => {
                   <tr
                     v-for="plan in filteredMasterList"
                     :key="plan.id"
-                    class="hover:bg-default/20 transition-colors cursor-pointer"
+                    class="hover:bg-default/20 transition-colors cursor-pointer text-sm"
                     :class="selectedPlanId === plan.id ? 'bg-primary/5 font-semibold text-primary' : ''"
                     @click="selectPlan(plan.id)"
                   >

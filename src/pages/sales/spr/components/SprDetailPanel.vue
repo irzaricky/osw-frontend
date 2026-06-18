@@ -231,7 +231,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <UBadge
             :color="getSourceColor(store.detail.source)"
             variant="subtle"
-            size="sm"
+            size="md"
             class="shrink-0"
           >
             <UIcon :name="getSourceIcon(store.detail.source)" class="w-3 h-3 mr-1" />
@@ -240,7 +240,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
 
           <!-- Status badge -->
           <div
-            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide uppercase shadow-sm"
+            class="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-semibold tracking-wide uppercase shadow-sm"
             :class="{
               'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300': store.detail.status === 'Draft',
               'bg-warning-100 text-warning-700 dark:bg-warning-900/40 dark:text-warning-300': store.detail.status === 'Submitted',
@@ -261,7 +261,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             icon="i-lucide-file-spreadsheet"
             color="neutral"
             variant="ghost"
-            size="sm"
+            size="md"
             @click="handleExport"
           />
 
@@ -271,7 +271,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             icon="i-lucide-history"
             color="neutral"
             variant="ghost"
-            size="sm"
+            size="md"
             @click="handleViewLogs"
           />
 
@@ -282,7 +282,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
-            size="sm"
+            size="md"
             label="Edit"
             :disabled="!isEditable"
             @click="sprSummary && emit('edit', sprSummary)"
@@ -293,7 +293,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"
-            size="sm"
+            size="md"
             label="Delete"
             :disabled="store.detail?.status !== 'Draft'"
             @click="emit('delete', sprId)"
@@ -307,7 +307,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             icon="i-lucide-user-check"
             color="warning"
             variant="subtle"
-            size="sm"
+            size="md"
             label="Review Sales"
             :loading="store.loading"
             @click="openReviewModal"
@@ -318,7 +318,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             v-if="canSubmit"
             icon="i-lucide-send"
             color="primary"
-            size="sm"
+            size="md"
             label="Submit"
             :loading="store.loading"
             @click="submitSpr"
@@ -339,13 +339,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Step 0: Draft -->
           <div class="flex flex-col items-center flex-1 min-w-[80px]">
             <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               :class="getStepState(0) === 'complete' ? 'bg-success-500 text-white' : getStepState(0) === 'current' ? 'bg-primary text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="getStepState(0) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>1</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(0) === 'current' ? 'text-primary' : 'text-muted'">
+            <p class="text-sm text-center mt-2 font-medium" :class="getStepState(0) === 'current' ? 'text-primary' : 'text-muted'">
               Draft
             </p>
           </div>
@@ -356,13 +356,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Step 1: Submitted -->
           <div class="flex flex-col items-center flex-1 min-w-[80px]">
             <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               :class="getStepState(1) === 'complete' ? 'bg-success-500 text-white' : getStepState(1) === 'current' ? 'bg-warning-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="getStepState(1) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>2</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(1) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
+            <p class="text-sm text-center mt-2 font-medium" :class="getStepState(1) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
               Submitted
             </p>
           </div>
@@ -373,13 +373,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Step 2: Waiting Review Supervisor Sales -->
           <div class="flex flex-col items-center flex-1 min-w-[100px]">
             <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               :class="getStepState(2) === 'complete' ? 'bg-success-500 text-white' : getStepState(2) === 'current' ? 'bg-warning-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="getStepState(2) === 'complete'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>3</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
+            <p class="text-sm text-center mt-2 font-medium" :class="getStepState(2) === 'current' ? 'text-warning-600 dark:text-warning-400' : 'text-muted'">
               Waiting Review<br>Sales
             </p>
           </div>
@@ -390,13 +390,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
           <!-- Step 3: Approved -->
           <div class="flex flex-col items-center flex-1 min-w-[80px]">
             <div
-              class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
               :class="getStepState(3) === 'complete' || store.detail.status === 'Approved' ? 'bg-success-500 text-white' : 'bg-elevated border-2 border-default text-muted'"
             >
               <UIcon v-if="store.detail.status === 'Approved'" name="i-lucide-check" class="w-4 h-4" />
               <span v-else>4</span>
             </div>
-            <p class="text-xs text-center mt-2 font-medium" :class="store.detail.status === 'Approved' ? 'text-success-600 dark:text-success-400' : 'text-muted'">
+            <p class="text-sm text-center mt-2 font-medium" :class="store.detail.status === 'Approved' ? 'text-success-600 dark:text-success-400' : 'text-muted'">
               Approved
             </p>
           </div>
@@ -421,7 +421,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
+            <div class="text-sm text-muted mb-1">
               Request Date
             </div>
             <div class="text-sm font-semibold">
@@ -429,7 +429,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
+            <div class="text-sm text-muted mb-1">
               Required Date
             </div>
             <div class="text-sm font-semibold text-warning-600 dark:text-warning-400">
@@ -437,7 +437,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
+            <div class="text-sm text-muted mb-1">
               Created By
             </div>
             <div class="text-sm font-semibold">
@@ -445,7 +445,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
+            <div class="text-sm text-muted mb-1">
               Source Forecast
             </div>
             <div class="text-sm font-semibold">
@@ -457,7 +457,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
         <!-- Approver Info Row -->
         <div v-if="store.detail.sales_order_approver" class="grid grid-cols-1 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
+            <div class="text-sm text-muted mb-1">
               Sales Approver
             </div>
             <div class="text-sm font-semibold flex items-center gap-1.5">
@@ -504,10 +504,10 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
                 :key="detail.id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20 transition-colors"
               >
-                <td class="p-3 border-r border-default text-center text-muted text-xs">
+                <td class="p-3 border-r border-default text-center text-muted text-sm">
                   {{ idx + 1 }}
                 </td>
-                <td class="p-3 border-r border-default font-mono text-xs font-medium">
+                <td class="p-3 border-r border-default font-mono text-sm font-medium">
                   {{ detail.part?.part_number || '-' }}
                 </td>
                 <td class="p-3 border-r border-default text-sm">
@@ -599,9 +599,9 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
               <div class="flex flex-col gap-1">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-bold" :class="getLogActionColor(log.action)">{{ log.action }}</span>
-                  <span class="text-xs text-muted">{{ new Date(log.createdAt).toLocaleString() }}</span>
+                  <span class="text-sm text-muted">{{ new Date(log.createdAt).toLocaleString() }}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                   <div class="flex gap-2">
                     <span class="text-muted">By:</span>
                     <span class="font-medium">{{ log.user?.user_detail?.full_name || log.user?.email }}</span>
@@ -612,13 +612,13 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
                   </div>
                 </div>
                 <div v-if="log.remarks || log.snapshot" class="mt-1 flex flex-col gap-2">
-                  <div v-if="log.remarks" class="p-2 rounded bg-elevated/50 border border-default text-xs italic text-muted">
+                  <div v-if="log.remarks" class="p-2 rounded bg-elevated/50 border border-default text-sm italic text-muted">
                     {{ log.remarks }}
                   </div>
                   <div v-if="log.snapshot" class="flex justify-end">
                     <UButton
                       icon="i-lucide-download"
-                      size="xs"
+                      size="sm"
                       variant="ghost"
                       color="neutral"
                       label="Download Snapshot"

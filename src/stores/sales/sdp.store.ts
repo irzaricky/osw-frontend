@@ -2,7 +2,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import sdpService, { type SdpParams } from '../../services/sales/sdp.service'
+import shiftService from '../../services/master-data/shift.service'
 import type { Sdp, SdpDropdownWarehouse, SdpDropdownDock } from '../../types/sales/sdp'
+import type { Shift } from '../../types/master-data/shift'
 
 export const useSdpStore = defineStore('sdp', () => {
   // ─── State ──────────────────────────────────────────────────────────────────
@@ -12,6 +14,7 @@ export const useSdpStore = defineStore('sdp', () => {
   const docks = ref<SdpDropdownDock[]>([])
   const availableSpoItems = ref<any[]>([])
   const maxVehicleCapacity = ref<number>(100)
+  const shifts = ref<Shift[]>([])
 
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -87,6 +90,18 @@ export const useSdpStore = defineStore('sdp', () => {
       }
     } catch (e: any) {
       console.error('Error fetching docks dropdown:', e)
+    }
+  }
+
+  async function fetchShifts() {
+    try {
+      const response = await shiftService.getShifts({ page: 1, limit: 100 })
+      const data = response.data
+      if (data.status) {
+        shifts.value = data.data.rows
+      }
+    } catch (e: any) {
+      console.error('Error fetching shifts:', e)
     }
   }
 
@@ -174,6 +189,7 @@ export const useSdpStore = defineStore('sdp', () => {
     docks,
     availableSpoItems,
     maxVehicleCapacity,
+    shifts,
     loading,
     error,
     meta,
@@ -182,6 +198,7 @@ export const useSdpStore = defineStore('sdp', () => {
     fetchSdpById,
     fetchDropdownWarehouses,
     fetchDropdownDocks,
+    fetchShifts,
     fetchAvailableSpoItems,
     fetchMaxVehicleCapacity,
     createSdp,
