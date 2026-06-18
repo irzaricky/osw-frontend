@@ -70,15 +70,11 @@ const columns: TableColumn<any>[] = [
 
 <template>
   <UCard>
-    <UTable
-      v-model:expanded="expanded"
-      :data="loading ? [] : data"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    >
+    <UTable v-model:expanded="expanded" :data="loading ? [] : data" :columns="columns" :loading="loading"
+      class="w-full">
       <template #expanded="{ row }">
-        <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
+        <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-elevated/50 border-b border-default">
+          <!-- Replacement Info -->
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Replacement Info
@@ -93,24 +89,69 @@ const columns: TableColumn<any>[] = [
               <span class="text-muted">Date:</span>
               {{ formatDateTime(row.original.created_at) }}
             </p>
-          </div>
-
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">
-              Station & Material
-            </h4>
 
             <p class="text-sm">
-              <span class="text-muted">Station:</span>
-              {{ row.original.station_name || '-' }}
+              <span class="text-muted">Created By:</span>
+              {{ row.original.created_by_email || '-' }}
             </p>
+          </div>
+
+          <!-- NG Material -->
+          <div class="space-y-1">
+            <h4 class="font-semibold text-sm text-highlighted">
+              NG Material
+            </h4>
 
             <p class="text-sm">
               <span class="text-muted">Material:</span>
               {{ row.original.part_number }} - {{ row.original.part_name }}
             </p>
+
+            <p class="text-sm">
+              <span class="text-muted">NG Label:</span>
+              {{ row.original.ng_source_label_number || row.original.source_label_number || '-' }}
+            </p>
+
+            <p class="text-sm">
+              <span class="text-muted">Reason:</span>
+              {{ row.original.replacement_reason || '-' }}
+            </p>
           </div>
 
+          <!-- Replacement Material -->
+          <div class="space-y-2">
+            <h4 class="font-semibold text-sm text-highlighted">
+              Replacement Material
+            </h4>
+
+            <p class="text-sm">
+              <span class="text-muted">Qty:</span>
+              {{ row.original.qty_replacement }} PCS
+            </p>
+
+            <div v-if="row.original.used_buffer_details?.length" class="max-h-48 overflow-y-auto space-y-1">
+              <div v-for="label in row.original.used_buffer_details" :key="label.id"
+                class="flex items-center justify-between rounded-md border border-default px-3 py-2">
+                <span class="text-sm font-medium">
+                  {{ label.pcs_label_number }}
+                </span>
+
+                <span class="text-xs text-muted">
+                  {{ label.supplied_by_email || '-' }}
+                </span>
+              </div>
+            </div>
+
+            <UBadge v-else-if="row.original.source_label_number" color="primary" variant="soft">
+              {{ row.original.source_label_number }}
+            </UBadge>
+
+            <p v-else class="text-sm text-muted">
+              No replacement label found.
+            </p>
+          </div>
+
+          <!-- Usage -->
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Usage

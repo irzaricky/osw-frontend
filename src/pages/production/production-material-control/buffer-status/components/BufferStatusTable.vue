@@ -107,59 +107,97 @@ const columns: TableColumn<any>[] = [
 
 <template>
   <UCard>
-    <UTable
-      v-model:expanded="expanded"
-      :data="loading ? [] : data"
-      :columns="columns"
-      :loading="loading"
-      class="w-full"
-    >
+    <UTable v-model:expanded="expanded" :data="loading ? [] : data" :columns="columns" :loading="loading"
+      class="w-full">
       <template #expanded="{ row }">
-        <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
+        <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-elevated/50 border-b border-default">
+          <!-- Location -->
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Buffer Location
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Station:</span>
               {{ row.original.station_name || '-' }}
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Material:</span>
-              {{ row.original.part_number }} - {{ row.original.part_name }}
+              {{ row.original.part_number }}
+            </p>
+
+            <p class="text-sm">
+              {{ row.original.part_name }}
             </p>
           </div>
 
+          <!-- Quantity -->
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Buffer Quantity
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Current:</span>
               {{ row.original.qty_pcs || 0 }} PCS
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Standard:</span>
               {{ row.original.standard_buffer_stock || 0 }} PCS
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Shortage:</span>
               {{ row.original.shortage_pcs || 0 }} PCS
             </p>
           </div>
 
+          <!-- Labels -->
+          <div class="space-y-2">
+            <h4 class="font-semibold text-sm text-highlighted">
+              Buffer Labels
+            </h4>
+
+            <div v-if="row.original.buffer_details?.length" class="max-h-56 overflow-y-auto space-y-1">
+              <div v-for="label in row.original.buffer_details" :key="label.id"
+                class="flex items-center justify-between rounded-md border border-default px-3 py-2">
+                <div class="font-medium text-sm">
+                  {{ label.pcs_label_number }}
+                </div>
+
+                <div class="text-xs text-muted">
+                  {{ label.supplied_by_email || '-' }}
+                </div>
+              </div>
+            </div>
+
+            <p v-else class="text-sm text-muted">
+              No label available
+            </p>
+
+            <p v-if="row.original.buffer_details?.length" class="text-xs text-muted">
+              {{ row.original.buffer_details.length }} PCS Available
+            </p>
+          </div>
+
+          <!-- Aging -->
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Aging
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Oldest Supply:</span>
               {{ formatDateTime(row.original.oldest_supply_at) }}
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Latest Supply:</span>
               {{ formatDateTime(row.original.latest_supply_at) }}
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Aging:</span>
               {{ row.original.aging_days || 0 }} day(s)
