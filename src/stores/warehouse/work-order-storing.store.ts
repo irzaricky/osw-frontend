@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import workOrderStoringService, { type WorkOrderStoringParams } from '../../services/warehouse/work-order-storing.service'
-import type { WorkOrderStoring, WorkOrderStoringType, WorkOrderStoringStatus } from '../../types/warehouse/work-order-storing'
+import type { WorkOrderStoring, WorkOrderStoringType, WorkOrderStoringStatus, StationDropdown, ProductionWODropdown } from '../../types/warehouse/work-order-storing'
 
 export const useWorkOrderStoringStore = defineStore('work-order-storing', () => {
   // State
   const workOrders = ref<WorkOrderStoring[]>([])
   const workOrderTypes = ref<WorkOrderStoringType[]>([])
   const workOrderStatuses = ref<WorkOrderStoringStatus[]>([])
+  const bufferStations = ref<StationDropdown[]>([])
+  const productionWOs = ref<ProductionWODropdown[]>([])
 
   const meta = ref({
     page: 1,
@@ -144,11 +146,39 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     }
   }
 
+  async function fetchBufferStationDropdown() {
+    try {
+      const response = await workOrderStoringService.getBufferStationDropdown()
+      const data = response.data
+      if (data.status) {
+        bufferStations.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching buffer station:', e)
+    }
+  }
+
+  async function fetchWoProductionDropdown() {
+    try {
+      const response = await workOrderStoringService.getWoProductionDropdown()
+      const data = response.data
+      if (data.status) {
+        productionWOs.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching wo production:', e)
+    }
+  }
+
   return {
     // State
     workOrders,
     workOrderTypes,
     workOrderStatuses,
+    bufferStations,
+    productionWOs,
     meta,
     loading,
     error,
@@ -161,6 +191,8 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     deleteWorkOrder,
     printLabel,
     fetchWorkOrderTypesDropdown,
-    fetchWorkOrderStatusesDropdown
+    fetchWorkOrderStatusesDropdown,
+    fetchBufferStationDropdown,
+    fetchWoProductionDropdown
   }
 })
