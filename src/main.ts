@@ -232,11 +232,6 @@ const router = createRouter({
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff', 'supervisor warehouse'] }
     },
     {
-      path: '/warehouse/station-buffer',
-      component: () => import('./pages/warehouse/station-buffer/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin'] }
-    },
-    {
       path: '/production/production-material-control/production-result',
       component: () => import('./pages/production/production-material-control/production-result/index.vue'),
       meta: {
