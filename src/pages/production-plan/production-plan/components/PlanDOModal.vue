@@ -2,19 +2,19 @@
 import { ref, computed } from 'vue'
 
 const props = defineProps<{
-  open: boolean
-	title?: string
-	description?: string
-  availableDos: any[]
+  open:          boolean
+  title?:        string
+  description?:  string
+  availableDos:  any[]
   selectedDoIds: number[]
-  loading: boolean
-  fmtDate: (d?: string | null) => string
+  loading:       boolean
+  fmtDate:       (d?: string | null) => string
 }>()
 
 const emit = defineEmits<{
   (e: 'update:open', val: boolean): void
   (e: 'toggle', id: number): void
-	(e: 'select-all', ids: number[], select: boolean): void
+  (e: 'select-all', ids: number[], select: boolean): void
 }>()
 
 const doSearch = ref('')
@@ -35,24 +35,16 @@ const allSelected = computed(() => {
 })
 
 function handleToggleAll() {
-  emit(
-    'select-all',
-    filteredDOs.value.map((d) => d.id),
-    !allSelected.value,
-  )
-}
-
-function close() {
-  emit('update:open', false)
+  emit('select-all', filteredDOs.value.map((d) => d.id), !allSelected.value)
 }
 </script>
 
 <template>
-  <UModal 
-    :open="open" 
-    :title="props.title || 'Select Delivery Orders'" 
-    :description="props.description || 'Select Delivery Orders to include in the production plan.'" 
-    :ui="{ content: 'sm:max-w-2xl', title: 'pt-2', description: 'pb-2' }" 
+  <UModal
+    :open="open"
+    :title="props.title || 'Select Delivery Orders'"
+    :description="props.description || 'Select Delivery Orders to include in the production plan.'"
+    :ui="{ content: 'sm:max-w-2xl', title: 'pt-2', description: 'pb-2' }"
     size="xl"
     @update:open="emit('update:open', $event)"
   >
@@ -61,7 +53,7 @@ function close() {
         <UInput
           v-model="doSearch"
           icon="i-lucide-search"
-          placeholder="Search DO by number or customer..."
+          placeholder="Search by DO number or customer..."
           class="w-full"
         />
 
@@ -79,29 +71,15 @@ function close() {
                 <th class="w-10 px-4 py-3 cursor-pointer" @click="handleToggleAll">
                   <div class="flex items-center justify-center">
                     <UIcon
-                      v-if="allSelected"
-                      name="i-lucide-check-square"
-                      class="w-4 h-4 text-primary"
-                    />
-                    <UIcon
-                      v-else
-                      name="i-lucide-square"
-                      class="w-4 h-4 text-muted"
+                      :name="allSelected ? 'i-lucide-check-square' : 'i-lucide-square'"
+                      :class="allSelected ? 'w-4 h-4 text-primary' : 'w-4 h-4 text-muted'"
                     />
                   </div>
                 </th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-                  No. DO
-                </th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-                  Customer
-                </th>
-                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-                  Delivery Date
-                </th>
-                <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-                  Item
-                </th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">DO Number</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Customer</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Delivery Date</th>
+                <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Items</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-default">
@@ -113,24 +91,14 @@ function close() {
               >
                 <td class="px-4 py-3 text-center">
                   <UIcon
-                    v-if="selectedDoIds.includes(doItem.id)"
-                    name="i-lucide-check-square"
-                    class="w-4 h-4 text-primary"
+                    :name="selectedDoIds.includes(doItem.id) ? 'i-lucide-check-square' : 'i-lucide-square'"
+                    :class="selectedDoIds.includes(doItem.id) ? 'w-4 h-4 text-primary' : 'w-4 h-4 text-muted'"
                   />
-                  <UIcon v-else name="i-lucide-square" class="w-4 h-4 text-muted" />
                 </td>
-                <td class="px-4 py-3 font-mono font-medium">
-                  {{ doItem.do_number }}
-                </td>
-                <td class="px-4 py-3">
-                  {{ doItem.customer?.name ?? '-' }}
-                </td>
-                <td class="px-4 py-3 text-muted">
-                  {{ fmtDate(doItem.shipment_date) }}
-                </td>
-                <td class="px-4 py-3 text-right text-muted">
-                  {{ doItem.details?.length ?? '-' }}
-                </td>
+                <td class="px-4 py-3 font-mono font-medium">{{ doItem.do_number }}</td>
+                <td class="px-4 py-3">{{ doItem.customer?.name ?? '-' }}</td>
+                <td class="px-4 py-3 text-muted">{{ fmtDate(doItem.shipment_date) }}</td>
+                <td class="px-4 py-3 text-right text-muted">{{ doItem.details?.length ?? '-' }}</td>
               </tr>
             </tbody>
           </table>
@@ -140,19 +108,14 @@ function close() {
 
     <template #footer>
       <div class="flex items-center justify-between w-full">
-        <span class="text-sm text-muted">{{ selectedDoIds.length }} DO selected</span>
+        <span class="text-sm text-muted">{{ selectedDoIds.length }} DO(s) selected</span>
         <div class="flex gap-2">
-          <UButton
-            label="Cancel"
-            color="neutral"
-            variant="ghost"
-            @click="close"
-          />
+          <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
           <UButton
             label="Confirm Selection"
             color="primary"
             :disabled="selectedDoIds.length === 0"
-            @click="close"
+            @click="emit('update:open', false)"
           />
         </div>
       </div>

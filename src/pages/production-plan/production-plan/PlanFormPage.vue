@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useProductionPlanStore } from '../../../stores/production-plan/plan.store'
 import { useAppToast } from '../../../composables/useAppToast'
 import type { PlanStatus, OverallStatus, PlanType } from '../../../types/production-plan/plan'
-import lineService from '../../../services/master-data/line.service'
-import lineCapacityService from '../../../services/master-data/line-capacity.service'
 
 import Breadcrumbs    from '../../../components/Breadcrumbs.vue'
 import PlanInfoCard   from './components/PlanInfoCard.vue'
@@ -19,7 +17,7 @@ import RejectDialog   from '../../../components/RejectDialog.vue'
 const router    = useRouter()
 const route     = useRoute()
 const planStore = useProductionPlanStore()
-const { currentPlan, availableDOs, dropdown, loading, saving, calculating } = storeToRefs(planStore)
+const { currentPlan, availableDOs, dropdown, calendarPreview, loading, saving, calculating } = storeToRefs(planStore)
 const { toastSuccess, toastError } = useAppToast()
 
 const isCreate   = computed(() => route.name === 'production-plan-create')
@@ -44,8 +42,8 @@ const headerForm = reactive({
   notes:            '',
 })
 
-const selectedDOs  = ref<number[]>([])
-const showDOModal  = ref(false)
+const selectedDOs = ref<number[]>([])
+const showDOModal = ref(false)
 
 const selectedDOItems = computed(() =>
   availableDOs.value.filter((d) => selectedDOs.value.includes(d.id)),
@@ -79,8 +77,7 @@ watch(
       planStore.fetchDropdown()
       headerForm.plan_month     = ''
       headerForm.parent_plan_id = null
-    }
-    else {
+    } else {
       headerForm.parent_plan_id = null
     }
     selectedDOs.value = []
@@ -103,19 +100,13 @@ watch(
 watch(
   () => headerForm.plan_month,
   (newMonth) => {
-    if (!isCreate.value || !newMonth) return
-    if (headerForm.plan_type !== 'ORIGINAL') return
+    if (!isCreate.value || !newMonth || headerForm.plan_type !== 'ORIGINAL') return
     selectedDOs.value = []
     planStore.fetchAvailableDOs(newMonth)
   },
 )
 
-// ── Capacity state ─────────────────────────────────────────────────────────
-
-const lines          = ref<any[]>([])
-const selectedLineId = ref<number | undefined>(undefined)
-const lineParams     = ref<any>(null)
-const loadingParams  = ref(false)
+// ── Capacity param edit form ───────────────────────────────────────────────
 
 const editParamForm = reactive({
   working_days:            0,
@@ -127,33 +118,8 @@ const editParamForm = reactive({
   max_takt_time:           0,
 })
 
-async function fetchLineParams(lineId: number) {
-  loadingParams.value = true
-  lineParams.value    = null
-  try {
-    const res        = await lineCapacityService.getParams(lineId)
-    lineParams.value = res.data?.data ?? null
-  }
-  catch (e) {
-    toastError(e)
-  }
-  finally {
-    loadingParams.value = false
-  }
-}
-
-watch(selectedLineId, (id) => {
-  if (id) {
-    fetchLineParams(id)
-    syncEditParamForm(id)
-  }
-  else {
-    lineParams.value = null
-  }
-})
-
-function syncEditParamForm(lineId: number) {
-  const param = currentPlan.value?.capacity_params?.find((p: any) => p.line_id === lineId)
+function syncEditParamForm() {
+  const param = currentPlan.value?.capacity_params?.[0]
   if (param) {
     editParamForm.working_days            = param.working_days
     editParamForm.shifts_per_day          = param.shifts_per_day
@@ -165,6 +131,8 @@ function syncEditParamForm(lineId: number) {
   }
 }
 
+// ── Dialogs ────────────────────────────────────────────────────────────────
+
 const confirm = reactive({
   open:         false,
   title:        '',
@@ -173,11 +141,13 @@ const confirm = reactive({
   action:       null as (() => Promise<void>) | null,
 })
 
-const reject = reactive({
+const rejectDialog = reactive({
   open:        false,
   title:       'Reject Production Plan',
   description: 'Please provide a reason for rejection.',
 })
+
+// ── Status display maps ────────────────────────────────────────────────────
 
 const planStatusLabel: Record<PlanStatus, string> = {
   Draft:            'Draft',
@@ -207,13 +177,22 @@ const detailStatusColor = (s?: string | null) => {
   return 'neutral'
 }
 
-const hasImpossible = computed(() =>
-  currentPlan.value?.details?.some((d: any) => d.status === 'IMPOSSIBLE'),
-)
+// ── Derived state ──────────────────────────────────────────────────────────
 
 const hasUnrouted = computed(() =>
   currentPlan.value?.details?.some((d: any) => !d.assigned_line_id),
 )
+
+// Submit requires: capacity calculated (not Not_Calculated) + all details have routing
+// IMPOSSIBLE is allowed to submit — supervisor reviews it
+const canSubmit = computed(() =>
+  isEditable.value &&
+  currentPlan.value?.status === 'Draft' &&
+  currentPlan.value?.overall_status !== 'Not_Calculated' &&
+  !hasUnrouted.value,
+)
+
+// ── Formatters ─────────────────────────────────────────────────────────────
 
 function fmtDate(d?: string | null) {
   if (!d) return '-'
@@ -224,7 +203,7 @@ function fmtNum(n?: number | null) {
   return n.toLocaleString('en-US')
 }
 
-// ── CRUD Actions ──────────────────────────────────────────────────────────
+// ── CRUD actions ───────────────────────────────────────────────────────────
 
 async function handleSaveHeader() {
   try {
@@ -252,14 +231,14 @@ async function handleSaveHeader() {
         do_ids:           selectedDOs.value,
         notes:            headerForm.notes || null,
       })
-      if (res.data?.warning) {
-        toastError(res.data.warning)
+      if (res.data?.warning) toastError(res.data.warning)
+      if (res.data?.line_conflicts?.length) {
+        toastError(`Warning: ${res.data.line_conflicts.length} line conflict(s) detected with other active plans.`)
       }
       toastSuccess(res.message || 'Plan created successfully')
       await nextTick()
       router.push({ name: 'production-plan-detail-edit', params: { id: res.data.id } })
-    }
-    else if (planId.value) {
+    } else if (planId.value) {
       await planStore.updatePlan(planId.value, {
         plan_description: headerForm.plan_description || null,
         notes:            headerForm.notes || null,
@@ -268,10 +247,12 @@ async function handleSaveHeader() {
       const currentDoIds = currentPlan.value?.details
         ? [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
         : []
-      const added   = selectedDOs.value.filter((id) => !currentDoIds.includes(id))
-      const removed = currentDoIds.filter((id: number) => !selectedDOs.value.includes(id))
+      const doChanged = (
+        selectedDOs.value.some((id) => !currentDoIds.includes(id)) ||
+        currentDoIds.some((id: number) => !selectedDOs.value.includes(id))
+      )
 
-      if (added.length > 0 || removed.length > 0) {
+      if (doChanged) {
         await planStore.syncDOs(planId.value, { do_ids: selectedDOs.value })
         await planStore.fetchPlan(planId.value)
         selectedDOs.value = currentPlan.value?.details
@@ -285,34 +266,23 @@ async function handleSaveHeader() {
   catch (e) { toastError(e) }
 }
 
-async function handleSaveBase() {
-  if (!planId.value || !selectedLineId.value) {
-    toastError('Please select a production line first.')
-    return
-  }
-  try {
-    const res = await planStore.saveCapacityParams(planId.value, { line_id: selectedLineId.value })
-    toastSuccess(res.message || 'BASE parameters saved from line master')
-    syncEditParamForm(selectedLineId.value)
-  }
-  catch (e) { toastError(e) }
-}
-
 async function handleSaveParamEdit() {
-  if (!planId.value || !selectedLineId.value) {
-    toastError('Please select a production line first.')
+  if (!planId.value) return
+  const param = currentPlan.value?.capacity_params?.[0]
+  if (!param) {
+    toastError('No capacity parameters found for this plan.')
     return
   }
   try {
     const res = await planStore.updateCapacityParams(planId.value, {
-      line_id:                 selectedLineId.value,
-      working_days:            editParamForm.working_days,
-      shifts_per_day:          editParamForm.shifts_per_day,
-      working_hours_per_shift: editParamForm.working_hours_per_shift,
+      line_id:                 param.line_id,
+      // working_days:            editParamForm.working_days,
+      // shifts_per_day:          editParamForm.shifts_per_day,
+      // working_hours_per_shift: editParamForm.working_hours_per_shift,
       manpower:                editParamForm.manpower,
       efficiency_factor:       editParamForm.efficiency_factor,
-      overtime_hours:          editParamForm.overtime_hours,
-      max_takt_time:           editParamForm.max_takt_time,
+      // overtime_hours:          editParamForm.overtime_hours,
+      // max_takt_time:           editParamForm.max_takt_time,
     })
     toastSuccess(res.message || 'Parameters updated. Run Calculate to apply.')
   }
@@ -320,12 +290,14 @@ async function handleSaveParamEdit() {
 }
 
 async function handleCalculate() {
-  if (!planId.value || !selectedLineId.value) {
-    toastError('Please select a production line first.')
+  if (!planId.value) return
+  const param = currentPlan.value?.capacity_params?.[0]
+  if (!param) {
+    toastError('No capacity parameters found for this plan.')
     return
   }
   try {
-    await planStore.calculateCapacity(planId.value, { line_id: selectedLineId.value })
+    await planStore.calculateCapacity(planId.value, { line_id: param.line_id })
     confirm.open = false
     toastSuccess('Capacity calculation completed successfully')
   }
@@ -338,25 +310,49 @@ async function handleCalculateAll() {
   if (!planId.value) return
   const params = currentPlan.value?.capacity_params ?? []
   if (params.length === 0) {
-    toastError('No lines with parameters to calculate.')
+    toastError('No capacity parameters found to calculate.')
     return
   }
   calculatingAll.value = true
   confirm.open = false
   try {
     await planStore.calculateAllCapacity(planId.value)
-    await planStore.fetchPlan(planId.value)
-    toastSuccess('All lines calculated successfully.')
+    toastSuccess('Capacity calculated successfully.')
   }
-  catch (e) {
-    toastError(e)
-  }
-  finally {
-    calculatingAll.value = false
-  }
+  catch (e) { toastError(e) }
+  finally { calculatingAll.value = false }
 }
 
-// ── Approval Workflow ──────────────────────────────────────────────────────
+// ── Calendar adjustment actions ────────────────────────────────────────────
+
+async function handleAddAdjustment(payload: any) {
+  if (!planId.value) return
+  try {
+    const res = await planStore.addCalendarAdjustment(planId.value, payload)
+    toastSuccess(res.message || 'Calendar adjustment added. Recalculate to apply.')
+  }
+  catch (e) { toastError(e) }
+}
+
+async function handleUpdateAdjustment(adjustment_id: number, payload: any) {
+  if (!planId.value) return
+  try {
+    const res = await planStore.updateCalendarAdjustment(planId.value, adjustment_id, payload)
+    toastSuccess(res.message || 'Calendar adjustment updated. Recalculate to apply.')
+  }
+  catch (e) { toastError(e) }
+}
+
+async function handleDeleteAdjustment(adjustment_id: number) {
+  if (!planId.value) return
+  try {
+    const res = await planStore.deleteCalendarAdjustment(planId.value, adjustment_id)
+    toastSuccess(res.message || 'Calendar adjustment removed.')
+  }
+  catch (e) { toastError(e) }
+}
+
+// ── Approval workflow ──────────────────────────────────────────────────────
 
 function openSubmitConfirm() {
   confirm.title        = 'Submit for Approval'
@@ -390,14 +386,12 @@ function openApproveConfirm() {
   confirm.open = true
 }
 
-function openRejectConfirm() { reject.open = true }
-
 async function handleReject(reason: string) {
   try {
     if (!planId.value) return
     const res = await planStore.reject(planId.value, { rejection_reason: reason })
     toastSuccess(res.message || 'Plan rejected successfully')
-    reject.open = false
+    rejectDialog.open = false
   }
   catch (e) { toastError(e) }
 }
@@ -409,55 +403,38 @@ function openConfirm(options: { title: string; description: string; action: () =
   confirm.open         = true
 }
 
-const canSubmit = computed(() =>
-  isEditable.value &&
-  currentPlan.value?.status === 'Draft' &&
-  currentPlan.value?.overall_status !== 'Not_Calculated' &&
-  !hasImpossible.value &&
-  !hasUnrouted.value,
-)
-
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 watch(
   () => route.params.id,
   async (newId) => {
+    if (isCreate.value) {
+      planStore.clearCurrentPlan()
+      Object.assign(headerForm, {
+        plan_month: '', plan_type: 'ORIGINAL', parent_plan_id: null,
+        plan_description: '', notes: '',
+      })
+      selectedDOs.value = []
+      return
+    }
+
     if (!newId) return
     const id = Number(newId)
 
-    if (isCreate.value) {
-      planStore.clearCurrentPlan()
-      headerForm.plan_month       = ''
-      headerForm.plan_type        = 'ORIGINAL'
-      headerForm.parent_plan_id   = null
-      headerForm.plan_description = ''
-      headerForm.notes            = ''
-      selectedDOs.value           = []
+    planStore.clearCurrentPlan()
+    await planStore.fetchPlan(id)
+    await planStore.fetchCalendarPreview(id)
+
+    if (currentPlan.value?.plan_month) {
+      await planStore.fetchAvailableDOs(currentPlan.value.plan_month)
     }
-    else if (planId.value) {
-      const lineRes = await lineService.getDropdown()
-      lines.value = lineRes.data?.data ?? []
-
-      planStore.clearCurrentPlan()
-      await planStore.fetchPlan(id)
-
-      if (currentPlan.value?.plan_month) {
-        await planStore.fetchAvailableDOs(currentPlan.value.plan_month)
-      }
-
-      if (currentPlan.value?.details) {
-        selectedDOs.value = [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
-      }
-
-      if (currentPlan.value) {
-        headerForm.plan_description = currentPlan.value.plan_description ?? ''
-        headerForm.notes            = currentPlan.value.notes ?? ''
-
-        const firstParam = currentPlan.value.capacity_params?.[0]
-        if (firstParam) {
-          selectedLineId.value = firstParam.line_id
-        }
-      }
+    if (currentPlan.value?.details) {
+      selectedDOs.value = [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
+    }
+    if (currentPlan.value) {
+      headerForm.plan_description = currentPlan.value.plan_description ?? ''
+      headerForm.notes            = currentPlan.value.notes ?? ''
+      syncEditParamForm()
     }
   },
   { immediate: true },
@@ -559,7 +536,7 @@ watch(
                 color="error"
                 variant="soft"
                 :loading="saving"
-                @click="openRejectConfirm"
+                @click="rejectDialog.open = true"
               />
             </template>
           </div>
@@ -571,8 +548,8 @@ watch(
           color="error"
           variant="soft"
           icon="i-lucide-alert-triangle"
-          title="Status Overall: IMPOSSIBLE"
-          description="Capacity is insufficient to meet all requests. Edit parameters in the Capacity tab and recalculate."
+          title="Capacity Status: IMPOSSIBLE"
+          description="Capacity is insufficient to meet all requests. Add Calendar Adjustments or edit parameters, then recalculate."
         />
         <UAlert
           v-if="!isCreate && hasUnrouted && isEditable"
@@ -587,17 +564,15 @@ watch(
           color="error"
           variant="soft"
           icon="i-lucide-x-circle"
-          :title="`Rejected by ${currentPlan.rejected_by ?? 'Supervisor'}`"
-          :description="currentPlan.rejection_reason"
+          :title="`Rejected: ${currentPlan.rejection_reason}`"
         />
 
-        <!-- SECTION 1: PLAN INFORMATION -->
+        <!-- PLAN INFO CARD -->
         <PlanInfoCard
           :is-create="isCreate"
           :is-detail="isEditable"
           :current-plan="currentPlan"
           :pending-dos="selectedDOItems"
-          :do-references="[]"
           :header-form="headerForm"
           :saving="saving"
           :fmt-date="fmtDate"
@@ -608,7 +583,7 @@ watch(
           @remove-do="toggleDO"
         />
 
-        <!-- SECTION 2: DELIVERY ORDERS (create mode) -->
+        <!-- DELIVERY ORDERS (create mode) -->
         <PlanDOSection
           v-if="isCreate"
           :selected-do-items="selectedDOItems"
@@ -618,14 +593,11 @@ watch(
           @remove="toggleDO"
         />
 
-        <!-- SECTION 3: TABS (detail/edit mode) -->
+        <!-- TABS (detail / edit mode) -->
         <PlanTabsSection
           v-if="!isCreate"
           :current-plan="currentPlan"
-          :selected-line-id="selectedLineId"
-          :lines="lines"
-          :line-params="lineParams"
-          :loading-params="loadingParams"
+          :calendar-preview="calendarPreview"
           :edit-param-form="editParamForm"
           :loading="loading"
           :saving="saving"
@@ -638,19 +610,20 @@ watch(
           :overall-status-label="overallStatusLabel"
           :overall-status-color="overallStatusColor"
           :detail-status-color="detailStatusColor"
-          @update:selected-line-id="selectedLineId = $event"
-          @save-base="handleSaveBase"
           @save-param-edit="handleSaveParamEdit"
           @calculate="openConfirm({
             title: 'Recalculate Capacity',
-            description: 'Capacity will be recalculated for this line. Do you want to proceed?',
+            description: 'Capacity will be recalculated based on current parameters and calendar adjustments. Proceed?',
             action: handleCalculate,
           })"
           @calculate-all="openConfirm({
-            title: 'Recalculate All Lines',
-            description: 'All lines will be recalculated. This may take some time. Do you want to proceed?',
+            title: 'Recalculate Capacity',
+            description: 'Capacity will be recalculated based on current parameters and calendar adjustments. Proceed?',
             action: handleCalculateAll,
           })"
+          @add-adjustment="handleAddAdjustment"
+          @update-adjustment="handleUpdateAdjustment"
+          @delete-adjustment="handleDeleteAdjustment"
         />
 
         <PlanDOModal
@@ -673,9 +646,9 @@ watch(
         />
 
         <RejectDialog
-          v-model:open="reject.open"
-          :title="reject.title"
-          :description="reject.description"
+          v-model:open="rejectDialog.open"
+          :title="rejectDialog.title"
+          :description="rejectDialog.description"
           :loading="saving"
           required
           @confirm="handleReject"

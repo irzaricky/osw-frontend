@@ -17,7 +17,6 @@ const props = defineProps<{
   fmtDate:     (d?: string | null) => string
   fmtNum:      (n?: number | null) => string
   pendingDos:  AvailableDO[]
-  doReferences: any[]
   approvedOriginalPlans?: { id: number; plan_number: string; plan_month: string }[]
 }>()
 
@@ -30,15 +29,15 @@ const emit = defineEmits<{
 function fmtPlanMonth(plan_month?: string): string {
   if (!plan_month) return '-'
   const [year, month] = plan_month.split('-')
-  const date = new Date(Number(year), Number(month) - 1, 1)
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  return new Date(Number(year), Number(month) - 1, 1)
+    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
 function getPlanMonthOptions() {
   const options: { label: string; value: string }[] = []
   const now = new Date()
   for (let i = 0; i <= 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    const d     = new Date(now.getFullYear(), now.getMonth() + i, 1)
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     options.push({ label, value })
@@ -75,7 +74,7 @@ const uniqueDoIds = computed(() => {
       <UBadge v-else-if="isDetail" label="Edit Mode" color="warning" variant="soft" size="sm" />
     </div>
 
-    <!-- Info bar (detail/edit mode) -->
+    <!-- Summary bar (detail / edit mode) -->
     <div
       v-if="!isCreate && currentPlan"
       class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-8 divide-x divide-default border-b border-default"
@@ -109,7 +108,7 @@ const uniqueDoIds = computed(() => {
         <p class="text-sm font-semibold">{{ fmtDate(currentPlan.latest_delivery_date) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Product</p>
+        <p class="text-xs text-muted">Total Products</p>
         <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_products) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
@@ -117,7 +116,7 @@ const uniqueDoIds = computed(() => {
         <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_qty_request) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Available Qty</p>
+        <p class="text-xs text-muted">Total Capacity Qty</p>
         <p
           class="text-sm font-semibold"
           :class="{
@@ -133,7 +132,6 @@ const uniqueDoIds = computed(() => {
     <!-- Form fields -->
     <div class="px-5 py-4 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
         <UFormField v-if="isCreate" label="Plan Type" required>
           <USelect
             v-model="headerForm.plan_type"
@@ -164,7 +162,7 @@ const uniqueDoIds = computed(() => {
 
         <UFormField
           v-if="isCreate && headerForm.plan_type === 'AMENDMENT'"
-          label="Parent Plan (Original Approved)"
+          label="Parent Plan (Approved Original)"
           required
         >
           <USelect
@@ -179,10 +177,7 @@ const uniqueDoIds = computed(() => {
             class="w-full"
             :disabled="saving || !(approvedOriginalPlans ?? []).length"
           />
-          <p
-            v-if="!(approvedOriginalPlans ?? []).length"
-            class="text-xs text-muted mt-1"
-          >
+          <p v-if="!(approvedOriginalPlans ?? []).length" class="text-xs text-muted mt-1">
             No approved Original plans available.
           </p>
         </UFormField>
@@ -190,7 +185,7 @@ const uniqueDoIds = computed(() => {
         <UFormField label="Plan Description">
           <UInput
             v-model="headerForm.plan_description"
-            placeholder="Example: March 2026 Production Batch"
+            placeholder="e.g. March 2026 Production Batch"
             class="w-full"
             :disabled="(!isCreate && !isDetail) || saving"
           />
@@ -205,7 +200,7 @@ const uniqueDoIds = computed(() => {
         </UFormField>
       </div>
 
-      <!-- DO reference row (detail/edit mode) -->
+      <!-- DO reference chips (detail / edit mode) -->
       <div v-if="!isCreate && uniqueDoIds.length" class="space-y-1.5">
         <p class="text-xs text-muted font-medium flex items-center gap-1.5">
           <UIcon name="i-lucide-link-2" class="w-3.5 h-3.5" />

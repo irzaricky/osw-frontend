@@ -1,8 +1,12 @@
-export type PlanStatus    = 'Draft' | 'Pending_Approval' | 'Approved' | 'Rejected'
-export type OverallStatus = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
-export type DetailStatus  = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
-export type ParamType     = 'base' | 'adjusted'
-export type PlanType      = 'ORIGINAL' | 'AMENDMENT'
+export type PlanStatus     = 'Draft' | 'Pending_Approval' | 'Approved' | 'Rejected'
+export type OverallStatus  = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
+export type DetailStatus   = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
+export type ParamType      = 'base' | 'adjusted'
+export type PlanType       = 'ORIGINAL' | 'AMENDMENT'
+export type AdjustmentType = 'ADD_SHIFT' | 'ADD_OVERTIME'
+
+// Master calendar day status used to distinguish working day / holiday / uninitialized in the calendar grid.
+export type MasterDayStatus = 'WORKING_DAY' | 'HOLIDAY' | 'UNINITIALIZED'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Production Plan
@@ -36,11 +40,12 @@ export interface ProductionPlan {
   details?:                PlanDetail[]
   capacity_params?:        CapacityParam[]
   capacity_results?:       CapacityResult[]
+  calendar_adjustments?:   CalendarAdjustment[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Plan detail — satu baris per (customer, part, delivery_date)
-// assigned_line_id & routing_id di-auto-assign dari routing aktif saat create/sync
+// Plan detail — one row per (customer, part, delivery_date)
+// assigned_line_id & routing_id are auto-assigned from active routing on create/sync
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PlanDetail {
@@ -67,8 +72,8 @@ export interface PlanDetail {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Capacity params — snapshot dari s_line_capacity_params
-// param_type: 'base' (dari master default) atau 'adjusted' (setelah diubah manual)
+// Capacity params — snapshot from s_line_capacity_params
+// param_type: 'base' (from master default) or 'adjusted' (after manual edit)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CapacityParam {
@@ -104,6 +109,36 @@ export interface CapacityResult {
   total_capacity_units:   number
   calculated_at?:         string | null
   line?:                  { id: number; name: string }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar adjustment — per-plan calendar override entry
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CalendarAdjustment {
+  id:                  number
+  plan_id:             number
+  date:                string
+  adjustment_type:     AdjustmentType
+  shift_id?:           number | null
+  overtime_minutes?:   number | null
+  reason:              string
+  inherited_from_plan?: number | null
+  shift?:              { id: number; name: string; shift_number: number } | null
+  created_at?:         string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar preview — per-date view combining base calendar + adjustments.
+// master_status: day status from line master calendar, used for grid coloring and determining valid adjustment actions.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CalendarDayPreview {
+  date:          string
+  is_holiday:    boolean
+  master_status: MasterDayStatus
+  base_shifts:   { shift_id: number; shift?: { id: number; shift_number: number; name: string }; date_event: string }[]
+  adjustments:   CalendarAdjustment[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,23 +208,30 @@ export interface SyncDOsPayload {
   do_ids: number[]
 }
 
-export interface CapacityParamPayload {
-  line_id: number
-}
-
 export interface UpdateCapacityParamPayload {
-  line_id:                 number
-  working_days?:           number
-  shifts_per_day?:         number
+  line_id:                  number
+  working_days?:            number
+  shifts_per_day?:          number
   working_hours_per_shift?: number
-  manpower?:               number
-  efficiency_factor?:      number
-  overtime_hours?:         number
-  max_takt_time?:          number
+  manpower?:                number
+  efficiency_factor?:       number
+  overtime_hours?:          number
+  max_takt_time?:           number
 }
 
 export interface CalculateCapacityPayload {
   line_id: number
+}
+
+// shift_number (bukan shift_id): backend addCalendarAdjustment menerima urutan
+// shift (1/2/3/dst), sesuai payload yang dikirim dari PlanCapacityTabs.vue
+// (lihat handleSubmit -> emit('add-adjustment', { shift_number, ... })).
+export interface AddCalendarAdjustmentPayload {
+  date:              string
+  adjustment_type:   AdjustmentType
+  shift_number?:     number | null
+  overtime_minutes?: number | null
+  reason:            string
 }
 
 export interface ApprovePayload {
@@ -201,7 +243,7 @@ export interface RejectPayload {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calculation result (response calculateCapacity)
+// Calculation result (response from calculateCapacity)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CalculationResult {
@@ -215,14 +257,11 @@ export interface CalculationResult {
   capacity_gap_minutes:       number
   utilization_pct:            number
   capacity_info: {
-    max_takt_time_seconds:   number
-    capacity_per_hour:       number
-    regular_minutes:         number
-    overtime_minutes:        number
-    available_minutes:       number
-    cap_per_shift:           number
-    cap_per_day:             number
-    effective_min_per_shift: number
+    max_takt_time_seconds:          number
+    capacity_per_hour:              number
+    effective_total_cap_minutes:    number
+    effective_total_cap_units:      number
+    has_calendar_adjustments:       boolean
   }
   params_used: {
     param_type:              ParamType

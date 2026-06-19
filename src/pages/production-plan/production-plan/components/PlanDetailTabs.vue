@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import type { PlanDetail } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
@@ -13,20 +13,87 @@ const props = defineProps<{
   detailStatusColor:  (s?: string | null) => string
 }>()
 
+const ALL_VALUE = 'all'
+
+// ─── Filter state ─────────────────────────────────────────────────────────────
+const filterCustomer = ref<string>(ALL_VALUE)
+const filterProduct  = ref<string>(ALL_VALUE)
+const currentPage    = ref<number>(1)
+const PAGE_SIZE      = 5
+
+// ─── Derived: unique customer list from details ───────────────────────────────
+const customerOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const d of (props.currentPlan?.details ?? [])) {
+    if (d.customer?.id && d.customer?.name) {
+      map.set(d.customer.id, d.customer.name)
+    }
+  }
+  return [{ id: ALL_VALUE, name: 'All Customer' }, ...[...map.entries()].map(([id, name]) => ({ id: String(id), name }))]
+})
+
+// ─── Derived: unique product list (optionally filtered by customer) ───────────
+const productOptions = computed(() => {
+  const map = new Map<number, string>()
+  for (const d of (props.currentPlan?.details ?? [])) {
+    if (filterCustomer.value !== ALL_VALUE && String(d.customer?.id) !== filterCustomer.value) continue
+    if (d.part?.id) {
+      map.set(d.part.id, `${d.part.part_number} – ${d.part.part_name}`)
+    }
+  }
+  return [{ id: ALL_VALUE, label: 'All Product' }, ...[...map.entries()].map(([id, label]) => ({ id: String(id), label }))]
+})
+
+// ─── Filtered details ─────────────────────────────────────────────────────────
+const filteredDetails = computed<PlanDetail[]>(() => {
+  let list: PlanDetail[] = props.currentPlan?.details ?? []
+
+  if (filterCustomer.value !== ALL_VALUE) {
+    list = list.filter(d => String(d.customer?.id) === filterCustomer.value)
+  }
+  if (filterProduct.value !== ALL_VALUE) {
+    list = list.filter(d => String(d.part?.id) === filterProduct.value)
+  }
+  return list
+})
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredDetails.value.length / PAGE_SIZE)))
+
+const pagedDetails = computed<PlanDetail[]>(() => {
+  const start = (currentPage.value - 1) * PAGE_SIZE
+  return filteredDetails.value.slice(start, start + PAGE_SIZE)
+})
+
+// Reset ke halaman 1 saat filter berubah
+function onFilterChange() {
+  currentPage.value = 1
+  // Reset filter produk saat customer berubah
+}
+function onCustomerChange() {
+  filterProduct.value = ALL_VALUE
+  currentPage.value   = 1
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function getCapacity(detail: PlanDetail): number | null {
-  if (detail.qty_capacity == null) return null
-  return detail.qty_capacity
+  return detail.qty_capacity ?? null
 }
 
 function getGap(detail: PlanDetail): number | null {
-  const cap = getCapacity(detail)
-  if (cap === null) return null
-  return cap - detail.qty_request
+  return detail.capacity_gap ?? null
+}
+
+// Urutan baris aktual di seluruh filtered list (bukan per-halaman)
+function rowIndex(detail: PlanDetail): number {
+  return filteredDetails.value.indexOf(detail) + 1
 }
 </script>
 
 <template>
   <div class="mt-4 bg-default border border-default rounded-xl">
+
+    <!-- Header + status badge -->
     <div class="flex items-center justify-between px-5 py-4 border-b border-default">
       <div>
         <h3 class="font-semibold text-sm flex items-center gap-2">
@@ -37,16 +104,64 @@ function getGap(detail: PlanDetail): number | null {
           Products requested from Delivery Orders. Lines are auto-assigned from part routing.
         </p>
       </div>
-      <div class="flex items-center gap-2">
-        <UBadge
-          v-if="currentPlan?.overall_status"
-          :label="overallStatusLabel[currentPlan.overall_status]"
-          :color="overallStatusColor[currentPlan.overall_status]"
-          variant="soft"
-        />
-      </div>
+      <UBadge
+        v-if="currentPlan?.overall_status"
+        :label="overallStatusLabel[currentPlan.overall_status]"
+        :color="overallStatusColor[currentPlan.overall_status]"
+        variant="soft"
+      />
     </div>
 
+    <!-- Filter bar -->
+    <div class="px-5 py-3 border-b border-default bg-elevated/40 flex flex-wrap items-center gap-3">
+      <!-- Customer filter -->
+      <div class="flex items-center gap-2 min-w-[200px]">
+        <UIcon name="i-lucide-building-2" class="w-3.5 h-3.5 text-muted flex-shrink-0" />
+        <USelect
+          v-model="filterCustomer"
+          :items="customerOptions"
+          value-key="id"
+          label-key="name"
+          size="sm"
+          class="w-full"
+          placeholder="All Customers"
+          @change="onCustomerChange"
+        />
+      </div>
+
+      <!-- Product filter -->
+      <div class="flex items-center gap-2 min-w-[240px]">
+        <UIcon name="i-lucide-package" class="w-3.5 h-3.5 text-muted flex-shrink-0" />
+        <USelect
+          v-model="filterProduct"
+          :items="productOptions"
+          value-key="id"
+          label-key="label"
+          size="sm"
+          class="w-full"
+          placeholder="All Products"
+          @change="onFilterChange"
+        />
+      </div>
+
+      <!-- Clear filters -->
+      <UButton
+        v-if="filterCustomer !== ALL_VALUE || filterProduct !== ALL_VALUE"
+        label="Reset"
+        icon="i-lucide-x"
+        variant="ghost"
+        color="neutral"
+        size="sm"
+        @click="filterCustomer = ALL_VALUE; filterProduct = ALL_VALUE; currentPage = 1"
+      />
+
+      <!-- Result count -->
+      <p class="text-xs text-muted ml-auto">
+        {{ filteredDetails.length }} from {{ currentPlan?.details?.length ?? 0 }} item
+      </p>
+    </div>
+
+    <!-- Table -->
     <div class="overflow-x-auto">
       <table class="w-full text-sm">
         <thead class="bg-elevated border-b border-default">
@@ -63,23 +178,36 @@ function getGap(detail: PlanDetail): number | null {
           </tr>
         </thead>
         <tbody class="divide-y divide-default">
+          <!-- Loading state -->
           <tr v-if="loading">
             <td colspan="9" class="text-center py-10 text-muted">
               <UIcon name="i-lucide-loader-2" class="w-5 h-5 animate-spin inline-block mr-2" />
               Loading data...
             </td>
           </tr>
+
+          <!-- Empty from source -->
           <tr v-else-if="!currentPlan?.details?.length">
             <td colspan="9" class="text-center py-10 text-muted text-sm">
               No request details found.
             </td>
           </tr>
+
+          <!-- Empty from filter -->
+          <tr v-else-if="!filteredDetails.length">
+            <td colspan="9" class="text-center py-10 text-muted text-sm">
+              <UIcon name="i-lucide-search-x" class="w-5 h-5 inline-block mr-1.5 mb-0.5" />
+              No data matches the current filter.
+            </td>
+          </tr>
+
+          <!-- Data rows -->
           <tr
-            v-for="(detail, idx) in currentPlan?.details"
+            v-for="detail in pagedDetails"
             :key="detail.id"
             class="hover:bg-elevated/50 transition-colors"
           >
-            <td class="px-4 py-3 text-muted">{{ idx + 1 }}</td>
+            <td class="px-4 py-3 text-muted">{{ rowIndex(detail) }}</td>
             <td class="px-4 py-3 font-medium">{{ detail.customer?.name ?? '-' }}</td>
             <td class="px-4 py-3">
               <div class="font-medium">{{ detail.part?.part_name ?? '-' }}</div>
@@ -126,7 +254,7 @@ function getGap(detail: PlanDetail): number | null {
             <td class="px-4 py-3 text-center">
               <UBadge
                 :label="
-                  detail.status === 'POSSIBLE'   ? 'POSSIBLE'
+                  detail.status === 'POSSIBLE'    ? 'POSSIBLE'
                   : detail.status === 'IMPOSSIBLE' ? 'IMPOSSIBLE'
                     : 'Not Calculated'
                 "
@@ -138,6 +266,53 @@ function getGap(detail: PlanDetail): number | null {
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="filteredDetails.length > PAGE_SIZE"
+      class="flex items-center justify-between px-5 py-3 border-t border-default"
+    >
+      <p class="text-xs text-muted">
+        Page {{ currentPage }} from {{ totalPages }}
+        &nbsp;·&nbsp;
+        {{ filteredDetails.length }} item
+      </p>
+      <div class="flex items-center gap-1">
+        <UButton
+          icon="i-lucide-chevron-first"
+          variant="ghost"
+          color="neutral"
+          size="xs"
+          :disabled="currentPage === 1"
+          @click="currentPage = 1"
+        />
+        <UButton
+          icon="i-lucide-chevron-left"
+          variant="ghost"
+          color="neutral"
+          size="xs"
+          :disabled="currentPage === 1"
+          @click="currentPage--"
+        />
+        <span class="text-xs font-mono px-2">{{ currentPage }} / {{ totalPages }}</span>
+        <UButton
+          icon="i-lucide-chevron-right"
+          variant="ghost"
+          color="neutral"
+          size="xs"
+          :disabled="currentPage === totalPages"
+          @click="currentPage++"
+        />
+        <UButton
+          icon="i-lucide-chevron-last"
+          variant="ghost"
+          color="neutral"
+          size="xs"
+          :disabled="currentPage === totalPages"
+          @click="currentPage = totalPages"
+        />
+      </div>
     </div>
   </div>
 </template>

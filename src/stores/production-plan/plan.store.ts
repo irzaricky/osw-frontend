@@ -4,12 +4,13 @@ import productionPlanService from '../../services/production-plan/plan.service'
 import type {
   ProductionPlan,
   AvailableDO,
+  CalendarDayPreview,
   PlanListParams,
   CreatePlanPayload,
   UpdatePlanPayload,
-  CapacityParamPayload,
   UpdateCapacityParamPayload,
   CalculateCapacityPayload,
+  AddCalendarAdjustmentPayload,
   ApprovePayload,
   RejectPayload,
   CalculationResult,
@@ -20,6 +21,7 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
   const plans        = ref<ProductionPlan[]>([])
   const currentPlan  = ref<ProductionPlan | null>(null)
   const availableDOs = ref<AvailableDO[]>([])
+  const calendarPreview = ref<CalendarDayPreview[]>([])
 
   const dropdown = ref<Pick<ProductionPlan,
     'id' | 'plan_number' | 'plan_month' | 'plan_type' | 'parent_plan_id' | 'parent_plan' |
@@ -99,22 +101,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  async function syncDOs(id: number | string, payload: { do_ids: number[] }) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await productionPlanService.syncDOs(id, payload)
-      return data
-    }
-    catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    }
-    finally {
-      saving.value = false
-    }
-  }
-
   async function createPlan(payload: CreatePlanPayload) {
     saving.value = true
     error.value  = null
@@ -150,6 +136,22 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
+  async function syncDOs(id: number | string, payload: { do_ids: number[] }) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.syncDOs(id, payload)
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
+    }
+  }
+
   async function deletePlan(id: number | string) {
     saving.value = true
     error.value  = null
@@ -166,33 +168,12 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  async function saveCapacityParams(id: number | string, payload: CapacityParamPayload) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await productionPlanService.saveCapacityParams(id, payload)
-      if (data.status) {
-        await fetchPlan(id)
-      }
-      return data
-    }
-    catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    }
-    finally {
-      saving.value = false
-    }
-  }
-
   async function updateCapacityParams(id: number | string, payload: UpdateCapacityParamPayload) {
     saving.value = true
     error.value  = null
     try {
       const { data } = await productionPlanService.updateCapacityParams(id, payload)
-      if (data.status) {
-        await fetchPlan(id)
-      }
+      if (data.status) await fetchPlan(id)
       return data
     }
     catch (e: any) {
@@ -241,6 +222,83 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
     finally {
       calculating.value = false
+    }
+  }
+
+  async function fetchCalendarPreview(id: number | string) {
+    loading.value = true
+    error.value   = null
+    try {
+      const { data } = await productionPlanService.getCalendarPreview(id)
+      if (data.status) calendarPreview.value = data.data?.calendar ?? []
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      loading.value = false
+    }
+  }
+
+  async function addCalendarAdjustment(id: number | string, payload: AddCalendarAdjustmentPayload) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.addCalendarAdjustment(id, payload)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
+    }
+  }
+
+  async function updateCalendarAdjustment(id: number | string, adjustment_id: number, payload: { overtime_minutes: number }) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.updateCalendarAdjustment(id, adjustment_id, payload)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
+    }
+  }
+  
+  async function deleteCalendarAdjustment(id: number | string, adjustment_id: number) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.deleteCalendarAdjustment(id, adjustment_id)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
     }
   }
 
@@ -304,12 +362,14 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
   function clearCurrentPlan() {
     currentPlan.value       = null
     calculationResult.value = null
+    calendarPreview.value   = []
   }
 
   return {
     plans,
     currentPlan,
     availableDOs,
+    calendarPreview,
     dropdown,
     calculationResult,
     meta,
@@ -322,14 +382,17 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     fetchPlan,
     fetchDropdown,
     fetchAvailableDOs,
-    syncDOs,
     createPlan,
     updatePlan,
+    syncDOs,
     deletePlan,
-    saveCapacityParams,
     updateCapacityParams,
     calculateCapacity,
     calculateAllCapacity,
+    fetchCalendarPreview,
+    addCalendarAdjustment,
+    updateCalendarAdjustment,
+    deleteCalendarAdjustment,
     submitForApproval,
     approve,
     reject,

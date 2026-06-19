@@ -1,43 +1,46 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import DetailsTab  from './PlanDetailTabs.vue'
 import CapacityTab from './PlanCapacityTabs.vue'
 
 defineProps<{
-  currentPlan:      any
-  selectedLineId:   number | undefined
-  lines:            any
-  lineParams:       any
-  loadingParams:    boolean
-  editParamForm:    any
-  loading:          boolean
-  saving:           boolean
-  calculating:      boolean
-  calculatingAll:   boolean
-  isEditable:       boolean
-  planId:           number | null
-  fmtDate:          (d?: string | null) => string
-  fmtNum:           (n?: number | null) => string
+  currentPlan:        any
+  calendarPreview:    any[]
+  editParamForm:      any
+  loading:            boolean
+  saving:             boolean
+  calculating:        boolean
+  calculatingAll:     boolean
+  isEditable:         boolean
+  planId:             number | null
+  fmtDate:            (d?: string | null) => string
+  fmtNum:             (n?: number | null) => string
   overallStatusLabel: Record<string, string>
   overallStatusColor: Record<string, string>
   detailStatusColor:  (s?: string | null) => string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:selectedLineId', val: number | undefined): void
-  (e: 'save-base'): void
   (e: 'save-param-edit'): void
   (e: 'calculate'): void
   (e: 'calculate-all'): void
+  (e: 'add-adjustment', payload: any): void
+  (e: 'update-adjustment', id: number, payload: any): void
+  (e: 'delete-adjustment', id: number): void
 }>()
 
+// value diberikan eksplisit (bukan mengandalkan fallback index "0"/"1" dari Nuxt UI)
+// supaya TabsRoot punya identitas item yang stabil saat reconciling/roving-focus.
 const tabs = [
-  { slot: 'details'  as const, label: 'Request Details',   icon: 'i-lucide-list' },
-  { slot: 'capacity' as const, label: 'Capacity Settings', icon: 'i-lucide-settings-2' },
+  { slot: 'details'  as const, value: 'details',  label: 'Request Details',  icon: 'i-lucide-list' },
+  { slot: 'capacity' as const, value: 'capacity', label: 'Capacity Settings', icon: 'i-lucide-settings-2' },
 ]
+
+const activeTab = ref('details')
 </script>
 
 <template>
-  <UTabs :items="tabs" variant="link" class="w-full">
+  <UTabs v-model="activeTab" :items="tabs" variant="link" class="w-full">
     <template #details>
       <DetailsTab
         :loading="loading"
@@ -54,24 +57,22 @@ const tabs = [
     <template #capacity>
       <CapacityTab
         :current-plan="currentPlan"
-        :selected-line-id="selectedLineId"
-        :lines="lines"
-        :line-params="lineParams"
-        :loading-params="loadingParams"
         :edit-param-form="editParamForm"
+        :calendar-preview="calendarPreview"
         :saving="saving"
         :calculating="calculating"
         :calculating-all="calculatingAll"
         :is-editable="isEditable"
-        :plan-id="planId"
         :fmt-num="fmtNum"
+        :fmt-date="fmtDate"
         :overall-status-label="overallStatusLabel"
         :overall-status-color="overallStatusColor"
-        @update:selected-line-id="emit('update:selectedLineId', $event)"
-        @save-base="emit('save-base')"
         @save-param-edit="emit('save-param-edit')"
         @calculate="emit('calculate')"
         @calculate-all="emit('calculate-all')"
+        @add-adjustment="emit('add-adjustment', $event)"
+        @update-adjustment="(id, payload) => emit('update-adjustment', id, payload)"
+        @delete-adjustment="emit('delete-adjustment', $event)"
       />
     </template>
   </UTabs>
