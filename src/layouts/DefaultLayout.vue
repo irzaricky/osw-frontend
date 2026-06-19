@@ -420,15 +420,6 @@ const staticLinks = [[{
         open.value = false
       }
     },
-    {
-      label: 'Station Buffer',
-      icon: 'i-lucide-factory',
-      to: '/warehouse/station-buffer',
-
-      onSelect: () => {
-        open.value = false
-      }
-    },
   ]
 }], []] satisfies NavigationMenuItem[][]
 

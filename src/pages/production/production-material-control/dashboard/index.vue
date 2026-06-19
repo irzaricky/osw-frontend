@@ -4,9 +4,15 @@ import { storeToRefs } from 'pinia'
 
 import Breadcrumbs from '../../../../components/Breadcrumbs.vue'
 import { useProductionMaterialDashboardStore } from '../../../../stores/production/production-material-dashboard.store'
+import { useProductionMaterialBufferTransactionStore } from '../../../../stores/production/production-material-buffer-transaction.store'
+import BufferTransactionTable from './components/BufferTransactionTable.vue'
+
 
 const store = useProductionMaterialDashboardStore()
+const bufferTransactionStore =
+  useProductionMaterialBufferTransactionStore()
 const { summary, loading } = storeToRefs(store)
+const { transactions, loading: transactionLoading, meta: transactionMeta } = storeToRefs(bufferTransactionStore)
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -70,8 +76,18 @@ const dashboardStatus = computed(() => {
   }
 })
 
+function handleTransactionPage(page: number) {
+  transactionMeta.value.page = page
+
+  bufferTransactionStore.fetchTransactions({
+    page: transactionMeta.value.page,
+    limit: transactionMeta.value.limit
+  })
+}
+
 onMounted(() => {
-  store.fetchDashboard()
+  store.fetchDashboard(),
+  bufferTransactionStore.fetchTransactions()
 })
 </script>
 
@@ -446,4 +462,15 @@ onMounted(() => {
       :description="`${summary.need_replenishment_items} buffer item(s) are below standard buffer stock.`"
     />
   </div>
+  <div>
+</div>
+
+<BufferTransactionTable
+  :data="transactions"
+  :loading="transactionLoading"
+  :page="transactionMeta.page"
+  :limit="transactionMeta.limit"
+  :total="transactionMeta.total"
+  @update:page="handleTransactionPage"
+/>
 </template>

@@ -94,6 +94,10 @@ const productionMaterialControlService = {
   getProductionWoMaterialLabels(productionWoId: number | string) {
     return api.get(`/production/production-material-control/production-wos/${productionWoId}/material-labels`)
   },
+
+  getBufferTransactions(params?: Record<string, any>) {
+    return api.get('/production/production-material-control/buffer-transactions', { params })
+  }
 }
 
 export default productionMaterialControlService
