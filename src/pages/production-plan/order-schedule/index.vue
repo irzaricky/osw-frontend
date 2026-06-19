@@ -185,7 +185,7 @@ onMounted(() => {
 
         <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
           <div class="text-sm text-muted">
-            Total {{ meta.total }} production order(s).
+            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} production order(s)
           </div>
           <UPagination
             v-model:page="meta.page"

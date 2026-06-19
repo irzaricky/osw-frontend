@@ -198,6 +198,31 @@ const isEditable    = computed(() => order.value?.status === 'Draft')
 
 const pct = computed(() => scheduledPct(order.value?.total_planned_qty ?? 0, order.value?.total_scheduled_qty ?? 0))
 
+// ── Overtime summary ───────────────────────────────────────────────────────────
+// has_overtime / overtime_qty di-derive server-side per baris POSchedule (lihat
+// tipe POSchedule). Dipakai untuk: badge "OT" per baris di Schedule Table,
+// ring oranye + tooltip di Gantt Chart, dan badge agregat di header.
+const overtimeSchedules = computed(() => (order.value?.schedules ?? []).filter(s => s.has_overtime))
+const overtimeShiftsCount = computed(() => overtimeSchedules.value.length)
+const totalOvertimeQty = computed(() => overtimeSchedules.value.reduce((sum, s) => sum + (s.overtime_qty ?? 0), 0))
+
+/** Tooltip teks untuk satu cell schedule di Gantt Chart, termasuk info overtime jika ada. */
+function scheduleTooltip(sched: POSchedule): string {
+  const shiftLabel = sched.shift?.name ?? sched.shift_name_snapshot ?? 'Shift'
+  const parts = [
+    isEditable.value ? 'Click to edit —' : null,
+    shiftLabel,
+    `| Qty: ${sched.planned_qty_per_day}`,
+    `| Util: ${sched.utilization_pct ?? '—'}%`,
+  ].filter(Boolean) as string[]
+
+  if (sched.has_overtime) {
+    parts.push(`| OT Qty: ${fmtNum(sched.overtime_qty ?? 0)}`)
+  }
+
+  return parts.join(' ')
+}
+
 const ganttDates = computed(() => {
   if (!order.value?.production_start_date || !order.value?.production_end_date) return []
   return dateRangeColumns(order.value.production_start_date, order.value.production_end_date)
@@ -277,6 +302,105 @@ const resourceRows = computed(() => {
 
     return { lineName, byDate: byDateResult }
   })
+})
+
+// ── Pagination: Products ───────────────────────────────────────────────────────
+const PAGE_SIZE = 10
+
+const productsPage = ref(1)
+const productsSearch = ref('')
+const productsCustomerFilter = ref<string | undefined>(undefined)
+
+const productCustomerOptions = computed(() => {
+  const customers = new Set((order.value?.products ?? []).map(p => p.customer?.name).filter(Boolean) as string[])
+  return [...customers]
+})
+
+const filteredProducts = computed(() => {
+  let items = order.value?.products ?? []
+  if (productsSearch.value) {
+    const q = productsSearch.value.toLowerCase()
+    items = items.filter(p =>
+      p.part?.part_number?.toLowerCase().includes(q) ||
+      p.part?.part_name?.toLowerCase().includes(q) ||
+      p.customer?.name?.toLowerCase().includes(q)
+    )
+  }
+  if (productsCustomerFilter.value) {
+    items = items.filter(p => p.customer?.name === productsCustomerFilter.value)
+  }
+  return items
+})
+
+const productsTotalPages = computed(() => Math.ceil(filteredProducts.value.length / PAGE_SIZE))
+const paginatedProducts = computed(() => {
+  const start = (productsPage.value - 1) * PAGE_SIZE
+  return filteredProducts.value.slice(start, start + PAGE_SIZE)
+})
+
+watch([productsSearch, productsCustomerFilter], () => { productsPage.value = 1 })
+
+// ── Pagination: Schedule Table ─────────────────────────────────────────────────
+const schedulePage = ref(1)
+const scheduleSearch = ref('')
+const scheduleShiftFilter = ref<string | undefined>(undefined)
+const scheduleStatusFilter = ref<string | undefined>(undefined)
+const scheduleDateRange = ref<Range | undefined>(undefined)
+
+const scheduleShiftOptions = computed(() => {
+  const shifts = new Set((order.value?.schedules ?? []).map(s => s.shift?.name ?? s.shift_name_snapshot).filter(Boolean) as string[])
+  return [...shifts]
+})
+
+const scheduleStatusOptions = computed(() => {
+  const statuses = new Set((order.value?.schedules ?? []).map(s => s.status).filter(Boolean))
+  return [...statuses]
+})
+
+const filteredSchedules = computed(() => {
+  let items = order.value?.schedules ?? []
+  if (scheduleSearch.value) {
+    const q = scheduleSearch.value.toLowerCase()
+    items = items.filter(s =>
+      s.part?.part_number?.toLowerCase().includes(q) ||
+      s.part?.part_name?.toLowerCase().includes(q)
+    )
+  }
+  if (scheduleShiftFilter.value) {
+    items = items.filter(s => (s.shift?.name ?? s.shift_name_snapshot) === scheduleShiftFilter.value)
+  }
+  if (scheduleStatusFilter.value) {
+    items = items.filter(s => s.status === scheduleStatusFilter.value)
+  }
+  if (scheduleDateRange.value?.start || scheduleDateRange.value?.end) {
+    const start = scheduleDateRange.value.start ? formatLocalDate(scheduleDateRange.value.start) : null
+    const end   = scheduleDateRange.value.end   ? formatLocalDate(scheduleDateRange.value.end)   : null
+    items = items.filter(s => {
+      if (start && s.production_date < start) return false
+      if (end   && s.production_date > end)   return false
+      return true
+    })
+  }
+  return items
+})
+
+const scheduleTotalPages = computed(() => Math.ceil(filteredSchedules.value.length / PAGE_SIZE))
+const paginatedSchedules = computed(() => {
+  const start = (schedulePage.value - 1) * PAGE_SIZE
+  return filteredSchedules.value.slice(start, start + PAGE_SIZE)
+})
+
+watch([scheduleSearch, scheduleShiftFilter, scheduleStatusFilter, scheduleDateRange], () => {
+  schedulePage.value = 1
+})
+
+// ── Pagination: Reschedule Logs ────────────────────────────────────────────────
+const logsPage = ref(1)
+const logsTotalPages = computed(() => Math.ceil((order.value?.reschedule_logs?.length ?? 0) / PAGE_SIZE))
+const paginatedLogs = computed(() => {
+  const items = order.value?.reschedule_logs ?? []
+  const start = (logsPage.value - 1) * PAGE_SIZE
+  return items.slice(start, start + PAGE_SIZE)
 })
 
 // ── Data fetch ─────────────────────────────────────────────────────────────────
@@ -391,6 +515,16 @@ onUnmounted(() => store.clearCurrentOrder())
           <h1 class="text-2xl font-bold font-mono">{{ order?.po_number ?? '—' }}</h1>
           <component :is="UBadge" v-if="order" :label="poStatusLabel[order.status]" :color="poStatusColor[order.status]" variant="subtle" />
           <component :is="UBadge" v-if="order" :label="order.priority" :color="priorityColor[order.priority]" variant="soft" size="sm" />
+          <component
+            :is="UBadge"
+            v-if="overtimeShiftsCount > 0"
+            icon="i-lucide-clock-alert"
+            :label="`${overtimeShiftsCount} shift(s) have overtime`"
+            color="warning"
+            variant="subtle"
+            size="sm"
+            :title="`Total overtime qty: ${fmtNum(totalOvertimeQty)}`"
+          />
         </div>
         <p class="text-sm text-muted">
           Plan: <span class="font-mono font-medium">{{ order?.plan?.plan_number ?? '—' }}</span>
@@ -440,7 +574,7 @@ onUnmounted(() => store.clearCurrentOrder())
       icon="i-lucide-alert-circle"
       color="error"
       variant="soft"
-      title="Kapasitas tidak mencukupi"
+      title="Insufficient capacity detected"
     >
       <template #description>
         <ul class="mt-1 space-y-1 text-xs">
@@ -598,38 +732,117 @@ onUnmounted(() => store.clearCurrentOrder())
       </div>
 
       <!-- TAB: Products -->
-      <div v-show="activeTab === 'products'">
+      <div v-show="activeTab === 'products'" class="space-y-4">
         <div v-if="!order.products?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-package-x" class="size-12 opacity-40" />
           <p class="text-sm">No products found in this production order.</p>
         </div>
-        <UTable
-          v-else
-          :data="order.products"
-          :columns="[
-            { header: '#', cell: ({ row }) => row.index + 1 },
-            { accessorKey: 'part', header: 'Part', cell: ({ row }) => `${row.original.part?.part_number ?? '—'} — ${row.original.part?.part_name ?? ''}` },
-            { accessorKey: 'customer', header: 'Customer', cell: ({ row }) => row.original.customer?.name ?? '—' },
-            { accessorKey: 'line', header: 'Line', cell: ({ row }) => row.original.line?.name ?? '—' },
-            { accessorKey: 'delivery_date', header: 'Delivery Date', cell: ({ row }) => fmtDate(row.original.delivery_date) },
-            { accessorKey: 'planned_qty', header: 'Planned Qty', cell: ({ row }) => fmtNum(row.original.planned_qty) },
-            { accessorKey: 'scheduled_qty', header: 'Scheduled Qty', cell: ({ row }) => fmtNum(row.original.scheduled_qty) },
-          ]"
-          class="w-full"
-        />
+        <template v-else>
+          <!-- Filters -->
+          <div class="flex flex-wrap items-center gap-3">
+            <UInput
+              v-model="productsSearch"
+              icon="i-lucide-search"
+              placeholder="Search part number or name..."
+              class="w-full md:w-64"
+            />
+            <USelectMenu
+              v-model="productsCustomerFilter"
+              :items="productCustomerOptions"
+              placeholder="Filter by Customer"
+              class="w-full md:w-48"
+              clear
+            />
+            <span class="text-xs text-muted ml-auto">{{ filteredProducts.length }} result(s)</span>
+          </div>
+
+          <!-- Table -->
+          <div class="overflow-x-auto rounded-lg border border-default">
+            <table class="w-full text-sm">
+              <thead class="bg-elevated">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">#</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Part</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Customer</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Line</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Delivery Date</th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Planned Qty</th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Scheduled Qty</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default">
+                <tr v-for="(product, idx) in paginatedProducts" :key="product.id" class="hover:bg-elevated/50 transition-colors">
+                  <td class="px-3 py-2 text-muted text-xs font-mono">{{ (productsPage - 1) * 10 + idx + 1 }}</td>
+                  <td class="px-3 py-2 text-xs">
+                    <span class="font-mono font-semibold">{{ product.part?.part_number ?? '—' }}</span>
+                    <span class="text-muted block">{{ product.part?.part_name ?? '' }}</span>
+                  </td>
+                  <td class="px-3 py-2 text-xs">{{ product.customer?.name ?? '—' }}</td>
+                  <td class="px-3 py-2 text-xs">{{ product.line?.name ?? '—' }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(product.delivery_date) }}</td>
+                  <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(product.planned_qty) }}</td>
+                  <td class="px-3 py-2 text-right font-mono text-xs">{{ fmtNum(product.scheduled_qty) }}</td>
+                </tr>
+                <tr v-if="!paginatedProducts.length">
+                  <td colspan="7" class="px-3 py-10 text-center text-muted text-sm">No results match the current filters.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <span class="text-xs text-muted">
+              Showing {{ Math.min((productsPage - 1) * 10 + 1, filteredProducts.length) }}–{{ Math.min(productsPage * 10, filteredProducts.length) }} of {{ filteredProducts.length }}
+            </span>
+            <UPagination
+              v-model:page="productsPage"
+              :total="filteredProducts.length"
+              :items-per-page="10"
+            />
+          </div>
+        </template>
       </div>
 
       <!-- TAB: Schedule Table -->
-      <div v-show="activeTab === 'schedule'">
+      <div v-show="activeTab === 'schedule'" class="space-y-4">
         <div v-if="!hasSchedule" class="flex flex-col items-center justify-center py-16 text-muted gap-3">
           <UIcon name="i-lucide-calendar-off" class="size-12 opacity-40" />
           <p class="text-sm">No schedule generated yet.</p>
           <UButton v-if="order.status === 'Draft'" icon="i-lucide-calendar-cog" color="primary" variant="outline" label="Generate Schedule" :loading="saving" @click="handleGenerateSchedule" />
         </div>
         <template v-else>
-          <div class="flex justify-end mb-3">
+          <!-- Toolbar -->
+          <div class="flex flex-wrap items-center gap-3">
+            <UInput
+              v-model="scheduleSearch"
+              icon="i-lucide-search"
+              placeholder="Search part number or name..."
+              class="w-full md:w-64"
+            />
+            <HomeDateRangePicker
+              v-model="scheduleDateRange"
+              class="w-full md:w-72"
+              clear
+            />
+            <USelectMenu
+              v-model="scheduleShiftFilter"
+              :items="scheduleShiftOptions"
+              placeholder="Filter by Shift"
+              class="w-full md:w-40"
+              clear
+            />
+            <USelectMenu
+              v-model="scheduleStatusFilter"
+              :items="scheduleStatusOptions"
+              placeholder="Filter by Status"
+              class="w-full md:w-44"
+              clear
+            />
+            <span class="text-xs text-muted ml-auto">{{ filteredSchedules.length }} row(s)</span>
             <UButton v-if="isEditable" icon="i-lucide-refresh-cw" color="neutral" variant="outline" size="sm" label="Recalculate" :loading="saving" @click="handleRecalculate" />
           </div>
+
           <div class="overflow-x-auto rounded-lg border border-default">
             <table class="w-full text-sm">
               <thead class="bg-elevated">
@@ -649,7 +862,7 @@ onUnmounted(() => store.clearCurrentOrder())
               </thead>
               <tbody class="divide-y divide-default">
                 <tr
-                  v-for="sched in order.schedules" :key="sched.id"
+                  v-for="sched in paginatedSchedules" :key="sched.id"
                   class="hover:bg-elevated/50 transition-colors"
                   :class="{ 'bg-amber-50 dark:bg-amber-950/20': isWeekend(sched.production_date) }"
                 >
@@ -669,14 +882,34 @@ onUnmounted(() => store.clearCurrentOrder())
                   <td class="px-3 py-2 text-right font-mono text-xs text-muted">{{ sched.line_capacity_per_day != null ? fmtNum(sched.line_capacity_per_day) : '—' }}</td>
                   <td class="px-3 py-2 text-right font-mono text-xs" :class="utilClass(sched.utilization_pct)">{{ sched.utilization_pct != null ? `${sched.utilization_pct}%` : '—' }}</td>
                   <td class="px-3 py-2 text-center">
-                    <component :is="UBadge" :label="sched.status.replace('_', ' ')" :color="schedBadgeColor(sched.status)" variant="subtle" size="sm" />
+                    <div class="flex items-center justify-center gap-1">
+                      <component :is="UBadge" :label="sched.status.replace('_', ' ')" :color="schedBadgeColor(sched.status)" variant="subtle" size="sm" />
+                      <span v-if="sched.has_overtime" :title="`Overtime qty: ${fmtNum(sched.overtime_qty ?? 0)}`">
+                        <component :is="UBadge" label="OT" color="warning" variant="solid" size="sm" />
+                      </span>
+                    </div>
                   </td>
                   <td v-if="isEditable" class="px-3 py-2 text-center">
                     <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" @click="openEditSchedule(sched)" />
                   </td>
                 </tr>
+                <tr v-if="!paginatedSchedules.length">
+                  <td :colspan="isEditable ? 11 : 10" class="px-3 py-10 text-center text-muted text-sm">No results match the current filters.</td>
+                </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <span class="text-xs text-muted">
+              Showing {{ Math.min((schedulePage - 1) * 10 + 1, filteredSchedules.length) }}–{{ Math.min(schedulePage * 10, filteredSchedules.length) }} of {{ filteredSchedules.length }}
+            </span>
+            <UPagination
+              v-model:page="schedulePage"
+              :total="filteredSchedules.length"
+              :items-per-page="10"
+            />
           </div>
         </template>
       </div>
@@ -687,55 +920,72 @@ onUnmounted(() => store.clearCurrentOrder())
           <UIcon name="i-lucide-gantt-chart-square" class="size-12 opacity-40" />
           <p class="text-sm">Generate a schedule first to view the Gantt chart.</p>
         </div>
-        <div v-else class="overflow-x-auto rounded-lg border border-default">
-          <table class="text-xs min-w-max">
-            <thead class="bg-elevated sticky top-0 z-10">
-              <tr>
-                <th class="px-3 py-2 text-left font-semibold text-muted uppercase tracking-wide sticky left-0 bg-elevated z-20 min-w-[180px]">Product / Part</th>
-                <th
-                  v-for="date in ganttDates" :key="date"
-                  class="px-1 py-2 text-center font-semibold text-muted min-w-[72px]"
-                  :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/30 text-warning-600' : ''"
-                >
-                  <div>{{ new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }}</div>
-                  <div class="text-muted/60 font-normal">{{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}</div>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-default">
-              <tr v-for="{ product, schedsByDate } in ganttRows" :key="product.id" class="hover:bg-elevated/40 transition-colors">
-                <td class="px-3 py-2 sticky left-0 bg-default z-10 border-r border-default">
-                  <div class="font-mono font-semibold">{{ product.part?.part_number }}</div>
-                  <div class="text-muted truncate max-w-[160px]">{{ product.part?.part_name }}</div>
-                  <div class="text-muted/60">{{ product.customer?.name }}</div>
-                </td>
-                <td
-                  v-for="date in ganttDates" :key="date"
-                  class="px-1 py-1 text-center align-top"
-                  :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/20' : ''"
-                >
-                  <template v-if="schedsByDate[date]?.length">
-                    <div
-                      v-for="sched in schedsByDate[date]" :key="sched.id"
-                      class="rounded px-1 py-0.5 text-xs font-mono font-semibold mb-0.5"
-                      :class="sched.utilization_pct != null && sched.utilization_pct > 100
-                        ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
-                        : 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300'"
-                      :title="`${sched.shift?.name ?? sched.shift_name_snapshot ?? 'Shift'} | Qty: ${sched.planned_qty_per_day} | Util: ${sched.utilization_pct ?? '—'}%`"
-                    >
-                      {{ fmtNum(sched.planned_qty_per_day) }}
-                      <span class="block text-[10px] opacity-70 font-normal">{{ sched.shift?.name ?? sched.shift_name_snapshot ?? '' }}</span>
-                    </div>
-                  </template>
-                  <span v-else class="text-muted/30">·</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div class="flex items-center gap-4 px-4 py-2 border-t border-default text-xs text-muted bg-elevated">
+        <div v-else class="space-y-3">
+          <div v-if="isEditable" class="flex items-center gap-2 text-xs text-muted bg-primary-50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800 rounded-lg px-3 py-2">
+            <UIcon name="i-lucide-info" class="size-3.5 text-primary shrink-0" />
+            Click on any scheduled cell to edit the planned quantity for that shift.
+          </div>
+          <div class="overflow-x-auto rounded-t-lg border border-b-0 border-default">
+            <table class="text-xs min-w-max">
+              <thead class="bg-elevated sticky top-0 z-10">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-muted uppercase tracking-wide sticky left-0 bg-elevated z-20 min-w-[180px]">Product / Part</th>
+                  <th
+                    v-for="date in ganttDates" :key="date"
+                    class="px-1 py-2 text-center font-semibold text-muted min-w-[72px]"
+                    :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/30 text-warning-600' : ''"
+                  >
+                    <div>{{ new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) }}</div>
+                    <div class="text-muted/60 font-normal">{{ new Date(date).toLocaleDateString('en-GB', { weekday: 'short' }) }}</div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default">
+                <tr v-for="{ product, schedsByDate } in ganttRows" :key="product.id" class="hover:bg-elevated/40 transition-colors">
+                  <td class="px-3 py-2 sticky left-0 bg-default z-10 border-r border-default">
+                    <div class="font-mono font-semibold">{{ product.part?.part_number }}</div>
+                    <div class="text-muted truncate max-w-[160px]">{{ product.part?.part_name }}</div>
+                    <div class="text-muted/60">{{ product.customer?.name }}</div>
+                  </td>
+                  <td
+                    v-for="date in ganttDates" :key="date"
+                    class="px-1 py-1 text-center align-top"
+                    :class="isWeekend(date) ? 'bg-amber-50 dark:bg-amber-950/20' : ''"
+                  >
+                    <template v-if="schedsByDate[date]?.length">
+                      <div
+                        v-for="sched in schedsByDate[date]" :key="sched.id"
+                        class="rounded px-1 py-0.5 text-xs font-mono font-semibold mb-0.5 transition-all"
+                        :class="[
+                          sched.utilization_pct != null && sched.utilization_pct > 100
+                            ? 'bg-error-100 text-error-700 dark:bg-error-900/40 dark:text-error-300'
+                            : 'bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300',
+                          sched.has_overtime ? 'ring-2 ring-orange-500 dark:ring-orange-400' : '',
+                          isEditable ? 'cursor-pointer hover:ring-2 hover:ring-primary/50 hover:scale-105' : ''
+                        ]"
+                        :title="scheduleTooltip(sched)"
+                        @click="isEditable ? openEditSchedule(sched) : undefined"
+                      >
+                        {{ fmtNum(sched.planned_qty_per_day) }}
+                        <span class="block text-[10px] opacity-70 font-normal">{{ sched.shift?.name ?? sched.shift_name_snapshot ?? '' }}</span>
+                        <UIcon v-if="isEditable" name="i-lucide-pencil" class="size-2.5 opacity-50 inline-block ml-0.5" />
+                      </div>
+                    </template>
+                    <span v-else class="text-muted/30">·</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Legend footer — outside overflow-x-auto so it never scrolls horizontally -->
+          <div class="flex items-center gap-4 px-4 py-2 border border-default rounded-b-lg text-xs text-muted bg-elevated -mt-px flex-wrap">
             <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-primary-200 dark:bg-primary-900/60"></div>Normal utilization</div>
             <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-error-200 dark:bg-error-900/60"></div>Over capacity (&gt;100%)</div>
+            <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded ring-2 ring-orange-500 dark:ring-orange-400"></div>Overtime</div>
             <div class="flex items-center gap-1.5"><div class="w-3 h-3 rounded bg-amber-100 dark:bg-amber-900/40"></div>Weekend</div>
+            <div v-if="isEditable" class="flex items-center gap-1.5 ml-auto">
+              <UIcon name="i-lucide-pencil" class="size-3" />Click a cell to edit
+            </div>
           </div>
         </div>
       </div>
@@ -790,35 +1040,49 @@ onUnmounted(() => store.clearCurrentOrder())
       </div>
 
       <!-- TAB: Reschedule Logs -->
-      <div v-show="activeTab === 'logs'">
+      <div v-show="activeTab === 'logs'" class="space-y-4">
         <div v-if="!order.reschedule_logs?.length" class="flex flex-col items-center justify-center py-16 text-muted gap-2">
           <UIcon name="i-lucide-history" class="size-12 opacity-40" />
           <p class="text-sm">No reschedule history found.</p>
         </div>
-        <div v-else class="overflow-x-auto rounded-lg border border-default">
-          <table class="w-full text-sm">
-            <thead class="bg-elevated">
-              <tr>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">#</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Old Range</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">New Range</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Reason</th>
-                <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Impacted WOs</th>
-                <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Rescheduled At</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-default">
-              <tr v-for="(log, idx) in order.reschedule_logs" :key="log.id" class="hover:bg-elevated/50">
-                <td class="px-3 py-2 text-muted text-xs">{{ idx + 1 }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.old_start_date) }} – {{ fmtDate(log.old_end_date) }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.new_start_date) }} – {{ fmtDate(log.new_end_date) }}</td>
-                <td class="px-3 py-2 text-xs max-w-xs">{{ log.reschedule_reason }}</td>
-                <td class="px-3 py-2 text-right font-mono text-xs">{{ log.impacted_wo_count }}</td>
-                <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.rescheduled_at) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <template v-else>
+          <div class="overflow-x-auto rounded-lg border border-default">
+            <table class="w-full text-sm">
+              <thead class="bg-elevated">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">#</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Old Range</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">New Range</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Reason</th>
+                  <th class="px-3 py-2 text-right font-semibold text-muted text-xs uppercase tracking-wide">Impacted WOs</th>
+                  <th class="px-3 py-2 text-left font-semibold text-muted text-xs uppercase tracking-wide">Rescheduled At</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-default">
+                <tr v-for="(log, idx) in paginatedLogs" :key="log.id" class="hover:bg-elevated/50">
+                  <td class="px-3 py-2 text-muted text-xs">{{ (logsPage - 1) * 10 + idx + 1 }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.old_start_date) }} – {{ fmtDate(log.old_end_date) }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.new_start_date) }} – {{ fmtDate(log.new_end_date) }}</td>
+                  <td class="px-3 py-2 text-xs max-w-xs">{{ log.reschedule_reason }}</td>
+                  <td class="px-3 py-2 text-right font-mono text-xs">{{ log.impacted_wo_count }}</td>
+                  <td class="px-3 py-2 font-mono text-xs">{{ fmtDate(log.rescheduled_at) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-between gap-3 pt-2">
+            <span class="text-xs text-muted">
+              Showing {{ Math.min((logsPage - 1) * 10 + 1, order.reschedule_logs.length) }}–{{ Math.min(logsPage * 10, order.reschedule_logs.length) }} of {{ order.reschedule_logs.length }}
+            </span>
+            <UPagination
+              v-model:page="logsPage"
+              :total="order.reschedule_logs.length"
+              :items-per-page="10"
+            />
+          </div>
+        </template>
       </div>
     </template>
 

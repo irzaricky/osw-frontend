@@ -68,6 +68,7 @@ export interface POSchedule {
   planned_qty_per_day:   number
   actual_qty_per_day:    number
   line_capacity_per_day?: number | null
+  regular_cap_snapshot?: number | null // Non-overtime capacity at generation time; basis for the derived overtime fields below
   utilization_pct?:      number | null
   status:                ScheduleStatus
   notes?:                string | null
@@ -76,6 +77,8 @@ export interface POSchedule {
   part?:  { id: number; part_number: string; part_name: string }
   line_name_snapshot?:  string | null
   shift_name_snapshot?: string | null
+  has_overtime?:  boolean // Derived server-side on read, not a stored column
+  overtime_qty?:  number  // Derived server-side on read, not a stored column
 }
 
 export interface RescheduleLog {
