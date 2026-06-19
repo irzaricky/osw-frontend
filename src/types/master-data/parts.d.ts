@@ -8,6 +8,7 @@ export interface PartDropdown {
   part_type_code?: string | null
   available_stock?: number
   remaining_qty?: number
+  max_kanban?: number
   min_qty_sell?: number
   uom?: {
     id: number

@@ -20,6 +20,12 @@ const workOrderStoringService = {
   getStatusesDropdown() {
     return api.get('/warehouse/work-order-storing/statuses/dropdown')
   },
+  getBufferStationDropdown() {
+    return api.get('/warehouse/work-order-storing/buffer-station/dropdown')
+  },
+  getWoProductionDropdown() {
+    return api.get('/warehouse/work-order-storing/wo-production/dropdown')
+  },
 
   // Work Order Storing
   getWorkOrders(params?: WorkOrderStoringParams) {
