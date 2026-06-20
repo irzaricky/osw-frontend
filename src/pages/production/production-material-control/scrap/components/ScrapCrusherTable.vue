@@ -84,32 +84,84 @@ const columns: TableColumn<any>[] = [
       class="w-full"
     >
       <template #expanded="{ row }">
-        <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 bg-elevated/50 border-b border-default">
+        <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-elevated/50 border-b border-default">
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
               Scrap Info
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Production Result ID:</span>
               {{ row.original.production_result_id }}
             </p>
+
+            <p class="text-sm">
+              <span class="text-muted">Replacement ID:</span>
+              {{ row.original.replacement_id || '-' }}
+            </p>
+
             <p class="text-sm">
               <span class="text-muted">Scrap Date:</span>
               {{ formatDate(row.original.scrap_date) }}
+            </p>
+
+            <p class="text-sm">
+              <span class="text-muted">Created By:</span>
+              {{ row.original.created_by_email || '-' }}
             </p>
           </div>
 
           <div class="space-y-1">
             <h4 class="font-semibold text-sm text-highlighted">
-              Part & Material
+              NG Material
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Product:</span>
-              {{ row.original.product_part_number }} - {{ row.original.product_part_name }}
+              {{ row.original.product_part_number || '-' }}
+              <span v-if="row.original.product_part_name">
+                - {{ row.original.product_part_name }}
+              </span>
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Material:</span>
-              {{ row.original.material_part_number }} - {{ row.original.material_part_name }}
+              {{ row.original.material_part_number || '-' }}
+              <span v-if="row.original.material_part_name">
+                - {{ row.original.material_part_name }}
+              </span>
+            </p>
+
+            <p class="text-sm">
+              <span class="text-muted">NG Label:</span>
+              {{ row.original.ng_source_label_number || '-' }}
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <h4 class="font-semibold text-sm text-highlighted">
+              Replacement Labels
+            </h4>
+
+            <div
+              v-if="row.original.replacement_labels?.length"
+              class="max-h-48 overflow-y-auto flex flex-wrap gap-2"
+            >
+              <UBadge
+                v-for="label in row.original.replacement_labels"
+                :key="label.id"
+                color="primary"
+                variant="soft"
+              >
+                {{ label.pcs_label_number }}
+              </UBadge>
+            </div>
+
+            <p
+              v-else
+              class="text-sm text-muted"
+            >
+              No replacement label found
             </p>
           </div>
 
@@ -117,17 +169,25 @@ const columns: TableColumn<any>[] = [
             <h4 class="font-semibold text-sm text-highlighted">
               Crusher
             </h4>
+
             <p class="text-sm">
               <span class="text-muted">Qty Scrap:</span>
               {{ row.original.qty_scrap }} PCS
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Weight / PCS:</span>
               {{ row.original.weight_per_pcs }} kg
             </p>
+
             <p class="text-sm">
               <span class="text-muted">Total Weight:</span>
               {{ row.original.total_weight }} kg
+            </p>
+
+            <p class="text-sm">
+              <span class="text-muted">Remarks:</span>
+              {{ row.original.remarks || '-' }}
             </p>
           </div>
         </div>

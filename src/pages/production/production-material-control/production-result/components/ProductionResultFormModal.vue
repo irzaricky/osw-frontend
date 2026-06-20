@@ -13,12 +13,22 @@ type DropdownOption = {
 type ProductionWo = {
   wo_id: number
   wo_number: string
-  planned_quantity: number
+  production_date: string
+  planning_qty: number
+  actual_quantity?: number
+  shift_id: number
+  shift_name: string
   part_id: number
   part_number: string
   part_name: string
-  station_id?: number
-  station_name?: string
+  stations: {
+    station_id: number
+    station_name: string
+    sequence: number
+    planned_quantity: number
+    actual_quantity: number
+    status: string
+  }[]
 }
 
 type MaterialLabel = {
@@ -68,37 +78,39 @@ const form = reactive({
   }[]
 })
 
+const selectedProductionWo = computed(() =>
+  props.productionWos.find(item => item.wo_id === form.production_wo_id)
+)
+
 const productionWoItems = computed(() =>
   props.productionWos.map(item => ({
-    label: `${item.wo_number} - ${item.part_number} - ${item.part_name}`,
+    label: `${item.wo_number} | ${item.part_number} - ${item.part_name} | ${item.production_date}`,
     value: item.wo_id
   }))
 )
 
+const woStationItems = computed(() =>
+  selectedProductionWo.value?.stations?.map(item => ({
+    label: `${item.station_name} - Seq ${item.sequence}`,
+    value: item.station_id
+  })) || []
+)
+
 const shiftItems = computed(() =>
   props.shifts.map(item => ({
-    label: `${item.name} - ${item.description || '-'} (${item.start_time} - ${item.end_time})`,
+    label: `${item.name} - ${item.description || '-'} (${item.start_time || '-'} - ${item.end_time || '-'})`,
     value: item.id
   }))
 )
-const stationItems = computed(() => props.stations.map(item => item.name))
-const productItems = computed(() => props.products.map(item => item.name))
 
-const selectedProductionWo = computed(() =>
-  props.productionWos.find(item => item.wo_id === form.production_wo_id)
+const productItems = computed(() =>
+  props.products.map(item => item.name)
 )
 
 const selectedShift = computed<number | undefined>({
   get: () => form.shift_id,
   set: value => {
     form.shift_id = value
-  }
-})
-
-const selectedStation = computed<string | undefined>({
-  get: () => props.stations.find(item => item.id === form.station_id)?.name,
-  set: value => {
-    form.station_id = props.stations.find(item => item.name === value)?.id
   }
 })
 
@@ -137,7 +149,7 @@ watch(() => props.open, open => {
 
   Object.assign(form, {
     production_wo_id: undefined,
-    production_date: new Date(),
+    production_date: undefined,
     shift_id: undefined,
     station_id: undefined,
     part_id: undefined,
@@ -154,9 +166,15 @@ watch(() => form.production_wo_id, id => {
   const found = props.productionWos.find(item => item.wo_id === id)
   if (!found) return
 
-  form.station_id = found.station_id
+  form.production_date = found.production_date
+    ? new Date(found.production_date)
+    : undefined
+
+  form.shift_id = found.shift_id
   form.part_id = found.part_id
-  form.planning_qty = Number(found.planned_quantity || 0)
+  form.planning_qty = Number(found.planning_qty || 0)
+  form.actual_qty = Number(found.actual_quantity || 0)
+  form.station_id = found.stations?.[0]?.station_id
   form.ng_materials = []
 
   emit('selectProductionWo', found.wo_id)
@@ -240,33 +258,52 @@ function handleSave() {
         </UFormField>
 
         <div v-if="selectedProductionWo" class="rounded-lg border border-default p-3 text-sm">
-          <p class="font-medium">WO Information</p>
+          <p class="font-medium">
+            WO Information
+          </p>
+
           <p class="text-muted mt-1">
             {{ selectedProductionWo.wo_number }} -
             {{ selectedProductionWo.part_number }} -
             {{ selectedProductionWo.part_name }}
           </p>
+
           <p class="text-muted mt-1">
-            Station: {{ selectedProductionWo.station_name || '-' }}
+            Shift: {{ selectedProductionWo.shift_name || '-' }}
           </p>
+
           <p class="text-muted mt-1">
-            Planned Qty: {{ selectedProductionWo.planned_quantity }} PCS
+            Stations:
+            {{
+              selectedProductionWo.stations?.length
+                ? selectedProductionWo.stations.map(item => item.station_name).join(', ')
+                : '-'
+            }}
+          </p>
+
+          <p class="text-muted mt-1">
+            Planned Qty: {{ selectedProductionWo.planning_qty }} PCS
+          </p>
+
+          <p class="text-muted mt-1">
+            Actual Qty: {{ selectedProductionWo.actual_quantity || 0 }} PCS
           </p>
         </div>
 
+
         <UFormField label="Production Date" required>
-          <DatePicker v-model="form.production_date" placeholder="Select production date" />
+          <DatePicker v-model="form.production_date" placeholder="Auto from WO" disabled />
         </UFormField>
 
         <UFormField label="Shift" required>
           <USelectMenu v-model="selectedShift" :items="shiftItems" value-key="value" label-key="label"
-            placeholder="Select shift" searchable clear class="w-full" />
+            placeholder="Auto from WO" searchable clear disabled class="w-full" />
         </UFormField>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <UFormField label="Station" required>
-            <USelectMenu v-model="selectedStation" :items="stationItems" placeholder="Auto from WO" searchable clear
-              disabled class="w-full" />
+            <USelectMenu v-model="form.station_id" :items="woStationItems" value-key="value" label-key="label"
+              placeholder="Select station from WO" searchable clear class="w-full" />
           </UFormField>
 
           <UFormField label="Part yang Dikerjakan" required>
@@ -300,7 +337,9 @@ function handleSave() {
         <div v-if="Number(form.total_ng || 0) > 0" class="space-y-3 rounded-lg border border-default p-4">
           <div class="flex items-center justify-between gap-3">
             <div>
-              <p class="font-medium">NG Material Label Detail</p>
+              <p class="font-medium">
+                NG Material Label Detail
+              </p>
               <p class="text-xs text-muted">
                 Select material label that caused NG and input NG quantity.
               </p>

@@ -154,33 +154,33 @@ const columns: TableColumn<any>[] = [
             </p>
           </div>
 
-          <!-- Labels -->
+          <!-- Labels
           <div class="space-y-2">
             <h4 class="font-semibold text-sm text-highlighted">
               Buffer Labels
             </h4>
 
-            <div v-if="row.original.buffer_details?.length" class="max-h-56 overflow-y-auto space-y-1">
+            <!-- <div v-if="row.original.buffer_details?.length" class="max-h-56 overflow-y-auto space-y-1">
               <div v-for="label in row.original.buffer_details" :key="label.id"
                 class="flex items-center justify-between rounded-md border border-default px-3 py-2">
                 <div class="font-medium text-sm">
-                  {{ label.pcs_label_number }}
+                  {{ label.pcs_label_number }} -
                 </div>
 
                 <div class="text-xs text-muted">
                   {{ label.supplied_by_email || '-' }}
                 </div>
               </div>
-            </div>
+            </div> -->
 
-            <p v-else class="text-sm text-muted">
+            <!-- <p v-else class="text-sm text-muted">
               No label available
-            </p>
+            </p> -->
 
-            <p v-if="row.original.buffer_details?.length" class="text-xs text-muted">
+            <!-- <p v-if="row.original.buffer_details?.length" class="text-xs text-muted">
               {{ row.original.buffer_details.length }} PCS Available
             </p>
-          </div>
+          </div> --> 
 
           <!-- Aging -->
           <div class="space-y-1">

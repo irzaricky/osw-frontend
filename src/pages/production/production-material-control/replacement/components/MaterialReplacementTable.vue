@@ -113,8 +113,8 @@ const columns: TableColumn<any>[] = [
             </p>
 
             <p class="text-sm">
-              <span class="text-muted">Reason:</span>
-              {{ row.original.replacement_reason || '-' }}
+              <span class="text-muted">NG Qty:</span>
+              {{ row.original.qty_replacement }} PCS
             </p>
           </div>
 
@@ -125,6 +125,11 @@ const columns: TableColumn<any>[] = [
             </h4>
 
             <p class="text-sm">
+              <span class="text-muted">Material:</span>
+              {{ row.original.part_number }} - {{ row.original.part_name }}
+            </p>
+
+            <p class="text-sm">
               <span class="text-muted">Qty:</span>
               {{ row.original.qty_replacement }} PCS
             </p>
@@ -132,19 +137,20 @@ const columns: TableColumn<any>[] = [
             <div v-if="row.original.used_buffer_details?.length" class="max-h-48 overflow-y-auto space-y-1">
               <div v-for="label in row.original.used_buffer_details" :key="label.id"
                 class="flex items-center justify-between rounded-md border border-default px-3 py-2">
-                <span class="text-sm font-medium">
-                  {{ label.pcs_label_number }}
-                </span>
+                <div>
+                  <p class="text-sm font-medium">
+                    {{ label.pcs_label_number }}
+                  </p>
+                  <p class="text-xs text-muted">
+                    Supplied by: {{ label.supplied_by_email || '-' }}
+                  </p>
+                </div>
 
-                <span class="text-xs text-muted">
-                  {{ label.supplied_by_email || '-' }}
-                </span>
+                <UBadge color="success" variant="soft">
+                  Replacement
+                </UBadge>
               </div>
             </div>
-
-            <UBadge v-else-if="row.original.source_label_number" color="primary" variant="soft">
-              {{ row.original.source_label_number }}
-            </UBadge>
 
             <p v-else class="text-sm text-muted">
               No replacement label found.
@@ -158,8 +164,8 @@ const columns: TableColumn<any>[] = [
             </h4>
 
             <p class="text-sm">
-              <span class="text-muted">Qty Replacement:</span>
-              {{ row.original.qty_replacement }} PCS
+              <span class="text-muted">Station:</span>
+              {{ row.original.station_name || '-' }}
             </p>
 
             <p class="text-sm">

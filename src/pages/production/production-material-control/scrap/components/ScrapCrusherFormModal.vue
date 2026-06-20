@@ -11,11 +11,21 @@ type ProductionResult = {
 
 type ReplacementMaterial = {
   replacement_id: number
+
   material_part_id: number
   part_number: string
   part_name: string
+
   qty_replacement: number
+
   weight_per_pcs?: number
+
+  ng_source_label_number?: string
+
+  replacement_labels?: {
+    id: number
+    pcs_label_number: string
+  }[]
 }
 
 const props = defineProps<{
@@ -34,6 +44,7 @@ const emit = defineEmits<{
 
 const form = reactive({
   production_result_id: undefined as number | undefined,
+  replacement_id: undefined as number | undefined,
   scrap_date: undefined as Date | undefined,
   part_id: undefined as number | undefined,
   material_part_id: undefined as number | undefined,
@@ -51,13 +62,18 @@ const productionItems = computed(() =>
 
 const materialItems = computed(() =>
   props.replacementMaterials.map(item => ({
-    label: `${item.part_number} - ${item.part_name} (${item.qty_replacement} PCS)`,
-    value: item.material_part_id
+    label:
+      `${item.part_number} - ${item.part_name} | ` +
+      `NG ${item.ng_source_label_number || '-'} | ` +
+      `${item.qty_replacement} PCS`,
+    value: item.replacement_id
   }))
 )
 
 const selectedReplacement = computed(() =>
-  props.replacementMaterials.find(item => item.material_part_id === form.material_part_id)
+  props.replacementMaterials.find(
+    item => item.replacement_id === form.replacement_id
+  )
 )
 
 const maxScrapQty = computed(() =>
@@ -105,11 +121,22 @@ watch(() => form.production_result_id, id => {
   }
 })
 
-watch(() => form.material_part_id, id => {
-  const found = props.replacementMaterials.find(item => item.material_part_id === id)
 
-  form.qty_scrap = Number(found?.qty_replacement || 1)
-  form.weight_per_pcs = Number(found?.weight_per_pcs || 0)
+watch(() => form.replacement_id, id => {
+  const found = props.replacementMaterials.find(
+    item => item.replacement_id === id
+  )
+
+  if (!found) {
+    form.material_part_id = undefined
+    form.qty_scrap = 1
+    form.weight_per_pcs = 0
+    return
+  }
+
+  form.material_part_id = found.material_part_id
+  form.qty_scrap = Number(found.qty_replacement || 0)
+  form.weight_per_pcs = Number(found.weight_per_pcs || 0)
 })
 
 function close() {
@@ -131,6 +158,7 @@ function handleSave() {
 
   emit('save', {
     production_result_id: form.production_result_id,
+    replacement_id: form.replacement_id,
     scrap_date: formatDate(form.scrap_date),
     part_id: form.part_id,
     material_part_id: form.material_part_id,
@@ -160,6 +188,25 @@ function handleSave() {
             :loading="replacementLoading" placeholder="Select replacement material" searchable clear class="w-full"
             :disabled="!form.production_result_id" />
         </UFormField>
+
+        <div v-if="selectedReplacement" class="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm">
+          <p>
+            <b>NG Label:</b>
+            {{ selectedReplacement.ng_source_label_number || '-' }}
+          </p>
+
+          <p>
+            <b>Replacement Qty:</b>
+            {{ selectedReplacement.qty_replacement }} PCS
+          </p>
+
+          <div v-if="selectedReplacement.replacement_labels?.length" class="mt-2 flex flex-wrap gap-2">
+            <UBadge v-for="label in selectedReplacement.replacement_labels" :key="label.id" color="primary"
+              variant="soft">
+              {{ label.pcs_label_number }}
+            </UBadge>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <UFormField label="Qty Scrap (PCS)" required>

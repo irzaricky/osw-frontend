@@ -3,9 +3,12 @@ import { computed, reactive, watch } from 'vue'
 
 type ProductionResult = {
   id: number
+  production_wo_id?: number
+  wo_number?: string
   part_id: number
   station_id: number
   product_part_number: string
+  product_part_name?: string
   station_name: string
 }
 
@@ -19,6 +22,8 @@ type NgMaterial = {
   qty_replacement: number
   replacement_reason?: string | null
   weight_per_pcs?: number
+  ng_source_label_id?: number | null
+  ng_source_label_number?: string | null
 }
 
 const props = defineProps<{
@@ -45,14 +50,14 @@ const form = reactive({
 
 const productionItems = computed(() =>
   props.productionResults.map(item => ({
-    label: `${item.product_part_number} - ${item.station_name}`,
+    label: `${item.wo_number || `Result #${item.id}`} | ${item.product_part_number} | ${item.station_name}`,
     value: item.id
   }))
 )
 
 const materialItems = computed(() =>
   props.bomMaterials.map(item => ({
-    label: `${item.part_number} - ${item.part_name} (${item.qty_replacement} PCS NG)`,
+    label: `${item.part_number} - ${item.part_name} | NG ${item.qty_replacement} PCS | Label ${item.ng_source_label_number || '-'}`,
     value: item.material_part_id
   }))
 )
@@ -65,12 +70,20 @@ const selectedMaterial = computed(() =>
   props.bomMaterials.find(item => item.material_part_id === form.material_part_id)
 )
 
+const maxReplacementQty = computed(() =>
+  Number(selectedMaterial.value?.qty_replacement || 0)
+)
+
+const isQtyInvalid = computed(() =>
+  Number(form.qty_replacement || 0) <= 0 ||
+  Number(form.qty_replacement || 0) > maxReplacementQty.value
+)
+
 const isFormInvalid = computed(() =>
   !form.production_result_id ||
   !form.station_id ||
   !form.material_part_id ||
-  !form.qty_replacement ||
-  Number(form.qty_replacement) <= 0
+  isQtyInvalid.value
 )
 
 watch(() => props.open, open => {
@@ -118,6 +131,7 @@ function handleSave() {
 
   emit('save', {
     production_result_id: form.production_result_id,
+    ng_detail_id: selectedMaterial.value?.ng_detail_id,
     station_id: form.station_id,
     material_part_id: form.material_part_id,
     qty_replacement: Number(form.qty_replacement),
@@ -148,13 +162,32 @@ function handleSave() {
           />
         </UFormField>
 
-        <UFormField label="Station">
-          <UInput
-            :model-value="selectedProduction?.station_name || '-'"
-            readonly
-            class="w-full"
-          />
-        </UFormField>
+        <div
+          v-if="selectedProduction"
+          class="rounded-lg border border-default p-3 text-sm"
+        >
+          <p class="font-medium">
+            Production Result Info
+          </p>
+
+          <p class="text-muted mt-1">
+            WO:
+            {{ selectedProduction.wo_number || '-' }}
+          </p>
+
+          <p class="text-muted mt-1">
+            Product:
+            {{ selectedProduction.product_part_number }}
+            <span v-if="selectedProduction.product_part_name">
+              - {{ selectedProduction.product_part_name }}
+            </span>
+          </p>
+
+          <p class="text-muted mt-1">
+            Station:
+            {{ selectedProduction.station_name || '-' }}
+          </p>
+        </div>
 
         <UFormField label="NG Material" required>
           <USelectMenu
@@ -181,14 +214,22 @@ function handleSave() {
               class="mt-0.5 size-4 text-warning"
             />
 
-            <div>
+            <div class="space-y-1">
               <p class="font-medium text-warning">
                 NG Material Detected
               </p>
-              <p class="text-muted mt-1">
+
+              <p class="text-muted">
+                Material:
                 {{ selectedMaterial.part_number }} - {{ selectedMaterial.part_name }}
               </p>
-              <p class="text-muted mt-1">
+
+              <p class="text-muted">
+                NG Label:
+                <b>{{ selectedMaterial.ng_source_label_number || '-' }}</b>
+              </p>
+
+              <p class="text-muted">
                 NG Qty:
                 <b>{{ selectedMaterial.qty_replacement }}</b>
                 PCS
@@ -202,10 +243,19 @@ function handleSave() {
             v-model.number="form.qty_replacement"
             type="number"
             min="1"
-            :max="selectedMaterial?.qty_replacement || undefined"
+            :max="maxReplacementQty || undefined"
             class="w-full"
           />
         </UFormField>
+
+        <UAlert
+          v-if="selectedMaterial && isQtyInvalid"
+          color="warning"
+          variant="soft"
+          icon="i-lucide-triangle-alert"
+          title="Replacement quantity invalid"
+          :description="`Qty replacement cannot exceed NG qty (${maxReplacementQty} PCS).`"
+        />
 
         <UFormField label="Reason">
           <UTextarea

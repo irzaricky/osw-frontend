@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { h, ref, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import productionMaterialControlService from '../../../../../services/production/production-material-control.service'
 
 const props = defineProps<{
   data: any[]
@@ -14,9 +13,6 @@ const expanded = ref({})
 const UButton = resolveComponent('UButton')
 const UBadge = resolveComponent('UBadge')
 
-const bomMaterialsMap = ref<Record<number, any[]>>({})
-const bomLoadingMap = ref<Record<number, boolean>>({})
-
 function formatDate(value?: string | null) {
   if (!value) return '-'
   return new Date(value).toLocaleDateString('id-ID')
@@ -26,27 +22,16 @@ function number(value: any) {
   return Number(value || 0).toLocaleString('id-ID')
 }
 
-async function loadBomMaterials(row: any) {
-  const productPartId = row.original.part_id
-
-  if (!productPartId) return
-  if (bomMaterialsMap.value[productPartId]) return
-
-  bomLoadingMap.value[productPartId] = true
-
-  try {
-    const res = await productionMaterialControlService.getBomMaterials(productPartId)
-    bomMaterialsMap.value[productPartId] = res.data.data || []
-  } finally {
-    bomLoadingMap.value[productPartId] = false
-  }
-}
-
 const columns: TableColumn<any>[] = [
   {
     id: 'no',
     header: 'No',
     cell: ({ row }) => (props.page - 1) * props.limit + row.index + 1
+  },
+  {
+    accessorKey: 'wo_number',
+    header: 'WO',
+    cell: ({ row }) => row.original.wo_number || '-'
   },
   {
     accessorKey: 'production_date',
@@ -102,10 +87,7 @@ const columns: TableColumn<any>[] = [
         color: 'neutral',
         variant: 'ghost',
         icon: row.getIsExpanded() ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right',
-        onClick: async () => {
-          row.toggleExpanded()
-          await loadBomMaterials(row)
-        }
+        onClick: () => row.toggleExpanded()
       })
   }
 ]
@@ -130,29 +112,47 @@ const columns: TableColumn<any>[] = [
                     Production Info
                   </p>
                   <p class="text-xs text-muted">
-                    Main production result information.
+                    Main production result information based on Production WO.
                   </p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 text-sm">
                   <div>
+                    <p class="text-xs text-muted">WO Number</p>
+                    <p class="font-medium">
+                      {{ row.original.wo_number || '-' }}
+                    </p>
+                  </div>
+
+                  <div>
                     <p class="text-xs text-muted">Date</p>
-                    <p class="font-medium">{{ formatDate(row.original.production_date) }}</p>
+                    <p class="font-medium">
+                      {{ formatDate(row.original.production_date) }}
+                    </p>
                   </div>
 
                   <div>
                     <p class="text-xs text-muted">Shift</p>
-                    <p class="font-medium">{{ row.original.shift_name || '-' }}</p>
+                    <p class="font-medium">
+                      {{ row.original.shift_name || '-' }}
+                    </p>
                   </div>
 
                   <div>
                     <p class="text-xs text-muted">Station</p>
-                    <p class="font-medium">{{ row.original.station_name || '-' }}</p>
+                    <p class="font-medium">
+                      {{ row.original.station_name || '-' }}
+                    </p>
                   </div>
 
-                  <div>
+                  <div class="col-span-2">
                     <p class="text-xs text-muted">Product</p>
-                    <p class="font-medium">{{ row.original.product_part_number || '-' }}</p>
+                    <p class="font-medium">
+                      {{ row.original.product_part_number || '-' }}
+                      <span v-if="row.original.product_part_name">
+                        - {{ row.original.product_part_name }}
+                      </span>
+                    </p>
                   </div>
                 </div>
 
@@ -216,7 +216,7 @@ const columns: TableColumn<any>[] = [
                       NG Materials
                     </p>
                     <p class="text-xs text-muted">
-                      Material selected as NG during production.
+                      Material and label recorded as NG during production.
                     </p>
                   </div>
 
@@ -244,8 +244,15 @@ const columns: TableColumn<any>[] = [
                     <div class="flex items-start justify-between gap-3">
                       <div>
                         <p class="text-sm font-medium">
-                          {{ material.part_number || material.material_part_number }} -
-                          {{ material.part_name || material.material_part_name }}
+                          {{ material.material_part_number || material.part_number || '-' }}
+                          <span v-if="material.material_part_name || material.part_name">
+                            - {{ material.material_part_name || material.part_name }}
+                          </span>
+                        </p>
+
+                        <p class="text-xs text-muted mt-1">
+                          Label NG:
+                          <b>{{ material.source_label_number || '-' }}</b>
                         </p>
 
                         <p class="text-xs text-muted mt-1">
@@ -256,75 +263,6 @@ const columns: TableColumn<any>[] = [
                       <UBadge color="error" variant="soft">
                         {{ number(material.qty_ng) }} PCS
                       </UBadge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </UCard>
-          </div>
-
-          <div class="mt-4">
-            <UCard variant="subtle">
-              <div class="space-y-4">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-semibold">
-                      BOM Materials
-                    </p>
-                    <p class="text-xs text-muted">
-                      Material requirement based on BOM and actual production.
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  v-if="bomLoadingMap[row.original.part_id]"
-                  class="text-sm text-muted"
-                >
-                  Loading BOM materials...
-                </div>
-
-                <div
-                  v-else-if="!(bomMaterialsMap[row.original.part_id] || []).length"
-                  class="rounded-lg border border-default p-4 text-sm text-muted"
-                >
-                  No BOM materials found.
-                </div>
-
-                <div
-                  v-else
-                  class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
-                >
-                  <div
-                    v-for="material in bomMaterialsMap[row.original.part_id]"
-                    :key="material.bom_detail_id"
-                    class="rounded-lg border border-default p-3"
-                  >
-                    <p class="text-sm font-medium">
-                      {{ material.part_number }} - {{ material.part_name }}
-                    </p>
-
-                    <div class="grid grid-cols-2 gap-3 mt-3 text-xs">
-                      <div>
-                        <p class="text-muted">Qty / Unit</p>
-                        <p class="font-medium">
-                          {{ Number(material.qty_required || 0).toFixed(2) }}
-                          {{ material.uom_name || 'PCS' }}
-                        </p>
-                      </div>
-
-                      <div>
-                        <p class="text-muted">Expected Usage</p>
-                        <p class="font-medium">
-                          {{
-                            (
-                              Number(material.qty_required || 0) *
-                              Number(row.original.actual_qty || 0)
-                            ).toFixed(2)
-                          }}
-                          {{ material.uom_name || 'PCS' }}
-                        </p>
-                      </div>
                     </div>
                   </div>
                 </div>
