@@ -15,6 +15,7 @@ const props = defineProps<{
   kanbanDisabled?: boolean
   showStockField?: boolean
   showRemainingQtyField?: boolean
+  showMaxKanbanField?: boolean
   item?: { part_id: number; total_kanban: number } | null
 }>()
 
@@ -34,6 +35,7 @@ const selectedPartData = computed(() =>
 
 const selectedPartStock = computed(() => selectedPartData.value?.available_stock)
 const selectedPartRemainingQty = computed(() => selectedPartData.value?.remaining_qty)
+const selectedPartMaxKanban = computed(() => selectedPartData.value?.max_kanban)
 
 const schema = z.object({
   part_id: z.number({ message: 'Part is required' }),
@@ -43,6 +45,14 @@ const schema = z.object({
       if (props.showStockField) {
         const stock = selectedPartStock.value
         if (stock !== undefined && value > stock) {
+          return false
+        }
+      }
+
+      // TAKE OUT SUPPLY PRODUCTION VALIDATION
+      if (props.showMaxKanbanField) {
+        const maxKanban = selectedPartMaxKanban.value
+        if (maxKanban !== undefined && value > maxKanban) {
           return false
         }
       }
@@ -143,6 +153,14 @@ function close() {
             class="w-full"
             :clear="!props.partDisabled"
             :disabled="props.partDisabled"
+          />
+        </UFormField>
+
+        <UFormField v-if="props.showMaxKanbanField" label="Recommended Kanban">
+          <UInput
+            :model-value="selectedPartMaxKanban ?? '-'"
+            disabled
+            class="w-full"
           />
         </UFormField>
 

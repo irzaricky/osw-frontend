@@ -79,7 +79,7 @@ export function useWorkOrderStoringColumns(actions: ColumnActions, components: C
     },
     {
       accessorKey: 'user.user_detail.full_name',
-      header: 'User',
+      header: 'Created By',
       cell: ({ row }) => row.original.user?.user_detail?.full_name || row.original.user?.email || '-'
     },
     {
