@@ -55,6 +55,7 @@ const props = defineProps<{
   types: { id: number; name: string }[]
   areas: {
     id: number
+    area_code: string
     name: string
     warehouse: {
       name: string
@@ -214,10 +215,7 @@ watch(
 const isEditable = computed(() => {
   if (props.mode === 'add') return true
 
-  const statusId =
-    props.workOrder?.wo_status_id ??
-    props.workOrder?.status?.id
-
+  const statusId = props.workOrder?.wo_status_id ?? props.workOrder?.status?.id
   return statusId === 1
 })
 
@@ -286,7 +284,19 @@ watch(
   () => state.wo_type_id,
   async (typeId) => {
     if (!typeId) return
-    if (state.ref_source === 'delivery_order' && state.ref_doc_id) return
+
+    if (typeId !== 1) {
+      state.ref_source = 'manual'
+      state.ref_doc_id = undefined
+      state.ref_doc_number = ''
+      state.ref_doc_name = ''
+
+      state.take_out_purpose = 'production'
+      state.production_wo_id = undefined
+      state.station_id = undefined
+    }
+
+    if (typeId === 1 && state.ref_source === 'delivery_order' && state.ref_doc_id) return
 
     const isTakeOut = state.wo_category === 'Take Out'
 
@@ -322,6 +332,13 @@ watch(
       return
     }
 
+    if (!isTakeOut) {
+      state.take_out_purpose = 'production'
+
+      state.production_wo_id = undefined
+      state.station_id = undefined
+    }
+
     await warehouseAreaStore.fetchDropdown({
       category_id: state.wo_type_id,
       ...(isTakeOut && { wo_category: 'take_out' })
@@ -336,6 +353,23 @@ watch(
     })
 
     state.items = []
+  }
+)
+
+watch(
+  () => state.take_out_purpose,
+  async (purpose) => {
+    state.items = []
+
+    state.warehouse_area_id = undefined
+
+    if (purpose === 'production') {
+      state.station_id = undefined
+    }
+
+    if (purpose === 'buffer') {
+      state.production_wo_id = undefined
+    }
   }
 )
 
@@ -510,7 +544,7 @@ const typeItems = computed(() => props.types.map(t => t.name))
 const areaItems = computed(() =>
   props.areas.map(a => ({
     ...a,
-    label: `${a.warehouse?.name ?? '-'} - ${a.name}`
+    label: `${a.area_code} - ${a.name} - ${a.warehouse?.name ?? '-'}`
   }))
 )
 
@@ -682,12 +716,24 @@ function onSubmit(event: FormSubmitEvent<any>) {
     return
   }
 
-  const { ref_source, ref_doc_id, ref_doc_number, ref_doc_name, ...formData } = event.data
+  const { take_out_purpose, ref_source, production_wo_id, ref_doc_id, ref_doc_number, ref_doc_name, station_id, ...formData } = event.data
   const isDeliveryOrder = ref_source === 'delivery_order'
+  const isProductionWo = state.take_out_purpose === 'production' && !!production_wo_id
+  const isBuffer = state.take_out_purpose === 'buffer' && !!station_id
 
   const payload = {
     ...formData,
-    ...(isDeliveryOrder ? { ref_doc_id } : { ref_doc_number, ref_doc_name }),
+
+    // Placement Delivery Order
+    ...(isDeliveryOrder ? { ref_doc_id } : {}),
+
+    // Take Out Production
+    ...(isProductionWo ? { take_out_purpose, production_wo_id } : {}),
+
+    // Take Out Buffer
+    ...(isBuffer ? { take_out_purpose, station_id } : {}),
+
+    ...(!isDeliveryOrder && !isProductionWo && !isBuffer ? { ref_doc_number, ref_doc_name } : {}),
     wo_status_id: submitType.value === 'draft' ? 1 : 2
   }
 
@@ -768,7 +814,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           placeholder="Select Work Order Type"
           class="w-full"
           :clear="isEditable"
-          :disabled="!isEditable"
+          :disabled="props.mode === 'edit'"
         />
       </UFormField>
 
@@ -783,6 +829,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           v-model="state.ref_source" 
           orientation="horizontal" 
           variant="list"
+          :disabled="props.mode === 'edit'"
           :items="[
             {
               label: 'Manual',
@@ -793,7 +840,6 @@ function onSubmit(event: FormSubmitEvent<any>) {
               value: 'delivery_order'
             }
           ]"
-          :disabled="!isEditable"
         />
       </UFormField>
 
@@ -808,7 +854,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
           v-model="state.take_out_purpose"
           orientation="horizontal"
           variant="list"
-          :disabled="!isEditable"
+          :disabled="props.mode === 'edit'"
           :items="[
             {
               label: 'Supply Production',
@@ -884,10 +930,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
         </UFormField>
       </div>
 
-      <UCard
-        v-if="productionWOInfo"
-        class="md:col-span-3"
-      >
+      <UCard v-if="productionWOInfo" class="md:col-span-3">
         <template #header>
           <div class="font-semibold">
             Production Work Order Information
@@ -910,9 +953,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
                 Product
               </div>
               <div>
-                {{ productionWOInfo.part_number }}
-                -
-                {{ productionWOInfo.part_name }}
+                {{ productionWOInfo.part_number }} - {{ productionWOInfo.part_name }}
               </div>
             </div>
 
@@ -921,8 +962,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
                 Planned Quantity
               </div>
               <div>
-                {{ productionWOInfo.planned_quantity }}
-                {{ productionWOInfo.uom }}
+                {{ productionWOInfo.planned_quantity }} {{ productionWOInfo.uom }}
               </div>
             </div>
 
@@ -941,20 +981,44 @@ function onSubmit(event: FormSubmitEvent<any>) {
             :columns="[
               { accessorKey: 'part_number', header: 'Part Number' },
               { accessorKey: 'part_name', header: 'Part Name' },
-              { accessorKey: 'required_qty', header: 'Required' },
-              { accessorKey: 'supplied_qty', header: 'Supplied' },
-              { accessorKey: 'remaining_qty', header: 'Remaining' },
-              { accessorKey: 'max_kanban', header: 'Max Kanban' },
+              { 
+                accessorKey: 'qty_per_kanban', 
+                header: 'Qty/Kanban',
+                cell: ({ row }) => `${row.original.qty_per_kanban} ${row.original.uom ?? ''}` 
+              },
+              { 
+                accessorKey: 'required_qty', 
+                header: 'Required',
+                cell: ({ row }) => `${row.original.required_qty} ${row.original.uom ?? ''}`
+              },
+              { 
+                accessorKey: 'supplied_qty', 
+                header: 'Supplied',
+                cell: ({ row }) => `${row.original.supplied_qty} ${row.original.uom ?? ''}`
+              },
+              { 
+                accessorKey: 'remaining_qty', 
+                header: 'Remaining',
+                cell: ({ row }) => `${row.original.remaining_qty} ${row.original.uom ?? ''}`
+              },
+              { 
+                accessorKey: 'buffer_stock', 
+                header: 'Buffer Stock',
+                cell: ({ row }) => `${row.original.buffer_stock} ${row.original.uom ?? ''}`
+              },
+              { 
+                accessorKey: 'max_kanban', 
+                header: 'Recommended Kanban',
+                cell: ({ row }) => `${row.original.max_kanban} Kanban`
+              },
               {
                 accessorKey: 'areas',
                 header: 'Available Areas',
-                cell: ({ row }) =>
-                  row.original.areas
-                    ?.map(
-                      area =>
-                        `${area.area_code} (${area.available_stock})`
-                    )
-                    .join(', ') || '-'
+                cell: ({ row }) => row.original.areas
+                  ?.map(
+                    area => `${area.area_code} (${area.available_stock})`
+                  )
+                  .join(', ') || '-'
               }
             ]"
           />
@@ -986,38 +1050,49 @@ function onSubmit(event: FormSubmitEvent<any>) {
         />
       </UFormField>
 
-      <UCard
-        v-if="stationInfo"
-        class="md:col-span-3"
-      >
+      <UCard v-if="stationInfo" class="md:col-span-3">
         <template #header>
           <div class="font-semibold">
             Buffer Station Information
           </div>
         </template>
 
-          <UTable
-            :data="stationInfo.materials"
-            :columns="[
-              { accessorKey: 'part_number', header: 'Part Number' },
-              { accessorKey: 'part_name', header: 'Part Name' },
-              { accessorKey: 'current_buffer_stock', header: 'Current Buffer' },
-              { accessorKey: 'min_buffer_stock', header: 'Min Buffer' },
-              { accessorKey: 'need_refill', header: 'Need Refill' },
-              { accessorKey: 'qty_per_kanban', header: 'Qty/Kanban' },
-              {
-                accessorKey: 'areas',
-                header: 'Available Areas',
-                cell: ({ row }) =>
-                  row.original.areas
-                    ?.map(
-                      area =>
-                        `${area.area_code} (${area.available_stock})`
-                    )
-                    .join(', ') || '-'
-              }
-            ]"
-          />
+        <UTable
+          :data="stationInfo.materials"
+          :columns="[
+            { accessorKey: 'part_number', header: 'Part Number' },
+            { accessorKey: 'part_name', header: 'Part Name' },
+            { 
+              accessorKey: 'current_buffer_stock', 
+              header: 'Current Buffer',
+              cell: ({ row }) => `${row.original.current_buffer_stock} ${row.original.uom?.code ?? ''}`
+            },
+            { 
+              accessorKey: 'min_buffer_stock', 
+              header: 'Min Buffer',
+              cell: ({ row }) => `${row.original.min_buffer_stock} ${row.original.uom?.code ?? ''}`
+            },
+            { 
+              accessorKey: 'need_refill', 
+              header: 'Need Refill',
+              cell: ({ row }) => `${row.original.need_refill} ${row.original.uom?.code ?? ''}`
+            },
+            { 
+              accessorKey: 'qty_per_kanban', 
+              header: 'Qty/Kanban',
+              cell: ({ row }) => `${row.original.qty_per_kanban} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'areas',
+              header: 'Available Areas',
+              cell: ({ row }) => row.original.areas
+                ?.map(
+                  area => `${area.area_code} (${area.available_stock})`
+                )
+                .join(', ') || '-'
+            }
+          ]"
+        />
       </UCard>
       
       <UFormField
@@ -1036,7 +1111,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
             !state.wo_type_id || 
             !isEditable ||
             (
-              state.wo_category === 'Take Out' &&
+              state.wo_category === 'Take Out' && state.wo_type_id === 1 &&
               (
                 (state.take_out_purpose === 'production' && !state.production_wo_id) ||
                 (state.take_out_purpose === 'buffer' && !state.station_id)
@@ -1100,6 +1175,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
       :loading="loading"
       :part-disabled="!isEditable || !state.wo_type_id || (state.wo_category === 'Take Out' && !state.warehouse_area_id) || (state.ref_source === 'delivery_order' && !state.ref_doc_id)"
       :kanban-disabled="!isEditable"
+      :show-max-kanban-field="state.wo_category === 'Take Out' && state.wo_type_id === 1 && state.take_out_purpose === 'production'"
       :show-stock-field="state.wo_category === 'Take Out' && state.ref_source !== 'delivery_order'"
       :show-remaining-qty-field="state.ref_source === 'delivery_order'"
       :item="selectedItemIndex !== null ? state.items[selectedItemIndex] : null"

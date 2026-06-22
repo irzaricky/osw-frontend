@@ -63,6 +63,7 @@ export interface ProductionWOMaterial {
   part_number: string
   part_name: string
   uom: string
+  qty_per_kanban: number
 
   required_qty: number
   supplied_qty: number
