@@ -157,6 +157,18 @@ const router = createRouter({
       component: () => import('./pages/production-plan/work-order/detail.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
+    {
+      path: '/production-plan/work-order/:id/stations/:station_id',
+      name: 'work-order-station-detail',
+      component: () => import('./pages/production-plan/work-order/detail-wo-station.vue'),
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+    },
+    {
+      path: '/production-plan/work-order-monitor',
+      name: 'work-order-monitor',
+      component: () => import('./pages/production-plan/wo-monitor/index.vue'),
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+    },
     // { 
     //   path: '/production-plan/work-order/create', 
     //   name: 'work-order-create',

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
-import { useAuthStore } from '../../../../stores/auth.store'
+import { useAuthStore }    from '../../../../stores/auth.store'
 import type {
-  WorkOrder,
   ReportIssuePayload,
   IssueType,
   IssueSeverity,
@@ -10,7 +9,6 @@ import type {
 
 const props = defineProps<{
   open:    boolean
-  wo:      WorkOrder
   loading: boolean
 }>()
 
@@ -22,11 +20,11 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 
 const ISSUE_TYPES: { value: IssueType; label: string; icon: string }[] = [
-  { value: 'DOWNTIME', label: 'Downtime',  icon: 'i-lucide-zap-off' },
-  { value: 'DEFECT',   label: 'Defect',    icon: 'i-lucide-x-circle' },
-  { value: 'MATERIAL', label: 'Material',  icon: 'i-lucide-package-x' },
-  { value: 'PAUSE',    label: 'Pause',     icon: 'i-lucide-pause-circle' },
-  { value: 'OTHER',    label: 'Other',     icon: 'i-lucide-more-horizontal' },
+  { value: 'DOWNTIME', label: 'Downtime', icon: 'i-lucide-zap-off' },
+  { value: 'DEFECT',   label: 'Defect',   icon: 'i-lucide-x-circle' },
+  { value: 'MATERIAL', label: 'Material', icon: 'i-lucide-package-x' },
+  { value: 'PAUSE',    label: 'Pause',    icon: 'i-lucide-pause-circle' },
+  { value: 'OTHER',    label: 'Other',    icon: 'i-lucide-more-horizontal' },
 ]
 
 const SEVERITY_OPTIONS: { value: IssueSeverity; label: string; color: string }[] = [
@@ -46,56 +44,57 @@ const form = reactive({
   defect_qty:        null as number | null,
   defect_type:       '',
   pause_reason:      '',
+  shift_end_qty:     null as number | null,
+  paused_at:         '',
 })
 
 const errors = reactive({
   issue_type:        '',
   issue_description: '',
+  session:           '',
 })
 
 watch(() => props.open, (v) => {
   if (v) {
-    form.issue_type        = ''
-    form.issue_description = ''
-    form.severity          = 'MEDIUM'
-    form.downtime_start    = ''
-    form.downtime_end      = ''
-    form.downtime_minutes  = null
-    form.defect_qty        = null
-    form.defect_type       = ''
-    form.pause_reason      = ''
-    errors.issue_type        = ''
+    Object.assign(form, {
+      issue_type: '', issue_description: '', severity: 'MEDIUM',
+      downtime_start: '', downtime_end: '', downtime_minutes: null,
+      defect_qty: null, defect_type: '', pause_reason: '',
+      shift_end_qty: null, paused_at: '',
+    })
+    errors.issue_type = ''
     errors.issue_description = ''
+    errors.session = ''
   }
 })
 
 function validate(): boolean {
   let valid = true
-  errors.issue_type        = ''
+  errors.issue_type = ''
   errors.issue_description = ''
-  if (!form.issue_type)              { errors.issue_type = 'Issue type is required.'; valid = false }
+  errors.session = ''
+  if (!form.issue_type)               { errors.issue_type        = 'Issue type is required.'; valid = false }
   if (!form.issue_description.trim()) { errors.issue_description = 'Description is required.'; valid = false }
+  if (!authStore.user?.id)            { errors.session            = 'User session not found. Please refresh and try again.'; valid = false }
   return valid
 }
 
 function handleSubmit() {
   if (!validate()) return
-  const userId = authStore.user?.id
-  if (!userId) {
-    errors.issue_description = 'User session not found. Please refresh and try again.'
-    return
-  }
   const payload: ReportIssuePayload = {
-    issue_type:          form.issue_type as IssueType,
-    issue_description:   form.issue_description.trim(),
-    reported_by_user_id: userId,
-    severity:            form.severity,
-    downtime_start:      form.downtime_start || null,
-    downtime_end:        form.downtime_end   || null,
-    downtime_minutes:    form.downtime_minutes,
-    defect_qty:          form.defect_qty,
-    defect_type:         form.defect_type || null,
-    pause_reason:        form.pause_reason || null,
+    issue_type:        form.issue_type as IssueType,
+    issue_description: form.issue_description.trim(),
+    reported_by:       authStore.user!.id,
+    severity:          form.severity,
+    downtime_start:    form.downtime_start || null,
+    downtime_end:      form.downtime_end   || null,
+    downtime_minutes:  form.downtime_minutes,
+    defect_qty:        form.defect_qty,
+    defect_type:       form.defect_type   || null,
+    pause_reason:      form.pause_reason  || null,
+    paused_by:         form.issue_type === 'PAUSE' ? (authStore.user?.id ?? null) : null,
+    paused_at:         form.paused_at || null,
+    shift_end_qty:     form.shift_end_qty,
   }
   emit('submit', payload)
 }
@@ -112,7 +111,7 @@ function handleSubmit() {
     <template #body>
       <div class="space-y-4">
 
-        <!-- Issue Type grid -->
+        <!-- Issue Type -->
         <UFormField label="Issue Type" :error="errors.issue_type" required>
           <div class="grid grid-cols-2 gap-2 mt-1">
             <button
@@ -155,15 +154,10 @@ function handleSubmit() {
 
         <!-- Description -->
         <UFormField label="Description" :error="errors.issue_description" required>
-          <UTextarea
-            v-model="form.issue_description"
-            placeholder="Describe the issue in detail..."
-            :rows="3"
-            class="w-full"
-          />
+          <UTextarea v-model="form.issue_description" placeholder="Describe the issue in detail..." :rows="3" class="w-full" />
         </UFormField>
 
-        <!-- Downtime fields -->
+        <!-- DOWNTIME fields -->
         <template v-if="form.issue_type === 'DOWNTIME'">
           <div class="grid grid-cols-2 gap-3">
             <UFormField label="Downtime Start">
@@ -174,17 +168,11 @@ function handleSubmit() {
             </UFormField>
           </div>
           <UFormField label="Downtime Minutes (Override)" description="Leave blank to auto-calculate from start/end.">
-            <UInput
-              v-model.number="form.downtime_minutes"
-              type="number"
-              min="0"
-              placeholder="Auto-calculated..."
-              class="w-full font-mono"
-            />
+            <UInput v-model.number="form.downtime_minutes" type="number" min="0" placeholder="Auto-calculated..." class="w-full font-mono" />
           </UFormField>
         </template>
 
-        <!-- Defect fields -->
+        <!-- DEFECT fields -->
         <template v-if="form.issue_type === 'DEFECT'">
           <div class="grid grid-cols-2 gap-3">
             <UFormField label="Defect Quantity">
@@ -196,25 +184,35 @@ function handleSubmit() {
           </div>
         </template>
 
-        <!-- Pause fields -->
+        <!-- PAUSE fields -->
         <template v-if="form.issue_type === 'PAUSE'">
           <UFormField label="Pause Reason">
-            <UInput v-model="form.pause_reason" placeholder="e.g. Shift change, maintenance..." class="w-full" />
+            <UInput v-model="form.pause_reason" placeholder="e.g. Shift change, waiting for material..." class="w-full" />
           </UFormField>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormField label="Units Completed at Pause">
+              <UInput v-model.number="form.shift_end_qty" type="number" min="0" placeholder="0" class="w-full font-mono" />
+            </UFormField>
+            <UFormField label="Paused At">
+              <UInput v-model="form.paused_at" type="datetime-local" class="w-full" />
+            </UFormField>
+          </div>
         </template>
+
+        <UAlert
+          v-if="errors.session"
+          color="error"
+          variant="soft"
+          icon="i-lucide-alert-circle"
+          :description="errors.session"
+        />
       </div>
     </template>
 
     <template #footer>
       <div class="flex items-center justify-end gap-2 w-full">
         <UButton label="Cancel" color="neutral" variant="ghost" @click="emit('update:open', false)" />
-        <UButton
-          label="Submit Issue"
-          icon="i-lucide-alert-triangle"
-          color="warning"
-          :loading="loading"
-          @click="handleSubmit"
-        />
+        <UButton label="Submit Issue" icon="i-lucide-alert-triangle" color="warning" :loading="loading" @click="handleSubmit" />
       </div>
     </template>
   </UModal>

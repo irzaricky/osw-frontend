@@ -2,10 +2,11 @@ import { api } from '../../plugins/axios'
 import type {
   WorkOrderListParams,
   DailySummaryParams,
+  StartWorkOrderPayload,
   AddProgressPayload,
   ReportIssuePayload,
   ResolveIssuePayload,
-  CompleteWorkOrderPayload,
+  CompleteStationPayload,
   UpdateStationStatusPayload,
   UpdateMaterialActualPayload,
 } from '../../types/production-plan/work-order'
@@ -13,6 +14,8 @@ import type {
 const BASE = '/production-plan/work-order'
 
 const workOrderService = {
+
+  // ── WO Line ──────────────────────────────────────────────────────────────────
 
   getWorkOrders(params?: WorkOrderListParams) {
     return api.get(BASE, { params })
@@ -26,54 +29,72 @@ const workOrderService = {
     return api.get(`${BASE}/daily-summary`, { params })
   },
 
-  startWorkOrder(id: number | string) {
-    return api.post(`${BASE}/${id}/start`)
+  startWorkOrder(id: number | string, data?: StartWorkOrderPayload) {
+    return api.post(`${BASE}/${id}/start`, data ?? {})
   },
 
-  completeWorkOrder(id: number | string, data: CompleteWorkOrderPayload) {
-    return api.post(`${BASE}/${id}/complete`, data)
+  checkMaterials(id: number | string) {
+    return api.get(`${BASE}/${id}/materials/check`)
   },
 
-  getProgresses(id: number | string) {
-    return api.get(`${BASE}/${id}/progresses`)
+  // ── WO Station ───────────────────────────────────────────────────────────────
+
+  getStationDetail(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}`)
   },
 
-  addProgress(id: number | string, data: AddProgressPayload) {
-    return api.post(`${BASE}/${id}/progresses`, data)
+  completeStation(wo_id: number | string, station_id: number | string, data: CompleteStationPayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/complete`, data)
   },
 
-  getIssues(id: number | string, resolved?: 'true' | 'false') {
-    return api.get(`${BASE}/${id}/issues`, {
+  updateStationStatus(wo_id: number | string, station_id: number | string, data: UpdateStationStatusPayload) {
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/status`, data)
+  },
+
+  // ── Station Progress ─────────────────────────────────────────────────────────
+
+  getStationProgresses(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/progresses`)
+  },
+
+  addStationProgress(wo_id: number | string, station_id: number | string, data: AddProgressPayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/progresses`, data)
+  },
+
+  // ── Station Issues ───────────────────────────────────────────────────────────
+
+  getStationIssues(wo_id: number | string, station_id: number | string, resolved?: 'true' | 'false') {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/issues`, {
       params: resolved !== undefined ? { resolved } : undefined,
     })
   },
 
-  reportIssue(id: number | string, data: ReportIssuePayload) {
-    return api.post(`${BASE}/${id}/issues`, data)
+  reportStationIssue(wo_id: number | string, station_id: number | string, data: ReportIssuePayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/issues`, data)
   },
 
-  resolveIssue(id: number | string, issue_id: number | string, data: ResolveIssuePayload) {
-    return api.put(`${BASE}/${id}/issues/${issue_id}/resolve`, data)
-  },
-
-  updateStationStatus(
+  resolveStationIssue(
     wo_id:      number | string,
     station_id: number | string,
-    data:       UpdateStationStatusPayload,
+    issue_id:   number | string,
+    data:       ResolveIssuePayload,
   ) {
-    return api.put(`${BASE}/${wo_id}/stations/${station_id}/status`, data)
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/issues/${issue_id}/resolve`, data)
   },
 
-  getMaterials(id: number | string) {
-    return api.get(`${BASE}/${id}/materials`)
+  // ── Station Materials ────────────────────────────────────────────────────────
+
+  getStationMaterials(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/materials`)
   },
 
-  updateMaterialActual(
+  updateStationMaterialActual(
     wo_id:       number | string,
+    station_id:  number | string,
     material_id: number | string,
     data:        UpdateMaterialActualPayload,
   ) {
-    return api.put(`${BASE}/${wo_id}/materials/${material_id}/actual`, data)
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/materials/${material_id}/actual`, data)
   },
 }
 

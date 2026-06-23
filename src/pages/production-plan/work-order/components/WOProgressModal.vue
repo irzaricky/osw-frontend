@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
 import { useAuthStore } from '../../../../stores/auth.store'
-import type { WorkOrder, AddProgressPayload } from '../../../../types/production-plan/work-order'
+import type { AddProgressPayload } from '../../../../types/production-plan/work-order'
 
 const props = defineProps<{
-  open:    boolean
-  wo:      WorkOrder
-  loading: boolean
+  open:              boolean
+  plannedQty:        number
+  currentCumulative: number
+  loading:           boolean
 }>()
 
 const emit = defineEmits<{
@@ -28,10 +29,6 @@ const errors = reactive({
   qty_scrap:  '',
 })
 
-const currentCumulative = computed(() =>
-  props.wo.cumulative_qty_good ?? props.wo.actual_quantity ?? 0,
-)
-
 watch(() => props.open, (v) => {
   if (v) {
     form.qty_good   = 0
@@ -43,12 +40,17 @@ watch(() => props.open, (v) => {
   }
 })
 
-const newCumulative = computed(() => currentCumulative.value + form.qty_good)
-const maxAllowed    = computed(() => Math.ceil(props.wo.planned_quantity * 1.1))
+const newCumulative = computed(() => props.currentCumulative + form.qty_good)
+const maxAllowed    = computed(() => Math.ceil(props.plannedQty * 1.1))
 
 const progressPct = computed(() => {
-  if (!props.wo.planned_quantity) return 0
-  return Math.min(110, Math.round((newCumulative.value / props.wo.planned_quantity) * 100))
+  if (!props.plannedQty) return 0
+  return Math.min(110, Math.round((newCumulative.value / props.plannedQty) * 100))
+})
+
+const currentPct = computed(() => {
+  if (!props.plannedQty) return 0
+  return Math.min(100, Math.round((props.currentCumulative / props.plannedQty) * 100))
 })
 
 const progressBarColor = computed(() => {
@@ -72,7 +74,7 @@ function validate(): boolean {
     valid = false
   }
   if (newCumulative.value > maxAllowed.value) {
-    errors.qty_good = `This would bring cumulative good qty to ${newCumulative.value}, exceeding 110% of planned (max: ${maxAllowed.value}). Use Complete WO instead.`
+    errors.qty_good = `This would bring cumulative good qty to ${newCumulative.value}, exceeding 110% of planned (max: ${maxAllowed.value}). Use Complete Station instead.`
     valid = false
   }
   return valid
@@ -86,10 +88,10 @@ function handleSubmit() {
     return
   }
   const payload: AddProgressPayload = {
-    qty_good:            form.qty_good,
-    qty_reject:          form.qty_reject || undefined,
-    qty_scrap:           form.qty_scrap  || undefined,
-    reported_by_user_id: userId,
+    qty_good:    form.qty_good,
+    qty_reject:  form.qty_reject || undefined,
+    qty_scrap:   form.qty_scrap  || undefined,
+    reported_by: userId,
   }
   emit('submit', payload)
 }
@@ -99,7 +101,7 @@ function handleSubmit() {
   <UModal
     :open="open"
     title="Report Progress"
-    description="Record production output for this batch or time period."
+    description="Record production output for this station."
     :ui="{ content: 'sm:max-w-md' }"
     @update:open="emit('update:open', $event)"
   >
@@ -110,14 +112,14 @@ function handleSubmit() {
           <div class="flex items-center justify-between text-sm">
             <span class="text-muted">Cumulative Good Qty</span>
             <span class="font-mono font-semibold">
-              {{ currentCumulative.toLocaleString() }} / {{ wo.planned_quantity.toLocaleString() }}
+              {{ currentCumulative.toLocaleString() }} / {{ plannedQty.toLocaleString() }}
             </span>
           </div>
           <div class="w-full h-1.5 bg-default rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-300"
               :class="progressBarColor"
-              :style="{ width: `${Math.min(100, Math.round((currentCumulative / wo.planned_quantity) * 100))}%` }"
+              :style="{ width: `${currentPct}%` }"
             />
           </div>
         </div>
@@ -136,7 +138,7 @@ function handleSubmit() {
               New cumulative:
               <span
                 class="font-semibold"
-                :class="newCumulative > wo.planned_quantity ? 'text-warning-600' : 'text-default'"
+                :class="newCumulative > plannedQty ? 'text-warning-600' : 'text-default'"
               >
                 {{ newCumulative.toLocaleString() }}
               </span>

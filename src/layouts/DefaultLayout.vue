@@ -253,15 +253,15 @@ const staticLinks = [[{
       }
     },
     {
-      label: 'Plan Managements',
-      icon: 'i-lucide-calendar-check',
+      label: 'Plan Capacity',
+      icon: 'i-lucide-gantt-chart',
       to: '/production-plan/plan',
       onSelect: () => {
         open.value = false
       }
     },
     {
-      label: 'Order & Schedulling',
+      label: 'Order Scheduling',
       icon: 'i-lucide-calendar-clock',
       to: '/production-plan/order-schedule',
       onSelect: () => {
@@ -272,6 +272,14 @@ const staticLinks = [[{
       label: 'Work Orders',
       icon: 'i-lucide-clipboard-list',
       to: '/production-plan/work-order',
+      onSelect: () => {
+        open.value = false
+      }
+    },
+    {
+      label: 'Work Order Monitoring',
+      icon: 'i-lucide-monitor-check',
+      to: '/production-plan/work-order-monitor',
       onSelect: () => {
         open.value = false
       }

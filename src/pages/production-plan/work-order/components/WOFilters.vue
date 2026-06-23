@@ -1,146 +1,89 @@
 <script setup lang="ts">
-/**
- * WoFilters.vue — [PERUBAHAN]
- *
- * Perubahan dari versi sebelumnya:
- * 1. Props `filters` kini menyertakan field `shift_id`.
- * 2. Tambah prop `shifts` (daftar master data Shift) untuk mengisi dropdown.
- * 3. Tambah computed `selectedShift` yang mengirim `shift_id` saat berubah.
- * 4. Komponen `USelectMenu` baru untuk memilih Shift ditambahkan di baris filter.
- * 5. `hasActiveFilters` kini juga mendeteksi filter shift yang aktif.
- */
-import { computed } from 'vue'
-import type { WorkOrderStatus, Shift } from '../../../../types/production-plan/work-order'
+import { computed }            from 'vue'
+import HomeDateRangePicker     from '../../../../components/home/HomeDateRangePicker.vue'
+import type { Range }          from '../../../../types'
+import type { WorkOrderStatus } from '../../../../types/production-plan/work-order'
+
+interface Filters {
+  status?:    WorkOrderStatus | undefined
+  date_range?: Range | undefined
+  line_id?:   number | undefined
+  shift_id?:  number | undefined
+}
 
 const props = defineProps<{
   search:  string
-  filters: {
-    status?:    WorkOrderStatus
-    work_date?: string
-    line_id?:   number
-    shift_id?:  number    // [BARU]
-  }
-  shifts?: Shift[]        // [BARU] data master shift untuk dropdown
+  filters: Filters
 }>()
 
 const emit = defineEmits<{
   'update:search':  [value: string]
-  'update:filters': [value: typeof props.filters]
+  'update:filters': [value: Partial<Filters>]
   'reset':          []
 }>()
 
-const statusItems = ['Draft', 'Released', 'In_Progress', 'Completed', 'Cancelled'] as WorkOrderStatus[]
+const STATUS_OPTIONS: { label: string; value: WorkOrderStatus }[] = [
+  { label: 'Released',    value: 'Released' },
+  { label: 'In Progress', value: 'In_Progress' },
+  { label: 'Completed',   value: 'Completed' },
+  { label: 'Cancelled',   value: 'Cancelled' },
+]
 
-const statusLabel: Record<WorkOrderStatus, string> = {
-  Draft:       'Draft',
-  Released:    'Released',
-  In_Progress: 'In Progress',
-  Completed:   'Completed',
-  Cancelled:   'Cancelled',
-}
+const selectedDateRange = computed({
+  get() { return props.filters.date_range },
+  set(value: Range | undefined) { emit('update:filters', { date_range: value }) },
+})
 
 const selectedStatus = computed({
-  get: () => props.filters.status ?? null,
-  set: (v) => emit('update:filters', { ...props.filters, status: v ?? undefined }),
+  get() { return props.filters.status },
+  set(value: WorkOrderStatus | undefined) { emit('update:filters', { status: value ?? undefined }) },
 })
 
-const selectedDate = computed({
-  get: () => props.filters.work_date ?? '',
-  set: (v) => emit('update:filters', { ...props.filters, work_date: v || undefined }),
-})
-
-// [BARU] Computed untuk filter shift_id.
-// USelectMenu menggunakan objek Shift, tapi kita emit hanya id-nya ke parent.
-const selectedShift = computed({
-  get: () => props.shifts?.find((s) => s.id === props.filters.shift_id) ?? null,
-  set: (v: Shift | null) => emit('update:filters', { ...props.filters, shift_id: v?.id ?? undefined }),
-})
-
-// Label yang ditampilkan di dalam dropdown shift: "Shift 1 · 07:00 - 15:00"
-function shiftLabel(s: Shift) {
-  return `${s.name} · ${s.start_time.slice(0, 5)}–${s.end_time.slice(0, 5)}`
-}
-
-// [PERUBAHAN] Deteksi filter aktif kini juga mengecek shift_id
 const hasActiveFilters = computed(() =>
-  !!props.search || !!props.filters.status || !!props.filters.work_date || !!props.filters.shift_id,
+  !!props.filters.status    ||
+  !!props.filters.date_range ||
+  !!props.filters.line_id   ||
+  !!props.filters.shift_id  ||
+  !!props.search,
 )
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-3">
 
-    <!-- Status Filter — tidak berubah -->
+    <HomeDateRangePicker
+      v-model="selectedDateRange"
+      class="w-full md:w-70"
+      clear
+    />
+
     <USelectMenu
       v-model="selectedStatus"
-      :items="statusItems"
-      placeholder="All Statuses"
-      class="w-44"
+      :items="STATUS_OPTIONS"
+      value-key="value"
+      label-key="label"
+      placeholder="Filter by Status"
+      class="w-full md:w-44"
       clear
     />
 
-    <!-- Work Date Filter — tidak berubah -->
     <UInput
-      v-model="selectedDate"
-      type="date"
-      icon="i-lucide-calendar"
-      placeholder="Work Date"
-      class="w-48"
+      :model-value="search"
+      icon="i-lucide-search"
+      placeholder="Search WO number..."
+      class="w-full md:w-64 ml-auto"
+      @update:model-value="emit('update:search', $event as string)"
     />
 
-    <!--
-      [BARU] Shift Filter Dropdown
-      Hanya ditampilkan jika prop `shifts` tersedia (dikirim dari halaman parent).
-      Menggunakan valueKey agar USelectMenu bisa membandingkan objek dengan benar.
-    -->
-    <USelectMenu
-      v-if="shifts && shifts.length > 0"
-      v-model="selectedShift"
-      :items="shifts"
-      :option-attribute="undefined"
-      value-key="id"
-      placeholder="All Shifts"
-      class="w-52"
-      clear
-    >
-      <template #label>
-        <template v-if="selectedShift">
-          <UIcon name="i-lucide-clock" class="w-4 h-4 text-muted" />
-          <span>{{ shiftLabel(selectedShift) }}</span>
-        </template>
-        <template v-else>
-          <UIcon name="i-lucide-clock" class="w-4 h-4 text-muted" />
-          <span class="text-muted">All Shifts</span>
-        </template>
-      </template>
-
-      <template #option="{ option: s }">
-        <div class="flex flex-col">
-          <span class="font-medium text-sm">{{ s.name }}</span>
-          <span class="text-xs text-muted">{{ s.start_time.slice(0, 5) }} – {{ s.end_time.slice(0, 5) }}</span>
-        </div>
-      </template>
-    </USelectMenu>
-
-    <!-- Search & Reset -->
-    <div class="ml-auto flex items-center gap-2">
-      <UButton
-        v-if="hasActiveFilters"
-        label="Reset"
-        icon="i-lucide-x"
-        color="neutral"
-        variant="ghost"
-        size="sm"
-        @click="emit('reset')"
-      />
-      <UInput
-        :model-value="search"
-        icon="i-lucide-search"
-        placeholder="Search WO number..."
-        class="w-64"
-        @update:model-value="emit('update:search', $event)"
-      />
-    </div>
+    <UButton
+      v-if="hasActiveFilters"
+      label="Reset"
+      icon="i-lucide-x"
+      color="neutral"
+      variant="ghost"
+      size="sm"
+      @click="emit('reset')"
+    />
 
   </div>
 </template>

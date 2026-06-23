@@ -1,12 +1,12 @@
-import { h } from 'vue'
-import type { ColumnDef } from '@tanstack/table-core'
+import { h, type Ref, computed } from 'vue'
+import type { ColumnDef }        from '@tanstack/table-core'
 import type { WorkOrder, WorkOrderStatus } from '../../../../types/production-plan/work-order'
 
 interface UIComponents {
-  UCheckbox:    any
-  UButton:      any
+  UCheckbox:     any
+  UButton:       any
   UDropdownMenu: any
-  UBadge:       any
+  UBadge:        any
 }
 
 interface Actions {
@@ -28,29 +28,16 @@ export const WO_STATUS_LABEL: Record<WorkOrderStatus, string> = {
   Cancelled:   'Cancelled',
 }
 
-export function useWorkOrderColumns(actions: Actions, ui: UIComponents) {
+export function useWorkOrderColumns(
+  actions:    Actions,
+  ui:         UIComponents,
+  pagination: Ref<{ page: number; limit: number }>,
+) {
   const columns: ColumnDef<WorkOrder>[] = [
     {
-      id: 'select',
-      header: ({ table }) =>
-        h(ui.UCheckbox, {
-          modelValue:           table.getIsAllPageRowsSelected(),
-          indeterminate:        table.getIsSomePageRowsSelected(),
-          'onUpdate:modelValue': (v: boolean) => table.toggleAllPageRowsSelected(!!v),
-          ariaLabel:            'Select all',
-        }),
-      cell: ({ row }) =>
-        h(ui.UCheckbox, {
-          modelValue:           row.getIsSelected(),
-          'onUpdate:modelValue': (v: boolean) => row.toggleSelected(!!v),
-          ariaLabel:            'Select row',
-        }),
-      enableSorting: false,
-      enableHiding:  false,
-    },
-    {
-      header: 'No',
-      cell:   ({ row }) => row.index + 1,
+      header: '#',
+      // Correct row number across pages
+      cell:   ({ row }) => (pagination.value.page - 1) * pagination.value.limit + row.index + 1,
     },
     {
       accessorKey: 'wo_number',
@@ -114,7 +101,7 @@ export function useWorkOrderColumns(actions: Actions, ui: UIComponents) {
         }),
     },
     {
-      id:   'actions',
+      id:     'actions',
       header: '',
       cell:   ({ row }) => {
         const wo = row.original
@@ -142,7 +129,7 @@ export function useWorkOrderColumns(actions: Actions, ui: UIComponents) {
             content: { align: 'end' },
           }, () =>
             h(ui.UButton, {
-              icon:    'i-lucide-more-vertical',
+              icon:    'i-lucide-ellipsis-vertical',
               color:   'neutral',
               variant: 'ghost',
               class:   'h-8 w-8 p-0',
