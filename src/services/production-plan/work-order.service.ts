@@ -2,19 +2,20 @@ import { api } from '../../plugins/axios'
 import type {
   WorkOrderListParams,
   DailySummaryParams,
+  StartWorkOrderPayload,
   AddProgressPayload,
   ReportIssuePayload,
   ResolveIssuePayload,
-  CompleteWorkOrderPayload,
-  UpdateStationJobStatusPayload,
-  ScanOperatorPayload,          // [BARU]
+  CompleteStationPayload,
+  UpdateStationStatusPayload,
+  UpdateMaterialActualPayload,
 } from '../../types/production-plan/work-order'
 
 const BASE = '/production-plan/work-order'
 
 const workOrderService = {
 
-  // ── List & Detail ──────────────────────────────────────────────────────────
+  // ── WO Line ──────────────────────────────────────────────────────────────────
 
   getWorkOrders(params?: WorkOrderListParams) {
     return api.get(BASE, { params })
@@ -24,72 +25,76 @@ const workOrderService = {
     return api.get(`${BASE}/${id}`)
   },
 
-  // [PERUBAHAN] getDailySummary kini menerima objek params lengkap (bukan hanya string tanggal)
-  // agar bisa meneruskan filter shift_id dan stage ke BE
   getDailySummary(params?: DailySummaryParams) {
     return api.get(`${BASE}/daily-summary`, { params })
   },
 
-  // ── Execution ──────────────────────────────────────────────────────────────
-
-  startWorkOrder(id: number | string) {
-    return api.post(`${BASE}/${id}/start`)
+  startWorkOrder(id: number | string, data?: StartWorkOrderPayload) {
+    return api.post(`${BASE}/${id}/start`, data ?? {})
   },
 
-  // ── Progress ──────────────────────────────────────────────────────────────
-
-  getProgresses(id: number | string) {
-    return api.get(`${BASE}/${id}/progresses`)
+  checkMaterials(id: number | string) {
+    return api.get(`${BASE}/${id}/materials/check`)
   },
 
-  addProgress(id: number | string, data: AddProgressPayload) {
-    return api.post(`${BASE}/${id}/progresses`, data)
+  // ── WO Station ───────────────────────────────────────────────────────────────
+
+  getStationDetail(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}`)
   },
 
-  // ── Issues ────────────────────────────────────────────────────────────────
-
-  getIssues(id: number | string, resolved?: 'true' | 'false') {
-    return api.get(`${BASE}/${id}/issues`, { params: resolved !== undefined ? { resolved } : undefined })
+  completeStation(wo_id: number | string, station_id: number | string, data: CompleteStationPayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/complete`, data)
   },
 
-  reportIssue(id: number | string, data: ReportIssuePayload) {
-    return api.post(`${BASE}/${id}/issues`, data)
+  updateStationStatus(wo_id: number | string, station_id: number | string, data: UpdateStationStatusPayload) {
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/status`, data)
   },
 
-  resolveIssue(id: number | string, issue_id: number | string, data: ResolveIssuePayload) {
-    return api.put(`${BASE}/${id}/issues/${issue_id}/resolve`, data)
+  // ── Station Progress ─────────────────────────────────────────────────────────
+
+  getStationProgresses(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/progresses`)
   },
 
-  // ── Complete ──────────────────────────────────────────────────────────────
-
-  completeWorkOrder(id: number | string, data: CompleteWorkOrderPayload) {
-    return api.post(`${BASE}/${id}/complete`, data)
+  addStationProgress(wo_id: number | string, station_id: number | string, data: AddProgressPayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/progresses`, data)
   },
 
-  // ── Station Job ───────────────────────────────────────────────────────────
+  // ── Station Issues ───────────────────────────────────────────────────────────
 
-  updateStationJobStatus(
+  getStationIssues(wo_id: number | string, station_id: number | string, resolved?: 'true' | 'false') {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/issues`, {
+      params: resolved !== undefined ? { resolved } : undefined,
+    })
+  },
+
+  reportStationIssue(wo_id: number | string, station_id: number | string, data: ReportIssuePayload) {
+    return api.post(`${BASE}/${wo_id}/stations/${station_id}/issues`, data)
+  },
+
+  resolveStationIssue(
     wo_id:      number | string,
     station_id: number | string,
-    job_id:     number | string,
-    data:       UpdateStationJobStatusPayload,
+    issue_id:   number | string,
+    data:       ResolveIssuePayload,
   ) {
-    return api.put(`${BASE}/${wo_id}/stations/${station_id}/jobs/${job_id}/status`, data)
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/issues/${issue_id}/resolve`, data)
   },
 
-  // ── [FITUR BARU] Scan Operator ────────────────────────────────────────────
-  //
-  // Memanggil endpoint POST /work-orders/:id/stations/:station_id/jobs/:job_id/scan-operator
-  // Payload: { operator_id } — ID operator yang didapat dari scan QR Code di lapangan.
-  // BE akan memvalidasi urutan (sequence enforcer) dan mengupdate status job ke In_Progress
-  // jika sebelumnya masih Pending.
-  scanOperator(
-    wo_id:      number | string,
-    station_id: number | string,
-    job_id:     number | string,
-    data:       ScanOperatorPayload,
+  // ── Station Materials ────────────────────────────────────────────────────────
+
+  getStationMaterials(wo_id: number | string, station_id: number | string) {
+    return api.get(`${BASE}/${wo_id}/stations/${station_id}/materials`)
+  },
+
+  updateStationMaterialActual(
+    wo_id:       number | string,
+    station_id:  number | string,
+    material_id: number | string,
+    data:        UpdateMaterialActualPayload,
   ) {
-    return api.post(`${BASE}/${wo_id}/stations/${station_id}/jobs/${job_id}/scan-operator`, data)
+    return api.put(`${BASE}/${wo_id}/stations/${station_id}/materials/${material_id}/actual`, data)
   },
 }
 

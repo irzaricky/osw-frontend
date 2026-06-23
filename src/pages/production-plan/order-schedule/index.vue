@@ -147,12 +147,20 @@ onMounted(() => {
         <div class="flex justify-between items-center">
           <div>
             <h1 class="text-2xl font-bold">
-              Production Order
+              Production Order Scheduling
             </h1>
             <p class="text-sm text-muted mt-0.5">
               Manage and schedule production orders from approved production plans.
             </p>
           </div>
+          <UButton
+            icon="i-lucide-plus"
+            class="ml-auto"
+            color="primary"
+            variant="solid"
+            label="New PO"
+            @click="goToCreate"
+          />
         </div>
 
         
@@ -163,14 +171,6 @@ onMounted(() => {
             :status-options="STATUS_OPTIONS"
             @update:filters="onUpdateFilters"
             @update:search="onUpdateSearch"
-          />
-          <UButton
-            icon="i-lucide-plus"
-            class="ml-auto"
-            color="primary"
-            variant="solid"
-            label="Create Production Order"
-            @click="goToCreate"
           />
         </div>
 
@@ -185,7 +185,7 @@ onMounted(() => {
 
         <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
           <div class="text-sm text-muted">
-            Total {{ meta.total }} production order(s).
+            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
           </div>
           <UPagination
             v-model:page="meta.page"

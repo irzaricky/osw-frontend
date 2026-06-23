@@ -83,7 +83,7 @@ const showComponents = computed(
 
     <!-- Alerts -->
     <UAlert
-      v-if="!isCreate && currentBom?.doc_status?.code === 'REJECTED' && currentBom.reject_reason"
+      v-if="!isCreate && currentBom?.doc_status === 'Rejected' && currentBom.reject_reason"
       color="error"
       variant="soft"
       icon="i-lucide-x-circle"
@@ -91,7 +91,7 @@ const showComponents = computed(
       :description="currentBom.reject_reason"
     />
     <UAlert
-      v-if="!isCreate && currentBom?.doc_status?.code === 'APPROVED' && currentBom.approver"
+      v-if="!isCreate && currentBom?.doc_status === 'Approved' && currentBom.approver"
       color="success"
       variant="soft"
       icon="i-lucide-check-circle-2"

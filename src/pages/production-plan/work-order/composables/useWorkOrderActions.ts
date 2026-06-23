@@ -4,7 +4,7 @@ import { useAppToast }       from '../../../../composables/useAppToast'
 import type { WorkOrder }    from '../../../../types/production-plan/work-order'
 
 export function useWorkOrderActions(onRefresh: () => void) {
-  const store              = useWorkOrderStore()
+  const store  = useWorkOrderStore()
   const { toastSuccess, toastError } = useAppToast()
 
   const confirm = reactive({
@@ -17,11 +17,11 @@ export function useWorkOrderActions(onRefresh: () => void) {
   })
 
   function openConfirm(opts: {
-    title:        string
-    description:  string
+    title:         string
+    description:   string
     confirmLabel?: string
     confirmColor?: 'primary' | 'error' | 'success'
-    action:       () => Promise<void>
+    action:        () => Promise<void>
   }) {
     confirm.title        = opts.title
     confirm.description  = opts.description
@@ -48,8 +48,7 @@ export function useWorkOrderActions(onRefresh: () => void) {
           toastSuccess(res.message || 'Work Order started')
           closeConfirm()
           onRefresh()
-        }
-        catch (e) { toastError(e); closeConfirm() }
+        } catch (e) { toastError(e); closeConfirm() }
       },
     })
   }

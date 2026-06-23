@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { AvailableDO, PlanType } from '../../../../types/production-plan/plan'
+import { computed, ref } from 'vue'
+import type { AvailableDO, PlanType, PlanDetail } from '../../../../types/production-plan/plan'
 
-defineProps<{
+const props = defineProps<{
   isCreate:    boolean
   isDetail:    boolean
   currentPlan: any
-  // [~] tambah plan_type ke headerForm
   headerForm:  {
     plan_month:       string
     plan_type:        PlanType
@@ -17,8 +17,6 @@ defineProps<{
   fmtDate:     (d?: string | null) => string
   fmtNum:      (n?: number | null) => string
   pendingDos:  AvailableDO[]
-  doReferences: any[]
-  // [+] daftar plan ORIGINAL Approved untuk dropdown parent (saat create AMENDMENT)
   approvedOriginalPlans?: { id: number; plan_number: string; plan_month: string }[]
 }>()
 
@@ -26,22 +24,24 @@ const emit = defineEmits<{
   (e: 'open-do-modal'): void
   (e: 'remove-pending', id: number): void
   (e: 'remove-do', id: number): void
+  (e: 'undo-remove-do', id: number): void  // ← tambahan
 }>()
 
-// Format YYYY-MM ke label yang mudah dibaca, misal "2025-05" → "May 2025"
+// Track DO IDs that user has marked for removal (pending removal, not yet saved)
+const pendingRemoveDoIds = ref<Set<number>>(new Set())
+
 function fmtPlanMonth(plan_month?: string): string {
   if (!plan_month) return '-'
   const [year, month] = plan_month.split('-')
-  const date = new Date(Number(year), Number(month) - 1, 1)
-  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  return new Date(Number(year), Number(month) - 1, 1)
+    .toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 }
 
-// Generate opsi bulan: bulan ini + 3 bulan ke depan (sesuai batasan BE untuk ORIGINAL)
 function getPlanMonthOptions() {
   const options: { label: string; value: string }[] = []
   const now = new Date()
   for (let i = 0; i <= 3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    const d     = new Date(now.getFullYear(), now.getMonth() + i, 1)
     const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const label = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     options.push({ label, value })
@@ -51,22 +51,53 @@ function getPlanMonthOptions() {
 
 const planMonthOptions = getPlanMonthOptions()
 
-// [+] Opsi plan type — sesuai enum BE
 const planTypeOptions: { label: string; value: PlanType }[] = [
-  { label: 'Original', value: 'ORIGINAL' },
+  { label: 'Original',  value: 'ORIGINAL' },
   { label: 'Amendment', value: 'AMENDMENT' },
 ]
 
-// [+] Label plan type untuk info bar
 const planTypeLabel: Record<PlanType, string> = {
   ORIGINAL:  'Original',
   AMENDMENT: 'Amendment',
 }
+
+// Build unique DO entries from details, including do_number from delivery_order
+const existingDoEntries = computed<{ do_id: number; do_number: string }[]>(() => {
+  if (!props.currentPlan?.details?.length) return []
+  const seen = new Set<number>()
+  const result: { do_id: number; do_number: string }[] = []
+  for (const d of props.currentPlan.details as PlanDetail[]) {
+    if (!seen.has(d.do_id)) {
+      seen.add(d.do_id)
+      result.push({
+        do_id:     d.do_id,
+        do_number: d.delivery_order?.do_number ?? `DO #${d.do_id}`,
+      })
+    }
+  }
+  return result
+})
+
+function handleRemoveDo(doId: number) {
+  pendingRemoveDoIds.value = new Set([...pendingRemoveDoIds.value, doId])
+  emit('remove-do', doId)
+}
+
+function handleRemovePending(doId: number) {
+  emit('remove-pending', doId)
+}
+
+// Reset pending remove state when parent refreshes data (plan changes)
+// Parent should call this via template ref if needed, or it resets naturally on re-render
+function resetPendingRemove() {
+  pendingRemoveDoIds.value = new Set()
+}
+
+defineExpose({ resetPendingRemove })
 </script>
 
 <template>
   <div class="bg-default border border-default rounded-xl">
-    <!-- Card header -->
     <div class="flex items-center justify-between px-5 py-4 border-b border-default">
       <h2 class="font-semibold text-sm flex items-center gap-2">
         <UIcon name="i-lucide-clipboard-list" class="w-4 h-4 text-primary" />
@@ -76,22 +107,19 @@ const planTypeLabel: Record<PlanType, string> = {
       <UBadge v-else-if="isDetail" label="Edit Mode" color="warning" variant="soft" size="sm" />
     </div>
 
-    <!-- Info bar (detail/edit mode only) -->
+    <!-- Summary bar (detail / edit mode) -->
     <div
       v-if="!isCreate && currentPlan"
       class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-8 divide-x divide-default border-b border-default"
     >
-      <!-- Plan Month -->
       <div class="px-4 py-3 space-y-0.5">
         <p class="text-xs text-muted">Plan Month</p>
         <p class="text-sm font-semibold">{{ fmtPlanMonth(currentPlan.plan_month) }}</p>
       </div>
-      <!-- [+] Plan Type -->
       <div class="px-4 py-3 space-y-0.5">
         <p class="text-xs text-muted">Type</p>
         <div class="flex items-center gap-1.5">
           <p class="text-sm font-semibold">{{ planTypeLabel[currentPlan.plan_type as PlanType] ?? currentPlan.plan_type }}</p>
-          <!-- Tampilkan link ke parent plan jika AMENDMENT -->
           <UTooltip
             v-if="currentPlan.plan_type === 'AMENDMENT' && currentPlan.parent_plan"
             :text="`Parent: ${currentPlan.parent_plan.plan_number}`"
@@ -113,7 +141,7 @@ const planTypeLabel: Record<PlanType, string> = {
         <p class="text-sm font-semibold">{{ fmtDate(currentPlan.latest_delivery_date) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Product</p>
+        <p class="text-xs text-muted">Total Products</p>
         <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_products) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
@@ -121,7 +149,7 @@ const planTypeLabel: Record<PlanType, string> = {
         <p class="text-sm font-semibold">{{ fmtNum(currentPlan.total_qty_request) }}</p>
       </div>
       <div class="px-4 py-3 space-y-0.5">
-        <p class="text-xs text-muted">Total Available Qty</p>
+        <p class="text-xs text-muted">Total Capacity Qty</p>
         <p
           class="text-sm font-semibold"
           :class="{
@@ -137,8 +165,6 @@ const planTypeLabel: Record<PlanType, string> = {
     <!-- Form fields -->
     <div class="px-5 py-4 space-y-4">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-        <!-- Plan Type — hanya tampil saat create -->
         <UFormField v-if="isCreate" label="Plan Type" required>
           <USelect
             v-model="headerForm.plan_type"
@@ -151,7 +177,6 @@ const planTypeLabel: Record<PlanType, string> = {
           />
         </UFormField>
 
-        <!-- Plan Month — hanya tampil & wajib diisi saat create ORIGINAL -->
         <UFormField
           v-if="isCreate && headerForm.plan_type === 'ORIGINAL'"
           label="Plan Month"
@@ -168,10 +193,9 @@ const planTypeLabel: Record<PlanType, string> = {
           />
         </UFormField>
 
-        <!-- [+] Parent Plan — wajib diisi saat plan_type === 'AMENDMENT' -->
         <UFormField
           v-if="isCreate && headerForm.plan_type === 'AMENDMENT'"
-          label="Parent Plan (Original Approved)"
+          label="Parent Plan (Approved Original)"
           required
         >
           <USelect
@@ -186,10 +210,7 @@ const planTypeLabel: Record<PlanType, string> = {
             class="w-full"
             :disabled="saving || !(approvedOriginalPlans ?? []).length"
           />
-          <p
-            v-if="!(approvedOriginalPlans ?? []).length"
-            class="text-xs text-muted mt-1"
-          >
+          <p v-if="!(approvedOriginalPlans ?? []).length" class="text-xs text-muted mt-1">
             No approved Original plans available.
           </p>
         </UFormField>
@@ -197,7 +218,7 @@ const planTypeLabel: Record<PlanType, string> = {
         <UFormField label="Plan Description">
           <UInput
             v-model="headerForm.plan_description"
-            placeholder="Example: March 2026 Production Batch"
+            placeholder="e.g. March 2026 Production Batch"
             class="w-full"
             :disabled="(!isCreate && !isDetail) || saving"
           />
@@ -212,41 +233,77 @@ const planTypeLabel: Record<PlanType, string> = {
         </UFormField>
       </div>
 
-      <!-- DO reference row (detail/edit) -->
-      <div v-if="!isCreate && doReferences.length" class="space-y-1.5">
+      <!-- DO reference chips -->
+      <div
+        v-if="!isCreate && (existingDoEntries.length || pendingDos.length)"
+        class="space-y-1.5"
+      >
         <p class="text-xs text-muted font-medium flex items-center gap-1.5">
           <UIcon name="i-lucide-link-2" class="w-3.5 h-3.5" />
           Delivery Order References
-        </p>
-        <div class="flex flex-wrap gap-2">
           <span
-            v-for="ref in doReferences"
-            :key="ref.id"
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border border-default text-default"
+            v-if="isDetail && (pendingRemoveDoIds.size > 0 || pendingDos.length > 0)"
+            class="text-[10px] text-warning-600 font-normal ml-1"
           >
-            {{ ref.delivery_order?.do_number ?? `DO #${ref.do_id}` }}
-            <UIcon
-              v-if="isDetail"
-              name="i-lucide-x"
-              class="w-3 h-3 cursor-pointer text-muted hover:text-error-500"
-              @click="$emit('remove-do', ref.do_id)"
-            />
+            · Unsaved changes
           </span>
-          <UBadge
+        </p>
+
+        <div class="flex flex-wrap gap-2">
+          <!-- Existing DOs from saved details -->
+          <span
+            v-for="entry in existingDoEntries"
+            :key="entry.do_id"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-all"
+            :class="pendingRemoveDoIds.has(entry.do_id)
+              ? 'border-error-300 bg-error-50 text-error-600 dark:border-error-700 dark:bg-error-950 dark:text-error-400 line-through opacity-60'
+              : 'border-default bg-elevated text-default'"
+          >
+            <UIcon
+              v-if="pendingRemoveDoIds.has(entry.do_id)"
+              name="i-lucide-trash-2"
+              class="w-3 h-3"
+            />
+            {{ entry.do_number }}
+            <button
+              v-if="isDetail && !pendingRemoveDoIds.has(entry.do_id)"
+              type="button"
+              class="ml-0.5 text-muted hover:text-error-500 transition-colors"
+              :disabled="saving"
+              @click="handleRemoveDo(entry.do_id)"
+            >
+              <UIcon name="i-lucide-x" class="w-3 h-3" />
+            </button>
+            <button
+              v-else-if="isDetail && pendingRemoveDoIds.has(entry.do_id)"
+              type="button"
+              class="ml-0.5 text-error-400 hover:text-error-600 transition-colors"
+              :disabled="saving"
+              @click="pendingRemoveDoIds.delete(entry.do_id); emit('undo-remove-do', entry.do_id)"
+            >
+              <UIcon name="i-lucide-undo-2" class="w-3 h-3" title="Undo remove" />
+            </button>
+          </span>
+
+          <!-- Pending new DOs (not yet saved) -->
+          <span
             v-for="doItem in (pendingDos ?? [])"
             :key="`pending-${doItem.id}`"
-            :label="doItem.do_number"
-            color="primary"
-            variant="soft"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-800 dark:bg-primary-950 dark:text-primary-300"
           >
-            <template #trailing>
-              <UIcon
-                name="i-lucide-x"
-                class="w-3 h-3 cursor-pointer"
-                @click="$emit('remove-pending', doItem.id)"
-              />
-            </template>
-          </UBadge>
+            <UIcon name="i-lucide-plus" class="w-3 h-3" />
+            {{ doItem.do_number }}
+            <button
+              type="button"
+              class="ml-0.5 text-primary-400 hover:text-primary-700 transition-colors"
+              :disabled="saving"
+              @click="handleRemovePending(doItem.id)"
+            >
+              <UIcon name="i-lucide-x" class="w-3 h-3" />
+            </button>
+          </span>
+
+          <!-- Add DO button -->
           <UButton
             v-if="isDetail"
             label="+ Add DO"
@@ -254,9 +311,43 @@ const planTypeLabel: Record<PlanType, string> = {
             color="neutral"
             variant="soft"
             class="ml-1 rounded"
+            :disabled="saving"
             @click="$emit('open-do-modal')"
           />
         </div>
+
+        <!-- Legend hint when there are pending changes -->
+        <div
+          v-if="isDetail && (pendingRemoveDoIds.size > 0 || pendingDos.length > 0)"
+          class="flex items-center gap-3 mt-1"
+        >
+          <span v-if="pendingRemoveDoIds.size > 0" class="flex items-center gap-1 text-[10px] text-error-500">
+            <UIcon name="i-lucide-trash-2" class="w-3 h-3" />
+            {{ pendingRemoveDoIds.size }} DO(s) marked for removal
+          </span>
+          <span v-if="pendingDos.length > 0" class="flex items-center gap-1 text-[10px] text-primary-500">
+            <UIcon name="i-lucide-plus" class="w-3 h-3" />
+            {{ pendingDos.length }} new DO(s) pending
+          </span>
+          <span class="text-[10px] text-muted">· Save to apply changes</span>
+        </div>
+      </div>
+
+      <!-- Empty state when no DOs and in detail/edit mode -->
+      <div
+        v-else-if="!isCreate && isDetail && !existingDoEntries.length && !pendingDos.length"
+        class="flex items-center gap-2"
+      >
+        <p class="text-xs text-muted">No Delivery Orders linked.</p>
+        <UButton
+          label="+ Add DO"
+          size="xs"
+          color="neutral"
+          variant="soft"
+          class="rounded"
+          :disabled="saving"
+          @click="$emit('open-do-modal')"
+        />
       </div>
     </div>
   </div>

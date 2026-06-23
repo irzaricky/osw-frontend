@@ -57,16 +57,39 @@ const monthOptions = [
   { label: 'December',  value: 12 },
 ]
  
-// ── Efficiency factor untuk calculate ─────────────────────────────────────
+// ── Form fields untuk calculate ────────────────────────────────────────────
 const efficiencyFactor = ref<number>(0.85)
- 
-// Sync efficiencyFactor dari preview (existing_param jika sudah ada)
+/**
+ * manpower sekarang wajib diisi secara eksplisit.
+ * BE tidak lagi bisa men-derive ini dari employee group (tabel sudah dihapus).
+ * Default-nya di-sync dari previewResult.suggested_manpower saat preview berhasil.
+ */
+const manpower = ref<number | null>(null)
+
+// Sync efficiencyFactor & manpower dari preview result
 watch(previewResult, (val) => {
   if (val?.existing_param?.default_efficiency_factor != null) {
     efficiencyFactor.value = val.existing_param.default_efficiency_factor
   }
+  // Gunakan suggested_manpower sebagai pre-fill jika manpower belum diisi
+  // atau saat periode berganti (reset ke saran dari BE)
+  if (val?.suggested_manpower != null) {
+    manpower.value = val.suggested_manpower
+  } else if (val !== null) {
+    // Preview berhasil tapi tidak ada histori manpower sama sekali → reset
+    manpower.value = null
+  }
 })
  
+// ── Computed: validasi form ────────────────────────────────────────────────
+const isFormValid = computed(() =>
+  efficiencyFactor.value >= 0.1 &&
+  efficiencyFactor.value <= 1 &&
+  manpower.value != null &&
+  manpower.value >= 1 &&
+  !isSelectedPeriodPast.value
+)
+
 // ── Confirm dialog untuk delete ────────────────────────────────────────────
 const confirmDialog = ref({
   open:        false,
@@ -104,15 +127,20 @@ onMounted(() => {
  
 // ── Calculate ──────────────────────────────────────────────────────────────
 async function handleCalculate() {
+  if (manpower.value == null || manpower.value < 1) {
+    toastError('Manpower harus diisi dan bernilai minimal 1.')
+    return
+  }
   try {
     const res = await lineCapacityStore.calculate(lineId.value, {
       year:              selectedYear.value,
       month:             selectedMonth.value,
       efficiency_factor: efficiencyFactor.value,
+      manpower:          manpower.value,
     })
     const msg = res?.message ?? 'Capacity params calculated successfully'
     toastSuccess(msg)
-    // Refresh preview untuk update already_calculated flag
+    // Refresh preview untuk update already_calculated flag & suggested_manpower
     await loadPreview()
   } catch (err) {
     toastError(err)
@@ -123,6 +151,8 @@ async function handleCalculate() {
 async function handleRecalculate(param: LineCapacitySavedParams) {
   selectedYear.value  = param.param_year
   selectedMonth.value = param.param_month
+  // Set manpower dari param yang akan direcalculate
+  manpower.value = param.default_manpower
   await handleCalculate()
 }
  
@@ -269,6 +299,38 @@ function formatFieldValue(field: (typeof savedParamFields)[number], value: any):
             </span>
           </div>
         </div>
+
+        <!-- Manpower -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs font-medium text-muted">
+            Manpower
+            <span class="text-error ml-0.5">*</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <UInput
+              v-model.number="manpower"
+              type="number"
+              min="1"
+              step="1"
+              placeholder="e.g. 10"
+              class="w-28 font-mono"
+              :class="{ 'ring-1 ring-error': manpower == null || manpower < 1 }"
+            />
+            <span class="text-sm text-muted">pax</span>
+          </div>
+          <p
+            v-if="previewResult?.suggested_manpower != null"
+            class="text-[11px] text-muted"
+          >
+            Suggested: {{ previewResult.suggested_manpower }} pax
+          </p>
+          <p
+            v-else-if="previewResult !== null"
+            class="text-[11px] text-warning"
+          >
+            Belum ada histori manpower. Isi manual.
+          </p>
+        </div>
  
         <!-- Calculate Button -->
         <UButton
@@ -276,7 +338,7 @@ function formatFieldValue(field: (typeof savedParamFields)[number], value: any):
           :icon="previewResult?.already_calculated ? 'i-lucide-refresh-cw' : 'i-lucide-play'"
           color="primary"
           :loading="calculating"
-          :disabled="efficiencyFactor < 0.1 || efficiencyFactor > 1 || isSelectedPeriodPast"
+          :disabled="!isFormValid"
           @click="handleCalculate"
         />
       </div>
@@ -368,7 +430,9 @@ function formatFieldValue(field: (typeof savedParamFields)[number], value: any):
         Actual Line Condition
       </p>
  
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+      <!-- Hanya 3 metric — default_manpower & total_all_members dihapus
+           karena tidak lagi dikembalikan BE (SEmployeeGroup sudah dihapus) -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
         <div class="bg-default rounded-md px-3 py-2 border border-default">
           <p class="text-[11px] text-muted mb-0.5">Active Stations</p>
           <p class="text-sm font-semibold font-mono text-highlighted">
@@ -385,20 +449,6 @@ function formatFieldValue(field: (typeof savedParamFields)[number], value: any):
           <p class="text-[11px] text-muted mb-0.5">Max Takt Time</p>
           <p class="text-sm font-semibold font-mono text-highlighted">
             {{ formatSeconds(currentParams.actual.max_takt_time_seconds) }}
-          </p>
-        </div>
-        <div class="bg-default rounded-md px-3 py-2 border border-default">
-          <p class="text-[11px] text-muted mb-0.5">Operators</p>
-          <p class="text-sm font-semibold font-mono text-highlighted">
-            {{ currentParams.actual.default_manpower ?? '-' }}
-            <span class="text-[11px] font-normal text-muted">pax</span>
-          </p>
-        </div>
-        <div class="bg-default rounded-md px-3 py-2 border border-default">
-          <p class="text-[11px] text-muted mb-0.5">Total Members</p>
-          <p class="text-sm font-semibold font-mono text-highlighted">
-            {{ currentParams.actual.total_all_members ?? '-' }}
-            <span class="text-[11px] font-normal text-muted">pax</span>
           </p>
         </div>
       </div>
@@ -461,25 +511,8 @@ function formatFieldValue(field: (typeof savedParamFields)[number], value: any):
           </table>
         </div>
       </div>
- 
-      <!-- Employee Groups -->
-      <div v-if="currentParams.actual.groups?.length">
-        <p class="text-[11px] font-semibold text-muted uppercase tracking-widest mb-1.5">
-          Employee Groups
-        </p>
-        <div class="flex flex-wrap gap-2">
-          <div
-            v-for="group in currentParams.actual.groups"
-            :key="group.group_id"
-            class="bg-default rounded-md px-3 py-2 border border-default text-sm min-w-0"
-          >
-            <p class="font-medium text-highlighted truncate">{{ group.group_name }}</p>
-            <p class="text-[11px] text-muted mt-0.5 whitespace-nowrap">
-              {{ group.total_operators }} operators / {{ group.total_members }} members
-            </p>
-          </div>
-        </div>
-      </div>
+
+      <!-- Employee Groups dihapus — tabel SEmployeeGroup sudah tidak ada di schema BE -->
     </div>
  
     <!-- ── Capacity History Table ───────────────────────────────────────── -->

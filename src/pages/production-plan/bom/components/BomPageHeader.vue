@@ -43,14 +43,14 @@ const router = useRouter()
           />
           <UBadge
             v-if="!isCreate && currentBom?.doc_status"
-            :label="currentBom.doc_status.name"
-            :color="docStatusColor(currentBom.doc_status.code)"
+            :label="currentBom.doc_status"
+            :color="docStatusColor(currentBom.doc_status)"
             variant="subtle"
           />
           <UBadge
             v-if="!isCreate && currentBom?.activation_status"
-            :label="currentBom.activation_status.name"
-            :color="currentBom.activation_status.code === 'ACTIVE' ? 'success' : 'neutral'"
+            :label="currentBom.activation_status"
+            :color="currentBom.activation_status === 'Active' ? 'success' : 'neutral'"
             variant="soft"
           />
         </div>
@@ -62,7 +62,7 @@ const router = useRouter()
 
     <!-- Workflow buttons (edit mode only) -->
     <div v-if="!isCreate && currentBom" class="flex items-center gap-2 flex-wrap">
-      <template v-if="currentBom.doc_status?.code === 'PENDING_APPROVAL'">
+      <template v-if="currentBom.doc_status === 'Pending_Approval'">
         <UButton
           label="Approve"
           icon="i-lucide-check"
@@ -79,11 +79,11 @@ const router = useRouter()
           @click="emit('reject')"
         />
       </template>
-      <template v-if="currentBom.doc_status?.code === 'APPROVED'">
+      <template v-if="currentBom.doc_status === 'Approved'">
         <UButton
-          :label="currentBom.activation_status?.code === 'ACTIVE' ? 'Deactivate' : 'Activate'"
-          :icon="currentBom.activation_status?.code === 'ACTIVE' ? 'i-lucide-power-off' : 'i-lucide-power'"
-          :color="currentBom.activation_status?.code === 'ACTIVE' ? 'neutral' : 'success'"
+          :label="currentBom.activation_status === 'Active' ? 'Deactivate' : 'Activate'"
+          :icon="currentBom.activation_status === 'Active' ? 'i-lucide-power-off' : 'i-lucide-power'"
+          :color="currentBom.activation_status === 'Active' ? 'neutral' : 'success'"
           variant="soft"
           :loading="saving"
           @click="emit('activate')"

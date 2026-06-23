@@ -1,55 +1,101 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveComponent } from 'vue'
-import { storeToRefs }    from 'pinia'
-import { useRouter }      from 'vue-router'
-import { useWorkOrderStore }    from '../../../stores/production-plan/work-order.store'
-import { useWorkOrderColumns }  from './composables/useWorkOrderColumns'
-import { useWorkOrderFilters }  from './composables/useWorkOrderFilters'
-import { useWorkOrderActions }  from './composables/useWorkOrderActions'
-import { useAppToast }          from '../../../composables/useAppToast'
-import type { WorkOrder }       from '../../../types/production-plan/work-order'
-import type { Row }             from '@tanstack/table-core'
+import { storeToRefs }        from 'pinia'
+import { useRouter }          from 'vue-router'
+import { useDebounceFn }      from '@vueuse/core'
+import { useWorkOrderStore }  from '../../../stores/production-plan/work-order.store'
+import { useWorkOrderColumns } from './composables/useWorkOrderColumns'
+import { useWorkOrderActions } from './composables/useWorkOrderActions'
+import { useAppToast }        from '../../../composables/useAppToast'
+import type { WorkOrder, WorkOrderStatus } from '../../../types/production-plan/work-order'
+import type { Range }         from '../../../types'
+import Breadcrumbs    from '../../../components/Breadcrumbs.vue'
+import ConfirmDialog  from '../../../components/ConfirmDialog.vue'
+import WOFilters      from './components/WOFilters.vue'
+import WODailySummary from './components/WODailySummary.vue'
 
-import Breadcrumbs       from '../../../components/Breadcrumbs.vue'
-import ConfirmDialog     from '../../../components/ConfirmDialog.vue'
-import WODailySummary    from './components/WODailySummary.vue'
-
-const router    = useRouter()
-const woStore   = useWorkOrderStore()
+const router  = useRouter()
+const woStore = useWorkOrderStore()
 const { workOrders, meta, loading, dailySummary } = storeToRefs(woStore)
-const { toastSuccess, toastError } = useAppToast()
 
 const table        = useTemplateRef('table')
 const rowSelection = ref({})
 
 const ui = {
-  UCheckbox:    resolveComponent('UCheckbox') as any,
-  UButton:      resolveComponent('UButton')   as any,
+  UCheckbox:     resolveComponent('UCheckbox') as any,
+  UButton:       resolveComponent('UButton')   as any,
   UDropdownMenu: resolveComponent('UDropdownMenu') as any,
-  UBadge:       resolveComponent('UBadge')    as any,
+  UBadge:        resolveComponent('UBadge')    as any,
 }
+
+const pagination = computed(() => ({ page: meta.value.page, limit: meta.value.limit }))
 
 const selectedCount = computed((): number =>
   (table.value as any)?.tableApi?.getFilteredSelectedRowModel().rows.length || 0,
 )
 
-async function fetchData() {
-  await woStore.fetchWorkOrders({
-    page:      meta.value.page,
-    limit:     meta.value.limit,
-    search:    search.value || undefined,
-    status:    filters.status,
-    work_date: filters.work_date,
-    line_id:   filters.line_id,
-  })
+// ── Filters ───────────────────────────────────────────────────────────────────
+
+const search = ref('')
+
+const today = new Date()
+const filters = reactive({
+  status:     undefined as WorkOrderStatus | undefined,
+  date_range: { start: today, end: today } as Range | undefined,
+  line_id:    undefined as number | undefined,
+  shift_id:   undefined as number | undefined,
+})
+
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-const { search, filters, debouncedSearch, resetFilters } = useWorkOrderFilters(fetchData)
+function resetFilters() {
+  search.value        = ''
+  filters.status      = undefined
+  filters.date_range  = undefined
+  filters.line_id     = undefined
+  filters.shift_id    = undefined
+  meta.value.page     = 1
+  fetchData()
+}
 
-const {
-  confirm,
-  handleStart,
-} = useWorkOrderActions(() => fetchData())
+// ── Fetch ─────────────────────────────────────────────────────────────────────
+
+async function fetchData() {
+  const params: Record<string, any> = {
+    page:    meta.value.page,
+    limit:   meta.value.limit,
+    search:  search.value || undefined,
+    status:  filters.status,
+    line_id: filters.line_id,
+    shift_id: filters.shift_id,
+  }
+  if (filters.date_range?.start) params.start_date = formatLocalDate(filters.date_range.start)
+  if (filters.date_range?.end)   params.end_date   = formatLocalDate(filters.date_range.end)
+
+  await woStore.fetchWorkOrders(params)
+}
+
+const debouncedFetch = useDebounceFn(() => {
+  meta.value.page = 1
+  fetchData()
+}, 300)
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+
+const summaryDate = ref(new Date().toISOString().split('T')[0])
+
+async function refreshSummary() {
+  await woStore.fetchDailySummary({ work_date: summaryDate.value })
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+const { confirm, handleStart } = useWorkOrderActions(() => fetchData())
 
 const { columns } = useWorkOrderColumns(
   {
@@ -57,24 +103,22 @@ const { columns } = useWorkOrderColumns(
     onStart: (wo) => handleStart(wo),
   },
   ui,
+  pagination,
 )
 
-watch(search, debouncedSearch)
+// ── Watchers ──────────────────────────────────────────────────────────────────
+
+watch(search, () => debouncedFetch())
 watch(filters, () => { meta.value.page = 1; fetchData() }, { deep: true })
+watch(summaryDate, refreshSummary)
+
+// ── Breadcrumbs ───────────────────────────────────────────────────────────────
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
-  { label: 'Manufacturing' },
+  { label: 'Production Plan' },
   { label: 'Work Orders' },
 ]
-
-const summaryDate = ref(new Date().toISOString().split('T')[0])
-
-async function refreshSummary() {
-  await woStore.fetchDailySummary(summaryDate.value)
-}
-
-watch(summaryDate, refreshSummary)
 
 onMounted(async () => {
   await Promise.all([fetchData(), refreshSummary()])
@@ -95,19 +139,13 @@ onMounted(async () => {
       <div class="space-y-5">
         <Breadcrumbs :items="breadcrumbItems" />
 
-        <!-- Page Header -->
-        <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold">
-              Work Orders
-            </h1>
-            <p class="text-sm text-muted mt-0.5">
-              Manage and monitor shop floor Work Orders
-            </p>
+            <h1 class="text-2xl font-bold">Work Orders</h1>
+            <p class="text-sm text-muted mt-0.5">Manage and monitor shop floor Work Orders</p>
           </div>
         </div>
 
-        <!-- Daily Summary -->
         <WODailySummary
           v-model:work-date="summaryDate"
           :summary="dailySummary"
@@ -115,69 +153,39 @@ onMounted(async () => {
           @refresh="refreshSummary"
         />
 
-        <!-- Filters -->
         <WOFilters
           :search="search"
           :filters="filters"
-          @update:search="search = $event; debouncedSearch()"
+          @update:search="search = $event"
           @update:filters="Object.assign(filters, $event)"
           @reset="resetFilters"
         />
 
-        <!-- Bulk Actions -->
-        <div v-if="selectedCount > 0" class="flex items-center gap-3 px-4 py-2.5 bg-elevated border border-default rounded-lg">
-          <span class="text-sm font-medium">{{ selectedCount }} selected</span>
-          <UButton
-            label="Clear Selection"
-            color="neutral"
-            variant="ghost"
-            size="xs"
-            @click="rowSelection = {}"
-          />
-        </div>
-
-        <!-- Table -->
         <UTable
           ref="table"
           v-model:row-selection="rowSelection"
-          :data="workOrders"
+          :data="loading ? [] : workOrders"
           :columns="columns"
           :loading="loading"
           class="w-full"
         />
 
-        <!-- Empty state -->
         <div
           v-if="!loading && workOrders.length === 0"
           class="flex flex-col items-center justify-center py-16 text-center text-muted gap-3"
         >
           <UIcon name="i-lucide-clipboard-x" class="w-10 h-10" />
           <div>
-            <p class="text-sm font-medium">
-              No Work Orders found
-            </p>
-            <p class="text-xs mt-1">
-              Try adjusting your filters or search.
-            </p>
+            <p class="text-sm font-medium">No Work Orders found</p>
+            <p class="text-xs mt-1">Try adjusting your filters or search.</p>
           </div>
-          <UButton
-            label="Reset Filters"
-            color="neutral"
-            variant="soft"
-            size="sm"
-            @click="resetFilters"
-          />
+          <UButton label="Reset Filters" color="neutral" variant="soft" size="sm" @click="resetFilters" />
         </div>
 
-        <!-- Pagination -->
-        <div
-          v-if="meta.total > 0"
-          class="flex items-center justify-between gap-3 border-t border-default pt-4"
-        >
-          <div class="text-sm text-muted">
-            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }}
-            of {{ meta.total }} row(s)
-          </div>
+        <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+          <p class="text-sm text-muted">
+            Total {{ meta.total }} work order(s).
+          </p>
           <UPagination
             v-model:page="meta.page"
             :total="meta.total"
@@ -186,7 +194,6 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Confirm Dialog (Start) -->
         <ConfirmDialog
           v-model:open="confirm.open"
           :title="confirm.title"

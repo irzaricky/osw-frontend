@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { z } from 'zod'
 import type { ReschedulePayload } from '../../../../types/production-plan/order-schedule'
 import { fmtDate } from '../composables/usePOUtils'
+import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
+import type { Range } from '../../../../types'
+import { parseDate, type DateValue } from '@internationalized/date'
 
 const props = defineProps<{
   open:                boolean
   currentStart?:       string
   currentEnd?:         string
   latestDeliveryDate?: string
+  planMonth?:          string
   loading:             boolean
 }>()
 
@@ -19,67 +23,97 @@ const emit = defineEmits<{
 
 const formRef = ref()
 
-const state = reactive({
-  new_start_date:    props.currentStart ?? '',
-  new_end_date:      props.currentEnd ?? '',
-  reschedule_reason: '',
+// ── Date range state ───────────────────────────────────────────────────────────
+const dateRange = ref<Range | undefined>(
+  props.currentStart && props.currentEnd
+    ? { start: new Date(props.currentStart), end: new Date(props.currentEnd) }
+    : undefined,
+)
+
+// ── String ISO turunan untuk validasi & payload ────────────────────────────────
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+const startIso = computed(() => dateRange.value?.start ? formatLocalDate(dateRange.value.start) : '')
+const endIso   = computed(() => dateRange.value?.end   ? formatLocalDate(dateRange.value.end)   : '')
+
+const planMonth = computed(() =>
+  props.planMonth ?? props.currentStart?.slice(0, 7) ?? null
+)
+
+const isDateDisabled = computed(() => {
+  if (!planMonth.value) return undefined
+  const [year, month] = planMonth.value.split('-').map(Number)
+  return (date: DateValue) => date.year !== year || date.month !== month
 })
+
+// ── Reason state ───────────────────────────────────────────────────────────────
+const rescheduleReason = ref('')
 
 // ── Schema ─────────────────────────────────────────────────────────────────────
 const schema = z.object({
-  new_start_date:    z.string().min(1, 'New start date is required.'),
-  new_end_date:      z.string().min(1, 'New end date is required.'),
+  new_start_date:    z.string().min(1, 'Start date is required.'),
+  new_end_date:      z.string().min(1, 'End date is required.'),
   reschedule_reason: z.string().min(10, 'Please provide a reason of at least 10 characters.'),
 }).superRefine((data, ctx) => {
   if (data.new_start_date && data.new_end_date) {
     if (new Date(data.new_end_date) <= new Date(data.new_start_date)) {
       ctx.addIssue({
         code:    z.ZodIssueCode.custom,
-        message: 'New End Date must be after New Start Date.',
+        message: 'End Date must be after Start Date.',
         path:    ['new_end_date'],
       })
     }
   }
-  if (props.latestDeliveryDate && data.new_end_date) {
-    if (new Date(data.new_end_date) >= new Date(props.latestDeliveryDate)) {
-      ctx.addIssue({
-        code:    z.ZodIssueCode.custom,
-        message: `New End Date must be before Latest Delivery Date (${fmtDate(props.latestDeliveryDate)}).`,
-        path:    ['new_end_date'],
-      })
+  // Validasi bulan
+  if (planMonth.value) {
+    const [y, m] = planMonth.value.split('-').map(Number)
+    for (const [field, iso] of [
+      ['new_start_date', data.new_start_date],
+      ['new_end_date',   data.new_end_date],
+    ] as const) {
+      if (iso) {
+        const d = new Date(iso)
+        if (d.getFullYear() !== y || d.getMonth() + 1 !== m) {
+          ctx.addIssue({
+            code:    z.ZodIssueCode.custom,
+            message: `Date must be within the plan month (${planMonth.value}).`,
+            path:    [field],
+          })
+        }
+      }
     }
   }
 })
 
-// ── Date helpers ───────────────────────────────────────────────────────────────
-function toCalendarDate(iso: string) {
-  const [year, month, day] = iso.split('-').map(Number)
-  return { year, month, day }
-}
-function fromCalendarDate(d: { year: number; month: number; day: number }): string {
-  return `${d.year}-${String(d.month).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`
-}
-
-const newStartModel = computed({
-  get() { return state.new_start_date ? toCalendarDate(state.new_start_date) : undefined },
-  set(val: any) { state.new_start_date = val ? fromCalendarDate(val) : '' },
-})
-
-const newEndModel = computed({
-  get() { return state.new_end_date ? toCalendarDate(state.new_end_date) : undefined },
-  set(val: any) { state.new_end_date = val ? fromCalendarDate(val) : '' },
-})
+// State yang diumpankan ke UForm
+const formState = computed(() => ({
+  new_start_date:    startIso.value,
+  new_end_date:      endIso.value,
+  reschedule_reason: rescheduleReason.value,
+}))
 
 // ── Submit ─────────────────────────────────────────────────────────────────────
 async function onConfirm() {
-  const result = await formRef.value?.validate()
-  if (!result?.valid) return
+  const payload = {
+    new_start_date:    startIso.value,
+    new_end_date:      endIso.value,
+    reschedule_reason: rescheduleReason.value,
+  }
 
-  emit('confirm', {
-    new_start_date:    state.new_start_date,
-    new_end_date:      state.new_end_date,
-    reschedule_reason: state.reschedule_reason,
-  })
+  const result = schema.safeParse(payload)
+  console.log('safeParse result:', result)
+
+  if (!result.success) {
+    await formRef.value?.validate().catch(() => {})
+    return
+  }
+
+  emit('confirm', payload)
 }
 </script>
 
@@ -102,9 +136,7 @@ async function onConfirm() {
 
         <!-- Current range summary -->
         <div class="bg-elevated rounded-lg p-3 text-sm space-y-1">
-          <p class="text-xs text-muted uppercase tracking-wide mb-2">
-            Current Schedule
-          </p>
+          <p class="text-xs text-muted uppercase tracking-wide mb-2">Current Schedule</p>
           <div class="flex justify-between">
             <span class="text-muted">Start Date</span>
             <span class="font-mono font-semibold">{{ fmtDate(props.currentStart) }}</span>
@@ -115,72 +147,39 @@ async function onConfirm() {
           </div>
           <div v-if="props.latestDeliveryDate" class="flex justify-between">
             <span class="text-muted">Latest Delivery</span>
-            <span class="font-mono text-error-600 dark:text-error-400 font-semibold">{{ fmtDate(props.latestDeliveryDate) }}</span>
+            <span class="font-mono text-error-600 dark:text-error-400 font-semibold">
+              {{ fmtDate(props.latestDeliveryDate) }}
+            </span>
           </div>
         </div>
 
         <UForm
           ref="formRef"
           :schema="schema"
-          :state="state"
+          :state="formState"
           class="space-y-4"
         >
-          <!-- New start date -->
-          <UFormField label="New Start Date" name="new_start_date" required>
-            <UInputDate v-model="state.new_start_date" class="w-full">
-              <template #trailing>
-                <UPopover>
-                  <UButton
-                    color="neutral"
-                    variant="link"
-                    size="sm"
-                    icon="i-lucide-calendar"
-                    class="px-0"
-                  />
-                  <template #content>
-                    <UCalendar v-model="newStartModel" class="p-2" />
-                  </template>
-                </UPopover>
-              </template>
-            </UInputDate>
-          </UFormField>
-
-          <!-- New end date -->
-          <UFormField label="New End Date" name="new_end_date" required>
-            <UInputDate v-model="state.new_end_date" class="w-full">
-              <template #trailing>
-                <UPopover>
-                  <UButton
-                    color="neutral"
-                    variant="link"
-                    size="sm"
-                    icon="i-lucide-calendar"
-                    class="px-0"
-                  />
-                  <template #content>
-                    <UCalendar
-                      v-model="newEndModel"
-                      class="p-2"
-                      :is-date-disabled="(date: any) => {
-                        if (!state.new_start_date) return false
-                        const cur = new Date(date.year, date.month - 1, date.day)
-                        const start = new Date(state.new_start_date)
-                        const latest = props.latestDeliveryDate ? new Date(props.latestDeliveryDate) : null
-                        if (cur <= start) return true
-                        if (latest && cur >= latest) return true
-                        return false
-                      }"
-                    />
-                  </template>
-                </UPopover>
-              </template>
-            </UInputDate>
+          <!-- Date range -->
+          <UFormField
+            label="New Production Date Range"
+            name="new_start_date"
+            required
+            :help="planMonth
+              ? `Date range must be within ${planMonth}.`
+              : 'Select the production date range for this order.'"
+          >
+            <HomeDateRangePicker
+              v-model="dateRange"
+              :is-date-disabled="isDateDisabled ?? undefined"
+              clear
+              class="w-full"
+            />
           </UFormField>
 
           <!-- Reason -->
           <UFormField label="Reschedule Reason" name="reschedule_reason" required>
             <UTextarea
-              v-model="state.reschedule_reason"
+              v-model="rescheduleReason"
               placeholder="Describe the reason for this reschedule (required)..."
               :rows="4"
               class="w-full"

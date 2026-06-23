@@ -10,17 +10,13 @@ export type BomPart = Pick<
 // ─── Reference / lookup entities ──────────────────────────────────────────────
 
 export interface BomDocStatus {
-  id: number;
   code: string; // 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED'
   name: string;
-  sequence: number;
 }
 
 export interface BomActivationStatus {
-  id: number;
   code: string; // 'ACTIVE' | 'INACTIVE'
   name: string;
-  sequence: number;
 }
 
 // ─── BOM Detail (s_bom_details) ───────────────────────────────────────────────
@@ -60,8 +56,8 @@ export interface Bom {
   notes?: string | null;
   bom_version: number;
   uom_id?: number | null;
-  doc_status_id?: number | null;
-  activation_status_id?: number | null;
+  doc_status?: string | null;
+  activation_status?: string | null;
   reject_reason?: string | null;
   created_by?: number | null;
   approved_by?: number | null;
@@ -72,8 +68,6 @@ export interface Bom {
   // Relations
   parent_part?: BomPart;
   uom?: Pick<Uom, "id" | "code" | "name">;
-  doc_status?: BomDocStatus;
-  activation_status?: BomActivationStatus;
   creator?: { id: number; email: string };
   approver?: { id: number; email: string };
   details?: BomDetail[];
@@ -150,8 +144,8 @@ export interface BomListParams {
   page?: number;
   limit?: number;
   search?: string;
-  doc_status_id?: number;
-  activation_status_id?: number;
+  doc_status?: string;
+  activation_status?: string;
   parent_part_id?: number;
   [key: string]: any;
 }

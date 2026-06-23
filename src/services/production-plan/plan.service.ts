@@ -3,21 +3,16 @@ import type {
   PlanListParams,
   CreatePlanPayload,
   UpdatePlanPayload,
-  CapacityParamPayload,
+  UpdateCapacityParamPayload,
   CalculateCapacityPayload,
-  AddAdjustmentPayload,
+  AddCalendarAdjustmentPayload,
   ApprovePayload,
   RejectPayload,
 } from '../../types/production-plan/plan'
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Production Plan service
 const BASE = '/production-plan/plan'
-// ─────────────────────────────────────────────────────────────────────────────
 
 const productionPlanService = {
-
-  // ── List & Detail ──────────────────────────────────────────────────────────
 
   getPlans(params?: PlanListParams) {
     return api.get(`${BASE}`, { params })
@@ -27,23 +22,13 @@ const productionPlanService = {
     return api.get(`${BASE}/${id}`)
   },
 
-  // ── Dropdown & Lookups ─────────────────────────────────────────────────────
-
   getDropdown() {
     return api.get(`${BASE}/dropdown`)
   },
 
-  // [~] plan_month wajib dikirim sebagai query param agar BE bisa filter DO
-  //     yang shipment_date-nya jatuh di bulan tersebut
   getAvailableDeliveryOrders(plan_month: string) {
     return api.get(`${BASE}/available-dos`, { params: { plan_month } })
   },
-
-  syncDOs(id: number | string, data: { do_ids: number[] }) {
-    return api.put(`${BASE}/${id}/dos`, data)
-  },
-
-  // ── CRUD ───────────────────────────────────────────────────────────────────
 
   createPlan(data: CreatePlanPayload) {
     return api.post(`${BASE}`, data)
@@ -53,31 +38,22 @@ const productionPlanService = {
     return api.put(`${BASE}/${id}`, data)
   },
 
+  syncDOs(id: number | string, data: { do_ids: number[] }) {
+    return api.put(`${BASE}/${id}/dos`, data)
+  },
+
   deletePlan(id: number | string) {
     return api.delete(`${BASE}/${id}`)
   },
 
-  // ── Capacity plan ──────────────────────────────────────────────────────────
-
   /**
-   * POST /production-plan/plan/:id/capacity-params
-   *
-   * Hanya kirim { line_id } — server copy semua nilai dari
-   * s_line_capacity_params (master default line) ke snapshot plan.
-   * Endpoint akan return 404 jika master line belum di-setup.
-   * Hanya bisa membuat BASE param; tidak ada ADJUSTED.
+   * PUT /production-plan/plan/:id/capacity-params
+   * Update specific param values. param_type is automatically set to 'adjusted'.
    */
-  saveCapacityParams(id: number | string, data: CapacityParamPayload) {
-    return api.post(`${BASE}/${id}/capacity-params`, data)
+  updateCapacityParams(id: number | string, data: UpdateCapacityParamPayload) {
+    return api.put(`${BASE}/${id}/capacity-params`, data)
   },
 
-  /**
-   * POST /production-plan/plan/:id/calculate
-   *
-   * Jalankan kalkulasi kapasitas untuk satu lini.
-   * Detail yang dihitung diambil dari SProductionPlanDetailLine (pivot table).
-   * Parameter diambil dari BASE snapshot + adjustments yang ada di DB.
-   */
   calculateCapacity(id: number | string, data: CalculateCapacityPayload) {
     return api.post(`${BASE}/${id}/calculate`, data)
   },
@@ -86,17 +62,25 @@ const productionPlanService = {
     return api.post(`${BASE}/${id}/calculate-all`)
   },
 
-  // ── Adjustments ────────────────────────────────────────────────────────────
-
-  addAdjustment(id: number | string, data: AddAdjustmentPayload) {
-    return api.post(`${BASE}/${id}/adjustments`, data)
+  /**
+   * GET /production-plan/plan/:id/calendar-preview
+   * Returns per-date calendar view combining base shift calendars + adjustments.
+   */
+  getCalendarPreview(id: number | string) {
+    return api.get(`${BASE}/${id}/calendar-preview`)
   },
 
-  deleteAdjustment(id: number | string, adjId: number | string) {
-    return api.delete(`${BASE}/${id}/adjustments/${adjId}`)
+  addCalendarAdjustment(id: number | string, data: AddCalendarAdjustmentPayload) {
+    return api.post(`${BASE}/${id}/calendar-adjustments`, data)
   },
 
-  // ── Approval Workflow ──────────────────────────────────────────────────────
+  updateCalendarAdjustment(id: number | string, adjustment_id: number, data: {  overtime_minutes: number }) {
+    return api.put(`${BASE}/${id}/calendar-adjustments/${adjustment_id}`, data)
+  },
+
+  deleteCalendarAdjustment(id: number | string, adjustment_id: number) {
+    return api.delete(`${BASE}/${id}/calendar-adjustments/${adjustment_id}`)
+  },
 
   submitForApproval(id: number | string) {
     return api.post(`${BASE}/${id}/submit`)

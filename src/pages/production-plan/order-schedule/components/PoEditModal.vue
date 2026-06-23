@@ -17,17 +17,20 @@ const emit = defineEmits<{
 }>()
 
 // ── Form state ─────────────────────────────────────────────────────────────────
-const formRef = ref()
 const state = reactive({
   planned_qty_per_day: 0,
   notes:               '' as string | null,
 })
 
+// ── Validation errors ──────────────────────────────────────────────────────────
+const errors = reactive<Record<string, string>>({})
+
 // ── Schema ─────────────────────────────────────────────────────────────────────
-// PERBAIKAN: max qty dibatasi oleh line_capacity_per_day (kapasitas per shift)
 const schema = z.object({
-  planned_qty_per_day: z.number({ required_error: 'Planned quantity is required.' }).min(1, 'Must be at least 1.'),
-  notes:               z.string().nullable().optional(),
+  planned_qty_per_day: z
+    .number({ required_error: 'Planned quantity is required.' })
+    .min(1, 'Must be at least 1.'),
+  notes: z.string().nullable().optional(),
 })
 
 // ── Sync on open ───────────────────────────────────────────────────────────────
@@ -35,13 +38,44 @@ watch(() => props.schedule, (s) => {
   if (s) {
     state.planned_qty_per_day = s.planned_qty_per_day
     state.notes               = s.notes ?? ''
+    // Clear errors when a new schedule is loaded
+    Object.keys(errors).forEach(k => delete errors[k])
   }
 }, { immediate: true })
 
 // ── Submit ─────────────────────────────────────────────────────────────────────
-async function onSubmit() {
-  const result = await formRef.value?.validate()
-  if (!result?.valid) return
+function onSubmit() {
+  // Clear previous errors
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  // Validate via Zod directly — avoids dependency on UForm.validate() which
+  // may not be exposed in all versions of Nuxt UI, causing a silent no-op.
+  const maxCap = props.schedule?.line_capacity_per_day
+
+  const extendedSchema = maxCap != null
+    ? schema.superRefine((data, ctx) => {
+        if (data.planned_qty_per_day > maxCap) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Cannot exceed line capacity of ${fmtNum(maxCap)} unit/shift.`,
+            path: ['planned_qty_per_day'],
+          })
+        }
+      })
+    : schema
+
+  const result = extendedSchema.safeParse({
+    planned_qty_per_day: state.planned_qty_per_day,
+    notes: state.notes,
+  })
+
+  if (!result.success) {
+    result.error.errors.forEach(e => {
+      const key = e.path[0] as string
+      errors[key] = e.message
+    })
+    return
+  }
 
   const payload: UpdateSchedulePayload = {
     planned_qty_per_day: state.planned_qty_per_day,
@@ -51,6 +85,7 @@ async function onSubmit() {
 }
 
 function onCancel() {
+  Object.keys(errors).forEach(k => delete errors[k])
   emit('update:open', false)
 }
 </script>
@@ -82,7 +117,6 @@ function onCancel() {
             <span class="text-muted">Shift</span>
             <span>{{ props.schedule.shift?.name ?? props.schedule.shift_name_snapshot ?? '—' }}</span>
           </div>
-          <!-- PERBAIKAN: label diperjelaskan sebagai kapasitas per shift -->
           <div class="flex justify-between">
             <span class="text-muted">Capacity / Shift</span>
             <span class="font-mono">
@@ -96,35 +130,41 @@ function onCancel() {
           </div>
         </div>
 
-        <!-- Editable fields -->
-        <UForm ref="formRef" :schema="schema" :state="state" class="space-y-4">
-          <!-- PERBAIKAN: label & help text menjelaskan ini qty per shift, bukan per hari -->
-          <UFormField
-            label="Planned Qty (this shift)"
-            name="planned_qty_per_day"
-            required
-            :help="props.schedule.line_capacity_per_day != null
-              ? `Max capacity for this shift: ${fmtNum(props.schedule.line_capacity_per_day)} unit/shift`
-              : 'Enter the planned quantity for this shift.'"
-          >
+        <!-- Editable fields — validation handled by onSubmit() directly via Zod -->
+        <div class="space-y-4">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">
+              Planned Qty (this shift)
+              <span class="text-error-500">*</span>
+            </label>
             <UInput
               v-model.number="state.planned_qty_per_day"
               type="number"
               :min="1"
               :max="props.schedule.line_capacity_per_day ?? undefined"
               class="w-full"
+              :class="errors.planned_qty_per_day ? 'ring-1 ring-error-500' : ''"
             />
-          </UFormField>
+            <p v-if="errors.planned_qty_per_day" class="text-xs text-error-500">{{ errors.planned_qty_per_day }}</p>
+            <p v-else class="text-xs text-muted">
+              {{
+                props.schedule.line_capacity_per_day != null
+                  ? `Max capacity for this shift: ${fmtNum(props.schedule.line_capacity_per_day)} unit/shift`
+                  : 'Enter the planned quantity for this shift.'
+              }}
+            </p>
+          </div>
 
-          <UFormField label="Notes" name="notes">
+          <div class="space-y-1">
+            <label class="text-sm font-medium">Notes</label>
             <UTextarea
               v-model="state.notes"
               placeholder="Optional notes for this schedule row..."
               :rows="3"
               class="w-full"
             />
-          </UFormField>
-        </UForm>
+          </div>
+        </div>
       </div>
     </template>
 

@@ -12,7 +12,6 @@ import type { Row } from '@tanstack/table-core'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import PlanFilters from './components/PlanFilters.vue'
-import PlanBulkActions from './components/PlanBulkActions.vue'
 
 const router    = useRouter()
 const planStore = useProductionPlanStore()
@@ -39,7 +38,7 @@ const { columns } = useProductionPlanColumns(
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Production Plan' },
-  { label: 'Plan' },
+  { label: 'Plan Capacity' },
 ]
 
 const search  = ref('')
@@ -63,6 +62,16 @@ const confirm = reactive({
   description: '',
   action:      null as (() => Promise<void>) | null,
 })
+
+function resetFilters() {
+  search.value        = ''
+  filters.status      = undefined
+  filters.overall_status  = undefined
+  filters.plan_month  = undefined
+  filters.plan_type   = undefined
+  meta.value.page     = 1
+  fetchData()
+}
 
 // [+] plan_month ikut dikirim ke fetchPlans
 async function fetchData() {
@@ -119,7 +128,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <UDashboardPanel id="planning">
+  <UDashboardPanel id="plan-capacity">
     <template #header>
       <UDashboardNavbar title="Production Plan">
         <template #leading>
@@ -134,7 +143,7 @@ onMounted(() => {
         <div class="flex items-start justify-between gap-4">
           <div>
             <h1 class="text-2xl font-bold">
-              Production Plans
+              Production Capacity Planning
             </h1>
             <p class="text-sm text-muted mt-0.5">
               Manage production capacity and delivery order planning
@@ -155,16 +164,26 @@ onMounted(() => {
           @update:filters="Object.assign(filters, $event)"
         />
 
-        <PlanBulkActions :count="selectedCount" @delete="confirmBulkDelete" />
-
         <UTable
           ref="table"
           v-model:row-selection="rowSelection"
-          :data="plans"
+          :data="loading ? [] : plans"
           :columns="columns"
           :loading="loading"
           class="w-full"
         />
+
+        <div
+          v-if="!loading && plans.length === 0"
+          class="flex flex-col items-center justify-center py-16 text-center text-muted gap-3"
+        >
+        <UIcon name="i-lucide-clipboard-x" class="w-10 h-10" />
+          <div>
+            <p class="text-sm font-medium">No Plans found</p>
+            <p class="text-xs mt-1">Try adjusting your filters or search.</p>
+          </div>
+          <UButton label="Reset Filters" color="neutral" variant="soft" size="sm" @click="resetFilters" />
+        </div>
 
         <!-- Pagination -->
         <div class="flex items-center justify-between gap-3 border-t border-default pt-4">

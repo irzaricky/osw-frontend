@@ -31,13 +31,13 @@ export interface ProductionOrder {
   created_by?:             number | null
   created_at?:             string
   updated_at?:             string
-  plan?:             { id: number; plan_number: string; plan_description?: string | null }
-  creator?:          { id: number; email: string }
-  releaser?:         { id: number; email: string }
-  rejector?:         { id: number; email: string }
-  products?:         POProduct[]
-  schedules?:        POSchedule[]
-  reschedule_logs?:  RescheduleLog[]
+  plan?:            { id: number; plan_number: string; plan_month: string; plan_description?: string | null }
+  creator?:         { id: number; email: string }
+  releaser?:        { id: number; email: string }
+  rejector?:        { id: number; email: string }
+  products?:        POProduct[]
+  schedules?:       POSchedule[]
+  reschedule_logs?: RescheduleLog[]
 }
 
 export interface POProduct {
@@ -68,6 +68,7 @@ export interface POSchedule {
   planned_qty_per_day:   number
   actual_qty_per_day:    number
   line_capacity_per_day?: number | null
+  regular_cap_snapshot?: number | null // Non-overtime capacity at generation time; basis for the derived overtime fields below
   utilization_pct?:      number | null
   status:                ScheduleStatus
   notes?:                string | null
@@ -76,6 +77,8 @@ export interface POSchedule {
   part?:  { id: number; part_number: string; part_name: string }
   line_name_snapshot?:  string | null
   shift_name_snapshot?: string | null
+  has_overtime?:  boolean // Derived server-side on read, not a stored column
+  overtime_qty?:  number  // Derived server-side on read, not a stored column
 }
 
 export interface RescheduleLog {
@@ -91,12 +94,23 @@ export interface RescheduleLog {
   rescheduled_at:    string
 }
 
+export interface CapacityViolation {
+  line_id:                number
+  line_name:              string
+  severity:               'FATAL' | 'OVERCOMMIT'
+  total_demand:           number
+  total_capacity:         number
+  shortage:               number
+  additional_days_needed?: number
+  message:                string
+}
+
 export interface PODropdownItem {
-  id:                    number
-  po_number:             string
-  status:                POStatus
-  production_start_date: string
-  production_end_date:   string
+  id:                     number
+  po_number:              string
+  status:                 POStatus
+  production_start_date:  string
+  production_end_date:    string
 }
 
 export interface POListParams {

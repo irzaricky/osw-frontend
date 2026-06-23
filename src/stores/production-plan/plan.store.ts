@@ -4,12 +4,13 @@ import productionPlanService from '../../services/production-plan/plan.service'
 import type {
   ProductionPlan,
   AvailableDO,
+  CalendarDayPreview,
   PlanListParams,
   CreatePlanPayload,
   UpdatePlanPayload,
-  CapacityParamPayload,
+  UpdateCapacityParamPayload,
   CalculateCapacityPayload,
-  AddAdjustmentPayload,
+  AddCalendarAdjustmentPayload,
   ApprovePayload,
   RejectPayload,
   CalculationResult,
@@ -17,17 +18,16 @@ import type {
 
 export const useProductionPlanStore = defineStore('productionPlan', () => {
 
-  // ── State ──────────────────────────────────────────────────────────────────
-
   const plans        = ref<ProductionPlan[]>([])
   const currentPlan  = ref<ProductionPlan | null>(null)
   const availableDOs = ref<AvailableDO[]>([])
+  const calendarPreview = ref<CalendarDayPreview[]>([])
 
-  // [~] dropdown include plan_type & parent_plan_id sesuai response BE getDropdown
-  const dropdown     = ref<Pick<ProductionPlan,
+  const dropdown = ref<Pick<ProductionPlan,
     'id' | 'plan_number' | 'plan_month' | 'plan_type' | 'parent_plan_id' | 'parent_plan' |
     'plan_description' | 'earliest_delivery_date' | 'latest_delivery_date'
   >[]>([])
+
   const calculationResult = ref<CalculationResult | null>(null)
 
   const meta        = ref({ page: 1, limit: 10, total: 0, totalPages: 0 })
@@ -35,8 +35,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
   const saving      = ref(false)
   const calculating = ref(false)
   const error       = ref<string | null>(null)
-
-  // ── List & Detail ──────────────────────────────────────────────────────────
 
   async function fetchPlans(params: PlanListParams = {}) {
     loading.value = true
@@ -88,7 +86,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  // [~] plan_month wajib dikirim — BE filter DO berdasarkan bulan tersebut
   async function fetchAvailableDOs(plan_month: string) {
     loading.value = true
     try {
@@ -104,25 +101,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  async function syncDOs(id: number | string, payload: { do_ids: number[] }) {
-    saving.value = true
-    error.value  = null
-    try {
-      const { data } = await productionPlanService.syncDOs(id, payload)
-      return data
-    }
-    catch (e: any) {
-      error.value = e.response?.data?.error || e.message
-      throw e
-    }
-    finally {
-      saving.value = false
-    }
-  }
-
-  // ── CRUD ───────────────────────────────────────────────────────────────────
-
-  // [~] payload sekarang support plan_type & parent_plan_id
   async function createPlan(payload: CreatePlanPayload) {
     saving.value = true
     error.value  = null
@@ -158,6 +136,22 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
+  async function syncDOs(id: number | string, payload: { do_ids: number[] }) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.syncDOs(id, payload)
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
+    }
+  }
+
   async function deletePlan(id: number | string) {
     saving.value = true
     error.value  = null
@@ -174,21 +168,12 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  // ── Capacity Planning ──────────────────────────────────────────────────────
-
-  /**
-   * Simpan BASE params dari master line ke plan.
-   * Payload hanya berisi line_id — server yang copy dari s_line_capacity_params.
-   * Setelah berhasil, otomatis refresh currentPlan agar capacity_params terupdate.
-   */
-  async function saveCapacityParams(id: number | string, payload: CapacityParamPayload) {
+  async function updateCapacityParams(id: number | string, payload: UpdateCapacityParamPayload) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await productionPlanService.saveCapacityParams(id, payload)
-      if (data.status) {
-        await fetchPlan(id)
-      }
+      const { data } = await productionPlanService.updateCapacityParams(id, payload)
+      if (data.status) await fetchPlan(id)
       return data
     }
     catch (e: any) {
@@ -200,14 +185,6 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  /**
-   * Jalankan kalkulasi kapasitas.
-   * Detail yang dihitung diambil dari SProductionPlanDetailLine (pivot table).
-   * Setelah berhasil, refresh currentPlan agar:
-   *   - detail_lines (qty_capacity, capacity_gap, status) terupdate
-   *   - capacity_results terupdate
-   *   - overall_status terupdate
-   */
   async function calculateCapacity(id: number | string, payload: CalculateCapacityPayload) {
     calculating.value = true
     error.value       = null
@@ -248,13 +225,32 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  // ── Adjustments ────────────────────────────────────────────────────────────
+  async function fetchCalendarPreview(id: number | string) {
+    loading.value = true
+    error.value   = null
+    try {
+      const { data } = await productionPlanService.getCalendarPreview(id)
+      if (data.status) calendarPreview.value = data.data?.calendar ?? []
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      loading.value = false
+    }
+  }
 
-  async function addAdjustment(id: number | string, payload: AddAdjustmentPayload) {
+  async function addCalendarAdjustment(id: number | string, payload: AddCalendarAdjustmentPayload) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await productionPlanService.addAdjustment(id, payload)
+      const { data } = await productionPlanService.addCalendarAdjustment(id, payload)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
       return data
     }
     catch (e: any) {
@@ -266,11 +262,15 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  async function deleteAdjustment(id: number | string, adjId: number | string) {
+  async function updateCalendarAdjustment(id: number | string, adjustment_id: number, payload: { overtime_minutes: number }) {
     saving.value = true
     error.value  = null
     try {
-      const { data } = await productionPlanService.deleteAdjustment(id, adjId)
+      const { data } = await productionPlanService.updateCalendarAdjustment(id, adjustment_id, payload)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
       return data
     }
     catch (e: any) {
@@ -281,8 +281,26 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
       saving.value = false
     }
   }
-
-  // ── Approval Workflow ──────────────────────────────────────────────────────
+  
+  async function deleteCalendarAdjustment(id: number | string, adjustment_id: number) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await productionPlanService.deleteCalendarAdjustment(id, adjustment_id)
+      if (data.status) {
+        await fetchPlan(id)
+        await fetchCalendarPreview(id)
+      }
+      return data
+    }
+    catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    }
+    finally {
+      saving.value = false
+    }
+  }
 
   async function submitForApproval(id: number | string) {
     saving.value = true
@@ -341,19 +359,17 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     }
   }
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
-
   function clearCurrentPlan() {
     currentPlan.value       = null
     calculationResult.value = null
+    calendarPreview.value   = []
   }
-
-  // ── Expose ─────────────────────────────────────────────────────────────────
 
   return {
     plans,
     currentPlan,
     availableDOs,
+    calendarPreview,
     dropdown,
     calculationResult,
     meta,
@@ -366,15 +382,17 @@ export const useProductionPlanStore = defineStore('productionPlan', () => {
     fetchPlan,
     fetchDropdown,
     fetchAvailableDOs,
-    syncDOs,
     createPlan,
     updatePlan,
+    syncDOs,
     deletePlan,
-    saveCapacityParams,
+    updateCapacityParams,
     calculateCapacity,
     calculateAllCapacity,
-    addAdjustment,
-    deleteAdjustment,
+    fetchCalendarPreview,
+    addCalendarAdjustment,
+    updateCalendarAdjustment,
+    deleteCalendarAdjustment,
     submitForApproval,
     approve,
     reject,

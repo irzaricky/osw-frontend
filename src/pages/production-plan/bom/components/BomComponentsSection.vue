@@ -250,7 +250,7 @@ import { computed } from 'vue'
           @click="emit('save', false)"
         />
         <UButton
-          v-if="isCreate || currentBom?.doc_status?.code === 'DRAFT' || currentBom?.doc_status?.code === 'REJECTED'"
+          v-if="isCreate || currentBom?.doc_status === 'Draft' || currentBom?.doc_status === 'Rejected'"
           label="Submit for Approval"
           icon="i-lucide-send"
           color="primary"

@@ -1,105 +1,80 @@
 export type PlanStatus     = 'Draft' | 'Pending_Approval' | 'Approved' | 'Rejected'
 export type OverallStatus  = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
 export type DetailStatus   = 'Not_Calculated' | 'POSSIBLE' | 'IMPOSSIBLE'
-export type ParamType      = 'BASE'
-export type PlanType       = 'ORIGINAL' | 'AMENDMENT'   // [+]
-export type AdjustmentType =
-  | 'WORKING_DAYS'
-  | 'SHIFTS_PER_DAY'
-  | 'WORKING_HOURS'
-  | 'MANPOWER'
-  | 'EFFICIENCY'
-  | 'OVERTIME'
+export type ParamType      = 'base' | 'adjusted'
+export type PlanType       = 'ORIGINAL' | 'AMENDMENT'
+export type AdjustmentType = 'ADD_SHIFT' | 'ADD_OVERTIME'
+
+// Master calendar day status used to distinguish working day / holiday / uninitialized in the calendar grid.
+export type MasterDayStatus = 'WORKING_DAY' | 'HOLIDAY' | 'UNINITIALIZED'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Production Plan
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ProductionPlan {
-  id:                     number
-  plan_number:            string
-  plan_month:             string          // format YYYY-MM
-  plan_type:              PlanType        // [+] ORIGINAL | AMENDMENT
-  parent_plan_id?:        number | null   // [+] diisi jika AMENDMENT
-  parent_plan?:           { id: number; plan_number: string } | null  // [+] eager-loaded
-  plan_description?:      string | null
+  id:                      number
+  plan_number:             string
+  plan_month:              string
+  plan_type:               PlanType
+  parent_plan_id?:         number | null
+  parent_plan?:            { id: number; plan_number: string } | null
+  plan_description?:       string | null
   earliest_delivery_date?: string | null
-  latest_delivery_date?:  string | null
-  total_products:         number
-  total_qty_request:      number
-  total_qty_capacity:     number
-  overall_status:         OverallStatus
-  status:                 PlanStatus
-  notes?:                 string | null
-  created_by?:            number | null
-  approved_by?:           number | null
-  approved_at?:           string | null
-  approval_notes?:        string | null
-  rejected_by?:           number | null
-  rejected_at?:           string | null
-  rejection_reason?:      string | null
-  created_at?:            string
-  updated_at?:            string
-  details?:               PlanDetail[]
-  do_references?:         DoReference[]
-  capacity_params?:       CapacityParam[]
-  capacity_results?:      CapacityResult[]
-  adjustments?:           PlanAdjustment[]
+  latest_delivery_date?:   string | null
+  total_products:          number
+  total_qty_request:       number
+  total_qty_capacity:      number
+  overall_status:          OverallStatus
+  status:                  PlanStatus
+  notes?:                  string | null
+  created_by?:             number | null
+  approved_by?:            number | null
+  approved_at?:            string | null
+  approval_notes?:         string | null
+  rejected_by?:            number | null
+  rejected_at?:            string | null
+  rejection_reason?:       string | null
+  created_at?:             string
+  updated_at?:             string
+  details?:                PlanDetail[]
+  capacity_params?:        CapacityParam[]
+  capacity_results?:       CapacityResult[]
+  calendar_adjustments?:   CalendarAdjustment[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Plan detail line — pivot table: satu detail bisa melewati banyak line
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface PlanDetailLine {
-  id:             number
-  plan_detail_id: number
-  line_id:        number
-  sequence:       number
-  qty_capacity?:  number | null
-  capacity_gap?:  number | null
-  status?:        DetailStatus | null
-  line?:          { id: number; name: string }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Plan detail (per part / DO line)
+// Plan detail — one row per (customer, part, delivery_date)
+// assigned_line_id & routing_id are auto-assigned from active routing on create/sync
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PlanDetail {
-  id:            number
-  plan_id:       number
-  sequence:      number
-  do_id:         number
-  do_detail_id:  number
-  customer_id:   number
-  part_id:       number
-  delivery_date: string
-  qty_request:   number
-  status?:       DetailStatus | null
-  customer?:     { id: number; name: string }
-  part?:         { id: number; part_number: string; part_name: string; uom?: { id: number; name: string } }
-  detail_lines?: PlanDetailLine[]
+  id:               number
+  plan_id:          number
+  sequence:         number
+  do_id:            number
+  do_detail_id:     number
+  customer_id:      number
+  part_id:          number
+  delivery_date:    string
+  qty_request:      number
+  qty_capacity?:    number | null
+  capacity_gap?:    number | null
+  status?:          DetailStatus | null
+  assigned_line_id?: number | null
+  routing_id?:       number | null
+  required_minutes?: number | null
+  priority_level?:   string | null
+  delivery_order?:  { id: number; do_number: string; shipment_date: string }
+  customer?:        { id: number; name: string }
+  part?:            { id: number; part_number: string; part_name: string; uom?: { id: number; name: string } }
+  assigned_line?:   { id: number; name: string }
+  routing?:         { id: number; routing_code: string }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DO references
-// ─────────────────────────────────────────────────────────────────────────────
-
-export interface DoReference {
-  id:             number
-  plan_id:        number
-  do_id:          number
-  delivery_order?: { id: number; do_number: string; shipment_date: string }
-}
-
-export interface SyncDOsPayload {
-  do_ids: number[]
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Capacity params — snapshot dari s_line_capacity_params saat plan dibuat
-// param_type selalu 'BASE' (ADJUSTED dihapus, sekarang pakai adjustments table)
+// Capacity params — snapshot from s_line_capacity_params
+// param_type: 'base' (from master default) or 'adjusted' (after manual edit)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CapacityParam {
@@ -113,7 +88,7 @@ export interface CapacityParam {
   manpower:                number
   efficiency_factor:       number
   overtime_hours:          number
-  max_takt_time:           number   // detik — di-copy dari s_line_capacity_params.default_max_takt_time
+  max_takt_time:           number
   line?:                   { id: number; name: string }
 }
 
@@ -125,9 +100,7 @@ export interface CapacityResult {
   id:                     number
   plan_id:                number
   line_id:                number
-  total_stations:         number
-  total_jobs:             number
-  max_takt_time?:         number | null   // detik
+  max_takt_time?:         number | null
   capacity_per_hour?:     number | null
   total_capacity_minutes: number
   total_required_minutes: number
@@ -136,27 +109,37 @@ export interface CapacityResult {
   status:                 OverallStatus
   total_capacity_units:   number
   calculated_at?:         string | null
-  calculation_version:    number
   line?:                  { id: number; name: string }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Adjustments
+// Calendar adjustment — per-plan calendar override entry
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface PlanAdjustment {
-  id:                      number
-  plan_id:                 number
-  line_id:                 number
-  adjustment_type:         AdjustmentType
-  adjustment_description?: string | null
-  sequence:                number
-  base_value:              number
-  adjusted_value:          number
-  difference?:             number | null
-  created_by?:             number | null
-  created_at?:             string
-  line?:                   { id: number; name: string }
+export interface CalendarAdjustment {
+  id:                  number
+  plan_id:             number
+  date:                string
+  adjustment_type:     AdjustmentType
+  shift_id?:           number | null
+  overtime_minutes?:   number | null
+  reason:              string
+  inherited_from_plan?: number | null
+  shift?:              { id: number; name: string; shift_number: number } | null
+  created_at?:         string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Calendar preview — per-date view combining base calendar + adjustments.
+// master_status: day status from line master calendar, used for grid coloring and determining valid adjustment actions.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface CalendarDayPreview {
+  date:          string
+  is_holiday:    boolean
+  master_status: MasterDayStatus
+  base_shifts:   { shift_id: number; shift?: { id: number; shift_number: number; name: string }; date_event: string }[]
+  adjustments:   CalendarAdjustment[]
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,11 +156,11 @@ export interface AvailableDO {
 }
 
 export interface AvailableDODetail {
-  id:           number
-  sent_qty:     number
+  id:            number
+  sent_qty:      number
   received_qty?: number | null
   planDetail?: {
-    id:        number
+    id:           number
     spo_detail_id: number
     planned_qty:   number
     spoDetail?: {
@@ -203,15 +186,15 @@ export interface PlanListParams {
   search?:         string
   status?:         PlanStatus
   overall_status?: OverallStatus
-  plan_month?:     string          // filter list by YYYY-MM
-  plan_type?:      PlanType        // [+] filter by ORIGINAL | AMENDMENT
+  plan_month?:     string
+  plan_type?:      PlanType
   [key: string]:   any
 }
 
 export interface CreatePlanPayload {
-  plan_month:        string          // wajib, format YYYY-MM
-  plan_type?:        PlanType        // [+] default ORIGINAL; AMENDMENT butuh parent_plan_id
-  parent_plan_id?:   number          // [+] wajib jika plan_type === 'AMENDMENT'
+  plan_month:        string
+  plan_type?:        PlanType
+  parent_plan_id?:   number
   plan_description?: string | null
   do_ids:            number[]
   notes?:            string | null
@@ -222,27 +205,34 @@ export interface UpdatePlanPayload {
   notes?:            string | null
 }
 
-/**
- * POST /production-plan/:id/capacity-params
- *
- * Hanya kirim line_id — server otomatis copy semua nilai dari
- * s_line_capacity_params (master default line) ke s_production_plan_capacity_params.
- * Hanya param_type 'BASE' yang dibuat; tidak ada ADJUSTED.
- */
-export interface CapacityParamPayload {
-  line_id: number
+export interface SyncDOsPayload {
+  do_ids: number[]
 }
 
-/** POST /production-plan/:id/calculate */
+export interface UpdateCapacityParamPayload {
+  line_id:                  number
+  working_days?:            number
+  shifts_per_day?:          number
+  working_hours_per_shift?: number
+  manpower?:                number
+  efficiency_factor?:       number
+  overtime_hours?:          number
+  max_takt_time?:           number
+}
+
 export interface CalculateCapacityPayload {
   line_id: number
 }
 
-export interface AddAdjustmentPayload {
-  line_id:                number
-  adjustment_type:        AdjustmentType
-  adjustment_description?: string | null
-  adjusted_value:         number
+// shift_number (bukan shift_id): backend addCalendarAdjustment menerima urutan
+// shift (1/2/3/dst), sesuai payload yang dikirim dari PlanCapacityTabs.vue
+// (lihat handleSubmit -> emit('add-adjustment', { shift_number, ... })).
+export interface AddCalendarAdjustmentPayload {
+  date:              string
+  adjustment_type:   AdjustmentType
+  shift_number?:     number | null
+  overtime_minutes?: number | null
+  reason:            string
 }
 
 export interface ApprovePayload {
@@ -254,7 +244,7 @@ export interface RejectPayload {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Calculation result (response calculateCapacity)
+// Calculation result (response from calculateCapacity)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface CalculationResult {
@@ -262,21 +252,25 @@ export interface CalculationResult {
   overall_status:             OverallStatus
   line_status:                OverallStatus
   total_capacity_units:       number
-  total_qty_request:          number
+  total_qty_this_line:        number
   total_required_minutes:     number
   effective_capacity_minutes: number
   capacity_gap_minutes:       number
   utilization_pct:            number
   capacity_info: {
-    total_stations:       number
-    total_jobs:           number
-    max_takt_time_seconds: number
-    capacity_per_hour:    number
-    regular_minutes:      number
-    overtime_minutes:     number
-    available_minutes:    number
+    max_takt_time_seconds:          number
+    capacity_per_hour:              number
+    effective_total_cap_minutes:    number
+    effective_total_cap_units:      number
+    has_calendar_adjustments:       boolean
   }
-  params_used:         Omit<CapacityParam, 'id' | 'plan_id' | 'line_id' | 'param_type' | 'line'>
-  adjustments_applied: number
-  detail_lines_count:  number
+  params_used: {
+    param_type:              ParamType
+    working_days:            number
+    shifts_per_day:          number
+    working_hours_per_shift: number
+    efficiency_factor:       number
+    overtime_hours:          number
+    max_takt_time:           number
+  }
 }

@@ -12,7 +12,7 @@ interface Props {
   partSearch:           string
   filteredParentParts:  PartDropdown[]
   uomItems:             { label: string; value: number }[]
-  selectedUomId?:       number
+  selectedUomId?:       number | undefined
 }
 
 const props = defineProps<Props>()
@@ -20,13 +20,13 @@ const emit  = defineEmits<{
   'update:headerForm':          [v: Props['headerForm']]
   'update:selectedParentPart':  [v: PartDropdown | null]
   'update:partSearch':          [v: string]
-  'update:selectedUomId':       [v: number | null]
+  'update:selectedUomId':       [v: number | undefined]
   proceedToDetails:             []
 }>()
 
 function setDesc(v: string)    { emit('update:headerForm', { ...props.headerForm, description: v }) }
 function setNotes(v: string)   { emit('update:headerForm', { ...props.headerForm, notes: v }) }
-function setUomId(v: number | null) { emit('update:selectedUomId', v) }
+function setUomId(v: number | undefined) { emit('update:selectedUomId', v) }
 </script>
 
 <template>
