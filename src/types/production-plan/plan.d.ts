@@ -65,6 +65,7 @@ export interface PlanDetail {
   routing_id?:       number | null
   required_minutes?: number | null
   priority_level?:   string | null
+  delivery_order?:  { id: number; do_number: string; shipment_date: string }
   customer?:        { id: number; name: string }
   part?:            { id: number; part_number: string; part_name: string; uom?: { id: number; name: string } }
   assigned_line?:   { id: number; name: string }

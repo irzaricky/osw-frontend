@@ -173,7 +173,7 @@ function rowIndex(detail: PlanDetail): number {
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Requested Qty</th>
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Capacity</th>
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Gap</th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Production Line</th>
+            <!-- <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Production Line</th> -->
             <th class="text-center px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Status</th>
           </tr>
         </thead>
@@ -235,7 +235,7 @@ function rowIndex(detail: PlanDetail): number {
               </span>
               <span v-else class="text-muted">—</span>
             </td>
-            <td class="px-4 py-3 min-w-[160px]">
+            <!-- <td class="px-4 py-3 min-w-[160px]">
               <span
                 v-if="detail.assigned_line_id"
                 class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium border border-default"
@@ -250,7 +250,7 @@ function rowIndex(detail: PlanDetail): number {
                 <UIcon name="i-lucide-alert-circle" class="w-3.5 h-3.5" />
                 No routing
               </span>
-            </td>
+            </td> -->
             <td class="px-4 py-3 text-center">
               <UBadge
                 :label="

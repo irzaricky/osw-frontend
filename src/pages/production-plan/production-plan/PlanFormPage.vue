@@ -42,6 +42,7 @@ const headerForm = reactive({
   notes:            '',
 })
 
+const planTabsSectionRef = ref<{ goToDetails: () => void } | null>(null)
 const selectedDOs = ref<number[]>([])
 const showDOModal = ref(false)
 
@@ -53,6 +54,25 @@ function toggleDO(id: number) {
   const idx = selectedDOs.value.indexOf(id)
   if (idx === -1) selectedDOs.value.push(id)
   else selectedDOs.value.splice(idx, 1)
+}
+
+const planInfoCardRef = ref<{ resetPendingRemove: () => void } | null>(null)
+
+// Hapus DO baru yang belum tersimpan (pending)
+function removePendingDO(id: number) {
+  const idx = selectedDOs.value.indexOf(id)
+  if (idx !== -1) selectedDOs.value.splice(idx, 1)
+}
+const pendingRemoveDoIds = ref<Set<number>>(new Set())
+
+function removeExistingDO(id: number) {
+  pendingRemoveDoIds.value = new Set([...pendingRemoveDoIds.value, id])
+}
+
+function undoRemoveDO(id: number) {
+  const next = new Set(pendingRemoveDoIds.value)
+  next.delete(id)
+  pendingRemoveDoIds.value = next
 }
 
 function handleSelectAll(ids: number[], select: boolean) {
@@ -244,19 +264,36 @@ async function handleSaveHeader() {
         notes:            headerForm.notes || null,
       })
 
-      const currentDoIds = currentPlan.value?.details
-        ? [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
-        : []
       const doChanged = (
-        selectedDOs.value.some((id) => !currentDoIds.includes(id)) ||
-        currentDoIds.some((id: number) => !selectedDOs.value.includes(id))
+        selectedDOs.value.filter(id => id > 0).length > 0 ||
+        pendingRemoveDoIds.value.size > 0
       )
 
       if (doChanged) {
-        await planStore.syncDOs(planId.value, { do_ids: selectedDOs.value })
+        const existingDoIds: number[] = currentPlan.value?.details
+          ? [...new Set((currentPlan.value.details as any[]).map((d: any) => d.do_id))]
+          : []
+
+        const cleanDoIds = [
+          // Existing DO yang tidak di-mark untuk remove
+          ...existingDoIds.filter((id) => !pendingRemoveDoIds.value.has(id)),
+          // Pending DO baru yang dipilih user (positif saja)
+          ...selectedDOs.value.filter((id) => id > 0 && !existingDoIds.includes(id)),
+        ]
+
+        await planStore.syncDOs(planId.value, { do_ids: cleanDoIds })
+
+        selectedDOs.value        = []
+        pendingRemoveDoIds.value = new Set()
+        planInfoCardRef.value?.resetPendingRemove()
+
         await planStore.fetchPlan(planId.value)
+        if (currentPlan.value?.plan_month) {
+          await planStore.fetchAvailableDOs(currentPlan.value.plan_month)
+        }
+
         selectedDOs.value = currentPlan.value?.details
-          ? [...new Set((currentPlan.value.details as any[]).map((d) => d.do_id))]
+          ? [...new Set((currentPlan.value.details as any[]).map((d: any) => d.do_id))]
           : []
       }
       confirm.open = false
@@ -300,6 +337,7 @@ async function handleCalculate() {
     await planStore.calculateCapacity(planId.value, { line_id: param.line_id })
     confirm.open = false
     toastSuccess('Capacity calculation completed successfully')
+    planTabsSectionRef.value?.goToDetails()
   }
   catch (e) { toastError(e) }
 }
@@ -318,6 +356,7 @@ async function handleCalculateAll() {
   try {
     await planStore.calculateAllCapacity(planId.value)
     toastSuccess('Capacity calculated successfully.')
+    planTabsSectionRef.value?.goToDetails()
   }
   catch (e) { toastError(e) }
   finally { calculatingAll.value = false }
@@ -442,7 +481,7 @@ watch(
 </script>
 
 <template>
-  <UDashboardPanel id="planning-form">
+  <UDashboardPanel id="plan-capacity-form">
     <template #header>
       <UDashboardNavbar title="Production Plan">
         <template #leading>
@@ -569,6 +608,7 @@ watch(
 
         <!-- PLAN INFO CARD -->
         <PlanInfoCard
+          ref="planInfoCardRef"
           :is-create="isCreate"
           :is-detail="isEditable"
           :current-plan="currentPlan"
@@ -579,8 +619,9 @@ watch(
           :fmt-num="fmtNum"
           :approved-original-plans="approvedOriginalPlans"
           @open-do-modal="showDOModal = true"
-          @remove-pending="toggleDO"
-          @remove-do="toggleDO"
+          @remove-pending="removePendingDO"
+          @remove-do="removeExistingDO"
+          @undo-remove-do="undoRemoveDO"
         />
 
         <!-- DELIVERY ORDERS (create mode) -->
@@ -595,6 +636,7 @@ watch(
 
         <!-- TABS (detail / edit mode) -->
         <PlanTabsSection
+          ref="planTabsSectionRef"
           v-if="!isCreate"
           :current-plan="currentPlan"
           :calendar-preview="calendarPreview"

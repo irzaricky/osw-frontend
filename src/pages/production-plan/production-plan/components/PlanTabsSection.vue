@@ -20,6 +20,10 @@ defineProps<{
   detailStatusColor:  (s?: string | null) => string
 }>()
 
+defineExpose({
+  goToDetails: () => { activeTab.value = 'details' }
+})
+
 const emit = defineEmits<{
   (e: 'save-param-edit'): void
   (e: 'calculate'): void
@@ -29,8 +33,6 @@ const emit = defineEmits<{
   (e: 'delete-adjustment', id: number): void
 }>()
 
-// value diberikan eksplisit (bukan mengandalkan fallback index "0"/"1" dari Nuxt UI)
-// supaya TabsRoot punya identitas item yang stabil saat reconciling/roving-focus.
 const tabs = [
   { slot: 'details'  as const, value: 'details',  label: 'Request Details',  icon: 'i-lucide-list' },
   { slot: 'capacity' as const, value: 'capacity', label: 'Capacity Settings', icon: 'i-lucide-settings-2' },

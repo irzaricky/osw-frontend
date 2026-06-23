@@ -31,7 +31,7 @@ export interface ProductionOrder {
   created_by?:             number | null
   created_at?:             string
   updated_at?:             string
-  plan?:            { id: number; plan_number: string; plan_description?: string | null }
+  plan?:            { id: number; plan_number: string; plan_month: string; plan_description?: string | null }
   creator?:         { id: number; email: string }
   releaser?:        { id: number; email: string }
   rejector?:        { id: number; email: string }

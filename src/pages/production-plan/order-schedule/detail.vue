@@ -116,13 +116,32 @@ const editSchema = z.object({
 }).superRefine((data, ctx) => {
   if (data.production_start_date && data.production_end_date) {
     if (new Date(data.production_end_date) <= new Date(data.production_start_date)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'End Date must be after Start Date.', path: ['production_end_date'] })
+      ctx.addIssue({
+        code:    z.ZodIssueCode.custom,
+        message: 'End Date must be after Start Date.',
+        path:    ['production_end_date'],
+      })
     }
   }
-  const latest = currentOrder.value?.latest_delivery_date
-  if (data.production_end_date && latest) {
-    if (data.production_end_date >= latest) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `End Date must be before Latest Delivery Date (${fmtDate(latest)}).`, path: ['production_end_date'] })
+  // Ganti validasi latest_delivery_date → validasi bulan plan
+  const planMonth = currentOrder.value?.plan?.plan_month
+    ?? currentOrder.value?.production_start_date?.slice(0, 7)
+  if (planMonth) {
+    const [y, m] = planMonth.split('-').map(Number)
+    for (const [field, iso] of [
+      ['production_start_date', data.production_start_date],
+      ['production_end_date',   data.production_end_date],
+    ] as const) {
+      if (iso) {
+        const d = new Date(iso)
+        if (d.getFullYear() !== y || d.getMonth() + 1 !== m) {
+          ctx.addIssue({
+            code:    z.ZodIssueCode.custom,
+            message: `Date must be within the plan month (${planMonth}).`,
+            path:    [field],
+          })
+        }
+      }
     }
   }
 })
@@ -160,10 +179,12 @@ async function saveEditInfo() {
 }
 
 const editIsDateDisabled = computed(() => {
-  const latest = currentOrder.value?.latest_delivery_date
-  if (!latest) return undefined
-  const latestDate = parseDate(latest)
-  return (date: DateValue) => date.compare(latestDate) >= 0
+  // Ambil plan_month dari plan object, fallback dari production_start_date
+  const planMonth = currentOrder.value?.plan?.plan_month
+    ?? currentOrder.value?.production_start_date?.slice(0, 7)
+  if (!planMonth) return undefined
+  const [year, month] = planMonth.split('-').map(Number)
+  return (date: DateValue) => date.year !== year || date.month !== month
 })
 
 // ── Priority select helper ─────────────────────────────────────────────────────
@@ -504,7 +525,16 @@ onUnmounted(() => store.clearCurrentOrder())
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
+  <UDashboardPanel id="order-schedule">
+    <template #header>
+      <UDashboardNavbar title="Order Scheduling">
+        <template #leading>
+          <UDashboardSidebarCollapse />
+        </template>
+      </UDashboardNavbar>
+    </template>
+    <template #body>
+      <div class="space-y-5">
     <Breadcrumbs :items="breadcrumbItems" />
 
     <!-- Header -->
@@ -629,7 +659,8 @@ onUnmounted(() => store.clearCurrentOrder())
             <p v-if="editErrors.production_start_date" class="text-xs text-error-500">{{ editErrors.production_start_date }}</p>
             <p v-else-if="editErrors.production_end_date" class="text-xs text-error-500">{{ editErrors.production_end_date }}</p>
             <p v-else class="text-xs text-muted">
-              End Date must be before {{ fmtDate(order?.latest_delivery_date ?? '') }}.
+              Date range must be within plan month
+              {{ order?.plan?.plan_month ?? order?.production_start_date?.slice(0, 7) ?? '' }}.
             </p>
           </div>
 
@@ -840,7 +871,7 @@ onUnmounted(() => store.clearCurrentOrder())
               clear
             />
             <span class="text-xs text-muted ml-auto">{{ filteredSchedules.length }} row(s)</span>
-            <UButton v-if="isEditable" icon="i-lucide-refresh-cw" color="neutral" variant="outline" size="sm" label="Recalculate" :loading="saving" @click="handleRecalculate" />
+            <!-- <UButton v-if="isEditable" icon="i-lucide-refresh-cw" color="neutral" variant="outline" size="sm" label="Recalculate" :loading="saving" @click="handleRecalculate" /> -->
           </div>
 
           <div class="overflow-x-auto rounded-lg border border-default">
@@ -1097,10 +1128,13 @@ onUnmounted(() => store.clearCurrentOrder())
       :current-start="order?.production_start_date"
       :current-end="order?.production_end_date"
       :latest-delivery-date="order?.latest_delivery_date ?? undefined"
+      :plan-month="order?.plan?.plan_month"
       :loading="saving"
       @confirm="handleReschedule"
     />
   </div>
+  </template>
+  </UDashboardPanel>
 </template>
 
 <style scoped>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { AvailableDO, PlanType } from '../../../../types/production-plan/plan'
+import { computed, ref } from 'vue'
+import type { AvailableDO, PlanType, PlanDetail } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
   isCreate:    boolean
@@ -24,7 +24,11 @@ const emit = defineEmits<{
   (e: 'open-do-modal'): void
   (e: 'remove-pending', id: number): void
   (e: 'remove-do', id: number): void
+  (e: 'undo-remove-do', id: number): void  // ← tambahan
 }>()
+
+// Track DO IDs that user has marked for removal (pending removal, not yet saved)
+const pendingRemoveDoIds = ref<Set<number>>(new Set())
 
 function fmtPlanMonth(plan_month?: string): string {
   if (!plan_month) return '-'
@@ -57,10 +61,39 @@ const planTypeLabel: Record<PlanType, string> = {
   AMENDMENT: 'Amendment',
 }
 
-const uniqueDoIds = computed(() => {
+// Build unique DO entries from details, including do_number from delivery_order
+const existingDoEntries = computed<{ do_id: number; do_number: string }[]>(() => {
   if (!props.currentPlan?.details?.length) return []
-  return [...new Set((props.currentPlan.details as any[]).map((d: any) => d.do_id))]
+  const seen = new Set<number>()
+  const result: { do_id: number; do_number: string }[] = []
+  for (const d of props.currentPlan.details as PlanDetail[]) {
+    if (!seen.has(d.do_id)) {
+      seen.add(d.do_id)
+      result.push({
+        do_id:     d.do_id,
+        do_number: d.delivery_order?.do_number ?? `DO #${d.do_id}`,
+      })
+    }
+  }
+  return result
 })
+
+function handleRemoveDo(doId: number) {
+  pendingRemoveDoIds.value = new Set([...pendingRemoveDoIds.value, doId])
+  emit('remove-do', doId)
+}
+
+function handleRemovePending(doId: number) {
+  emit('remove-pending', doId)
+}
+
+// Reset pending remove state when parent refreshes data (plan changes)
+// Parent should call this via template ref if needed, or it resets naturally on re-render
+function resetPendingRemove() {
+  pendingRemoveDoIds.value = new Set()
+}
+
+defineExpose({ resetPendingRemove })
 </script>
 
 <template>
@@ -200,41 +233,77 @@ const uniqueDoIds = computed(() => {
         </UFormField>
       </div>
 
-      <!-- DO reference chips (detail / edit mode) -->
-      <div v-if="!isCreate && uniqueDoIds.length" class="space-y-1.5">
+      <!-- DO reference chips -->
+      <div
+        v-if="!isCreate && (existingDoEntries.length || pendingDos.length)"
+        class="space-y-1.5"
+      >
         <p class="text-xs text-muted font-medium flex items-center gap-1.5">
           <UIcon name="i-lucide-link-2" class="w-3.5 h-3.5" />
           Delivery Order References
-        </p>
-        <div class="flex flex-wrap gap-2">
           <span
-            v-for="doId in uniqueDoIds"
-            :key="doId"
-            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border border-default text-default"
+            v-if="isDetail && (pendingRemoveDoIds.size > 0 || pendingDos.length > 0)"
+            class="text-[10px] text-warning-600 font-normal ml-1"
           >
-            DO #{{ doId }}
-            <UIcon
-              v-if="isDetail"
-              name="i-lucide-x"
-              class="w-3 h-3 cursor-pointer text-muted hover:text-error-500"
-              @click="$emit('remove-do', doId)"
-            />
+            · Unsaved changes
           </span>
-          <UBadge
+        </p>
+
+        <div class="flex flex-wrap gap-2">
+          <!-- Existing DOs from saved details -->
+          <span
+            v-for="entry in existingDoEntries"
+            :key="entry.do_id"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-all"
+            :class="pendingRemoveDoIds.has(entry.do_id)
+              ? 'border-error-300 bg-error-50 text-error-600 dark:border-error-700 dark:bg-error-950 dark:text-error-400 line-through opacity-60'
+              : 'border-default bg-elevated text-default'"
+          >
+            <UIcon
+              v-if="pendingRemoveDoIds.has(entry.do_id)"
+              name="i-lucide-trash-2"
+              class="w-3 h-3"
+            />
+            {{ entry.do_number }}
+            <button
+              v-if="isDetail && !pendingRemoveDoIds.has(entry.do_id)"
+              type="button"
+              class="ml-0.5 text-muted hover:text-error-500 transition-colors"
+              :disabled="saving"
+              @click="handleRemoveDo(entry.do_id)"
+            >
+              <UIcon name="i-lucide-x" class="w-3 h-3" />
+            </button>
+            <button
+              v-else-if="isDetail && pendingRemoveDoIds.has(entry.do_id)"
+              type="button"
+              class="ml-0.5 text-error-400 hover:text-error-600 transition-colors"
+              :disabled="saving"
+              @click="pendingRemoveDoIds.delete(entry.do_id); emit('undo-remove-do', entry.do_id)"
+            >
+              <UIcon name="i-lucide-undo-2" class="w-3 h-3" title="Undo remove" />
+            </button>
+          </span>
+
+          <!-- Pending new DOs (not yet saved) -->
+          <span
             v-for="doItem in (pendingDos ?? [])"
             :key="`pending-${doItem.id}`"
-            :label="doItem.do_number"
-            color="primary"
-            variant="soft"
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-800 dark:bg-primary-950 dark:text-primary-300"
           >
-            <template #trailing>
-              <UIcon
-                name="i-lucide-x"
-                class="w-3 h-3 cursor-pointer"
-                @click="$emit('remove-pending', doItem.id)"
-              />
-            </template>
-          </UBadge>
+            <UIcon name="i-lucide-plus" class="w-3 h-3" />
+            {{ doItem.do_number }}
+            <button
+              type="button"
+              class="ml-0.5 text-primary-400 hover:text-primary-700 transition-colors"
+              :disabled="saving"
+              @click="handleRemovePending(doItem.id)"
+            >
+              <UIcon name="i-lucide-x" class="w-3 h-3" />
+            </button>
+          </span>
+
+          <!-- Add DO button -->
           <UButton
             v-if="isDetail"
             label="+ Add DO"
@@ -242,9 +311,43 @@ const uniqueDoIds = computed(() => {
             color="neutral"
             variant="soft"
             class="ml-1 rounded"
+            :disabled="saving"
             @click="$emit('open-do-modal')"
           />
         </div>
+
+        <!-- Legend hint when there are pending changes -->
+        <div
+          v-if="isDetail && (pendingRemoveDoIds.size > 0 || pendingDos.length > 0)"
+          class="flex items-center gap-3 mt-1"
+        >
+          <span v-if="pendingRemoveDoIds.size > 0" class="flex items-center gap-1 text-[10px] text-error-500">
+            <UIcon name="i-lucide-trash-2" class="w-3 h-3" />
+            {{ pendingRemoveDoIds.size }} DO(s) marked for removal
+          </span>
+          <span v-if="pendingDos.length > 0" class="flex items-center gap-1 text-[10px] text-primary-500">
+            <UIcon name="i-lucide-plus" class="w-3 h-3" />
+            {{ pendingDos.length }} new DO(s) pending
+          </span>
+          <span class="text-[10px] text-muted">· Save to apply changes</span>
+        </div>
+      </div>
+
+      <!-- Empty state when no DOs and in detail/edit mode -->
+      <div
+        v-else-if="!isCreate && isDetail && !existingDoEntries.length && !pendingDos.length"
+        class="flex items-center gap-2"
+      >
+        <p class="text-xs text-muted">No Delivery Orders linked.</p>
+        <UButton
+          label="+ Add DO"
+          size="xs"
+          color="neutral"
+          variant="soft"
+          class="rounded"
+          :disabled="saving"
+          @click="$emit('open-do-modal')"
+        />
       </div>
     </div>
   </div>

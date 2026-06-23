@@ -46,7 +46,7 @@ function updateFilter(key: keyof Filters, value: any) {
       value-attribute="value"
       option-attribute="label"
       placeholder="Filter by Status"
-      class="w-full md:w-48"
+      class="w-48"
       clear
     />
 
@@ -54,7 +54,7 @@ function updateFilter(key: keyof Filters, value: any) {
       :model-value="props.search"
       icon="i-lucide-search"
       placeholder="Search PO Number or Plan..."
-      class="w-full md:w-72"
+      class="w-64 ml-auto"
       @update:model-value="emit('update:search', $event as string)"
     />
   </div>

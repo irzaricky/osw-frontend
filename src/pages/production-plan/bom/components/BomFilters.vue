@@ -77,7 +77,7 @@ const selectedActivationId = computed({
       :model-value="search"
       icon="i-lucide-search"
       placeholder="Search BOM number or part..."
-      class="w-72 ml-auto"
+      class="w-64 ml-auto"
       @update:model-value="emit('update:search', String($event))"
     />
   </div>

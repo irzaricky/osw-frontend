@@ -59,25 +59,7 @@ function fmtPlanMonth(plan_month: string): string {
 export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
   const columns: ColumnDef<ProductionPlan>[] = [
     {
-      id: 'select',
-      header: ({ table }) =>
-        h(ui.UCheckbox, {
-          modelValue: table.getIsAllPageRowsSelected(),
-          indeterminate: table.getIsSomePageRowsSelected(),
-          'onUpdate:modelValue': (v: boolean) => table.toggleAllPageRowsSelected(!!v),
-          ariaLabel: 'Select all',
-        }),
-      cell: ({ row }) =>
-        h(ui.UCheckbox, {
-          modelValue: row.getIsSelected(),
-          'onUpdate:modelValue': (v: boolean) => row.toggleSelected(!!v),
-          ariaLabel: 'Select row',
-        }),
-      enableSorting: false,
-      enableHiding:  false,
-    },
-    {
-      header: 'No',
+      header: '#',
       cell: ({ row }) => row.index + 1,
     },
     {
@@ -87,7 +69,7 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
         h(
           'button',
           {
-            class:   'font-semibold text-primary hover:underline text-left',
+            class:   'font-mono text-primary hover:underline text-left',
             onClick: () => actions.onView(row.original),
           },
           row.original.plan_number,
@@ -109,7 +91,8 @@ export function useProductionPlanColumns(actions: Actions, ui: UIComponents) {
             label:   planTypeLabel[type] ?? type,
             color:   planTypeColor[type] ?? 'neutral',
             variant: 'soft',
-            size:    'sm',
+            size:    'md',
+            class: 'justify-center',
           }),
           row.original.plan_type === 'AMENDMENT' && row.original.parent_plan
             ? h('span', { class: 'text-xs text-muted font-mono' }, `↳ ${row.original.parent_plan.plan_number}`)

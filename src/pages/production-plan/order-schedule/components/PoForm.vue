@@ -53,9 +53,10 @@ const latestDelivery = computed(() =>
 )
 
 const isDateDisabled = computed(() => {
-  if (!selectedPlanData.value?.latest_delivery_date) return undefined
-  const latest = parseDate(selectedPlanData.value.latest_delivery_date)
-  return (date: DateValue) => date.compare(latest) >= 0
+  const planMonth = selectedPlanData.value?.plan_month // "2026-06"
+  if (!planMonth) return undefined
+  const [year, month] = planMonth.split('-').map(Number)
+  return (date: DateValue) => date.year !== year || date.month !== month
 })
 
 const selectedPlanDetail = ref<any>(null)
@@ -89,30 +90,30 @@ const schema = z.object({
   if (data.production_start_date && data.production_end_date) {
     if (new Date(data.production_end_date) <= new Date(data.production_start_date)) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code:    z.ZodIssueCode.custom,
         message: 'End Date must be after Start Date.',
-        path: ['production_end_date'],
+        path:    ['production_end_date'],
       })
     }
   }
-  if (data.plan_id && data.production_end_date) {
-    const plan = dropdown.value.find(p => p.id === data.plan_id)
-    if (plan?.latest_delivery_date && new Date(data.production_end_date) >= new Date(plan.latest_delivery_date)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `End Date must be before Latest Delivery Date (${fmtDate(plan.latest_delivery_date)}).`,
-        path: ['production_end_date'],
-      })
-    }
-  }
-  // Di superRefine tambah validasi end date vs latest delivery:
-  if (data.production_end_date && selectedPlanData.value?.latest_delivery_date) {
-    if (data.production_end_date >= selectedPlanData.value.latest_delivery_date) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `End Date must before Latest Delivery Date (${fmtDate(selectedPlanData.value.latest_delivery_date)}).`,
-        path: ['production_end_date'],
-      })
+  // Validasi bulan — start dan end harus dalam bulan plan
+  const planMonth = selectedPlanData.value?.plan_month
+  if (planMonth) {
+    const [y, m] = planMonth.split('-').map(Number)
+    for (const [field, iso] of [
+      ['production_start_date', data.production_start_date],
+      ['production_end_date',   data.production_end_date],
+    ] as const) {
+      if (iso) {
+        const d = new Date(iso)
+        if (d.getFullYear() !== y || d.getMonth() + 1 !== m) {
+          ctx.addIssue({
+            code:    z.ZodIssueCode.custom,
+            message: `Date must be within the plan month (${planMonth}).`,
+            path:    [field],
+          })
+        }
+      }
     }
   }
 })
@@ -314,8 +315,8 @@ onMounted(() => {
         name="production_start_date"
         required
         class="md:col-span-3"
-        :help="selectedPlanData?.latest_delivery_date
-          ? `End Date must be before ${fmtDate(selectedPlanData.latest_delivery_date)}.`
+        :help="selectedPlanData?.plan_month
+          ? `Date range must be within ${selectedPlanData.plan_month}.`
           : 'Select the production date range for this order.'"
       >
         <HomeDateRangePicker 

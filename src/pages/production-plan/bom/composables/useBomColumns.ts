@@ -45,25 +45,25 @@ function activationColor(code?: string): "success" | "neutral" {
 export function useBomColumns(actions: Actions, ui: UIComponents) {
   const columns: ColumnDef<Bom>[] = [
     // ── Checkbox ────────────────────────────────────────────────────────────
-    {
-      id: "select",
-      header: ({ table }) =>
-        h(ui.UCheckbox, {
-          modelValue: table.getIsAllPageRowsSelected(),
-          indeterminate: table.getIsSomePageRowsSelected(),
-          "onUpdate:modelValue": (v: boolean) =>
-            table.toggleAllPageRowsSelected(!!v),
-          ariaLabel: "Select all",
-        }),
-      cell: ({ row }) =>
-        h(ui.UCheckbox, {
-          modelValue: row.getIsSelected(),
-          "onUpdate:modelValue": (v: boolean) => row.toggleSelected(!!v),
-          ariaLabel: "Select row",
-        }),
-      enableSorting: false,
-      enableHiding: false,
-    },
+    // {
+    //   id: "select",
+    //   header: ({ table }) =>
+    //     h(ui.UCheckbox, {
+    //       modelValue: table.getIsAllPageRowsSelected(),
+    //       indeterminate: table.getIsSomePageRowsSelected(),
+    //       "onUpdate:modelValue": (v: boolean) =>
+    //         table.toggleAllPageRowsSelected(!!v),
+    //       ariaLabel: "Select all",
+    //     }),
+    //   cell: ({ row }) =>
+    //     h(ui.UCheckbox, {
+    //       modelValue: row.getIsSelected(),
+    //       "onUpdate:modelValue": (v: boolean) => row.toggleSelected(!!v),
+    //       ariaLabel: "Select row",
+    //     }),
+    //   enableSorting: false,
+    //   enableHiding: false,
+    // },
 
     // ── No ──────────────────────────────────────────────────────────────────
     {
