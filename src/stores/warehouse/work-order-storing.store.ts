@@ -8,8 +8,8 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
   const workOrders = ref<WorkOrderStoring[]>([])
   const workOrderTypes = ref<WorkOrderStoringType[]>([])
   const workOrderStatuses = ref<WorkOrderStoringStatus[]>([])
-  const bufferStations = ref<StationDropdown[]>([])
   const productionWOs = ref<ProductionWODropdown[]>([])
+  const stations = ref<StationDropdown[]>([])
 
   const meta = ref({
     page: 1,
@@ -146,19 +146,6 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     }
   }
 
-  async function fetchBufferStationDropdown() {
-    try {
-      const response = await workOrderStoringService.getBufferStationDropdown()
-      const data = response.data
-      if (data.status) {
-        bufferStations.value = data.data
-      }
-    } catch (e: any) {
-      error.value = e.response?.data?.message || e.message
-      console.error('Error fetching buffer station:', e)
-    }
-  }
-
   async function fetchWoProductionDropdown() {
     try {
       const response = await workOrderStoringService.getWoProductionDropdown()
@@ -172,13 +159,26 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     }
   }
 
+  async function fetchStationDropdown(params?: Record<string, any>) {
+    try {
+      const response = await workOrderStoringService.getStationDropdown(params)
+      const data = response.data
+      if (data.status) {
+        stations.value = data.data
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching buffer station:', e)
+    }
+  }
+
   return {
     // State
     workOrders,
     workOrderTypes,
     workOrderStatuses,
-    bufferStations,
     productionWOs,
+    stations,
     meta,
     loading,
     error,
@@ -192,7 +192,7 @@ export const useWorkOrderStoringStore = defineStore('work-order-storing', () => 
     printLabel,
     fetchWorkOrderTypesDropdown,
     fetchWorkOrderStatusesDropdown,
-    fetchBufferStationDropdown,
-    fetchWoProductionDropdown
+    fetchWoProductionDropdown,
+    fetchStationDropdown
   }
 })

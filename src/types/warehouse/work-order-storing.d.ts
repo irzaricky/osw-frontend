@@ -14,84 +14,51 @@ export interface WorkOrderStoringType {
   name: string
 }
 
-export interface StationBufferArea {
-  id: number
-  area_code: string
-  name: string
-  available_stock: number
-}
-
-export interface StationBufferUom {
-  id: number
-  code: string
-  name: string
-}
-
-export interface StationBufferMaterial {
-  part_id: number
-  part_number: string
-  part_name: string
-
-  current_buffer_stock: number
-  min_buffer_stock: number
-  need_refill: number
-
-  qty_per_kanban: number
-
-  uom?: StationBufferUom | null
-
-  areas: StationBufferArea[]
-}
-
 export interface StationDropdown {
   id: number
   station_code: string
   name: string
 
-  materials: StationBufferMaterial[]
+  materials: StationMaterial[]
 }
 
-export interface ProductionWOMaterialArea {
-  id: number
-  area_code: string
-  name: string
-  available_stock: number
-}
-
-export interface ProductionWOMaterial {
+export interface StationMaterial {
   part_id: number
   part_number: string
   part_name: string
-  uom: string
   qty_per_kanban: number
 
-  required_qty: number
-  supplied_qty: number
-  remaining_qty: number
+  uom: {
+    id: number
+    code: string
+    name: string
+  } | null
 
-  buffer_stock: number
-  max_kanban: number
+  areas: {
+    id: number
+    area_code: string
+    name: string
+    available_stock: number
+  }[]
 
-  areas: ProductionWOMaterialArea[]
+  // Production
+  required_qty?: number
+  supplied_qty?: number
+  remaining_qty?: number
+  buffer_stock?: number
+  max_kanban?: number
+
+  // Buffer
+  current_buffer_stock?: number
+  min_buffer_stock?: number
+  refill_qty?: number
 }
 
 export interface ProductionWODropdown {
-  wo_id: number
+  id: number
   wo_number: string
-
-  planned_quantity: number
-
-  part_id: number
   part_number: string
-  part_name: string
-  uom: string
-
-  station?: {
-    id: number
-    name: string
-  }
-
-  materials: ProductionWOMaterial[]
+  planned_quantity: number
 }
 
 export interface WorkOrderStoring {
