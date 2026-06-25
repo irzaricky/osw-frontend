@@ -64,7 +64,7 @@ const props = defineProps<{
   parts: PartDropdown[]
   refDocs: MaterialReceivingDropdown[]
   productionWos: ProductionWODropdown[]
-  bufferStations: StationDropdown[]
+  stations: StationDropdown[]
   loading: boolean
 }>()
 
@@ -145,6 +145,14 @@ const schema = z.object({
         code: z.ZodIssueCode.custom,
         path: ['production_wo_id'],
         message: 'Production Work Order is required'
+      })
+    }
+
+    if (!data.station_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['station_id'],
+        message: 'Station is required'
       })
     }
   }
@@ -254,16 +262,8 @@ const displayDescription = computed(() => {
   return state.wo_description || '-'
 })
 
-const productionWOInfo = computed(() => {
-  if (state.take_out_purpose !== 'production' || !selectedProductionWO.value) {
-    return null
-  }
-
-  return selectedProductionWO.value
-})
-
 const stationInfo = computed(() => {
-  if (state.take_out_purpose !== 'buffer' || !selectedStation.value) {
+  if (!selectedStation.value) {
     return null
   }
 
@@ -328,15 +328,19 @@ watch(
       state.ref_doc_id = undefined
       state.ref_doc_number = ''
       state.ref_doc_name = ''
+      state.warehouse_area_id = undefined
+      state.production_wo_id = undefined
+      state.station_id = undefined
     } else if (state.ref_source === 'delivery_order' && state.ref_doc_id) {
       return
     }
 
     if (!isTakeOut) {
       state.take_out_purpose = 'production'
-
+      
       state.production_wo_id = undefined
       state.station_id = undefined
+      state.warehouse_area_id = undefined
     }
 
     await warehouseAreaStore.fetchDropdown({
@@ -361,14 +365,14 @@ watch(
   async (purpose) => {
     state.items = []
 
+    state.station_id = undefined
+    state.production_wo_id = undefined
     state.warehouse_area_id = undefined
 
-    if (purpose === 'production') {
-      state.station_id = undefined
-    }
-
     if (purpose === 'buffer') {
-      state.production_wo_id = undefined
+      await workOrderStore.fetchStationDropdown({
+        take_out_purpose: 'buffer'
+      })
     }
   }
 )
@@ -444,6 +448,7 @@ watch(
   () => state.production_wo_id,
   async (productionWoId) => {
     state.items = []
+    state.station_id = undefined
     state.warehouse_area_id = undefined
 
     if (!productionWoId) {
@@ -453,7 +458,7 @@ watch(
     }
 
     const selectedWO = props.productionWos.find(
-      wo => wo.wo_id === productionWoId
+      wo => wo.id === productionWoId
     )
 
     if (!selectedWO) return
@@ -461,12 +466,9 @@ watch(
     state.ref_doc_number = selectedWO.wo_number
     state.ref_doc_name = 'Production Work Order'
 
-    state.station_id = selectedWO.station?.id
-
-    await warehouseAreaStore.fetchDropdown({
-      production_wo_id: productionWoId,
-      wo_category: 'take_out',
-      category_id: 1
+    await workOrderStore.fetchStationDropdown({
+      take_out_purpose: 'production',
+      production_wo_id: productionWoId
     })
   }
 )
@@ -474,17 +476,16 @@ watch(
 watch(
   () => state.station_id,
   async (stationId) => {
-    if (state.take_out_purpose !== 'buffer' || !stationId) {
-      return
-    }
+    if (!stationId) return
 
     state.items = []
     state.warehouse_area_id = undefined
 
     await warehouseAreaStore.fetchDropdown({
-      station_id: stationId,
+      category_id: 1,
       wo_category: 'take_out',
-      category_id: 1
+      production_wo_id: state.take_out_purpose === 'production' ? state.production_wo_id : undefined,
+      station_id: stationId,
     })
   }
 )
@@ -492,6 +493,10 @@ watch(
 watch(
   () => state.warehouse_area_id,
   async (areaId) => {
+    if (state.items.length) {
+      state.items = []
+    }
+    
     if (!areaId || !state.wo_type_id) return
     if (state.ref_source === 'delivery_order' && state.ref_doc_id) return
 
@@ -499,12 +504,14 @@ watch(
     if (
       state.wo_category === 'Take Out' &&
       state.take_out_purpose === 'production' &&
-      state.production_wo_id
+      state.production_wo_id &&
+      state.station_id
     ) {
       await partStore.fetchDropdown({
         part_type_code: mapTypeToPartCode(state.wo_type_id),
         wo_category: 'take_out',
         production_wo_id: state.production_wo_id,
+        station_id: state.station_id,
         area_id: areaId
       })
 
@@ -556,7 +563,7 @@ const refDocItems = computed(() =>
 )
 
 const stationItems = computed(() =>
-  props.bufferStations.map(station => ({
+  props.stations.map(station => ({
     ...station,
     label: `${station.station_code} - ${station.name}`
   }))
@@ -565,7 +572,7 @@ const stationItems = computed(() =>
 const productionWOItems = computed(() =>
   props.productionWos.map(wo => ({
     ...wo,
-    label: `${wo.wo_number} - ${wo.part_name}`
+    label: `${wo.wo_number} - ${wo.part_number}`
   }))
 )
 
@@ -600,13 +607,18 @@ const selectedStation = computed({
 })
 
 const selectedProductionWO = computed({
-  get: () =>
-    productionWOItems.value.find(
-      wo => wo.wo_id === state.production_wo_id
-    ),
+  get() {
+    if (!state.production_wo_id) {
+      return undefined
+    }
 
-  set: (val) => {
-    state.production_wo_id = val?.wo_id
+    return productionWOItems.value.find(
+      wo => wo.id === state.production_wo_id
+    )
+  },
+
+  set(val) {
+    state.production_wo_id = val?.id
   }
 })
 
@@ -728,7 +740,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
     ...(isDeliveryOrder ? { ref_doc_id } : {}),
 
     // Take Out Production
-    ...(isProductionWo ? { take_out_purpose, production_wo_id } : {}),
+    ...(isProductionWo ? { take_out_purpose, production_wo_id, station_id } : {}),
 
     // Take Out Buffer
     ...(isBuffer ? { take_out_purpose, station_id } : {}),
@@ -930,106 +942,11 @@ function onSubmit(event: FormSubmitEvent<any>) {
         </UFormField>
       </div>
 
-      <UCard v-if="productionWOInfo" class="md:col-span-3">
-        <template #header>
-          <div class="font-semibold">
-            Production Work Order Information
-          </div>
-        </template>
-
-        <div class="space-y-4">
-          <div class="grid md:grid-cols-4 gap-4">
-            <div>
-              <div class="text-sm text-muted">
-                WO Number
-              </div>
-              <div>
-                {{ productionWOInfo.wo_number }}
-              </div>
-            </div>
-
-            <div>
-              <div class="text-sm text-muted">
-                Product
-              </div>
-              <div>
-                {{ productionWOInfo.part_number }} - {{ productionWOInfo.part_name }}
-              </div>
-            </div>
-
-            <div>
-              <div class="text-sm text-muted">
-                Planned Quantity
-              </div>
-              <div>
-                {{ productionWOInfo.planned_quantity }} {{ productionWOInfo.uom }}
-              </div>
-            </div>
-
-            <div>
-              <div class="text-sm text-muted">
-                Station
-              </div>
-              <div>
-                {{ productionWOInfo.station?.name || '-' }}
-              </div>
-            </div>
-          </div>
-
-          <UTable
-            :data="productionWOInfo.materials"
-            :columns="[
-              { accessorKey: 'part_number', header: 'Part Number' },
-              { accessorKey: 'part_name', header: 'Part Name' },
-              { 
-                accessorKey: 'qty_per_kanban', 
-                header: 'Qty/Kanban',
-                cell: ({ row }) => `${row.original.qty_per_kanban} ${row.original.uom ?? ''}` 
-              },
-              { 
-                accessorKey: 'required_qty', 
-                header: 'Required',
-                cell: ({ row }) => `${row.original.required_qty} ${row.original.uom ?? ''}`
-              },
-              { 
-                accessorKey: 'supplied_qty', 
-                header: 'Supplied',
-                cell: ({ row }) => `${row.original.supplied_qty} ${row.original.uom ?? ''}`
-              },
-              { 
-                accessorKey: 'remaining_qty', 
-                header: 'Remaining',
-                cell: ({ row }) => `${row.original.remaining_qty} ${row.original.uom ?? ''}`
-              },
-              { 
-                accessorKey: 'buffer_stock', 
-                header: 'Buffer Stock',
-                cell: ({ row }) => `${row.original.buffer_stock} ${row.original.uom ?? ''}`
-              },
-              { 
-                accessorKey: 'max_kanban', 
-                header: 'Recommended Kanban',
-                cell: ({ row }) => `${row.original.max_kanban} Kanban`
-              },
-              {
-                accessorKey: 'areas',
-                header: 'Available Areas',
-                cell: ({ row }) => row.original.areas
-                  ?.map(
-                    area => `${area.area_code} (${area.available_stock})`
-                  )
-                  .join(', ') || '-'
-              }
-            ]"
-          />
-        </div>
-      </UCard>
-
       <UFormField
         label="Station"
         name="station_id"
         class="md:col-span-3"
-        :required="showTakeOutPurpose && state.take_out_purpose === 'buffer'"
+        :required="showTakeOutPurpose"
       >
         <USelectMenu
           v-if="isEditable"
@@ -1038,7 +955,13 @@ function onSubmit(event: FormSubmitEvent<any>) {
           option-attribute="label"
           placeholder="Select Station"
           class="w-full"
-          :disabled="state.take_out_purpose !== 'buffer' || !isEditable"
+          :disabled="
+            !isEditable || 
+            (
+              state.take_out_purpose === 'production'
+              && !state.production_wo_id
+            )
+          "
           :clear="isEditable"
         />
 
@@ -1050,14 +973,63 @@ function onSubmit(event: FormSubmitEvent<any>) {
         />
       </UFormField>
 
-      <UCard v-if="stationInfo" class="md:col-span-3">
+      <UCard v-if="isEditable && stationInfo" class="md:col-span-3">
         <template #header>
           <div class="font-semibold">
-            Buffer Station Information
+            Station Information
           </div>
         </template>
 
         <UTable
+          v-if="state.take_out_purpose === 'production'"
+          :data="stationInfo.materials"
+          :columns="[
+            { accessorKey: 'part_number', header: 'Part Number' },
+            { accessorKey: 'part_name', header: 'Part Name' },
+            {
+              accessorKey: 'qty_per_kanban',
+              header: 'Qty/Kanban',
+              cell: ({ row }) => `${row.original.qty_per_kanban} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'required_qty',
+              header: 'Required',
+              cell: ({ row }) => `${row.original.required_qty} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'supplied_qty',
+              header: 'Supplied',
+              cell: ({ row }) => `${row.original.supplied_qty} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'remaining_qty',
+              header: 'Remaining',
+              cell: ({ row }) => `${row.original.remaining_qty} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'buffer_stock',
+              header: 'Buffer Stock',
+              cell: ({ row }) => `${row.original.buffer_stock} ${row.original.uom?.code ?? ''}`
+            },
+            {
+              accessorKey: 'max_kanban',
+              header: 'Recommended Kanban',
+              cell: ({ row }) => `${row.original.max_kanban} Kanban`
+            },
+            {
+              accessorKey: 'areas',
+              header: 'Available Areas',
+              cell: ({ row }) => row.original.areas
+                ?.map(
+                  area => `${area.area_code} (${area.available_stock})`
+                )
+                .join(', ') || '-'
+            }
+          ]"
+        />
+
+        <UTable
+          v-else
           :data="stationInfo.materials"
           :columns="[
             { accessorKey: 'part_number', header: 'Part Number' },
@@ -1073,9 +1045,9 @@ function onSubmit(event: FormSubmitEvent<any>) {
               cell: ({ row }) => `${row.original.min_buffer_stock} ${row.original.uom?.code ?? ''}`
             },
             { 
-              accessorKey: 'need_refill', 
-              header: 'Need Refill',
-              cell: ({ row }) => `${row.original.need_refill} ${row.original.uom?.code ?? ''}`
+              accessorKey: 'refill_qty', 
+              header: 'Refill Qty',
+              cell: ({ row }) => `${row.original.refill_qty} ${row.original.uom?.code ?? ''}`
             },
             { 
               accessorKey: 'qty_per_kanban', 
@@ -1113,7 +1085,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
             (
               state.wo_category === 'Take Out' && state.wo_type_id === 1 &&
               (
-                (state.take_out_purpose === 'production' && !state.production_wo_id) ||
+                (state.take_out_purpose === 'production' && !state.station_id) ||
                 (state.take_out_purpose === 'buffer' && !state.station_id)
               )
             )

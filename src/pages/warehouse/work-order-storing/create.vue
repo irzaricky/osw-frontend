@@ -19,7 +19,7 @@ const warehouseAreaStore = useWarehouseAreaStore()
 const partStore = usePartStore()
 const materialReceivingStore = useMaterialReceivingStore()
 
-const { workOrderTypes, bufferStations, productionWOs, loading } = storeToRefs(workOrderStore)
+const { workOrderTypes, stations, productionWOs, loading } = storeToRefs(workOrderStore)
 const { dropdown } = storeToRefs(warehouseAreaStore)
 const areas = computed(() => dropdown.value)
 const parts = computed(() => partStore.dropdown)
@@ -51,7 +51,7 @@ async function handleSave(data: any) {
 // fetch dropdown
 onMounted(async () => {
   await workOrderStore.fetchWorkOrderTypesDropdown()
-  await workOrderStore.fetchBufferStationDropdown()
+  await workOrderStore.fetchStationDropdown()
   await workOrderStore.fetchWoProductionDropdown()
   await materialReceivingStore.fetchDropdown()
   isTypesLoaded.value = true
@@ -85,7 +85,7 @@ onMounted(async () => {
         :areas="areas"
         :parts="parts"
         :ref-docs="refDocs"
-        :buffer-stations="bufferStations"
+        :stations="stations"
         :production-wos="productionWOs"
         :loading="loading"
         @save="handleSave"
