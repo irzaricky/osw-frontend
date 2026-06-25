@@ -333,7 +333,6 @@ function handleSave() {
             label-key="label"
             placeholder="Select unit of measure"
             class="w-full"
-            clear
             :disabled="true"
           />
         </UFormField>
@@ -347,7 +346,6 @@ function handleSave() {
             label-key="label"
             placeholder="Select type..."
             class="w-full"
-            clear
             :disabled="true"
           />
         </UFormField>

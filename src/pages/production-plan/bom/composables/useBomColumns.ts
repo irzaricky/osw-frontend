@@ -6,7 +6,6 @@ import type { Bom } from "../../../../types/production-plan/bom";
 import type { ColumnDef } from "@tanstack/table-core";
 
 interface UIComponents {
-  UCheckbox: any;
   UButton: any;
   UDropdownMenu: any;
   UBadge: any;
@@ -44,27 +43,6 @@ function activationColor(code?: string): "success" | "neutral" {
 
 export function useBomColumns(actions: Actions, ui: UIComponents) {
   const columns: ColumnDef<Bom>[] = [
-    // ── Checkbox ────────────────────────────────────────────────────────────
-    // {
-    //   id: "select",
-    //   header: ({ table }) =>
-    //     h(ui.UCheckbox, {
-    //       modelValue: table.getIsAllPageRowsSelected(),
-    //       indeterminate: table.getIsSomePageRowsSelected(),
-    //       "onUpdate:modelValue": (v: boolean) =>
-    //         table.toggleAllPageRowsSelected(!!v),
-    //       ariaLabel: "Select all",
-    //     }),
-    //   cell: ({ row }) =>
-    //     h(ui.UCheckbox, {
-    //       modelValue: row.getIsSelected(),
-    //       "onUpdate:modelValue": (v: boolean) => row.toggleSelected(!!v),
-    //       ariaLabel: "Select row",
-    //     }),
-    //   enableSorting: false,
-    //   enableHiding: false,
-    // },
-
     // ── No ──────────────────────────────────────────────────────────────────
     {
       header: "#",
@@ -182,15 +160,15 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
       cell: ({ row }) => {
         const status     = row.original.doc_status
         const activation = row.original.activation_status
-    
+
         const isDraft     = status === "Draft"
         const isSubmitted = status === "Pending_Approval"
         const isApproved  = status === "Approved"
         const isActive    = activation === "Active"
-    
+
         // Build groups, only push non-empty ones to avoid separator gaps
         const groups: any[][] = []
-    
+
         // Group 1 — always visible
         groups.push([
           {
@@ -199,7 +177,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
             onSelect: () => actions.onView(row.original),
           },
         ])
-    
+
         // Group 2 — draft workflow
         if (isDraft) {
           groups.push([
@@ -211,7 +189,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
             },
           ])
         }
-    
+
         // Group 3 — approval workflow
         if (isSubmitted) {
           groups.push([
@@ -235,7 +213,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
             },
           ])
         }
-    
+
         // Group 4 — activation toggle (only when approved)
         if (isApproved) {
           groups.push([
@@ -254,7 +232,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
                 },
           ])
         }
-    
+
         // Group 5 — danger zone (always visible, disabled when not draft)
         groups.push([
           {
@@ -265,7 +243,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
             onSelect: () => actions.onDelete(row.original),
           },
         ])
-    
+
         return h("div", { class: "flex justify-end" }, [
           h(
             ui.UDropdownMenu,

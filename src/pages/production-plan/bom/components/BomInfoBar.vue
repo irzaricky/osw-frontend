@@ -47,7 +47,7 @@ defineProps<Props>()
         Created By
       </p>
       <p class="text-sm font-semibold">
-        {{ currentBom.creator?.email ?? '—' }}
+        {{ currentBom.creator?.user_detail?.full_name ?? '—' }}
       </p>
     </div>
     <div class="bg-default p-4 space-y-1">
@@ -55,7 +55,7 @@ defineProps<Props>()
         Approved By
       </p>
       <p class="text-sm font-semibold">
-        {{ currentBom.approver?.email ?? '—' }}
+        {{ currentBom.approver?.user_detail?.full_name ?? '—' }}
         <span v-if="currentBom.approved_at" class="block text-xs text-muted font-normal">
           {{ fmtDate(currentBom.approved_at) }}
         </span>

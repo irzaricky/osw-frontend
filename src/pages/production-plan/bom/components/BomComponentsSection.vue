@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { ref, computed, resolveComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import type { LocalDetail } from '../composables/useBomForm'
+import { useBomComponentColumns } from '../composables/useBomComponentColumns'
 
 interface Props {
   localDetails:    LocalDetail[]
@@ -9,257 +12,268 @@ interface Props {
   isCreate:        boolean
   isEditable:      boolean
   currentBom?:     any
+  canAddDetail:    boolean
   resolveUomCode:  (d: LocalDetail) => string
 }
 
 const props = defineProps<Props>()
 const emit  = defineEmits<{
-  addDetail:      []
-  editDetail:     [d: LocalDetail]
-  deleteDetail:   [d: LocalDetail]
-  save:           [andSubmit: boolean]
-  discard:        []
+  addDetail:    []
+  editDetail:   [d: LocalDetail]
+  deleteDetail: [d: LocalDetail]
+  save:         [andSubmit: boolean]
+  discard:      []
 }>()
 
+const router = useRouter()
+
+function goToChildBom(childBomId: number) {
+  router.push(`/production-plan/bom/${childBomId}`)
+}
+
+const ui = {
+  UButton:       resolveComponent('UButton') as any,
+  UDropdownMenu: resolveComponent('UDropdownMenu') as any,
+  UBadge:        resolveComponent('UBadge') as any,
+}
+
+const TYPE_FILTER_OPTIONS = [
+  { label: 'Product', value: 'PRODUCT' },
+  { label: 'WIP',     value: 'WIP' },
+  { label: 'Raw',     value: 'RAW' },
+]
+
+const LEVEL_FILTER_OPTIONS = [0, 1, 2, 3, 4, 5].map((lvl) => ({
+  label: `L${lvl}`,
+  value: lvl,
+}))
+
+// ── Filters ───────────────────────────────────────────────────────────────────
+const search      = ref('')
+const typeFilter  = ref<string | undefined>(undefined)
+const levelFilter = ref<number | undefined>(undefined)
+
+// ── Pagination ────────────────────────────────────────────────────────────────
+const page  = ref(1)
+const limit = 10
+
+function resetPage() {
+  page.value = 1
+}
+
+// ── Data pipeline ─────────────────────────────────────────────────────────────
 const sortedDetails = computed(() =>
   props.localDetails.slice().sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0)),
 )
 
-import { computed } from 'vue'
+const filteredDetails = computed(() => {
+  let list = sortedDetails.value
+
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    list = list.filter((d) =>
+      (d._part?.part_number ?? '').toLowerCase().includes(q) ||
+      (d._part?.part_name   ?? '').toLowerCase().includes(q),
+    )
+  }
+
+  if (typeFilter.value !== undefined && typeFilter.value !== null) {
+    list = list.filter((d) => d.type === typeFilter.value)
+  }
+
+  if (levelFilter.value !== undefined && levelFilter.value !== null) {
+    list = list.filter((d) => d.level === levelFilter.value)
+  }
+
+  return list
+})
+
+// Meta untuk pagination text (mirip pola yang diminta)
+const meta = computed(() => ({
+  total: filteredDetails.value.length,
+  page:  page.value,
+  limit,
+}))
+
+const pageOffset = computed(() => (page.value - 1) * limit)
+
+const paginatedDetails = computed(() =>
+  filteredDetails.value.slice(pageOffset.value, pageOffset.value + limit),
+)
+
+// ── Columns ───────────────────────────────────────────────────────────────────
+const isEditableOrCreate = computed(() => props.isEditable || props.isCreate)
+
+const { columns } = useBomComponentColumns(
+  {
+    onEdit:         (d) => emit('editDetail', d),
+    onDelete:       (d) => emit('deleteDetail', d),
+    onViewChildBom: goToChildBom, // ← sekarang terhubung
+  },
+  ui,
+  props.resolveUomCode,
+  isEditableOrCreate,
+  pageOffset,
+)
 </script>
 
 <template>
-  <div class="border-t border-default">
-    <!-- Toolbar -->
-    <div class="flex items-center justify-between gap-3 px-5 py-4">
-      <h2 class="font-semibold text-sm flex items-center gap-2">
-        <UIcon name="i-lucide-layers" class="w-4 h-4 text-primary" />
-        Components
-        <UBadge
-          v-if="localDetails.length"
-          :label="String(localDetails.length)"
-          color="neutral"
-          variant="soft"
-          size="sm"
-        />
-      </h2>
-      <UButton
-        v-if="isEditable || isCreate"
-        icon="i-lucide-plus"
-        color="primary"
-        variant="soft"
-        size="sm"
-        label="Add Component"
-        @click="emit('addDetail')"
-      />
-    </div>
-
-    <!-- Loading -->
-    <div v-if="loading && !isCreate" class="flex justify-center items-center py-12">
-      <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin text-muted" />
-    </div>
-
-    <!-- Empty state -->
-    <div
-      v-else-if="!localDetails.length"
-      class="flex flex-col items-center justify-center py-12 gap-3 text-muted"
-    >
-      <UIcon name="i-lucide-package-open" class="w-10 h-10" />
-      <p class="text-sm">
-        No components yet. Add the first component to this BOM.
-      </p>
-      <UButton
-        v-if="isEditable || isCreate"
-        icon="i-lucide-plus"
-        color="primary"
-        variant="soft"
-        size="sm"
-        label="Add Component"
-        @click="emit('addDetail')"
-      />
-    </div>
-
-    <!-- Table -->
-    <div v-else class="overflow-x-auto">
-      <table class="w-full text-sm min-w-[900px]">
-        <thead class="bg-elevated border-y border-default">
-          <tr>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide w-14">
-              #
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-              Part Number
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-              Part Name
-            </th>
-            <th class="text-center px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide w-16">
-              Lvl
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide w-28">
-              Type
-            </th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-              Qty
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide w-20">
-              UOM
-            </th>
-            <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide w-24">
-              Scrap %
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-              Child BOM
-            </th>
-            <th class="text-left px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">
-              Notes
-            </th>
-            <th v-if="isEditable || isCreate" class="px-4 py-3 w-20" />
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-default">
-          <tr
-            v-for="(d, idx) in sortedDetails"
-            :key="d.temp_id"
-            class="hover:bg-elevated/50 transition-colors group"
-          >
-            <td class="px-4 py-3 font-mono text-xs text-muted">
-              {{ idx + 1 }}
-            </td>
-            <td class="px-4 py-3">
-              <span class="font-mono text-xs font-semibold">
-                {{ d._part?.part_number ?? `#${d.part_id}` }}
-              </span>
-            </td>
-            <td class="px-4 py-3 font-medium">
-              {{ d._part?.part_name ?? '—' }}
-            </td>
-            <td class="px-4 py-3 text-center">
-              <UBadge
-                v-if="d.level != null"
-                :label="`L${d.level}`"
-                color="neutral"
-                variant="soft"
-                size="sm"
-              />
-              <span v-else class="text-muted">—</span>
-            </td>
-            <td class="px-4 py-3">
-              <UBadge
-                v-if="d.type"
-                :label="d.type"
-                :color="
-                  d.type === 'material' ? 'info' :
-                  d.type === 'phantom' ? 'warning' :
-                  d.type === 'byproduct' ? 'neutral' :
-                  d.type === 'co-product' ? 'success' : 'neutral'
-                "
-                variant="subtle"
-                size="sm"
-              />
-              <span v-else class="text-muted text-xs">—</span>
-            </td>
-            <td class="px-4 py-3 text-right font-mono">
-              {{ Number(d.qty_required).toLocaleString('en-US', { maximumFractionDigits: 4 }) }}
-            </td>
-            <td class="px-4 py-3">
-              <span class="font-mono text-xs uppercase">{{ resolveUomCode(d) }}</span>
-            </td>
-            <td class="px-4 py-3 text-right font-mono text-muted">
-              {{ Number(d.scrap_percentage) > 0 ? `${d.scrap_percentage}%` : '—' }}
-            </td>
-            <td class="px-4 py-3 text-xs font-mono text-muted">
-              <span v-if="d._child_bom">
-                {{ d._child_bom.bom_number }}
-                <span class="opacity-60">v{{ d._child_bom.bom_version }}</span>
-              </span>
-              <span v-else>—</span>
-            </td>
-            <td class="px-4 py-3 text-xs text-muted max-w-40 truncate">
-              {{ d.notes ?? '—' }}
-            </td>
-            <td v-if="isEditable || isCreate" class="px-4 py-3">
-              <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <UButton
-                  icon="i-lucide-pencil"
-                  color="neutral"
-                  variant="ghost"
-                  size="xs"
-                  @click="emit('editDetail', d)"
-                />
-                <UButton
-                  icon="i-lucide-trash-2"
-                  color="error"
-                  variant="ghost"
-                  size="xs"
-                  @click="emit('deleteDetail', d)"
-                />
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Footer: Save actions -->
-    <div
-      v-if="isEditable || isCreate"
-      class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-5 py-4 border-t border-default bg-elevated/40"
-    >
-      <!-- Status hint -->
-      <p class="text-xs text-muted">
-        <template v-if="isCreate">
-          <span class="font-medium">{{ localDetails.length }}</span> component(s) added.
-          Save as Draft to keep editing later, or Submit directly for approval.
-        </template>
-        <template v-else-if="isDirty">
-          <span class="text-warning-600 dark:text-warning-400 font-medium">
-            <UIcon name="i-lucide-alert-triangle" class="w-3 h-3 inline-block mr-1" />
-            Unsaved changes
-          </span>
-          — save to apply all changes at once.
-        </template>
-        <template v-else>
-          <span class="text-success-600 dark:text-success-400">
-            <UIcon name="i-lucide-check" class="w-3 h-3 inline-block mr-1" />
-            All changes saved.
-          </span>
-        </template>
-      </p>
-
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2 flex-wrap">
+  <div class="space-y-6">
+    <div class="space-y-3">
+      <div class="flex justify-between items-center">
+        <h3 class="font-semibold flex items-center gap-2">
+          Components
+          <UBadge
+            v-if="localDetails.length"
+            :label="String(localDetails.length)"
+            color="neutral"
+            variant="soft"
+            size="sm"
+          />
+        </h3>
         <UButton
-          v-if="!isCreate && isDirty"
-          label="Discard"
-          icon="i-lucide-rotate-ccw"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          :disabled="saving"
-          @click="emit('discard')"
-        />
-        <UButton
-          :label="isCreate ? 'Save as Draft' : 'Save Changes'"
-          icon="i-lucide-save"
-          color="neutral"
-          variant="soft"
-          size="sm"
-          :loading="saving"
-          :disabled="!isDirty && !isCreate"
-          @click="emit('save', false)"
-        />
-        <UButton
-          v-if="isCreate || currentBom?.doc_status === 'Draft' || currentBom?.doc_status === 'Rejected'"
-          label="Submit for Approval"
-          icon="i-lucide-send"
-          color="primary"
-          size="sm"
-          :loading="saving"
-          :disabled="!localDetails.length"
-          @click="emit('save', true)"
+          v-if="isEditable || isCreate"
+          label="Add Component"
+          :disabled="!canAddDetail"
+          @click="emit('addDetail')"
         />
       </div>
+
+      <!-- Filters -->
+      <div v-if="localDetails.length" class="flex flex-wrap items-center gap-3">
+        <UInput
+          v-model="search"
+          icon="i-lucide-search"
+          placeholder="Search part number or name..."
+          class="w-full sm:w-64"
+          @update:model-value="resetPage"
+        />
+        <USelectMenu
+          v-model="typeFilter"
+          :items="TYPE_FILTER_OPTIONS"
+          value-key="value"
+          label-key="label"
+          placeholder="Filter by Type"
+          class="w-full sm:w-40"
+          clearable
+          @update:model-value="resetPage"
+        />
+        <USelectMenu
+          v-model="levelFilter"
+          :items="LEVEL_FILTER_OPTIONS"
+          value-key="value"
+          label-key="label"
+          placeholder="Filter by Level"
+          class="w-full sm:w-36"
+          clearable
+          @update:model-value="resetPage"
+        />
+      </div>
+
+      <!-- Empty: belum ada komponen sama sekali -->
+      <div
+        v-if="!loading && !localDetails.length"
+        class="flex flex-col items-center justify-center py-12 gap-3 text-muted"
+      >
+        <UIcon name="i-lucide-package-open" class="w-10 h-10" />
+        <p class="text-sm">
+          <template v-if="!canAddDetail">
+            Select a parent part above before adding components.
+          </template>
+          <template v-else>
+            No components yet. Add the first component to this BOM.
+          </template>
+        </p>
+        <UButton
+          v-if="isEditable || isCreate"
+          label="Add Component"
+          :disabled="!canAddDetail"
+          @click="emit('addDetail')"
+        />
+      </div>
+
+      <!-- Empty: filter tidak cocok -->
+      <div
+        v-else-if="!loading && !filteredDetails.length"
+        class="flex flex-col items-center justify-center py-12 gap-3 text-muted"
+      >
+        <UIcon name="i-lucide-search-x" class="w-10 h-10" />
+        <p class="text-sm">No components match your filters.</p>
+      </div>
+
+      <!-- Table -->
+      <UTable
+        v-else
+        :data="paginatedDetails"
+        :columns="columns"
+        :loading="loading && !isCreate"
+      />
+
+      <!-- Pagination -->
+      <div
+        v-if="filteredDetails.length > limit"
+        class="flex items-center justify-between gap-3"
+      >
+        <div class="text-sm text-muted">
+          {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
+        </div>
+        <UPagination
+          v-model:page="page"
+          :total="filteredDetails.length"
+          :items-per-page="limit"
+        />
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div v-if="isEditable || isCreate" class="flex justify-end gap-2">
+      <div class="flex-1 text-sm text-muted flex items-center gap-2">
+        <p class="text-muted">
+          <template v-if="isCreate">
+            <span class="font-medium">{{ localDetails.length }}</span> component(s) added.
+            Save as Draft to keep editing later, or Submit directly for approval.
+          </template>
+          <template v-else-if="isDirty">
+            <span class="text-warning-600 dark:text-warning-400 font-medium">
+              <UIcon name="i-lucide-alert-triangle" class="w-3 h-3 inline-block mr-1" />
+              Unsaved changes
+            </span>
+            — save to apply all changes at once.
+          </template>
+          <template v-else>
+            <span class="text-success-600 dark:text-success-400">
+              <UIcon name="i-lucide-check" class="w-3 h-3 inline-block mr-1" />
+              All changes saved.
+            </span>
+          </template>
+        </p>
+      </div>
+      <UButton
+        v-if="!isCreate && isDirty"
+        label="Discard"
+        color="neutral"
+        variant="ghost"
+        :disabled="saving"
+        @click="emit('discard')"
+      />
+      <UButton
+        color="neutral"
+        variant="outline"
+        :loading="saving"
+        :disabled="!isDirty && !isCreate"
+        @click="emit('save', false)"
+      >
+        {{ isCreate ? 'Save as Draft' : 'Save Changes' }}
+      </UButton>
+      <UButton
+        v-if="isCreate || currentBom?.doc_status === 'Draft' || currentBom?.doc_status === 'Rejected'"
+        color="primary"
+        :loading="saving"
+        :disabled="!localDetails.length"
+        @click="emit('save', true)"
+      >
+        Submit for Approval
+      </UButton>
     </div>
   </div>
 </template>

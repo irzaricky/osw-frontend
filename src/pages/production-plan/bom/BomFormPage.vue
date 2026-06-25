@@ -5,7 +5,6 @@ import { useBomForm } from './composables/useBomForm'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import BomPageHeader from './components/BomPageHeader.vue'
 import BomInfoBar from './components/BomInfoBar.vue'
-import BomHeaderCard from './components/BomHeaderCard.vue'
 import BomComponentsSection from './components/BomComponentsSection.vue'
 import BomWorkflowModal from './components/BomWorkflowModal.vue'
 import BomDeleteConfirmModal from './components/BomDeleteConfirmModal.vue'
@@ -17,15 +16,13 @@ const {
   // store refs
   currentBom, loading, saving,
   partDropdown, uomDropdown, bomDropdown,
-  // step
-  createStep,
   // status helpers
   docStatusColor, isEditable, fmtDate,
   // header form
   headerForm, partSearch, selectedParentPart,
   filteredParentParts, uomItems, selectedUomId,
   // details
-  localDetails, isDirty, nextSequence,
+  localDetails, isDirty, canAddDetail, nextSequence,
   discardChanges, resolveDetailUomCode,
   // detail modal
   isDetailModalOpen, detailModalMode, editingDetail,
@@ -33,7 +30,7 @@ const {
   // delete confirm
   deleteConfirm, confirmDeleteDetail, executeDeleteDetail,
   // actions
-  handleProceedToDetails, handleSave,
+  handleSave,
   // workflow
   wfModal, openApproveConfirm, openRejectConfirm,
   openActivationConfirm, handleNewVersion,
@@ -51,10 +48,8 @@ const breadcrumbItems = computed(() => [
   },
 ])
 
-// Show components section when: create step 2, or edit mode (regardless of editable)
-const showComponents = computed(
-  () => (isCreate.value && createStep.value === 2) || (!isCreate.value && !!currentBom.value),
-)
+function setDesc(v: string) { headerForm.description = v }
+function setNotes(v: string) { headerForm.notes = v }
 </script>
 
 <template>
@@ -90,52 +85,133 @@ const showComponents = computed(
       title="BOM Rejected"
       :description="currentBom.reject_reason"
     />
-    <UAlert
-      v-if="!isCreate && currentBom?.doc_status === 'Approved' && currentBom.approver"
-      color="success"
-      variant="soft"
-      icon="i-lucide-check-circle-2"
-      :title="`Approved by ${currentBom.approver.email}`"
-      :description="fmtDate(currentBom.approved_at)"
-    />
 
-    <!-- Header card + components section -->
-    <BomHeaderCard
-      :is-create="isCreate"
-      :create-step="createStep"
-      :is-editable="isEditable"
+    <!-- Header fields (flat, no card wrapper — matches WO Storing form style) -->
+    <UForm :state="headerForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Parent part selector (create only) -->
+      <UFormField v-if="isCreate" label="Parent Part" required class="md:col-span-2">
+        <div class="space-y-2">
+          <div
+            v-if="selectedParentPart"
+            class="flex items-center justify-between gap-2 rounded-lg border border-default bg-elevated px-3 py-2.5"
+          >
+            <div class="text-sm">
+              <span class="font-mono font-semibold">{{ selectedParentPart.part_number }}</span>
+              <span class="mx-2 text-muted">·</span>
+              <span>{{ selectedParentPart.part_name }}</span>
+              <span v-if="selectedParentPart.uom" class="ml-2 text-xs text-muted">
+                ({{ selectedParentPart.uom.code }})
+              </span>
+            </div>
+            <UButton
+              icon="i-lucide-x"
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              type="button"
+              :disabled="saving"
+              @click="selectedParentPart = null; partSearch = ''"
+            />
+          </div>
+
+          <template v-else>
+            <UInput
+              v-model="partSearch"
+              icon="i-lucide-search"
+              placeholder="Search part number or name..."
+              class="w-full sm:w-96"
+              :disabled="saving"
+            />
+            <div
+              v-if="filteredParentParts.length > 0"
+              class="max-h-44 overflow-y-auto rounded-lg border border-default divide-y divide-default"
+            >
+              <button
+                v-for="part in filteredParentParts.slice(0, 30)"
+                :key="part.id"
+                type="button"
+                class="w-full text-left px-3 py-2.5 hover:bg-elevated transition-colors text-sm"
+                @click="selectedParentPart = part; partSearch = ''"
+              >
+                <span class="font-mono font-semibold text-xs">{{ part.part_number }}</span>
+                <span class="mx-2 text-muted">·</span>
+                <span>{{ part.part_name }}</span>
+                <span v-if="part.uom" class="ml-2 text-xs text-muted">({{ part.uom.code }})</span>
+              </button>
+            </div>
+            <p v-else-if="partSearch" class="text-xs text-muted px-1">
+              No parts found.
+            </p>
+          </template>
+        </div>
+      </UFormField>
+
+      <!-- Parent part display (edit — read-only) -->
+      <div
+        v-if="!isCreate && currentBom?.parent_part"
+        class="md:col-span-2 rounded-lg border border-default bg-elevated px-3 py-2.5"
+      >
+        <p class="text-xs text-muted mb-0.5">
+          Parent Part <span class="opacity-50">(cannot be changed)</span>
+        </p>
+        <p class="text-sm font-medium">
+          <span class="font-mono font-semibold">{{ currentBom.parent_part.part_number }}</span>
+          <span class="mx-2 text-muted">·</span>
+          {{ currentBom.parent_part.part_name }}
+        </p>
+      </div>
+
+      <UFormField label="Description">
+        <UInput
+          :model-value="headerForm.description"
+          placeholder="e.g. Main assembly BOM rev1"
+          class="w-full"
+          :disabled="!isEditable || saving"
+          @update:model-value="setDesc"
+        />
+      </UFormField>
+
+      <UFormField label="UOM">
+        <USelectMenu
+          v-model="selectedUomId"
+          :items="uomItems"
+          value-key="value"
+          label-key="label"
+          placeholder="Select UOM..."
+          class="w-full"
+          :disabled="true"
+        />
+      </UFormField>
+
+      <UFormField label="Notes" class="md:col-span-2">
+        <UTextarea
+          :model-value="headerForm.notes"
+          placeholder="Optional notes..."
+          class="w-full"
+          :rows="2"
+          :disabled="!isEditable || saving"
+          @update:model-value="setNotes"
+        />
+      </UFormField>
+    </UForm>
+
+    <!-- Components section — always visible, no wizard step gate -->
+    <BomComponentsSection
+      :local-details="localDetails"
+      :loading="loading"
       :saving="saving"
+      :is-dirty="isDirty"
+      :is-create="isCreate"
+      :is-editable="isEditable"
       :current-bom="currentBom"
-      :header-form="headerForm"
-      :selected-parent-part="selectedParentPart"
-      :part-search="partSearch"
-      :filtered-parent-parts="filteredParentParts"
-      :uom-items="uomItems"
-      :selected-uom-id="selectedUomId"
-      @update:header-form="Object.assign(headerForm, $event)"
-      @update:selected-parent-part="selectedParentPart = $event"
-      @update:part-search="partSearch = $event"
-      @update:selected-uom-id="selectedUomId = $event"
-      @proceed-to-details="handleProceedToDetails"
-    >
-      <!-- Components section is slotted into the card -->
-      <BomComponentsSection
-        v-if="showComponents"
-        :local-details="localDetails"
-        :loading="loading"
-        :saving="saving"
-        :is-dirty="isDirty"
-        :is-create="isCreate"
-        :is-editable="isEditable"
-        :current-bom="currentBom"
-        :resolve-uom-code="resolveDetailUomCode"
-        @add-detail="openAddDetail"
-        @edit-detail="openEditDetail"
-        @delete-detail="confirmDeleteDetail"
-        @save="handleSave"
-        @discard="discardChanges"
-      />
-    </BomHeaderCard>
+      :can-add-detail="canAddDetail"
+      :resolve-uom-code="resolveDetailUomCode"
+      @add-detail="openAddDetail"
+      @edit-detail="openEditDetail"
+      @delete-detail="confirmDeleteDetail"
+      @save="handleSave"
+      @discard="discardChanges"
+    />
 
     <!-- Delete component confirm modal -->
     <BomDeleteConfirmModal

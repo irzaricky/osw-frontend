@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 interface Props {
@@ -9,7 +8,7 @@ interface Props {
   docStatusColor:  (code?: string) => 'neutral' | 'warning' | 'success' | 'error'
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit  = defineEmits<{
   approve:    []
   reject:     []
@@ -21,19 +20,19 @@ const router = useRouter()
 </script>
 
 <template>
-  <div class="flex items-start justify-between gap-4 flex-wrap">
-    <div class="flex items-center gap-3">
+  <div class="flex items-center justify-between gap-4 flex-wrap">
+    <div class="flex items-center gap-4">
       <UButton
         icon="i-lucide-arrow-left"
         color="neutral"
         variant="ghost"
-        size="sm"
         @click="router.push('/production-plan/bom')"
       />
+
       <div>
         <div class="flex items-center gap-2 flex-wrap">
           <h1 class="text-2xl font-bold">
-            {{ isCreate ? 'New Bill of Materials' : (currentBom?.bom_number ?? '—') }}
+            {{ isCreate ? 'Create BOM' : (currentBom?.bom_number ?? '—') }}
           </h1>
           <UBadge
             v-if="!isCreate && currentBom?.bom_version"
@@ -54,8 +53,13 @@ const router = useRouter()
             variant="soft"
           />
         </div>
-        <p v-if="!isCreate && currentBom?.parent_part" class="text-sm text-muted mt-0.5">
-          {{ currentBom.parent_part.part_number }} · {{ currentBom.parent_part.part_name }}
+        <p class="text-sm text-muted">
+          <template v-if="isCreate">
+            Fill in the BOM details and add components below.
+          </template>
+          <template v-else-if="currentBom?.parent_part">
+            {{ currentBom.parent_part.part_number }} · {{ currentBom.parent_part.part_name }}
+          </template>
         </p>
       </div>
     </div>
