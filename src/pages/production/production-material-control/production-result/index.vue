@@ -45,12 +45,29 @@ async function fetchProductionWos() {
     productionWos.value = res.data.data || []
 }
 
-async function handleSelectProductionWo(productionWoId: number) {
+async function handleSelectProductionWo(productionWoId: number, stationId: number) {
+    if (!productionWoId || !stationId) return
+
     materialLabelLoading.value = true
 
     try {
-        const res = await productionMaterialControlService.getProductionWoMaterialLabels(productionWoId)
-        materialLabels.value = res.data.data || []
+        const res = await productionMaterialControlService.getProductionWoMaterialLabels(
+            productionWoId,
+            stationId
+        )
+
+        const materials = res.data.data || []
+
+        materialLabels.value = materials.flatMap((material: any) =>
+            (material.labels || []).map((label: any) => ({
+                wo_item_label_id: label.wo_item_label_id,
+                label_id: label.label_id,
+                label_number: label.label_number,
+                material_part_id: material.material_part_id,
+                part_number: material.part_number,
+                part_name: material.part_name
+            }))
+        )
     } finally {
         materialLabelLoading.value = false
     }

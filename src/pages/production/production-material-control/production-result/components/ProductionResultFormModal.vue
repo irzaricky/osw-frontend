@@ -53,7 +53,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  selectProductionWo: [productionWoId: number]
+  selectProductionWo: [productionWoId: number, stationId: number]
   save: [data: any]
 }>()
 
@@ -177,7 +177,13 @@ watch(() => form.production_wo_id, id => {
   form.station_id = found.stations?.[0]?.station_id
   form.ng_materials = []
 
-  emit('selectProductionWo', found.wo_id)
+})
+
+watch(() => form.station_id, stationId => {
+  if (!form.production_wo_id || !stationId) return
+
+  form.ng_materials = []
+  emit('selectProductionWo', form.production_wo_id, stationId)
 })
 
 watch(() => props.materialLabels, labels => {
@@ -306,7 +312,7 @@ function handleSave() {
               placeholder="Select station from WO" searchable clear class="w-full" />
           </UFormField>
 
-          <UFormField label="Part yang Dikerjakan" required>
+          <UFormField label="Product yang Dikerjakan" required>
             <USelectMenu v-model="selectedProduct" :items="productItems" placeholder="Auto from WO" searchable clear
               disabled class="w-full" />
           </UFormField>
