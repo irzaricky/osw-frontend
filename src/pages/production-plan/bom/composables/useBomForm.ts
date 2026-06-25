@@ -43,9 +43,6 @@ export function useBomForm() {
   const isCreate = computed(() => route.name === "bom-create");
   const bomId = computed(() => route.params.id as string | undefined);
 
-  // ─── Create mode step ───────────────────────────────────────────────────────
-  const createStep = ref<1 | 2>(1);
-
   // ─── Doc status ─────────────────────────────────────────────────────────────
   function docStatusColor(
     code?: string
@@ -112,6 +109,13 @@ export function useBomForm() {
     },
   });
 
+  // ─── Can add component? (create mode requires a parent part first) ─────────
+  // Edit mode always has a parent part already (from currentBom), so it's
+  // never gated here — only the create flow needs this check.
+  const canAddDetail = computed(() =>
+    isCreate.value ? !!selectedParentPart.value : true
+  );
+
   // ─── Local details ──────────────────────────────────────────────────────────
   const localDetails = ref<LocalDetail[]>([]);
   const savedSnapshot = ref("");
@@ -135,8 +139,14 @@ export function useBomForm() {
     });
   }
 
+  // NOTE: previously this also checked `createStep === 2` while creating.
+  // Now that the wizard step is gone, "dirty" for create mode simply means
+  // "the user has typed/added something" — i.e. there's a parent part
+  // selected or at least one detail added.
   const isDirty = computed(() => {
-    if (isCreate.value) return createStep.value === 2;
+    if (isCreate.value) {
+      return !!selectedParentPart.value || localDetails.value.length > 0;
+    }
     return makeSnapshot() !== savedSnapshot.value;
   });
 
@@ -183,6 +193,10 @@ export function useBomForm() {
   });
 
   function openAddDetail() {
+    if (!canAddDetail.value) {
+      toastError("Please select a parent part first.");
+      return;
+    }
     detailModalMode.value = "add";
     editingDetail.value = undefined;
     isDetailModalOpen.value = true;
@@ -264,15 +278,6 @@ export function useBomForm() {
     );
     deleteConfirm.open = false;
     deleteConfirm.target = null;
-  }
-
-  // ─── Step 1 → 2 ─────────────────────────────────────────────────────────────
-  function handleProceedToDetails() {
-    if (!selectedParentPart.value) {
-      toastError("Please select a parent part.");
-      return;
-    }
-    createStep.value = 2;
   }
 
   // ─── Save ───────────────────────────────────────────────────────────────────
@@ -471,7 +476,6 @@ export function useBomForm() {
       if (isCreate.value) {
         bomStore.clearCurrentBom();
         localDetails.value = [];
-        createStep.value = 1;
         return;
       }
       if (!newId) return;
@@ -493,8 +497,6 @@ export function useBomForm() {
     partDropdown,
     uomDropdown,
     bomDropdown,
-    // step
-    createStep,
     // status helpers
     docStatusColor,
     isEditable,
@@ -509,6 +511,7 @@ export function useBomForm() {
     // details
     localDetails,
     isDirty,
+    canAddDetail,
     nextSequence,
     syncDetailsFromBom,
     discardChanges,
@@ -525,7 +528,6 @@ export function useBomForm() {
     confirmDeleteDetail,
     executeDeleteDetail,
     // actions
-    handleProceedToDetails,
     handleSave,
     // workflow
     wfModal,

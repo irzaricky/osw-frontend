@@ -70,6 +70,12 @@ const progressPct = computed(() => {
 
 const tabs = computed(() => [
   {
+    slot:  'materials' as const,
+    label: 'Materials',
+    icon:  'i-lucide-package',
+    count: materials.value.length,
+  },
+  {
     slot:  'progress' as const,
     label: 'Progress History',
     icon:  'i-lucide-trending-up',
@@ -80,12 +86,6 @@ const tabs = computed(() => [
     label: 'Issues',
     icon:  'i-lucide-alert-triangle',
     count: activeIssues.value.length,
-  },
-  {
-    slot:  'materials' as const,
-    label: 'Materials',
-    icon:  'i-lucide-package',
-    count: materials.value.length,
   },
 ])
 
