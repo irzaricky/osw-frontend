@@ -173,7 +173,7 @@ onMounted(() => {
                 @update:page="fetchData" />
         </div>
         <ProductionResultFormModal v-model:open="showFormModal" :loading="submitLoading" :shifts="shifts"
-            :stations="stations" :products="products" :production-wos="productionWos" :material-labels="materialLabels"
+            :stations="stations" :products="products" :production-wos="productionWos" :production-results="productionResults" :material-labels="materialLabels"
             :material-label-loading="materialLabelLoading" @select-production-wo="handleSelectProductionWo"
             @save="handleCreate" />
     </div>

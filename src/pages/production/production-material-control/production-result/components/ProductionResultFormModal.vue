@@ -47,6 +47,7 @@ const props = defineProps<{
   stations: DropdownOption[]
   products: DropdownOption[]
   productionWos: ProductionWo[]
+  productionResults: any[]
   materialLabels: MaterialLabel[]
   materialLabelLoading?: boolean
 }>()
@@ -89,12 +90,18 @@ const productionWoItems = computed(() =>
   }))
 )
 
-const woStationItems = computed(() =>
-  selectedProductionWo.value?.stations?.map(item => ({
-    label: `${item.station_name} - Seq ${item.sequence}`,
-    value: item.station_id
-  })) || []
-)
+const woStationItems = computed(() => {
+  const recordedStationIds = props.productionResults
+    .filter(item => Number(item.production_wo_id) === Number(form.production_wo_id))
+    .map(item => Number(item.station_id))
+
+  return selectedProductionWo.value?.stations
+    ?.filter(item => !recordedStationIds.includes(Number(item.station_id)))
+    .map(item => ({
+      label: `${item.station_name} - Seq ${item.sequence}`,
+      value: item.station_id
+    })) || []
+})
 
 const shiftItems = computed(() =>
   props.shifts.map(item => ({
@@ -240,14 +247,21 @@ function handleSave() {
     total_ng: Number(form.total_ng || 0),
     remarks: form.remarks || null,
     ng_materials: form.ng_materials
-      .filter(item => item.checked && Number(item.qty_ng || 0) > 0)
-      .map(item => ({
-        wo_item_label_id: item.wo_item_label_id,
-        label_id: item.label_id,
-        material_part_id: item.material_part_id,
-        qty_ng: Number(item.qty_ng),
-        remarks: item.remarks || null
-      }))
+  .filter(item => item.checked && Number(item.qty_ng || 0) > 0)
+  .map(item => {
+    const label = props.materialLabels.find(
+      label => label.wo_item_label_id === item.wo_item_label_id
+    )
+
+    return {
+      wo_item_label_id: item.wo_item_label_id,
+      label_id: item.label_id,
+      label_number: label?.label_number || null,
+      material_part_id: item.material_part_id,
+      qty_ng: Number(item.qty_ng),
+      remarks: item.remarks || null
+    }
+  })
   })
 }
 </script>

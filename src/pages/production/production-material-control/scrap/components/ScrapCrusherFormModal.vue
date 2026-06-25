@@ -53,6 +53,14 @@ const form = reactive({
   remarks: ''
 })
 
+const selectedReplacementItem = computed({
+  get: () =>
+    materialItems.value.find(item => item.value === form.replacement_id),
+  set: item => {
+    form.replacement_id = item?.value
+  }
+})
+
 const productionItems = computed(() =>
   props.productionResults.map(item => ({
     label: `${item.product_part_number} - ${item.station_name}`,
@@ -90,6 +98,7 @@ const isQtyInvalid = computed(() =>
 
 const isFormInvalid = computed(() =>
   !form.production_result_id ||
+  !form.replacement_id ||
   !form.scrap_date ||
   !form.part_id ||
   !form.material_part_id ||
@@ -101,6 +110,7 @@ watch(() => props.open, open => {
   if (!open) return
 
   form.production_result_id = undefined
+  form.replacement_id = undefined
   form.scrap_date = new Date()
   form.part_id = undefined
   form.material_part_id = undefined
@@ -114,6 +124,7 @@ watch(() => form.production_result_id, id => {
 
   form.part_id = found?.part_id
   form.material_part_id = undefined
+  form.replacement_id = undefined
   form.weight_per_pcs = 0
 
   if (found) {
@@ -184,7 +195,7 @@ function handleSave() {
         </UFormField>
 
         <UFormField label="Replacement Material" required>
-          <USelectMenu v-model="form.material_part_id" :items="materialItems" value-key="value" label-key="label"
+          <USelectMenu v-model="selectedReplacementItem" :items="materialItems" label-key="label"
             :loading="replacementLoading" placeholder="Select replacement material" searchable clear class="w-full"
             :disabled="!form.production_result_id" />
         </UFormField>

@@ -47,7 +47,7 @@ async function handleSelectProductionResult(productionResultId: number) {
   replacementLoading.value = true
 
   try {
-    const res = await productionMaterialControlService.getReplacementsByProductionResult(productionResultId)
+    const res = await productionMaterialControlService.getReplacementForScrap(productionResultId)
     replacementMaterials.value = res.data.data || []
   } finally {
     replacementLoading.value = false

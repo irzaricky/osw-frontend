@@ -107,6 +107,7 @@ const productionMaterialControlService = {
   getReplacementForScrap(productionResultId: number | string) {
     return api.get(`/production/production-material-control/production-results/${productionResultId}/replacements-for-scrap`)
   }
+  
 }
 
 export default productionMaterialControlService

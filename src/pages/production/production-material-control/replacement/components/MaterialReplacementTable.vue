@@ -73,108 +73,167 @@ const columns: TableColumn<any>[] = [
     <UTable v-model:expanded="expanded" :data="loading ? [] : data" :columns="columns" :loading="loading"
       class="w-full">
       <template #expanded="{ row }">
-        <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-elevated/50 border-b border-default">
-          <!-- Replacement Info -->
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">
-              Replacement Info
-            </h4>
-
-            <p class="text-sm">
-              <span class="text-muted">Production Result ID:</span>
-              {{ row.original.production_result_id }}
-            </p>
-
-            <p class="text-sm">
-              <span class="text-muted">Date:</span>
-              {{ formatDateTime(row.original.created_at) }}
-            </p>
-
-            <p class="text-sm">
-              <span class="text-muted">Created By:</span>
-              {{ row.original.created_by_email || '-' }}
-            </p>
+  <div class="px-4 pb-5">
+    <div class="rounded-xl border border-default bg-elevated/40 p-5">
+      <!-- ===== Row 1 ===== -->
+      <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
+        <!-- Replacement Info -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 border-b border-default pb-3">
+            <UIcon name="i-lucide-info" class="size-5 text-primary" />
+            <h4 class="text-sm font-semibold">Replacement Info</h4>
           </div>
 
-          <!-- NG Material -->
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">
-              NG Material
-            </h4>
+          <div class="space-y-3 text-sm">
+            <div class="grid grid-cols-[140px_10px_1fr] gap-2">
+              <span class="text-muted">Production Result ID</span>
+              <span>:</span>
+              <span>{{ row.original.production_result_id }}</span>
+            </div>
 
-            <p class="text-sm">
-              <span class="text-muted">Material:</span>
-              {{ row.original.part_number }} - {{ row.original.part_name }}
-            </p>
+            <div class="grid grid-cols-[140px_10px_1fr] gap-2">
+              <span class="text-muted">Date</span>
+              <span>:</span>
+              <span>{{ formatDateTime(row.original.created_at) }}</span>
+            </div>
 
-            <p class="text-sm">
-              <span class="text-muted">NG Label:</span>
-              {{ row.original.ng_source_label_number || row.original.source_label_number || '-' }}
-            </p>
+            <div class="grid grid-cols-[140px_10px_1fr] gap-2">
+              <span class="text-muted">Created By</span>
+              <span>:</span>
+              <span class="break-all">
+                {{ row.original.created_by_email || '-' }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-            <p class="text-sm">
-              <span class="text-muted">NG Qty:</span>
-              {{ row.original.qty_replacement }} PCS
-            </p>
+        <!-- NG Material -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 border-b border-default pb-3">
+            <UIcon name="i-lucide-triangle-alert" class="size-5 text-warning" />
+            <h4 class="text-sm font-semibold">NG Material</h4>
           </div>
 
-          <!-- Replacement Material -->
-          <div class="space-y-2">
-            <h4 class="font-semibold text-sm text-highlighted">
-              Replacement Material
-            </h4>
-
-            <p class="text-sm">
-              <span class="text-muted">Material:</span>
-              {{ row.original.part_number }} - {{ row.original.part_name }}
-            </p>
-
-            <p class="text-sm">
-              <span class="text-muted">Qty:</span>
-              {{ row.original.qty_replacement }} PCS
-            </p>
-
-            <div v-if="row.original.used_buffer_details?.length" class="max-h-48 overflow-y-auto space-y-1">
-              <div v-for="label in row.original.used_buffer_details" :key="label.id"
-                class="flex items-center justify-between rounded-md border border-default px-3 py-2">
-                <div>
-                  <p class="text-sm font-medium">
-                    {{ label.pcs_label_number }}
-                  </p>
-                  <p class="text-xs text-muted">
-                    Supplied by: {{ label.supplied_by_email || '-' }}
-                  </p>
-                </div>
-
-                <UBadge color="success" variant="soft">
-                  Replacement
-                </UBadge>
+          <div class="space-y-3 text-sm">
+            <div class="grid grid-cols-[90px_10px_1fr] gap-2">
+              <span class="text-muted">Material</span>
+              <span>:</span>
+              <div>
+                <p class="font-semibold">
+                  {{ row.original.part_number }}
+                </p>
+                <p class="text-xs text-muted">
+                  {{ row.original.part_name }}
+                </p>
               </div>
             </div>
 
-            <p v-else class="text-sm text-muted">
-              No replacement label found.
+            <div class="grid grid-cols-[90px_10px_1fr] gap-2">
+              <span class="text-muted">NG Label</span>
+              <span>:</span>
+              <span class="break-all">
+                {{ row.original.ng_source_label_number || row.original.source_label_number || '-' }}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-[90px_10px_1fr] gap-2">
+              <span class="text-muted">NG Qty</span>
+              <span>:</span>
+              <span>{{ row.original.qty_replacement }} PCS</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Usage -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 border-b border-default pb-3">
+            <UIcon name="i-lucide-warehouse" class="size-5 text-primary" />
+            <h4 class="text-sm font-semibold">Usage</h4>
+          </div>
+
+          <div class="space-y-3 text-sm">
+            <div class="grid grid-cols-[80px_10px_1fr] gap-2">
+              <span class="text-muted">Station</span>
+              <span>:</span>
+              <span>{{ row.original.station_name }}</span>
+            </div>
+
+            <div class="grid grid-cols-[80px_10px_1fr] gap-2">
+              <span class="text-muted">Reason</span>
+              <span>:</span>
+              <span class="break-words">
+                {{ row.original.replacement_reason || '-' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Row 2 ===== -->
+      <div class="mt-6 border-t border-default pt-5">
+        <div class="mb-4 flex items-center gap-2">
+          <UIcon name="i-lucide-tags" class="size-5 text-primary" />
+          <h4 class="text-sm font-semibold">Replacement Material</h4>
+        </div>
+
+        <div class="mb-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div class="rounded-lg border border-default bg-default/30 p-4">
+            <p class="text-xs text-muted">Material</p>
+            <p class="mt-1 break-all font-semibold">
+              {{ row.original.part_number }}
+            </p>
+            <p class="mt-1 text-xs text-muted">
+              {{ row.original.part_name }}
             </p>
           </div>
 
-          <!-- Usage -->
-          <div class="space-y-1">
-            <h4 class="font-semibold text-sm text-highlighted">
-              Usage
-            </h4>
-
-            <p class="text-sm">
-              <span class="text-muted">Station:</span>
-              {{ row.original.station_name || '-' }}
-            </p>
-
-            <p class="text-sm">
-              <span class="text-muted">Reason:</span>
-              {{ row.original.replacement_reason || '-' }}
+          <div class="rounded-lg border border-default bg-default/30 p-4">
+            <p class="text-xs text-muted">Qty Replacement</p>
+            <p class="mt-1 font-semibold">
+              {{ row.original.qty_replacement }} PCS
             </p>
           </div>
         </div>
-      </template>
+
+        <div
+          v-if="row.original.used_buffer_details?.length"
+          class="grid grid-cols-1 gap-3 md:grid-cols-2"
+        >
+          <div
+            v-for="label in row.original.used_buffer_details"
+            :key="label.id"
+            class="flex items-start justify-between gap-4 rounded-lg border border-default bg-default/30 p-4"
+          >
+            <div class="flex-1">
+              <p class="break-all text-sm font-semibold">
+                {{ label.pcs_label_number }}
+              </p>
+
+              <p class="mt-2 break-all text-xs text-muted">
+                Supplied by: {{ label.supplied_by_email || '-' }}
+              </p>
+            </div>
+
+            <UBadge
+              color="success"
+              variant="soft"
+              class="shrink-0"
+            >
+              Replacement
+            </UBadge>
+          </div>
+        </div>
+
+        <p
+          v-else
+          class="text-sm text-muted"
+        >
+          No replacement label found.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
     </UTable>
 
     <div v-if="!loading && !data.length" class="py-10 text-center text-muted">
