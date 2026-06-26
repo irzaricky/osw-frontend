@@ -183,7 +183,18 @@ onMounted(() => {
           class="w-full"
         />
 
-        <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
+        <div
+          v-if="!loading && orders.length === 0"
+          class="flex flex-col items-center justify-center py-16 text-center text-muted gap-3"
+        >
+        <UIcon name="i-lucide-clipboard-x" class="w-10 h-10" />
+          <div>
+            <p class="text-sm font-medium">No Production Order found</p>
+            <p class="text-xs mt-1">Try adjusting your filters or search.</p>
+          </div>
+        </div>
+
+        <div v-if="!loading && orders.length !== 0" class="flex items-center justify-between gap-3 border-t border-default pt-4">
           <div class="text-sm text-muted">
             {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
           </div>

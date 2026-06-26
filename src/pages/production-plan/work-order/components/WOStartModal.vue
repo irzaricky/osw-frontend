@@ -148,7 +148,7 @@ function handleConfirm() {
                       <div class="font-medium">{{ m.material_part?.part_name ?? '-' }}</div>
                       <div class="text-muted font-mono">{{ m.material_part?.part_number }}</div>
                     </td>
-                    <td class="px-3 py-2 text-right font-mono">{{ Number(m.planned_quantity ?? 0).toLocaleString() }}</td>
+                    <td class="px-3 py-2 text-right font-mono">{{ Number(m.total_planned ?? 0).toLocaleString() }}</td>
                     <td class="px-3 py-2 text-right font-mono" :class="m.sufficient ? 'text-success-600' : 'text-error-600'">
                       {{ Number(m.current_stock ?? 0).toLocaleString() }}
                     </td>

@@ -68,10 +68,22 @@ export interface Bom {
   // Relations
   parent_part?: BomPart;
   uom?: Pick<Uom, "id" | "code" | "name">;
-  creator?: { id: number; email: string };
-  approver?: { id: number; email: string };
+  creator?: Creator;
+  approver?: Approver
   details?: BomDetail[];
   component_count?: number | null;
+}
+
+export interface Creator {
+  id: number;
+  email: string;
+  user_detail?: { full_name: string | null };
+}
+
+export interface Approver {
+  id: number;
+  email: string;
+  user_detail?: { full_name: string | null };
 }
 
 // ─── Dropdown ──────────────────────────────────────────────────────────────────
