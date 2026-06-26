@@ -84,10 +84,20 @@ const selectedProductionWo = computed(() =>
 )
 
 const productionWoItems = computed(() =>
-  props.productionWos.map(item => ({
-    label: `${item.wo_number} | ${item.part_number} - ${item.part_name} | ${item.production_date}`,
-    value: item.wo_id
-  }))
+  props.productionWos
+    .filter(wo => {
+      const recordedStationIds = props.productionResults
+        .filter(result => Number(result.production_wo_id) === Number(wo.wo_id))
+        .map(result => Number(result.station_id))
+
+      return wo.stations?.some(
+        station => !recordedStationIds.includes(Number(station.station_id))
+      )
+    })
+    .map(wo => ({
+      label: `${wo.wo_number} | ${wo.part_number} - ${wo.part_name} | ${wo.production_date}`,
+      value: wo.wo_id
+    }))
 )
 
 const woStationItems = computed(() => {
@@ -181,7 +191,7 @@ watch(() => form.production_wo_id, id => {
   form.part_id = found.part_id
   form.planning_qty = Number(found.planning_qty || 0)
   form.actual_qty = Number(found.actual_quantity || 0)
-  form.station_id = found.stations?.[0]?.station_id
+  form.station_id = undefined
   form.ng_materials = []
 
 })
@@ -305,9 +315,9 @@ function handleSave() {
             Planned Qty: {{ selectedProductionWo.planning_qty }} PCS
           </p>
 
-          <p class="text-muted mt-1">
+          <!-- <p class="text-muted mt-1">
             Actual Qty: {{ selectedProductionWo.actual_quantity || 0 }} PCS
-          </p>
+          </p> -->
         </div>
 
 

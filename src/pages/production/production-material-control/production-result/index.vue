@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 
 import Breadcrumbs from '../../../../components/Breadcrumbs.vue'
+import { useAppToast } from '../../../../composables/useAppToast'
 import { useProductionMaterialResultStore } from '../../../../stores/production/production-material-result.store'
 
 import ProductionResultFilters from './components/ProductionResultFilters.vue'
@@ -13,6 +14,7 @@ import productionMaterialControlService from '../../../../services/production/pr
 
 const store = useProductionMaterialResultStore()
 const { productionResults, meta, loading } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
 const search = ref('')
 
@@ -34,9 +36,8 @@ const stations = ref<any[]>([])
 const products = ref<any[]>([])
 const showFormModal = ref(false)
 const submitLoading = ref(false)
-const bomMaterials = ref<any[]>([])
-const bomLoading = ref(false)
 const productionWos = ref<any[]>([])
+const recordedResults = ref<any[]>([])
 const materialLabels = ref<any[]>([])
 const materialLabelLoading = ref(false)
 
@@ -96,6 +97,15 @@ async function fetchDropdowns() {
     products.value = res.data.data?.products || []
 }
 
+async function fetchRecordedResults() {
+    const res = await productionMaterialControlService.getProductionResults({
+        page: 1,
+        limit: 1000
+    })
+
+    recordedResults.value = res.data.data || []
+}
+
 function onUpdateSearch(value: string) {
     search.value = value
 }
@@ -117,9 +127,21 @@ async function handleCreate(data: any) {
     submitLoading.value = true
 
     try {
-        await store.createProductionResult(data)
+        const res = await store.createProductionResult(data)
+
+        toastSuccess(res?.data?.message || 'Production result created successfully')
+
         showFormModal.value = false
+
         await fetchData()
+        await fetchProductionWos()
+        await fetchRecordedResults()
+    } catch (err: any) {
+        toastError(
+            err?.response?.data?.message ||
+            err?.message ||
+            'Failed to create production result'
+        )
     } finally {
         submitLoading.value = false
     }
@@ -141,6 +163,7 @@ onMounted(() => {
     fetchData()
     fetchDropdowns()
     fetchProductionWos()
+    fetchRecordedResults()
 })
 </script>
 
@@ -173,7 +196,7 @@ onMounted(() => {
                 @update:page="fetchData" />
         </div>
         <ProductionResultFormModal v-model:open="showFormModal" :loading="submitLoading" :shifts="shifts"
-            :stations="stations" :products="products" :production-wos="productionWos" :production-results="productionResults" :material-labels="materialLabels"
+            :stations="stations" :products="products" :production-wos="productionWos" :production-results="recordedResults" :material-labels="materialLabels"
             :material-label-loading="materialLabelLoading" @select-production-wo="handleSelectProductionWo"
             @save="handleCreate" />
     </div>

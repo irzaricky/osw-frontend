@@ -8,6 +8,7 @@ import type { Range } from '../../../../types'
 
 import { useScrapCrusherStore } from '../../../../stores/production/scrap-crusher.store'
 import productionMaterialControlService from '../../../../services/production/production-material-control.service'
+import { useAppToast } from '../../../../composables/useAppToast'
 
 import ScrapCrusherFilters from './components/ScrapCrusherFilters.vue'
 import ScrapCrusherTable from './components/ScrapCrusherTable.vue'
@@ -15,6 +16,7 @@ import ScrapCrusherFormModal from './components/ScrapCrusherFormModal.vue'
 
 const store = useScrapCrusherStore()
 const { scraps, meta, loading } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
 const search = ref('')
 const dateRange = ref<Range | undefined>()
@@ -37,7 +39,7 @@ async function fetchProductionResultsDropdown() {
   const res = await productionMaterialControlService.getProductionResults({
     page: 1,
     limit: 100,
-    has_ng: true
+    has_pending_scrap: true
   })
 
   productionResults.value = res.data.data || []
@@ -58,9 +60,20 @@ async function handleCreate(data: any) {
   submitLoading.value = true
 
   try {
-    await store.createScrap(data)
+    const res = await store.createScrap(data)
+
+    toastSuccess((res as any)?.data?.message || 'Scrap created successfully')
+
     showFormModal.value = false
+
     await fetchData()
+    await fetchProductionResultsDropdown()
+  } catch (err: any) {
+    toastError(
+      err?.response?.data?.message ||
+      err?.message ||
+      'Failed to create scrap'
+    )
   } finally {
     submitLoading.value = false
   }

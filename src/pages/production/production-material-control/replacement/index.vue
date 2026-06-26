@@ -5,6 +5,7 @@ import { useDebounceFn } from '@vueuse/core'
 
 import Breadcrumbs from '../../../../components/Breadcrumbs.vue'
 import { useMaterialReplacementStore } from '../../../../stores/production/material-replacement.store'
+import { useAppToast } from '../../../../composables/useAppToast'
 
 import MaterialReplacementFilters from './components/MaterialReplacementFilters.vue'
 import MaterialReplacementTable from './components/MaterialReplacementTable.vue'
@@ -13,6 +14,7 @@ import MaterialReplacementFormModal from './components/MaterialReplacementFormMo
 
 const store = useMaterialReplacementStore()
 const { replacements, meta, loading } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
 const search = ref('')
 
@@ -60,9 +62,20 @@ async function handleCreate(data: any) {
     submitLoading.value = true
 
     try {
-        await store.createReplacement(data)
+        const res = await store.createReplacement(data)
+
+        toastSuccess(res?.data?.message || 'Replacement created successfully')
+
         showFormModal.value = false
+
         await fetchData()
+        await fetchProductionResultsDropdown()
+    } catch (err: any) {
+        toastError(
+            err?.response?.data?.message ||
+            err?.message ||
+            'Failed to create replacement'
+        )
     } finally {
         submitLoading.value = false
     }
