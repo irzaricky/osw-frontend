@@ -272,7 +272,6 @@ const newShiftsSelected = computed(() =>
 )
 
 const canSubmit = computed(() => {
-  if (!dayModal.reason.trim()) return false
   return dayModal.shiftInputs.some(s => {
     if (!s.isAlreadyActive && s.addShift) return true
     if ((s.isAlreadyActive || s.addShift) && s.overtimeMinutes != null && s.overtimeMinutes > 0) return true
@@ -322,7 +321,6 @@ function handleSubmit() {
     emit('add-adjustment', {
       date:   dayModal.day.date,
       shifts: addShifts,
-      reason: dayModal.reason.trim(),
     })
   }
 
@@ -1029,18 +1027,15 @@ function requestDelete(adjId: number, date: string) {
                       ? 'border-primary bg-primary/5'
                       : 'border-default'"
                 >
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        :id="`shift-check-${s.shift_number}`"
+                  <label class="flex items-center cursor-pointer justify-between">
+                    <div class="flex items-center gap-2 select-none">
+                      <UCheckbox
                         v-model="s.addShift"
                         :disabled="s.isAlreadyActive || (!s.addShift && newShiftsSelected >= availableNewShiftSlots)"
-                        class="accent-primary w-4 h-4"
                       />
-                      <label :for="`shift-check-${s.shift_number}`" class="text-sm font-medium cursor-pointer select-none">
+                      <span class="text-sm font-medium">
                         {{ s.name }}
-                      </label>
+                      </span>
                     </div>
                     <UBadge
                       v-if="s.isAlreadyActive"
@@ -1056,7 +1051,7 @@ function requestDelete(adjId: number, date: string) {
                       variant="soft"
                       size="xs"
                     />
-                  </div>
+                  </label>
 
                   <div
                     v-if="s.isAlreadyActive || s.addShift"
@@ -1093,16 +1088,6 @@ function requestDelete(adjId: number, date: string) {
                 </div>
               </div>
             </div>
-
-            <!-- Reason -->
-            <UFormField label="Reason" required>
-              <UTextarea
-                v-model="dayModal.reason"
-                placeholder="Explain why these adjustments are needed..."
-                class="w-full"
-                :rows="2"
-              />
-            </UFormField>
           </template>
         </div>
       </template>
