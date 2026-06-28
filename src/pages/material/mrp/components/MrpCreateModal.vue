@@ -22,13 +22,13 @@ const emit = defineEmits<{
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 const addSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   priority: z.string().optional(),
   notes: z.string().optional()
 })
 
 const editSchema = z.object({
-  description: z.string().min(1, 'Description is required'),
+  description: z.string().optional(),
   priority: z.string().optional(),
   notes: z.string().optional()
 })
@@ -202,7 +202,7 @@ function onSubmit(event: FormSubmitEvent<any>) {
 
     // 2. Cegah submit kalau ternyata kosong (stok aman semua)
     if (validDetails.length === 0) {
-      alert('Tidak dapat menyimpan! Semua material stoknya masih mencukupi (Net Req = 0).')
+      alert('Cannot save! All materials have sufficient stock (Net Req = 0).')
       return 
     }
 
@@ -330,7 +330,7 @@ function close() {
         </template>
 
         <!-- Description -->
-        <UFormField label="Description" name="description" required>
+        <UFormField label="Description" name="description">
           <UInput
             v-model="state.description"
             placeholder="Enter MRP description..."
@@ -467,7 +467,7 @@ function close() {
             <!-- Formula legend -->
             <p class="text-xs text-muted mt-1">
               <span class="font-medium">Net Req.</span> = Gross Req. + Target Safety (50) − (On-Hand + Safety Stk).
-              Hover pada Order Qty untuk melihat detail angkanya.
+              Hover over Order Qty to see the calculation details.
             </p>
 
             <!-- Manual part add row -->

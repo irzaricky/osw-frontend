@@ -7,9 +7,12 @@ import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { storeToRefs } from 'pinia'
 import MdoAddModal from './components/MdoAddModal.vue'
 import MdoDetailPanel from './components/MdoDetailPanel.vue'
+import { useAppToast } from '../../../composables/useAppToast'
+import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 
 const store = useMdoStore()
-const { loading, orders, meta } = storeToRefs(store)
+const { loading, orders, meta, paginatedOrders, loadingList, listMeta } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
@@ -84,11 +87,37 @@ async function loadOrders() {
   await store.fetchMdoList(params)
 }
 
-watch([selectedDateStart, selectedDateEnd, selectedWarehouseId], () => { loadOrders() })
+// ─── List bawah (paginated) ───────────────────────────────────────────────────
+// Terpisah sengaja dari loadOrders() di atas — lihat catatan di store.
+// Timeline Gantt selalu pakai `orders` (lengkap), list bawah pakai
+// `paginatedOrders` (per halaman) supaya jadwal di Gantt tidak pernah
+// terpotong oleh pagination.
+const currentListPage = ref(1)
+const LIST_PAGE_SIZE = 10
+
+async function loadPaginatedList() {
+  const params: Record<string, any> = { page: currentListPage.value, limit: LIST_PAGE_SIZE }
+  if (selectedDateStart.value) params.start_date = selectedDateStart.value
+  if (selectedDateEnd.value)   params.end_date   = selectedDateEnd.value
+  await store.fetchMdoListPaginated(params)
+}
+
+function goToListPage(page: number) {
+  if (page < 1 || page > (listMeta.value.total_pages || 1)) return
+  currentListPage.value = page
+  loadPaginatedList()
+}
+
+watch([selectedDateStart, selectedDateEnd, selectedWarehouseId], () => {
+  loadOrders()
+  currentListPage.value = 1
+  loadPaginatedList()
+})
 
 onMounted(async () => {
   await store.fetchDropdownWarehouses()
   await loadOrders()
+  await loadPaginatedList()
   if (store.warehouses.length > 0) {
     selectedWarehouseId.value = store.warehouses[0].id
   }
@@ -112,32 +141,53 @@ async function handleSaveOrder(payload: any) {
     if (res.status) {
       openAddModal.value = false
       await loadOrders()
-      alert(`MDO berhasil dibuat: ${res.data?.number}`)
+      await loadPaginatedList()
+      toastSuccess(`MDO created successfully: ${res.data?.number}`)
     } else {
-      alert(res.message || 'Gagal membuat MDO.')
+      toastError(res.message || 'Failed to create MDO.')
     }
   } catch (e: any) {
-    alert(`Gagal: ${e.response?.data?.message || 'Terjadi kesalahan saat menyimpan.'}`)
+    toastError(e)
   } finally {
     createLoading.value = false
   }
 }
 
-// Delete handler
-async function handleDeleteOrder(id: number) {
-  if (!confirm('Yakin ingin menghapus MDO ini? Tindakan ini tidak bisa dibatalkan.')) return
+// ─── Delete ───────────────────────────────────────────────────────────────────
+const confirmDialog = ref({
+  open: false,
+  title: '',
+  description: '',
+  id: 0
+})
+
+function handleDeleteOrder(id: number) {
+  confirmDialog.value = {
+    open: true,
+    title: 'Delete MDO',
+    description: 'Are you sure you want to delete this MDO? This action cannot be undone.',
+    id
+  }
+}
+
+async function handleConfirmDelete() {
   try {
-    const res = await store.deleteMdo(id)
+    const res = await store.deleteMdo(confirmDialog.value.id)
     if (res.status) {
-      selectedOrderId.value = null
-      store.detail = null
+      if (selectedOrderId.value === confirmDialog.value.id) {
+        selectedOrderId.value = null
+        store.detail = null
+      }
       await loadOrders()
-      alert('MDO berhasil dihapus.')
+      await loadPaginatedList()
+      toastSuccess('MDO deleted successfully.')
     } else {
-      alert(res.message || 'Gagal menghapus MDO.')
+      toastError(res.message || 'Failed to delete MDO.')
     }
   } catch (e: any) {
-    alert(`Gagal: ${e.response?.data?.message || e.message}`)
+    toastError(e)
+  } finally {
+    confirmDialog.value.open = false
   }
 }
 
@@ -257,14 +307,14 @@ function capacityBarWidth(pct: number | null | undefined): string {
             Material Delivery Order (MDO)
           </h1>
           <p class="text-xs text-muted mt-0.5">
-            Jadwalkan kedatangan pengiriman dari supplier ke receiving dock gudang material.
+            Schedule incoming deliveries from suppliers to the material warehouse receiving dock.
           </p>
         </div>
         <UButton
           icon="i-lucide-plus"
           color="primary"
           variant="solid"
-          label="Buat MDO Baru"
+          label="Create New MDO"
           @click="openAddModal = true"
         />
       </div>
@@ -279,19 +329,19 @@ function capacityBarWidth(pct: number | null | undefined): string {
           <div class="flex flex-wrap items-center gap-4">
             <!-- Warehouse filter -->
             <div class="flex items-center gap-2">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Gudang:</span>
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Warehouse:</span>
               <USelectMenu
                 v-model="selectedWarehouseId"
                 :items="store.warehouses"
                 value-key="id"
                 label-key="name"
                 class="w-64"
-                placeholder="Pilih Gudang"
+                placeholder="Select Warehouse"
               />
             </div>
             <!-- Date Range filter: Hari Ini s/d H+7 -->
             <div class="flex items-center gap-2 flex-wrap">
-              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Jadwal:</span>
+              <span class="text-xs font-bold text-muted uppercase tracking-wider shrink-0">Schedule:</span>
               <UInputDate v-model="selectedDateStartModel" class="w-40">
                 <template #trailing>
                   <UPopover>
@@ -308,7 +358,7 @@ function capacityBarWidth(pct: number | null | undefined): string {
                   </UPopover>
                 </template>
               </UInputDate>
-              <span class="text-xs text-muted font-semibold shrink-0">s/d</span>
+              <span class="text-xs text-muted font-semibold shrink-0">to</span>
               <UInputDate v-model="selectedDateEndModel" class="w-40">
                 <template #trailing>
                   <UPopover>
@@ -325,7 +375,7 @@ function capacityBarWidth(pct: number | null | undefined): string {
                 color="neutral"
                 variant="soft"
                 icon="i-lucide-refresh-ccw"
-                label="7 Hari"
+                label="7 Days"
                 @click="resetToWeekAhead"
               />
             </div>
@@ -345,12 +395,12 @@ function capacityBarWidth(pct: number | null | undefined): string {
           <UIcon name="i-lucide-alert-triangle" class="w-5 h-5 shrink-0 text-error-500 mt-0.5" />
           <div>
             <h5 class="text-xs font-bold uppercase tracking-wider">
-              Konflik Slot Dock Terdeteksi!
+              Dock Slot Conflict Detected!
             </h5>
             <p class="text-xs mt-0.5 leading-relaxed">
-              Terdapat MDO yang saling tumpang tindih pada Dock:
+              There are overlapping MDOs on Dock:
               <span class="font-bold font-mono">{{ conflictingDocksNames.join(', ') }}</span>.
-              Blok yang konflik ditampilkan berkedip merah di bawah.
+              Conflicting blocks are shown blinking in red below.
             </p>
           </div>
         </div>
@@ -369,10 +419,10 @@ function capacityBarWidth(pct: number | null | undefined): string {
             </div>
             <div>
               <h3 class="font-bold text-default text-lg">
-                Belum Ada MDO
+                No MDO Found
               </h3>
               <p class="text-xs text-muted mt-1">
-                Tidak ada delivery order yang dijadwalkan untuk tanggal ini.
+                No delivery orders are scheduled for this date range.
               </p>
             </div>
           </div>
@@ -382,7 +432,7 @@ function capacityBarWidth(pct: number | null | undefined): string {
             <!-- X-Axis Hours Header -->
             <div class="flex border-b border-default/70 pb-3 shrink-0 font-bold uppercase tracking-wider text-[10px] text-muted">
               <div class="w-48 shrink-0 flex items-center">
-                <span>Receiving Docks ({{ activeWarehouse?.name || 'Semua Gudang' }})</span>
+                <span>Receiving Docks ({{ activeWarehouse?.name || 'All Warehouses' }})</span>
               </div>
               <div class="flex-1 grid grid-cols-10 text-center relative pr-4">
                 <div
@@ -464,7 +514,7 @@ function capacityBarWidth(pct: number | null | undefined): string {
                       <!-- Capacity mini-bar -->
                       <div v-if="order.capacity_usage_pct != null" class="mt-1.5">
                         <div class="flex justify-between items-center mb-0.5">
-                          <span class="text-[8px] text-muted leading-none">Muatan</span>
+                          <span class="text-[8px] text-muted leading-none">Load</span>
                           <span
                             class="text-[8px] font-bold leading-none"
                             :class="order.capacity_usage_pct > 90 ? 'text-error-500' : order.capacity_usage_pct > 70 ? 'text-warning-500' : 'text-success-500'"
@@ -500,28 +550,32 @@ function capacityBarWidth(pct: number | null | undefined): string {
               </div>
               <div class="flex items-center gap-1.5">
                 <div class="w-3 h-3 rounded bg-primary/10 border border-primary" />
-                <span>Dipilih</span>
+                <span>Selected</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <div class="w-3 h-3 rounded bg-error-500/10 border border-error-500 animate-pulse" />
-                <span>Konflik</span>
+                <span>Conflict</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- Paginated List below timeline for overflow dates -->
-        <div v-if="orders.length > 0" class="bg-elevated border border-default rounded-2xl overflow-hidden shadow-sm">
+        <div v-if="paginatedOrders.length > 0" class="bg-elevated border border-default rounded-2xl overflow-hidden shadow-sm">
           <div class="p-4 border-b border-default flex items-center justify-between">
             <h4 class="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
               <UIcon name="i-lucide-list" class="w-4 h-4" />
-              Semua MDO — {{ selectedDateStart }} s/d {{ selectedDateEnd }}
+              All MDO — {{ selectedDateStart }} to {{ selectedDateEnd }}
             </h4>
-            <span class="text-xs text-muted">Total: {{ meta.total }}</span>
+            <span class="text-xs text-muted">Total: {{ listMeta.total }}</span>
           </div>
-          <div class="divide-y divide-default">
+          <div class="divide-y divide-default relative">
+            <!-- Loading overlay khusus list bawah, tidak mengganggu Gantt -->
+            <div v-if="loadingList" class="absolute inset-0 bg-elevated/60 backdrop-blur-sm z-10 flex items-center justify-center">
+              <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin text-primary" />
+            </div>
             <div
-              v-for="order in orders"
+              v-for="order in paginatedOrders"
               :key="order.id"
               class="px-4 py-3 flex items-center justify-between hover:bg-elevated/40 cursor-pointer transition-colors"
               :class="selectedOrderId === order.id ? 'bg-primary/5' : ''"
@@ -563,6 +617,43 @@ function capacityBarWidth(pct: number | null | undefined): string {
               </div>
             </div>
           </div>
+
+          <!-- Pagination Footer -->
+          <div v-if="listMeta.total_pages > 1" class="p-3 border-t border-default flex items-center justify-between">
+            <span class="text-[10px] text-muted font-semibold">
+              Page {{ listMeta.page }} of {{ listMeta.total_pages }}
+            </span>
+            <div class="flex items-center gap-1">
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-chevron-left"
+                :disabled="listMeta.page <= 1 || loadingList"
+                @click="goToListPage(listMeta.page - 1)"
+              />
+              <UButton
+                v-for="p in listMeta.total_pages"
+                :key="p"
+                size="xs"
+                :color="p === listMeta.page ? 'primary' : 'neutral'"
+                :variant="p === listMeta.page ? 'solid' : 'soft'"
+                :disabled="loadingList"
+                class="min-w-[28px] justify-center"
+                @click="goToListPage(p)"
+              >
+                {{ p }}
+              </UButton>
+              <UButton
+                size="xs"
+                color="neutral"
+                variant="soft"
+                icon="i-lucide-chevron-right"
+                :disabled="listMeta.page >= listMeta.total_pages || loadingList"
+                @click="goToListPage(listMeta.page + 1)"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -573,7 +664,7 @@ function capacityBarWidth(pct: number | null | undefined): string {
           :loading="loading"
           @close="selectedOrderId = null; store.detail = null"
           @delete="handleDeleteOrder"
-          @refresh="loadOrders(); selectOrder(selectedOrderId!)"
+          @refresh="loadOrders(); loadPaginatedList(); selectOrder(selectedOrderId!)"
         />
       </div>
     </div>
@@ -583,6 +674,16 @@ function capacityBarWidth(pct: number | null | undefined): string {
       v-model:open="openAddModal"
       :loading="createLoading"
       @save="handleSaveOrder"
+    />
+
+    <!-- Confirm Dialog: Delete -->
+    <ConfirmDialog
+      v-model:open="confirmDialog.open"
+      :title="confirmDialog.title"
+      :description="confirmDialog.description"
+      confirm-label="Delete"
+      :loading="loading"
+      @confirm="handleConfirmDelete"
     />
   </div>
 </template>

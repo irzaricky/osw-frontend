@@ -26,6 +26,21 @@ export const useMdoStore = defineStore('mdo', () => {
     total_pages: 0
   })
 
+  // ─── State khusus list bawah yang dipaginate ───────────────────────────────
+  // SENGAJA DIPISAH dari `orders`/`meta`/`loading` di atas. `orders` dipakai
+  // oleh Timeline Gantt dan HARUS selalu lengkap (semua MDO pada rentang
+  // tanggal terpilih) agar staf gudang tidak salah baca jadwal dock akibat
+  // data yang terpotong pagination. List bawah ini boleh dipotong per halaman
+  // karena cuma untuk kenyamanan scroll, bukan sumber kebenaran visual jadwal.
+  const paginatedOrders = ref<Mdo[]>([])
+  const loadingList = ref(false)
+  const listMeta = ref({
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_pages: 0
+  })
+
   // ─── Actions ─────────────────────────────────────────────────────────────────
   async function fetchMdoList(params: MdoParams = {}) {
     loading.value = true
@@ -47,6 +62,31 @@ export const useMdoStore = defineStore('mdo', () => {
       console.error('Error fetching MDO list:', e)
     } finally {
       loading.value = false
+    }
+  }
+
+  // Fetch khusus untuk list bawah yang dipaginate. Tidak menyentuh `orders`
+  // atau `loading` milik Timeline Gantt — keduanya independen secara sengaja.
+  async function fetchMdoListPaginated(params: MdoParams = {}) {
+    loadingList.value = true
+    error.value = null
+    try {
+      const response = await mdoService.getMdoList(params)
+      const data = response.data
+      if (data.status) {
+        paginatedOrders.value = data.data.rows
+        listMeta.value = {
+          page: data.data.page,
+          limit: data.data.limit,
+          total: data.data.total,
+          total_pages: data.data.total_pages
+        }
+      }
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      console.error('Error fetching paginated MDO list:', e)
+    } finally {
+      loadingList.value = false
     }
   }
 
@@ -195,8 +235,13 @@ export const useMdoStore = defineStore('mdo', () => {
     loading,
     error,
     meta,
+    // State list bawah (dipaginate, terpisah dari Gantt)
+    paginatedOrders,
+    loadingList,
+    listMeta,
     // Actions
     fetchMdoList,
+    fetchMdoListPaginated,
     fetchMdoById,
     fetchDropdownWarehouses,
     fetchDropdownDocks,
