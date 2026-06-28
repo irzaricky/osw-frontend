@@ -197,6 +197,11 @@ const router = createRouter({
       component: () => import('./pages/material/mdo/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
     },
+    {
+      path: '/material/analytics',
+      component: () => import('./pages/material/analytics/index.vue'),
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin Material', 'Staff Material', 'Supervisor Material'] }
+    },
     //WAREHOUSE
     {
       path: '/warehouse',

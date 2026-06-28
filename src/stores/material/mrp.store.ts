@@ -234,6 +234,20 @@ export const useMrpStore = defineStore('mrp', () => {
     }
   }
 
+  async function bulkSubmitMrp(ids: number[]) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await mrpService.bulkSubmitMrp(ids)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function bulkReviewMrp(data: { ids: number[]; action: 'approve' | 'reject'; notes?: string }) {
     loading.value = true
     error.value = null
@@ -284,6 +298,7 @@ export const useMrpStore = defineStore('mrp', () => {
     updateMrpDetail,
     submitMrp,
     reviewMrp,
+    bulkSubmitMrp,
     bulkReviewMrp,
     deleteMrp
   }

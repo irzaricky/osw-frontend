@@ -136,7 +136,7 @@ function getTypeColor(type: string): any {
 
 function formatDate(dateStr: string | null | undefined) {
   if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+  return new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
 // ─── Modal: Add / Edit ────────────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useMpoStore } from '../../../stores/material/mpo.store'
 import type { Mpo } from '../../../types/material/mpo'
 import MpoCreateModal from './components/MpoCreateModal.vue'
+import MpoEditRejectedModal from './components/MpoEditRejectedModal.vue'   // NEW
 import MpoDetailPanel from './components/MpoDetailPanel.vue'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
@@ -94,7 +95,7 @@ function getStatusColor(status: string): any {
   return map[status.toLowerCase()] || 'neutral'
 }
 
-// ─── Grouped by status (sama persis seperti MRP) ─────────────────────────────
+// ─── Grouped by status ────────────────────────────────────────────────────────
 interface StatusGroup {
   status: string
   items: Mpo[]
@@ -121,6 +122,94 @@ const collapsedStatuses = reactive<Record<string, boolean>>({})
 
 function toggleStatusCollapse(status: string) {
   collapsedStatuses[status] = !collapsedStatuses[status]
+}
+
+// ─── Bulk Submit (Maker) ──────────────────────────────────────────────────────
+const selectedDraftIds = ref<number[]>([])
+const isBulkSubmitOpen = ref(false)
+
+function toggleSelectDraft(id: number) {
+  const idx = selectedDraftIds.value.indexOf(id)
+  if (idx === -1) selectedDraftIds.value.push(id)
+  else selectedDraftIds.value.splice(idx, 1)
+}
+
+function toggleSelectAllDraft() {
+  const draftIds = mpos.value
+    .filter(m => m.status?.toLowerCase() === 'draft')
+    .map(m => m.id)
+
+  if (selectedDraftIds.value.length === draftIds.length) {
+    selectedDraftIds.value = []
+  } else {
+    selectedDraftIds.value = draftIds
+  }
+}
+
+function openBulkSubmit() {
+  isBulkSubmitOpen.value = true
+}
+
+async function confirmBulkSubmit() {
+  try {
+    await store.bulkSubmitMpo(selectedDraftIds.value)
+    toastSuccess(`${selectedDraftIds.value.length} MPO submitted successfully`)
+    selectedDraftIds.value = []
+    isBulkSubmitOpen.value = false
+    fetchData()
+  } catch (e: any) {
+    toastError(e)
+  }
+}
+
+// ─── Bulk Review (Supervisor) ─────────────────────────────────────────────────
+const selectedSubmittedIds = ref<number[]>([])
+const isBulkReviewOpen = ref(false)
+const bulkReviewForm = ref<{ action: 'approve' | 'reject'; notes: string }>({
+  action: 'approve',
+  notes: ''
+})
+
+function toggleSelectSubmitted(id: number) {
+  const idx = selectedSubmittedIds.value.indexOf(id)
+  if (idx === -1) selectedSubmittedIds.value.push(id)
+  else selectedSubmittedIds.value.splice(idx, 1)
+}
+
+function toggleSelectAllSubmitted() {
+  const submittedIds = mpos.value
+    .filter(m => m.status?.toLowerCase() === 'submitted')
+    .map(m => m.id)
+
+  if (selectedSubmittedIds.value.length === submittedIds.length) {
+    selectedSubmittedIds.value = []
+  } else {
+    selectedSubmittedIds.value = submittedIds
+  }
+}
+
+function openBulkReview(action: 'approve' | 'reject') {
+  bulkReviewForm.value = { action, notes: '' }
+  isBulkReviewOpen.value = true
+}
+
+async function confirmBulkReview() {
+  if (bulkReviewForm.value.action === 'reject' && !bulkReviewForm.value.notes.trim()) {
+    return
+  }
+  try {
+    await store.bulkReviewMpo({
+      ids: selectedSubmittedIds.value,
+      action: bulkReviewForm.value.action,
+      notes: bulkReviewForm.value.notes || undefined
+    })
+    toastSuccess(`${selectedSubmittedIds.value.length} MPO ${bulkReviewForm.value.action === 'approve' ? 'approved' : 'rejected'}`)
+    selectedSubmittedIds.value = []
+    isBulkReviewOpen.value = false
+    fetchData()
+  } catch (e: any) {
+    toastError(e)
+  }
 }
 
 // ─── Navigation Guards ────────────────────────────────────────────────────────
@@ -153,7 +242,7 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 
 onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload))
 
-// ─── Modal: Create / Edit ─────────────────────────────────────────────────────
+// ─── Modal: Create (auto-generate) ───────────────────────────────────────────
 const isModalOpen = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
 const currentMpo = reactive<Partial<Mpo>>({})
@@ -179,21 +268,52 @@ function openEditModal(mpo: Mpo) {
 
 async function handleSave(data: any) {
   try {
-    if (modalMode.value === 'add') {
+    if (data.isAutoGenerate) {
+      await store.autoGenerateMpo(data)
+      toastSuccess(data.action === 'draft' ? 'MPO Auto-Generated as draft' : 'MPO Auto-Generated & submitted successfully')
+    } else if (modalMode.value === 'add') {
       await store.createMpo(data)
       toastSuccess(data.action === 'draft' ? 'MPO saved as draft' : 'MPO submitted successfully')
     } else {
       await store.updateMpo((currentMpo as Mpo).id, data)
       toastSuccess('MPO updated successfully')
     }
+
     isModalOpen.value = false
     fetchData()
+    // FIX: create/auto-generate menyerap part dari source (MRP/MPR) sehingga
+    // bisa membuat source itu habis. Refetch supaya dropdown source tidak stale
+    // kalau modal create dibuka lagi tanpa reload halaman.
+    store.fetchDropdownSource()
     if (modalMode.value === 'edit' && selectedMpoId.value) {
       detailPanelRef.value?.loadDetail?.()
     }
   } catch (e: any) {
     toastError(e)
   }
+}
+
+// ─── Modal: Edit Rejected MPO (NEW) ──────────────────────────────────────────
+const isEditRejectedOpen = ref(false)
+const rejectedMpoToEdit = ref<Mpo | null>(null)
+
+function openEditRejectedModal(mpo: Mpo) {
+  // Perlu full detail (dengan details[]) — ambil dari store.detail atau
+  // minta detail panel kirim mpo yang sudah di-load
+  rejectedMpoToEdit.value = mpo
+  isEditRejectedOpen.value = true
+}
+
+function onRejectedEditSaved() {
+  toastSuccess('MPO updated successfully')
+  isEditRejectedOpen.value = false
+  fetchData()
+  // FIX: split-update bisa mengubah/menghapus alokasi part MPO asal, yang
+  // berarti ketersediaan part di source (MRP/MPR) ikut berubah. Refetch
+  // supaya dropdown source tetap akurat.
+  store.fetchDropdownSource()
+  // Reload detail panel untuk MPO asal (mungkin sudah berubah atau di-delete)
+  detailPanelRef.value?.loadDetail?.()
 }
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
@@ -235,6 +355,10 @@ async function executeDelete() {
     toastSuccess('MPO deleted successfully')
     if (selectedMpoId.value === confirmDialog.value.id) selectedMpoId.value = null
     fetchData()
+    // FIX: MPO yang dihapus (draft) melepaskan kembali part-nya ke source MRP/MPR
+    // asal. Dropdown source harus di-refetch supaya source itu muncul lagi kalau
+    // sebelumnya sempat hilang karena semua part-nya habis terpakai.
+    store.fetchDropdownSource()
     confirmDialog.value.open = false
   } catch (e: any) {
     toastError(e)
@@ -257,17 +381,22 @@ onMounted(() => {
     <div class="px-6 pt-6 pb-4 border-b border-default space-y-3 shrink-0">
       <Breadcrumbs :items="breadcrumbItems" />
       <div class="flex justify-between items-center gap-3 flex-wrap">
-        <h1 class="text-2xl font-bold">
-          Material Purchase Order
-        </h1>
+        <h1 class="text-2xl font-bold">Material Purchase Order</h1>
         <div class="flex items-center gap-2">
-          <UButton
-            v-if="isStaff"
-            icon="i-lucide-plus"
-            color="primary"
-            label="Create MPO"
-            @click="openAddModal"
-          />
+          <!-- Bulk Submit (Maker) -->
+          <template v-if="isStaff && selectedDraftIds.length > 0">
+            <span class="text-sm text-muted">{{ selectedDraftIds.length }} draft(s) selected</span>
+            <UButton icon="i-lucide-send" color="warning" variant="outline" size="sm" label="Submit Selected" @click="openBulkSubmit" />
+          </template>
+
+          <!-- Bulk Review (Supervisor) -->
+          <template v-if="isSupervisor && selectedSubmittedIds.length > 0">
+            <span class="text-sm text-muted">{{ selectedSubmittedIds.length }} selected</span>
+            <UButton icon="i-lucide-check" color="success" variant="outline" size="sm" label="Approve Selected" @click="openBulkReview('approve')" />
+            <UButton icon="i-lucide-x" color="error" variant="outline" size="sm" label="Reject Selected" @click="openBulkReview('reject')" />
+          </template>
+
+          <UButton v-if="isStaff" icon="i-lucide-plus" color="primary" label="Create MPO" @click="openAddModal" />
         </div>
       </div>
     </div>
@@ -278,47 +407,38 @@ onMounted(() => {
       <div class="w-[30%] min-w-[260px] max-w-sm flex flex-col border-r border-default overflow-hidden">
         <!-- Filters -->
         <div class="p-3 space-y-2 border-b border-default shrink-0">
-          <UInput
-            v-model="searchFilter"
-            icon="i-lucide-search"
-            placeholder="Search MPO..."
-            class="w-full"
-            size="sm"
-          />
-          <USelectMenu
-            v-model="selectedStatus"
-            :items="statusItems"
-            placeholder="All Status"
-            class="w-full"
-            size="sm"
-            clear
-          />
+          <UInput v-model="searchFilter" icon="i-lucide-search" placeholder="Search MPO..." class="w-full" size="sm" />
+          <USelectMenu v-model="selectedStatus" :items="statusItems" placeholder="All Status" class="w-full" size="sm" clear />
         </div>
 
         <!-- List -->
         <div class="flex-1 overflow-y-auto">
           <template v-if="groupedMpos.length === 0">
-            <div class="p-6 text-center text-sm text-muted">
-              No MPO documents found.
-            </div>
+            <div class="p-6 text-center text-sm text-muted">No MPO documents found.</div>
           </template>
 
           <template v-for="statusGroup in groupedMpos" :key="statusGroup.status">
-            <!-- Status Group Header -->
             <div
               class="sticky top-0 z-10 px-3 py-2 bg-default/95 backdrop-blur border-b border-default flex items-center gap-2 cursor-pointer hover:bg-elevated/80 transition-colors"
               @click="toggleStatusCollapse(statusGroup.status)"
             >
-              <UIcon
-                :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
-                class="w-4 h-4 text-muted transition-transform"
+              <UIcon :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'" class="w-4 h-4 text-muted transition-transform" />
+
+              <UCheckbox
+                v-if="isStaff && statusGroup.status === 'draft'"
+                :model-value="selectedDraftIds.length > 0 && selectedDraftIds.length === statusGroup.items.length"
+                :indeterminate="selectedDraftIds.length > 0 && selectedDraftIds.length < statusGroup.items.length"
+                @click.stop="toggleSelectAllDraft"
               />
-              <UBadge
-                :color="getStatusColor(statusGroup.status)"
-                variant="subtle"
-                size="xs"
-                class="capitalize"
-              >
+
+              <UCheckbox
+                v-if="isSupervisor && statusGroup.status === 'submitted'"
+                :model-value="selectedSubmittedIds.length > 0 && selectedSubmittedIds.length === statusGroup.items.length"
+                :indeterminate="selectedSubmittedIds.length > 0 && selectedSubmittedIds.length < statusGroup.items.length"
+                @click.stop="toggleSelectAllSubmitted"
+              />
+
+              <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs" class="capitalize">
                 {{ statusGroup.status }}
               </UBadge>
               <span class="ml-auto text-xs text-muted shrink-0">{{ statusGroup.items.length }} item(s)</span>
@@ -333,13 +453,16 @@ onMounted(() => {
                 @click="selectMpo(mpo)"
               >
                 <div class="flex items-start justify-between gap-2">
+                  <div v-if="isStaff && mpo.status?.toLowerCase() === 'draft'" class="mt-0.5 shrink-0" @click.stop="toggleSelectDraft(mpo.id)">
+                    <UCheckbox :model-value="selectedDraftIds.includes(mpo.id)" />
+                  </div>
+                  <div v-if="isSupervisor && mpo.status?.toLowerCase() === 'submitted'" class="mt-0.5 shrink-0" @click.stop="toggleSelectSubmitted(mpo.id)">
+                    <UCheckbox :model-value="selectedSubmittedIds.includes(mpo.id)" />
+                  </div>
+
                   <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium truncate">
-                      {{ mpo.number }}
-                    </p>
-                    <p class="text-xs text-muted truncate">
-                      {{ mpo.mrp?.number || mpo.purchase_request?.number || '-' }}
-                    </p>
+                    <p class="text-sm font-medium truncate">{{ mpo.number }}</p>
+                    <p class="text-xs text-muted truncate">{{ mpo.mrp?.number || mpo.purchase_request?.number || '-' }}</p>
                   </div>
                 </div>
               </div>
@@ -349,16 +472,8 @@ onMounted(() => {
 
         <!-- Pagination -->
         <div class="p-3 border-t border-default shrink-0">
-          <div class="text-xs text-muted mb-2">
-            {{ meta.total }} MPO document(s)
-          </div>
-          <UPagination
-            v-model:page="meta.page"
-            :items-per-page="meta.limit"
-            :total="meta.total"
-            size="xs"
-            @update:page="fetchData"
-          />
+          <div class="text-xs text-muted mb-2">{{ meta.total }} MPO document(s)</div>
+          <UPagination v-model:page="meta.page" :items-per-page="meta.limit" :total="meta.total" size="xs" @update:page="fetchData" />
         </div>
       </div>
 
@@ -366,9 +481,7 @@ onMounted(() => {
       <div class="flex-1 overflow-hidden">
         <div v-if="!selectedMpoId" class="flex flex-col items-center justify-center h-full text-muted gap-3">
           <UIcon name="i-lucide-shopping-cart" class="w-12 h-12 opacity-30" />
-          <p class="text-sm">
-            Select an MPO from the list to view its detail
-          </p>
+          <p class="text-sm">Select an MPO from the list to view its detail</p>
         </div>
 
         <MpoDetailPanel
@@ -377,13 +490,14 @@ onMounted(() => {
           :mpo-id="selectedMpoId"
           :mpo-summary="selectedMpoData"
           @edit="openEditModal"
+          @edit-rejected="openEditRejectedModal"
           @delete="handleDelete"
           @refresh-list="fetchData"
         />
       </div>
     </div>
 
-    <!-- Create / Edit Modal -->
+    <!-- Create / Edit Modal (auto-generate) -->
     <MpoCreateModal
       v-model:open="isModalOpen"
       :mode="modalMode"
@@ -391,6 +505,86 @@ onMounted(() => {
       :loading="loading"
       @save="handleSave"
     />
+
+    <!-- Edit Rejected Modal (NEW) -->
+    <MpoEditRejectedModal
+      v-model:open="isEditRejectedOpen"
+      :mpo="rejectedMpoToEdit"
+      @saved="onRejectedEditSaved"
+    />
+
+    <!-- Bulk Submit Modal -->
+    <UModal
+      v-model:open="isBulkSubmitOpen"
+      title="Bulk Submit MPO"
+      :description="`You are about to submit ${selectedDraftIds.length} MPO document(s) with Draft status to the Supervisor for review.`"
+    >
+      <template #body>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
+          <UIcon name="i-lucide-send" class="w-5 h-5 shrink-0 text-warning-500" />
+          <div class="text-sm">
+            <p class="font-medium">{{ selectedDraftIds.length }} MPO(s) selected</p>
+            <p class="text-muted text-xs mt-0.5">MPO IDs: {{ selectedDraftIds.join(', ') }}</p>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="isBulkSubmitOpen = false" />
+          <UButton color="warning" label="Submit All" icon="i-lucide-send" :loading="loading" @click="confirmBulkSubmit" />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Bulk Review Modal -->
+    <UModal
+      v-model:open="isBulkReviewOpen"
+      :title="bulkReviewForm.action === 'approve' ? 'Bulk Approve MPO' : 'Bulk Reject MPO'"
+      :description="`You are about to ${bulkReviewForm.action === 'approve' ? 'approve' : 'reject'} ${selectedSubmittedIds.length} MPO document(s).`"
+    >
+      <template #body>
+        <div class="space-y-4">
+          <div
+            class="flex items-center gap-3 p-3 rounded-lg"
+            :class="bulkReviewForm.action === 'approve'
+              ? 'bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800'
+              : 'bg-error-50 dark:bg-error-900/20 border border-error-200 dark:border-error-800'"
+          >
+            <UIcon
+              :name="bulkReviewForm.action === 'approve' ? 'i-lucide-check-circle' : 'i-lucide-x-circle'"
+              :class="bulkReviewForm.action === 'approve' ? 'text-success-500' : 'text-error-500'"
+              class="w-5 h-5 shrink-0"
+            />
+            <div class="text-sm">
+              <p class="font-medium">{{ selectedSubmittedIds.length }} MPO(s) selected</p>
+              <p class="text-muted text-xs mt-0.5">MPO IDs: {{ selectedSubmittedIds.join(', ') }}</p>
+            </div>
+          </div>
+
+          <UFormField :label="bulkReviewForm.action === 'reject' ? 'Rejection Notes' : 'Notes (Optional)'" :required="bulkReviewForm.action === 'reject'">
+            <UTextarea
+              v-model="bulkReviewForm.notes"
+              :placeholder="bulkReviewForm.action === 'reject' ? 'Explain the reason for rejection...' : 'Add notes if needed...'"
+              class="w-full"
+              rows="3"
+            />
+          </UFormField>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="isBulkReviewOpen = false" />
+          <UButton
+            :color="bulkReviewForm.action === 'approve' ? 'success' : 'error'"
+            :label="bulkReviewForm.action === 'approve' ? 'Approve All' : 'Reject All'"
+            :icon="bulkReviewForm.action === 'approve' ? 'i-lucide-check' : 'i-lucide-x'"
+            :loading="loading"
+            :disabled="bulkReviewForm.action === 'reject' && !bulkReviewForm.notes.trim()"
+            @click="confirmBulkReview"
+          />
+        </div>
+      </template>
+    </UModal>
 
     <!-- Confirm Dialog -->
     <ConfirmDialog

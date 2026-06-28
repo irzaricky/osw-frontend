@@ -6,6 +6,8 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import * as z from 'zod'
 import type { Mdo } from '../../../../types/material/mdo'
 import { useMdoStore } from '../../../../stores/material/mdo.store'
+import { useAppToast } from '../../../../composables/useAppToast'
+import ConfirmDialog from '../../../../components/ConfirmDialog.vue'
 
 const props = defineProps<{
   order: Mdo | null
@@ -19,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const store = useMdoStore()
+const { toastSuccess, toastError } = useAppToast()
 
 // ─── Edit mode ────────────────────────────────────────────────────────────────
 const isEditing = ref(false)
@@ -83,7 +86,7 @@ const editTimeConflictWarning = computed<boolean>(() => {
 })
 
 const editSchema = z.object({
-  target_date: z.string().min(1, 'Tanggal harus diisi'),
+  target_date: z.string().min(1, 'Date is required'),
 })
 
 // ─── CalendarDate bridge ───────────────────────────────────────────────────────
@@ -121,8 +124,8 @@ const statusLabel = (s: string) => {
 
 const nextStatusLabel = computed(() => {
   if (!props.order) return ''
-  if (props.order.status === 'scheduled') return 'Tandai In Transit'
-  if (props.order.status === 'in_transit') return 'Tandai Arrived'
+  if (props.order.status === 'scheduled') return 'Mark as In Transit'
+  if (props.order.status === 'in_transit') return 'Mark as Arrived'
   return ''
 })
 
@@ -237,34 +240,47 @@ async function onEditSubmit(_event: FormSubmitEvent<any>) {
     const res = await store.updateMdo(props.order.id, payload)
     if (res?.status) {
       isEditing.value = false
+      toastSuccess(
+        editState.save_as === 'scheduled'
+          ? 'MDO submitted and scheduled successfully.'
+          : 'Changes saved as draft successfully.'
+      )
       emit('refresh')
     } else {
-      alert(res?.message || 'Gagal menyimpan perubahan.')
+      toastError(res?.message || 'Failed to save changes.')
     }
   } catch (e: any) {
-    alert(e.response?.data?.message || 'Terjadi kesalahan saat menyimpan.')
+    toastError(e)
   } finally {
     isSaving.value = false
   }
 }
 
 // ─── Advance status ────────────────────────────────────────────────────────────
-async function handleAdvanceStatus() {
+const advanceConfirmOpen = ref(false)
+
+function handleAdvanceStatus() {
+  if (!props.order) return
+  advanceConfirmOpen.value = true
+}
+
+async function confirmAdvanceStatus() {
   if (!props.order) return
   const label = nextStatusLabel.value
-  if (!confirm(`Yakin ingin ${label}?`)) return
   isAdvancing.value = true
   try {
     const res = await store.advanceMdoStatus(props.order.id)
     if (res?.status) {
+      toastSuccess(`Status updated successfully: ${label}.`)
       emit('refresh')
     } else {
-      alert(res?.message || 'Gagal mengubah status.')
+      toastError(res?.message || 'Failed to update status.')
     }
   } catch (e: any) {
-    alert(e.response?.data?.message || 'Terjadi kesalahan.')
+    toastError(e)
   } finally {
     isAdvancing.value = false
+    advanceConfirmOpen.value = false
   }
 }
 </script>
@@ -279,10 +295,10 @@ async function handleAdvanceStatus() {
         </div>
         <div>
           <h3 class="text-sm font-bold text-default">
-            Detail MDO
+            MDO Detail
           </h3>
           <p class="text-[10px] text-muted">
-            {{ props.order?.number || 'Pilih MDO' }}
+            {{ props.order?.number || 'Select MDO' }}
           </p>
         </div>
       </div>
@@ -320,10 +336,10 @@ async function handleAdvanceStatus() {
         <UIcon name="i-lucide-package-open" class="w-6 h-6 text-muted" />
       </div>
       <h3 class="text-sm font-bold text-default">
-        Tidak Ada MDO Dipilih
+        No MDO Selected
       </h3>
       <p class="text-[10px] text-muted mt-1">
-        Klik blok di timeline atau item di list untuk melihat detailnya.
+        Click a block on the timeline or an item in the list to view its details.
       </p>
     </div>
 
@@ -331,7 +347,7 @@ async function handleAdvanceStatus() {
     <div v-else-if="isEditing" class="flex-1 overflow-y-auto p-4 space-y-4">
       <div class="flex items-center gap-2 mb-2">
         <UIcon name="i-lucide-pencil" class="w-4 h-4 text-warning-500" />
-        <span class="text-xs font-bold text-warning-600 dark:text-warning-400 uppercase tracking-wider">Mode Edit</span>
+        <span class="text-xs font-bold text-warning-600 dark:text-warning-400 uppercase tracking-wider">Edit Mode</span>
       </div>
 
       <UForm
@@ -342,7 +358,7 @@ async function handleAdvanceStatus() {
         @submit="onEditSubmit"
       >
         <!-- Target Date -->
-        <UFormField label="Tanggal Pengiriman" name="target_date" required>
+        <UFormField label="Delivery Date" name="target_date" required>
           <UInputDate v-model="editTargetDateModel" class="w-full">
             <template #trailing>
               <UPopover>
@@ -362,26 +378,26 @@ async function handleAdvanceStatus() {
         </UFormField>
 
         <!-- Target Time -->
-        <UFormField label="Waktu Kedatangan (Opsional)" name="target_time">
+        <UFormField label="Arrival Time (Optional)" name="target_time">
           <USelectMenu
             v-model="editState.target_time"
             :items="availableEditTimeOptions"
             class="w-full"
-            :placeholder="!editState.dock_id ? 'Pilih jam kedatangan' : 'Pilih jam kedatangan (slot tersedia)'"
+            :placeholder="!editState.dock_id ? 'Select arrival time' : 'Select arrival time (available slots)'"
           >
             <template #empty>
-              <p class="text-xs text-muted p-2">Tidak ada slot waktu tersedia di dock ini</p>
+              <p class="text-xs text-muted p-2">No time slots available at this dock</p>
             </template>
           </USelectMenu>
-          <!-- Warning: slot yang dipilih sudah terpakai -->
+          <!-- Warning: selected slot is already taken -->
           <div
             v-if="editTimeConflictWarning"
             class="flex items-start gap-2 mt-2 rounded-lg border border-red-400/50 bg-red-50 dark:bg-red-900/20 px-3 py-2 text-red-800 dark:text-red-300"
           >
             <UIcon name="i-lucide-clock-alert" class="w-3.5 h-3.5 shrink-0 mt-0.5 text-red-500" />
             <p class="text-[10px] leading-relaxed">
-              Jam <span class="font-mono font-bold">{{ editState.target_time }}</span> sudah terpakai
-              di dock ini. Silakan pilih slot lain.
+              Time <span class="font-mono font-bold">{{ editState.target_time }}</span> is already taken
+              at this dock. Please select another slot.
             </p>
           </div>
         </UFormField>
@@ -392,7 +408,7 @@ async function handleAdvanceStatus() {
             v-model="editSelectedDock"
             :items="store.docks"
             class="w-full"
-            placeholder="Pilih dock"
+            placeholder="Select dock"
             label-key="name"
             :disabled="!editState.target_date"
           >
@@ -406,12 +422,12 @@ async function handleAdvanceStatus() {
         </UFormField>
 
         <!-- Vehicle -->
-        <UFormField label="Kendaraan" name="vehicle_id">
+        <UFormField label="Vehicle" name="vehicle_id">
           <USelectMenu
             v-model="editSelectedVehicle"
             :items="store.vehicles"
             class="w-full"
-            placeholder="Pilih kendaraan"
+            placeholder="Select vehicle"
             label-key="plate_number"
             searchable
             :search-attributes="['plate_number', 'vehicle_code']"
@@ -419,7 +435,7 @@ async function handleAdvanceStatus() {
           >
             <template #label>
               <span v-if="editSelectedVehicle" class="text-xs">{{ vehicleLabel(editSelectedVehicle) }}</span>
-              <span v-else class="text-muted text-xs">Pilih kendaraan</span>
+              <span v-else class="text-muted text-xs">Select vehicle</span>
             </template>
             <template #option="{ item }">
               <div class="flex flex-col py-0.5">
@@ -431,24 +447,24 @@ async function handleAdvanceStatus() {
         </UFormField>
 
         <!-- Transporter -->
-        <UFormField label="Transporter / Ekspedisi" name="transporter">
-          <UInput v-model="editState.transporter" placeholder="Nama ekspedisi atau sopir" class="w-full" />
+        <UFormField label="Transporter / Courier" name="transporter">
+          <UInput v-model="editState.transporter" placeholder="Courier or driver name" class="w-full" />
         </UFormField>
 
         <!-- Description -->
-        <UFormField label="Deskripsi" name="description">
+        <UFormField label="Description" name="description">
           <UTextarea v-model="editState.description" :rows="2" class="w-full" />
         </UFormField>
 
         <!-- Remarks -->
-        <UFormField label="Catatan / Remarks" name="remarks">
+        <UFormField label="Notes / Remarks" name="remarks">
           <UTextarea v-model="editState.remarks" :rows="2" class="w-full" />
         </UFormField>
 
         <!-- Part details edit -->
         <div>
           <h5 class="text-xs font-bold text-muted uppercase tracking-wider mb-2">
-            Detail Parts
+            Part Details
           </h5>
           <div class="border border-default rounded-xl overflow-hidden divide-y divide-default">
             <div
@@ -470,7 +486,7 @@ async function handleAdvanceStatus() {
                 />
                 <UInput
                   v-model="editState.details[idx].notes"
-                  placeholder="Catatan part (opsional)"
+                  placeholder="Part note (optional)"
                   size="sm"
                   class="flex-1"
                 />
@@ -486,7 +502,7 @@ async function handleAdvanceStatus() {
           <UButton
             color="neutral"
             variant="outline"
-            label="Batal"
+            label="Cancel"
             class="flex-1"
             :disabled="isSaving"
             @click="cancelEdit"
@@ -494,7 +510,7 @@ async function handleAdvanceStatus() {
           <UButton
             color="warning"
             variant="soft"
-            label="Simpan Draft"
+            label="Save as Draft"
             icon="i-lucide-save"
             class="flex-1"
             :loading="isSaving && editState.save_as === 'draft'"
@@ -504,7 +520,7 @@ async function handleAdvanceStatus() {
         </div>
         <UButton
           color="primary"
-          label="Simpan & Jadwalkan"
+          label="Save & Schedule"
           icon="i-lucide-calendar-check"
           class="w-full font-bold justify-center"
           :loading="isSaving && editState.save_as === 'scheduled'"
@@ -534,11 +550,11 @@ async function handleAdvanceStatus() {
             {{ statusLabel(props.order.status) }}
           </UBadge>
           <span class="text-[10px] text-muted">
-            Dibuat {{ new Date(props.order.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) }}
+            Created {{ new Date(props.order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) }}
           </span>
           <span v-if="props.order.warnings?.length" class="text-[10px] text-warning-600 dark:text-warning-400 font-semibold flex items-center gap-0.5">
             <UIcon name="i-lucide-alert-triangle" class="w-3 h-3" />
-            {{ props.order.warnings.length }} peringatan
+            {{ props.order.warnings.length }} warning(s)
           </span>
         </div>
       </div>
@@ -558,7 +574,7 @@ async function handleAdvanceStatus() {
       <!-- Metadata Grid -->
       <div class="space-y-4">
         <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
-          Informasi Pengiriman
+          Delivery Information
         </h4>
 
         <div class="grid grid-cols-2 gap-3">
@@ -576,19 +592,19 @@ async function handleAdvanceStatus() {
 
           <!-- Target Date -->
           <div class="p-3 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Tanggal</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Date</span>
             <div class="flex items-center gap-1.5 font-bold text-default text-xs">
               <UIcon name="i-lucide-calendar" class="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span>{{ new Date(props.order.target_date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) }}</span>
+              <span>{{ new Date(props.order.target_date).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' }) }}</span>
             </div>
           </div>
 
           <!-- Target Time -->
           <div class="p-3 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Jam Kedatangan</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Arrival Time</span>
             <div class="flex items-center gap-1.5 font-bold text-default text-xs">
               <UIcon name="i-lucide-clock" class="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span>{{ props.order.target_time ? props.order.target_time.slice(0, 5) : 'Tidak ditentukan' }}</span>
+              <span>{{ props.order.target_time ? props.order.target_time.slice(0, 5) : 'Not set' }}</span>
             </div>
           </div>
 
@@ -603,7 +619,7 @@ async function handleAdvanceStatus() {
 
           <!-- Vehicle -->
           <div class="p-3 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Kendaraan</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Vehicle</span>
             <div class="flex items-center gap-1.5 font-bold text-default text-xs">
               <UIcon name="i-lucide-truck" class="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               <span class="font-mono">{{ props.order.vehicle?.plate_number || '-' }}</span>
@@ -615,7 +631,7 @@ async function handleAdvanceStatus() {
 
           <!-- Transporter -->
           <div v-if="props.order.transporter" class="p-3 rounded-xl border border-default bg-elevated/40 col-span-2">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Transporter / Ekspedisi</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Transporter / Courier</span>
             <div class="flex items-center gap-1.5 font-bold text-default text-xs">
               <UIcon name="i-lucide-package" class="w-3.5 h-3.5 text-violet-500 shrink-0" />
               <span>{{ props.order.transporter }}</span>
@@ -630,7 +646,7 @@ async function handleAdvanceStatus() {
               <UIcon name="i-lucide-weight" class="w-3.5 h-3.5 shrink-0"
                 :class="capacityPct > 90 ? 'text-error-500' : capacityPct > 70 ? 'text-warning-500' : 'text-success-500'"
               />
-              <span class="text-[10px] text-muted font-semibold">Kapasitas Kendaraan Terpakai</span>
+              <span class="text-[10px] text-muted font-semibold">Vehicle Capacity Used</span>
             </div>
             <span
               class="text-[11px] font-black tabular-nums"
@@ -649,10 +665,10 @@ async function handleAdvanceStatus() {
           <div class="flex justify-between text-[9px] text-muted mt-1.5 font-medium">
             <span>
               <span class="font-bold text-default">{{ props.order.total_weight_kg?.toFixed(1) ?? '—' }} kg</span>
-              dipakai
+              used
             </span>
             <span>
-              kapasitas
+              capacity
               <span class="font-bold text-default">{{ props.order.vehicle_capacity_kg ?? '—' }} kg</span>
             </span>
           </div>
@@ -662,25 +678,25 @@ async function handleAdvanceStatus() {
             class="mt-2 flex items-center gap-1.5 text-[10px] text-error-600 dark:text-error-400 font-bold bg-error-500/10 rounded-lg px-2 py-1"
           >
             <UIcon name="i-lucide-alert-triangle" class="w-3.5 h-3.5 shrink-0" />
-            Muatan melebihi kapasitas kendaraan!
+            Load exceeds vehicle capacity!
           </div>
         </div>
         <!-- Kapasitas tidak tersedia (kendaraan belum dipilih) -->
         <div v-else-if="props.order.vehicle_id && props.order.vehicle_capacity_kg === 0" class="p-3 rounded-xl border border-dashed border-default bg-elevated/20 text-[10px] text-muted flex items-center gap-1.5">
           <UIcon name="i-lucide-info" class="w-3.5 h-3.5 shrink-0" />
-          Data kapasitas kendaraan belum tersedia.
+          Vehicle capacity data not available.
         </div>
 
         <!-- Description / Remarks -->
         <div v-if="props.order.description || props.order.remarks" class="space-y-2">
           <div v-if="props.order.description" class="p-3 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Deskripsi</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Description</span>
             <p class="text-xs text-default leading-relaxed">
               {{ props.order.description }}
             </p>
           </div>
           <div v-if="props.order.remarks" class="p-3 rounded-xl border border-default bg-elevated/40">
-            <span class="text-[10px] text-muted font-semibold block mb-1">Catatan / Remarks</span>
+            <span class="text-[10px] text-muted font-semibold block mb-1">Notes / Remarks</span>
             <p class="text-xs text-default leading-relaxed">
               {{ props.order.remarks }}
             </p>
@@ -689,7 +705,7 @@ async function handleAdvanceStatus() {
 
         <!-- Creator -->
         <div class="p-3 rounded-xl border border-default bg-elevated/40">
-          <span class="text-[10px] text-muted font-semibold block mb-1">Dibuat Oleh</span>
+          <span class="text-[10px] text-muted font-semibold block mb-1">Created By</span>
           <div class="flex items-center gap-1.5 font-bold text-default text-xs">
             <UIcon name="i-lucide-user" class="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span>{{ props.order.creator?.user_detail?.full_name || props.order.creator?.email || 'System' }}</span>
@@ -700,12 +716,12 @@ async function handleAdvanceStatus() {
       <!-- Parts Detail Table -->
       <div class="space-y-3">
         <h4 class="text-xs font-bold text-muted uppercase tracking-wider">
-          Detail Parts
+          Part Details
         </h4>
         <div class="border border-default rounded-xl overflow-hidden">
           <div class="divide-y divide-default bg-elevated/20">
             <div v-if="orderDetails.length === 0" class="p-4 text-center text-xs text-muted">
-              Tidak ada data parts.
+              No part data available.
             </div>
             <div
               v-for="detail in orderDetails"
@@ -758,10 +774,20 @@ async function handleAdvanceStatus() {
           variant="outline"
           class="w-full font-bold justify-center"
           icon="i-lucide-trash-2"
-          label="Hapus MDO"
+          label="Delete MDO"
           @click="emit('delete', props.order!.id)"
         />
       </div>
     </div>
+
+    <!-- Confirm Dialog: Advance Status -->
+    <ConfirmDialog
+      v-model:open="advanceConfirmOpen"
+      title="Confirm Status Change"
+      :description="`Are you sure you want to ${nextStatusLabel}?`"
+      confirm-label="Yes, Proceed"
+      :loading="isAdvancing"
+      @confirm="confirmAdvanceStatus"
+    />
   </div>
 </template>

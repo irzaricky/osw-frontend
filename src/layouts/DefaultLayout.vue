@@ -238,6 +238,14 @@ const staticLinks = [[{
         open.value = false
       }
     },
+    {
+      label: 'Analytics',
+      icon: 'i-lucide-book-check',
+      to: '/material/analytics',
+      onSelect: () => {
+        open.value = false
+      }
+    },
   ]
 },{
   label: 'Production Plan',

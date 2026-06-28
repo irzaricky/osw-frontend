@@ -9,6 +9,16 @@ import type { Mpr } from '../../../../types/material/mpr'
 const formRef = ref()
 const store = useMprStore()
 
+// Tanggal hari ini dalam format YYYY-MM-DD, berbasis waktu lokal browser
+// (bukan toISOString() agar tidak bergeser akibat timezone UTC)
+function todayIso(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 const props = defineProps<{
   open: boolean
   mode: 'add' | 'edit'
@@ -22,8 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const schema = z.object({
-  description: z.string().min(1, 'Description is required'),
-  request_date: z.string().min(1, 'Request date is required')
+  description: z.string().min(1, 'Description is required')
 })
 
 type Schema = z.output<typeof schema>
@@ -45,7 +54,9 @@ watch(
   () => props.mpr,
   (val) => {
     state.description = val.description ?? ''
-    state.request_date = val.request_date ?? ''
+    // request_date selalu read-only: tanggal hari ini saat add,
+    // atau tanggal asli MPR saat edit (server tidak mengizinkan field ini diubah)
+    state.request_date = val.request_date ?? todayIso()
     state.remarks = val.remarks ?? ''
     if (val.details && val.details.length) {
       state.details = val.details.map(d => ({
@@ -66,7 +77,7 @@ watch(
   (isOpen) => {
     if (isOpen && props.mode === 'add') {
       state.description = ''
-      state.request_date = ''
+      state.request_date = todayIso()
       state.remarks = ''
       state.details = [{ part_id: undefined, qty: 0, required_date: '', notes: '' }]
     }
@@ -143,7 +154,6 @@ function onSubmit(event: FormSubmitEvent<Schema>) {
   const validDetails = state.details.filter(d => d.part_id && d.qty > 0)
   emit('save', {
     description: event.data.description,
-    request_date: event.data.request_date,
     remarks: state.remarks || undefined,
     details: validDetails
   })
@@ -188,23 +198,7 @@ function close() {
           </UFormField>
 
           <UFormField label="Request Date" name="request_date" required>
-            <UInputDate v-model="requestDateModel" :disabled="isAutoType">
-              <template #trailing>
-                <UPopover>
-                  <UButton
-                    color="neutral"
-                    variant="link"
-                    size="sm"
-                    icon="i-lucide-calendar"
-                    class="px-0"
-                    :disabled="isAutoType"
-                  />
-                  <template #content>
-                    <UCalendar v-model="requestDateModel" class="p-2" />
-                  </template>
-                </UPopover>
-              </template>
-            </UInputDate>
+            <UInputDate v-model="requestDateModel" disabled />
           </UFormField>
 
           <UFormField label="Remarks" name="remarks">

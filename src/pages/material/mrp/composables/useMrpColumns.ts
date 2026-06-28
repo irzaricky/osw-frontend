@@ -20,28 +20,31 @@ interface Actions {
 }
 
 export function useMrpColumns(actions: Actions, ui: UIComponents) {
-  const getActionItems = (row: Row<Mrp>) => [
-    [
-      {
-        label: 'View details',
-        icon: 'i-lucide-list',
-        onSelect: () => actions.onView(row.original.id)
-      },
-      {
-        label: 'Edit',
-        icon: 'i-lucide-pencil',
-        onSelect: () => actions.onEdit(row.original)
-      }
-    ],
-    [
-      {
-        label: 'Delete',
-        icon: 'i-lucide-trash-2',
-        color: 'error' as const,
-        onSelect: () => actions.onDelete(row.original.id)
-      }
+  const getActionItems = (row: Row<Mrp>) => {
+    const canEdit = ['Draft', 'Rejected'].includes(row.original.status)
+    return [
+      [
+        {
+          label: 'View details',
+          icon: 'i-lucide-list',
+          onSelect: () => actions.onView(row.original.id)
+        },
+        ...(canEdit ? [{
+          label: 'Edit',
+          icon: 'i-lucide-pencil',
+          onSelect: () => actions.onEdit(row.original)
+        }] : [])
+      ],
+      [
+        {
+          label: 'Delete',
+          icon: 'i-lucide-trash-2',
+          color: 'error' as const,
+          onSelect: () => actions.onDelete(row.original.id)
+        }
+      ]
     ]
-  ]
+  }
 
   const columns: ColumnDef<Mrp>[] = [
     {
@@ -68,7 +71,7 @@ export function useMrpColumns(actions: Actions, ui: UIComponents) {
     {
       accessorKey: 'mrp_number',
       header: 'MRP Number',
-      cell: ({ row }) => h('div', { class: 'font-medium text-highlighted' }, row.original.mrp_number)
+      cell: ({ row }) => h('div', { class: 'font-medium text-highlighted' }, row.original.number)
     },
     {
       accessorKey: 'description',
@@ -92,7 +95,7 @@ export function useMrpColumns(actions: Actions, ui: UIComponents) {
     {
       accessorKey: 'salesPlan',
       header: 'Sales Plan',
-      cell: ({ row }) => row.original.salesPlan?.spr_number || '-'
+      cell: ({ row }) => row.original.sales_plan?.spr_number || '-'
     },
     {
       accessorKey: 'status',

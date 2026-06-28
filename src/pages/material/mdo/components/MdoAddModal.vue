@@ -6,9 +6,11 @@ import { CalendarDate } from '@internationalized/date'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { useMdoStore } from '../../../../stores/material/mdo.store'
 import type { MdoDropdownMpo, MdoDropdownMpoDetail } from '../../../../types/material/mdo'
+import { useAppToast } from '../../../../composables/useAppToast'
 
 const formRef = ref()
 const store = useMdoStore()
+const { toastError } = useAppToast()
 
 // ─── Preview Warning State ─────────────────────────────────────────────────────
 // Diset ke true oleh hasil previewSplit jika ada part dengan weight = null/0
@@ -113,8 +115,8 @@ const targetDateModel = computed({
 
 // ─── Validation Schema ─────────────────────────────────────────────────────────
 const schema = z.object({
-  mpo_id: z.number({ message: 'MPO harus dipilih' }),
-  target_date: z.string().min(1, 'Tanggal pengiriman harus diisi'),
+  mpo_id: z.number({ message: 'MPO is required' }),
+  target_date: z.string().min(1, 'Delivery date is required'),
 })
 
 // ─── Computed: Selected MPO object ────────────────────────────────────────────
@@ -238,7 +240,7 @@ watch(
       }
     } catch (error) {
       // Preview gagal → tidak blok user, cukup reset indikator
-      console.error('Gagal mengambil data kapasitas:', error)
+      console.error('Failed to fetch capacity data:', error)
       previewHasNullWeight.value = false
       previewWeight.loaded = false
       partWeights.value = {}
@@ -283,18 +285,18 @@ function onSubmit(_event: FormSubmitEvent<any>) {
   // Ini melengkapi :disabled="isSubmitDisabled" di tombol — mencegah celah
   // race-condition atau bypass lewat keyboard shortcut / manipulasi DOM.
   if (isLoadExceeded.value) {
-    alert('Total muatan melebihi kapasitas maksimal kendaraan! Kurangi qty atau pilih kendaraan lain.')
+    toastError('Total load exceeds maximum vehicle capacity! Reduce qty or select a larger vehicle.')
     return
   }
 
   if (state.details.length === 0) {
-    alert('Pilih MPO yang memiliki detail parts terlebih dahulu.')
+    toastError('Please select an MPO with part details first.')
     return
   }
 
   const selectedDetails = state.details.filter(d => d.selected)
   if (selectedDetails.length === 0) {
-    alert('Pilih minimal 1 part untuk dikirim.')
+    toastError('Select at least 1 part to ship.')
     return
   }
 
@@ -326,8 +328,8 @@ function close() {
 <template>
   <UModal
     :open="props.open"
-    title="Buat Material Delivery Order (MDO)"
-    description="Jadwalkan pengiriman material dari supplier ke receiving dock gudang."
+    title="Create Material Delivery Order (MDO)"
+    description="Schedule a material delivery from a supplier to the warehouse receiving dock."
     class="sm:max-w-4xl"
     @update:open="emit('update:open', $event)"
   >
@@ -348,7 +350,7 @@ function close() {
                 v-model="selectedMpo"
                 :items="store.mpoItems"
                 class="w-full"
-                placeholder="Pilih MPO yang akan dikirim"
+                placeholder="Select MPO to deliver"
                 label-key="number"
               >
                 <template #option="{ item }">
@@ -362,7 +364,7 @@ function close() {
             </UFormField>
 
             <!-- Target Date -->
-            <UFormField label="Tanggal Pengiriman" name="target_date" required>
+            <UFormField label="Delivery Date" name="target_date" required>
               <UInputDate v-model="targetDateModel" class="w-full">
                 <template #trailing>
                   <UPopover>
@@ -387,7 +389,7 @@ function close() {
                 v-model="selectedDock"
                 :items="store.docks"
                 class="w-full"
-                placeholder="Pilih dock penerimaan"
+                placeholder="Select receiving dock"
                 label-key="name"
                 :disabled="!state.target_date"
               >
@@ -396,13 +398,13 @@ function close() {
                     <span class="font-bold text-xs text-default">{{ item.name }}</span>
                     <span v-if="item.area" class="text-[10px] text-muted">Area: {{ item.area.name }}</span>
                     <span class="text-[10px] text-muted/70">
-                      {{ (item.slots ?? []).filter((s: any) => s.available).length }} slot tersedia
+                      {{ (item.slots ?? []).filter((s: any) => s.available).length }} slots available
                     </span>
                   </div>
                 </template>
                 <template #empty>
                   <p class="text-xs text-muted p-2">
-                    {{ !state.target_date ? 'Isi tanggal dulu untuk melihat dock tersedia' : 'Tidak ada dock tersedia' }}
+                    {{ !state.target_date ? 'Enter a date first to see available docks' : 'No docks available' }}
                   </p>
                 </template>
               </USelectMenu>
@@ -415,39 +417,39 @@ function close() {
             >
               <UIcon name="i-lucide-clock-alert" class="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
               <div class="text-xs leading-relaxed">
-                <span class="font-bold block">Slot Waktu Tidak Tersedia</span>
-                Jam <span class="font-mono font-bold">{{ state.target_time }}</span> yang sebelumnya dipilih
-                sudah tidak tersedia di dock atau tanggal yang baru. Silakan pilih jam lain.
+                <span class="font-bold block">Time Slot Unavailable</span>
+                The previously selected time <span class="font-mono font-bold">{{ state.target_time }}</span>
+                is no longer available for the selected dock or date. Please choose another time.
               </div>
             </div>
 
             <!-- Target Time — disabled sampai dock dipilih, hanya tampilkan slot available -->
-            <UFormField label="Jam Kedatangan (Opsional)" name="target_time">
+            <UFormField label="Arrival Time (Optional)" name="target_time">
               <USelectMenu
                 v-model="state.target_time"
                 :items="availableTimeOptions"
                 class="w-full"
-                :placeholder="!state.dock_id ? 'Pilih Receiving Dock terlebih dahulu' : 'Pilih jam kedatangan'"
+                :placeholder="!state.dock_id ? 'Select a Receiving Dock first' : 'Select arrival time'"
                 :disabled="!state.dock_id"
               >
                 <template #empty>
                   <p class="text-xs text-muted p-2">
-                    {{ !state.dock_id ? 'Pilih dock dulu' : 'Tidak ada slot waktu yang tersedia di dock ini' }}
+                    {{ !state.dock_id ? 'Select a dock first' : 'No time slots available at this dock' }}
                   </p>
                 </template>
               </USelectMenu>
               <p v-if="state.dock_id && availableTimeOptions.length === 0" class="text-[10px] text-red-500 mt-1">
-                Semua slot waktu di dock ini sudah penuh pada tanggal tersebut.
+                All time slots at this dock are fully booked on that date.
               </p>
             </UFormField>
 
             <!-- Vehicle -->
-            <UFormField label="Kendaraan Pengantar" name="vehicle_id">
+            <UFormField label="Delivery Vehicle" name="vehicle_id">
               <USelectMenu
                 v-model="selectedVehicle"
                 :items="store.vehicles"
                 class="w-full"
-                placeholder="Pilih kendaraan"
+                placeholder="Select vehicle"
                 label-key="plate_number"
                 searchable
                 :search-attributes="['plate_number', 'vehicle_code']"
@@ -455,7 +457,7 @@ function close() {
               >
                 <template #label>
                   <span v-if="selectedVehicle" class="text-xs">{{ vehicleLabel(selectedVehicle) }}</span>
-                  <span v-else class="text-muted text-xs">Pilih kendaraan</span>
+                  <span v-else class="text-muted text-xs">Select vehicle</span>
                 </template>
                 <template #option="{ item }">
                   <div class="flex flex-col py-0.5">
@@ -467,36 +469,36 @@ function close() {
                 </template>
                 <template #empty>
                   <p class="text-xs text-muted p-2">
-                    {{ !state.target_date ? 'Isi tanggal dulu untuk melihat kendaraan tersedia' : 'Tidak ada kendaraan tersedia' }}
+                    {{ !state.target_date ? 'Enter a date first to see available vehicles' : 'No vehicles available' }}
                   </p>
                 </template>
               </USelectMenu>
             </UFormField>
 
             <!-- Transporter (nama ekspedisi jika tidak pakai vehicle internal) -->
-            <UFormField label="Nama Transporter / Ekspedisi (Opsional)" name="transporter">
+            <UFormField label="Transporter / Courier Name (Optional)" name="transporter">
               <UInput
                 v-model="state.transporter"
-                placeholder="Contoh: JNE, TIKI, atau nama sopir"
+                placeholder="e.g. JNE, TIKI, or driver name"
                 class="w-full"
               />
             </UFormField>
 
             <!-- Description -->
-            <UFormField label="Deskripsi (Opsional)" name="description">
+            <UFormField label="Description (Optional)" name="description">
               <UTextarea
                 v-model="state.description"
-                placeholder="Deskripsi singkat MDO ini..."
+                placeholder="Brief description of this MDO..."
                 :rows="2"
                 class="w-full"
               />
             </UFormField>
 
             <!-- Remarks -->
-            <UFormField label="Catatan / Remarks (Opsional)" name="remarks">
+            <UFormField label="Notes / Remarks (Optional)" name="remarks">
               <UTextarea
                 v-model="state.remarks"
-                placeholder="Catatan tambahan untuk penerima..."
+                placeholder="Additional notes for the receiver..."
                 :rows="2"
                 class="w-full"
               />
@@ -522,7 +524,7 @@ function close() {
                 <div class="flex justify-between items-center text-xs font-medium">
                   <span class="text-muted flex items-center gap-1">
                     <UIcon name="i-lucide-weight" class="w-3.5 h-3.5" />
-                    Kapasitas Muatan Truk:
+                    Truck Load Capacity:
                   </span>
                   <span
                     v-if="previewWeight.loaded"
@@ -537,7 +539,7 @@ function close() {
                         : 0 }}%)
                     </span>
                   </span>
-                  <span v-else class="text-muted italic text-[10px]">Menghitung…</span>
+                  <span v-else class="text-muted italic text-[10px]">Calculating…</span>
                 </div>
 
                 <!-- Progress bar -->
@@ -558,14 +560,14 @@ function close() {
                   v-if="previewWeight.loaded && isLoadExceeded"
                   class="text-[11px] text-red-600 dark:text-red-400 font-semibold flex items-center gap-1 animate-pulse"
                 >
-                  ⚠️ Muatan Overload! Kurangi item atau ganti kendaraan yang lebih besar.
+                  ⚠️ Overloaded! Reduce items or select a larger vehicle.
                 </p>
                 <!-- OK status -->
                 <p
                   v-else-if="previewWeight.loaded && !isLoadExceeded"
                   class="text-[11px] text-green-700 dark:text-green-400 font-medium flex items-center gap-1"
                 >
-                  ✅ Muatan dalam batas aman kendaraan.
+                  ✅ Load is within vehicle capacity.
                 </p>
               </div>
             </Transition>
@@ -577,10 +579,10 @@ function close() {
             >
               <UIcon name="i-lucide-alert-triangle" class="w-4 h-4 shrink-0 mt-0.5 text-amber-500" />
               <div class="text-xs leading-relaxed">
-                <span class="font-bold block">Peringatan: Data Berat Tidak Lengkap</span>
-                Beberapa barang belum memiliki data berat di sistem (Weight = 0).
-                Perhitungan muatan otomatis mungkin tidak akurat.
-                Harap lengkapi data master Parts sebelum menjadwalkan pengiriman.
+                <span class="font-bold block">Warning: Incomplete Weight Data</span>
+                Some items do not have weight data in the system (Weight = 0).
+                Automatic load calculation may not be accurate.
+                Please complete the Parts master data before scheduling a delivery.
               </div>
             </div>
 
@@ -588,7 +590,7 @@ function close() {
             <div class="p-3 bg-elevated border-b border-default shrink-0 flex items-center justify-between">
               <h4 class="text-sm font-bold text-default flex items-center gap-1.5">
                 <UIcon name="i-lucide-package-2" class="text-primary w-4 h-4" />
-                <span>Detail Parts (dari MPO)</span>
+                <span>Part Details (from MPO)</span>
               </h4>
               <UBadge
                 color="primary"
@@ -596,7 +598,7 @@ function close() {
                 size="xs"
                 class="rounded-full"
               >
-                {{ state.details.filter(d => d.selected).length }} / {{ state.details.length }} dipilih
+                {{ state.details.filter(d => d.selected).length }} / {{ state.details.length }} selected
               </UBadge>
             </div>
 
@@ -604,10 +606,10 @@ function close() {
             <div v-if="!state.mpo_id" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
               <UIcon name="i-lucide-file-search" class="w-10 h-10 text-muted mb-3 opacity-40" />
               <p class="text-xs text-muted font-medium">
-                Pilih MPO terlebih dahulu
+                Select an MPO first
               </p>
               <p class="text-[10px] text-muted/70 mt-1">
-                Parts dari MPO yang dipilih akan muncul di sini.
+                Parts from the selected MPO will appear here.
               </p>
             </div>
 
@@ -615,10 +617,10 @@ function close() {
             <div v-else-if="state.details.length === 0" class="flex-1 flex flex-col items-center justify-center p-6 text-center">
               <UIcon name="i-lucide-check-circle" class="w-10 h-10 text-success-500 mb-3 opacity-70" />
               <p class="text-xs text-muted font-medium">
-                Semua parts sudah terpenuhi
+                All parts fulfilled
               </p>
               <p class="text-[10px] text-muted/70 mt-1">
-                Tidak ada remaining qty pada MPO ini.
+                No remaining qty on this MPO.
               </p>
             </div>
 
@@ -642,13 +644,13 @@ function close() {
                         {{ detail.label }}
                       </p>
                       <p class="text-[10px] text-muted mt-0.5">
-                        Maks: {{ detail.max_qty }} pcs
+                        Max: {{ detail.max_qty }} pcs
                       </p>
 
                       <!-- Notes input per part -->
                       <UInput
                         v-model="state.details[idx].notes"
-                        placeholder="Catatan part (opsional)"
+                        placeholder="Part note (optional)"
                         size="xs"
                         class="mt-2 w-full"
                         :disabled="!state.details[idx].selected"
@@ -657,7 +659,7 @@ function close() {
 
                     <!-- Qty input -->
                     <div class="text-right shrink-0 w-28">
-                      <span class="text-[10px] font-semibold text-muted block mb-1">Qty Kirim</span>
+                      <span class="text-[10px] font-semibold text-muted block mb-1">Qty to Ship</span>
                       <UInput
                         v-model="state.details[idx].qty"
                         type="number"
@@ -705,20 +707,20 @@ function close() {
           /
           <span class="font-mono">{{ previewWeight.vehicle_capacity_kg.toFixed(1) }} kg</span>
         </span>
-        <span v-if="isLoadExceeded" class="font-bold">— Melebihi Kapasitas!</span>
+        <span v-if="isLoadExceeded" class="font-bold">— Exceeds Capacity!</span>
       </div>
 
       <div class="flex gap-2 justify-end w-full">
         <UButton
           color="neutral"
           variant="ghost"
-          label="Batal"
+          label="Cancel"
           @click="close"
         />
         <UButton
           color="warning"
           variant="soft"
-          label="Simpan Draft"
+          label="Save as Draft"
           icon="i-lucide-save"
           :loading="props.loading && state.save_as === 'draft'"
           :disabled="isSubmitDisabled"
@@ -726,7 +728,7 @@ function close() {
         />
         <UButton
           color="primary"
-          label="Jadwalkan (Scheduled)"
+          label="Schedule (Scheduled)"
           icon="i-lucide-calendar-check"
           :loading="props.loading && state.save_as === 'scheduled'"
           :disabled="isSubmitDisabled"

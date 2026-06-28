@@ -8,167 +8,55 @@ import type { Mpo, MpoSourceData } from '../../../../types/material/mpo'
 const formRef = ref()
 const store = useMpoStore()
 
-const props = defineProps<{
-  open: boolean
-  mode: 'add' | 'edit'
-  mpo: Partial<Mpo>
-  loading: boolean
-}>()
+const props = defineProps<{ open: boolean, mode: 'add' | 'edit', mpo: Partial<Mpo>, loading: boolean }>()
+const emit = defineEmits<{ 'update:open': [value: boolean], save: [data: any] }>()
 
-const emit = defineEmits<{
-  'update:open': [value: boolean]
-  save: [data: any]
-}>()
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
 const schema = z.object({
-  description: z.string().optional(),
-  po_date: z.string().min(1, 'PO Date is required'),
-  payment_term: z.string().optional(),
-  remarks: z.string().optional()
+  po_date: z.string().min(1, 'PO Date is required')
 })
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface SourceItem {
-  label: string
-  source_type: 'mrp' | 'mpr'
-  source_id: number
-}
+// ─── Types ───────────────────────────────────────────────────────────────────
 
-// Supplier tersedia untuk satu part (dari relasi M2M as: 'suppliers')
-interface PartSupplier {
+interface SupplierOption {
   id: number
   name: string
-  supplier_code?: string
-  is_primary?: boolean
 }
 
-// Satu item yang sudah masuk ke keranjang MPO
-// qty TIDAK bisa diedit — mutlak mengikuti dokumen source (Strict Source)
-interface CartItem {
+interface ItemSplit {
+  _key: number          // unik per baris, bukan part_id (karena bisa duplikat)
+  supplier_id: number | null
+  qty: number
+}
+
+interface PartItem {
   part_id: number
-  part_number: string
   part_name: string
-  uom_code: string
-  qty: number               // Strict: diisi dari source, tidak bisa diubah user
+  original_qty: number  // qty dari source dokumen, tidak boleh diubah
   price: number
-  notes?: string
-  available_suppliers: PartSupplier[]   // Semua supplier yang bisa handle part ini
+  notes: string | null
+  available_suppliers: SupplierOption[]
+  splits: ItemSplit[]   // 1 atau lebih baris supplier+qty
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const state = reactive<{
-  description: string
-  po_date: string
-  payment_term: string
-  remarks: string
-  save_as_draft: boolean
-  // Supplier Header — 1 MPO = 1 Supplier
-  supplier_id: number | undefined
-  supplier_name: string
-}>({
+// ─── State ───────────────────────────────────────────────────────────────────
+
+let _keyCounter = 0
+function nextKey() { return ++_keyCounter }
+
+const state = reactive({
   description: '',
   po_date: new Date().toISOString().split('T')[0],
   payment_term: '',
   remarks: '',
   save_as_draft: true,
-  supplier_id: undefined,
-  supplier_name: ''
+  parts: [] as PartItem[]
 })
 
-const selectedSource = ref<SourceItem | null>(null)
+const selectedSource = ref<any>(null)
 const loadedSourceData = ref<MpoSourceData | null>(null)
 const isLoadingSource = ref(false)
 
-// Semua part dari source — sebelum filter supplier
-const sourceParts = ref<{
-  part_id: number
-  part_number: string
-  part_name: string
-  uom_code: string
-  qty: number               // qty dari MPR/MRP — STRICT
-  price: number
-  // [M2M] Array supplier yang bisa handle part ini (dari as: 'suppliers')
-  available_suppliers: PartSupplier[]
-  inCart: boolean
-}[]>([])
-
-// Keranjang — hanya part yang sudah diklik "tambah"
-const cartItems = ref<CartItem[]>([])
-
-// ─── Supplier Header dropdown ─────────────────────────────────────────────────
-// Jika keranjang KOSONG  → semua supplier unik dari seluruh sourceParts.
-// Jika keranjang BERISI  → irisan (intersection): hanya supplier yang sanggup
-//   melayani SEMUA item di keranjang sekaligus. Ini mencegah user memilih
-//   supplier yang tidak bisa handle sebagian item yang sudah ada di keranjang.
-const supplierOptions = computed(() => {
-  if (cartItems.value.length === 0) {
-    // Belum ada item — tampilkan semua supplier unik dari source
-    const seen = new Set<number>()
-    const list: PartSupplier[] = []
-    for (const part of sourceParts.value) {
-      for (const s of part.available_suppliers) {
-        if (!seen.has(s.id)) {
-          seen.add(s.id)
-          list.push(s)
-        }
-      }
-    }
-    return list.sort((a, b) => a.name.localeCompare(b.name))
-  }
-
-  // Ada item di keranjang — hitung irisan
-  // Mulai dari available_suppliers item pertama sebagai patokan dasar
-  let validSuppliers: PartSupplier[] = [...(cartItems.value[0].available_suppliers ?? [])]
-
-  // Setiap item berikutnya mempersempit pilihan: hanya pertahankan supplier
-  // yang juga ada di available_suppliers item tersebut
-  for (let i = 1; i < cartItems.value.length; i++) {
-    const nextIds = new Set(
-      (cartItems.value[i].available_suppliers ?? []).map(s => s.id)
-    )
-    validSuppliers = validSuppliers.filter(s => nextIds.has(s.id))
-  }
-
-  return validSuppliers.sort((a, b) => a.name.localeCompare(b.name))
-})
-
-const supplierOptionLabels = computed(() => supplierOptions.value.map(s => s.name))
-
-// ─── Computed: filter panel kiri berdasarkan Supplier Header ─────────────────
-// Part tampil jika state.supplier_id termasuk di dalam available_suppliers-nya
-const filteredSourceParts = computed(() => {
-  if (!state.supplier_id) return sourceParts.value
-  return sourceParts.value.filter(p =>
-    p.available_suppliers.some(s => s.id === state.supplier_id)
-  )
-})
-
-// ─── v-model label untuk USelectMenu Supplier Header ─────────────────────────
-const selectedSupplierLabel = computed({
-  get: () => state.supplier_name,
-  set: (val: string) => {
-    if (!val) {
-      // User clear → lepas filter, reset keranjang
-      state.supplier_id = undefined
-      state.supplier_name = ''
-      for (const p of sourceParts.value) p.inCart = false
-      cartItems.value = []
-      return
-    }
-    const found = supplierOptions.value.find(s => s.name === val)
-    if (found) {
-      state.supplier_id = found.id
-      state.supplier_name = found.name
-      // Ganti supplier → reset keranjang agar tidak tercampur
-      for (const p of sourceParts.value) p.inCart = false
-      cartItems.value = []
-    }
-  }
-})
-
-// ─── Source dropdown ──────────────────────────────────────────────────────────
-const sourceItems = computed<SourceItem[]>(() => store.sourceDropdown as SourceItem[])
+const sourceItems = computed(() => store.sourceDropdown)
 const selectedSourceLabel = computed({
   get: () => selectedSource.value?.label ?? '',
   set: (val: string) => {
@@ -176,478 +64,332 @@ const selectedSourceLabel = computed({
   }
 })
 
-// ─── Sync edit data ───────────────────────────────────────────────────────────
-watch(
-  () => props.mpo,
-  (val) => {
-    state.description = val.description ?? ''
-    state.po_date = val.po_date ?? new Date().toISOString().split('T')[0]
-    state.payment_term = val.payment_term ?? ''
-    state.remarks = val.remarks ?? ''
+// ─── Reset ───────────────────────────────────────────────────────────────────
+
+watch(() => props.open, (isOpen) => {
+  if (isOpen && props.mode === 'add') {
+    selectedSource.value = null
+    loadedSourceData.value = null
+    state.description = ''
+    state.po_date = new Date().toISOString().split('T')[0]
+    state.payment_term = ''
+    state.remarks = ''
     state.save_as_draft = true
-    state.supplier_id = (val as any).supplier_id ?? undefined
-    state.supplier_name = (val as any).supplier?.name ?? ''
-  },
-  { immediate: true, deep: true }
-)
-
-// ─── Reset saat modal dibuka (mode add) ──────────────────────────────────────
-watch(
-  () => props.open,
-  (isOpen) => {
-    if (isOpen && props.mode === 'add') {
-      selectedSource.value = null
-      loadedSourceData.value = null
-      sourceParts.value = []
-      cartItems.value = []
-      state.description = ''
-      state.po_date = new Date().toISOString().split('T')[0]
-      state.payment_term = ''
-      state.remarks = ''
-      state.save_as_draft = true
-      state.supplier_id = undefined
-      state.supplier_name = ''
-      store.fetchDropdownSource()
-    }
+    state.parts = []
+    store.fetchDropdownSource()
   }
-)
+})
 
-// ─── Load source data saat user memilih source ────────────────────────────────
+// ─── Load source data → build parts ──────────────────────────────────────────
+
 watch(selectedSource, async (val) => {
   if (!val) {
     loadedSourceData.value = null
-    sourceParts.value = []
-    cartItems.value = []
-    state.supplier_id = undefined
-    state.supplier_name = ''
+    state.parts = []
     return
   }
-
   isLoadingSource.value = true
   try {
-    const data = await store.loadSourceData(val.source_type, val.source_id)
-    loadedSourceData.value = data
-    cartItems.value = []
-    state.supplier_id = undefined
-    state.supplier_name = ''
+    loadedSourceData.value = await store.loadSourceData(val.source_type, val.source_id)
 
-    if (data?.details) {
-      sourceParts.value = data.details.map((d: any) => ({
-        part_id: d.part_id,
-        part_number: d.part?.part_number ?? '',
-        part_name: d.part?.part_name ?? '',
-        uom_code: d.part?.uom?.code ?? '',
-        qty: d.qty ?? 1,
-        price: d.part?.price ?? 0,
-        // [M2M] Petakan d.part.suppliers (array) → available_suppliers
-        available_suppliers: (d.part?.suppliers ?? []).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          supplier_code: s.supplier_code,
-          is_primary: s.SPartSuppliers?.is_primary ?? s.part_suppliers?.is_primary ?? false
-        })),
-        inCart: false
-      }))
+    if (loadedSourceData.value?.details) {
+      state.parts = (loadedSourceData.value.details as any[])
+        .map(d => {
+          const suppliers: SupplierOption[] = (d.part?.suppliers ?? []).map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            is_primary: s.SPartSuppliers?.is_primary ?? false
+          }))
+
+          const primarySupplier = (suppliers as any[]).find(s => s.is_primary) ?? suppliers[0] ?? null
+
+          return {
+            part_id: d.part_id,
+            part_name: d.part?.part_name ?? '-',
+            original_qty: Number(d.qty),
+            price: d.part?.price || 0,
+            notes: d.notes ?? null,
+            available_suppliers: suppliers,
+            splits: [{
+              _key: nextKey(),
+              supplier_id: primarySupplier?.id ?? null,
+              qty: d.qty  // default: semua qty ke primary supplier
+            }]
+          } as PartItem
+        })
+        .filter(p => p.available_suppliers.length > 0)
     }
   } catch {
     loadedSourceData.value = null
-    sourceParts.value = []
-    cartItems.value = []
-    state.supplier_id = undefined
-    state.supplier_name = ''
+    state.parts = []
   } finally {
     isLoadingSource.value = false
   }
 })
 
-// ─── [UX Cerdas] Tambah part ke keranjang ────────────────────────────────────
-// Jika Supplier Header kosong, auto-set dari primary supplier part (atau pertama).
-// Part ditolak jika supplier yang dipilih di Header bukan bagian dari available_suppliers-nya.
-function addToCart(part: typeof sourceParts.value[0]) {
-  if (part.inCart) return
+// ─── Split helpers ────────────────────────────────────────────────────────────
 
-  // Auto-set Supplier Header dari part pertama yang diklik
-  if (!state.supplier_id && part.available_suppliers.length > 0) {
-    // Preferensikan is_primary, fallback ke index 0
-    const primary = part.available_suppliers.find(s => s.is_primary) ?? part.available_suppliers[0]
-    state.supplier_id = primary.id
-    state.supplier_name = primary.name
-  }
+function addSplit(part: PartItem) {
+  // Ambil supplier yang belum dipakai di splits lain, kalau ada
+  const usedIds = new Set(part.splits.map(s => s.supplier_id))
+  const nextSupplier = part.available_suppliers.find(s => !usedIds.has(s.id)) ?? null
 
-  // Guard: supplier yang aktif harus ada di available_suppliers part ini
-  if (
-    state.supplier_id &&
-    !part.available_suppliers.some(s => s.id === state.supplier_id)
-  ) return
+  // Distribusi ulang qty secara rata ke semua split (termasuk yang baru)
+  const newCount = part.splits.length + 1
+  const baseQty = Math.floor(part.original_qty / newCount)
+  const remainder = part.original_qty - baseQty * newCount
 
-  cartItems.value.push({
-    part_id: part.part_id,
-    part_number: part.part_number,
-    part_name: part.part_name,
-    uom_code: part.uom_code,
-    qty: part.qty,      // STRICT — dikunci dari source
-    price: part.price,
-    available_suppliers: part.available_suppliers
+  part.splits.forEach((s, i) => {
+    s.qty = baseQty + (i < remainder ? 1 : 0)
   })
-  part.inCart = true
+
+  part.splits.push({
+    _key: nextKey(),
+    supplier_id: nextSupplier?.id ?? null,
+    qty: baseQty
+  })
 }
 
-// ─── Hapus part dari keranjang ────────────────────────────────────────────────
-function removeFromCart(partId: number) {
-  cartItems.value = cartItems.value.filter(c => c.part_id !== partId)
-  const sp = sourceParts.value.find(p => p.part_id === partId)
-  if (sp) sp.inCart = false
+function removeSplit(part: PartItem, key: number) {
+  if (part.splits.length <= 1) return // minimal 1 baris
+  part.splits = part.splits.filter(s => s._key !== key)
 
-  // Lepas lock Supplier Header jika keranjang kembali kosong
-  if (cartItems.value.length === 0) {
-    state.supplier_id = undefined
-    state.supplier_name = ''
-  }
+  // Rebalance qty setelah hapus
+  rebalance(part)
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function subtotal(item: CartItem): number {
-  return item.qty * item.price
+function rebalance(part: PartItem) {
+  const n = part.splits.length
+  const base = Math.floor(part.original_qty / n)
+  const rem = part.original_qty - base * n
+  part.splits.forEach((s, i) => {
+    s.qty = base + (i < rem ? 1 : 0)
+  })
 }
 
-const grandTotal = computed(() =>
-  cartItems.value.reduce((sum, item) => sum + subtotal(item), 0)
-)
-
-// Nama supplier dari suatu part untuk ditampilkan di panel kiri
-function supplierNames(part: typeof sourceParts.value[0]): string {
-  if (!part.available_suppliers.length) return '—'
-  return part.available_suppliers
-    .map(s => s.is_primary ? `${s.name} ★` : s.name)
-    .join(', ')
+function clampQty(part: PartItem, split: ItemSplit) {
+  const val = Number(split.qty)
+  // Minimal 1, maksimal sisa qty yang tersedia untuk split ini
+  const otherTotal = part.splits
+    .filter(s => s._key !== split._key)
+    .reduce((sum, s) => sum + (Number(s.qty) || 0), 0)
+  const maxAllowed = part.original_qty - otherTotal
+  split.qty = Math.min(Math.max(val || 1, 1), maxAllowed)
 }
+
+// ─── Validasi per part ────────────────────────────────────────────────────────
+
+function splitTotal(part: PartItem): number {
+  return part.splits.reduce((sum, s) => sum + (Number(s.qty) || 0), 0)
+}
+
+function getSupplierId(val: any): number | null {
+  // USelectMenu v3 dengan value-key bisa return object atau primitive tergantung versi
+  if (val === null || val === undefined) return null
+  if (typeof val === 'object') return val.id ?? null
+  return Number(val)
+}
+
+function isPartValid(part: PartItem): boolean {
+  return (
+    splitTotal(part) === Number(part.original_qty) &&
+    part.splits.every(s => getSupplierId(s.supplier_id) !== null && Number(s.qty) > 0)
+  )
+}
+
+const allValid = computed(() => state.parts.every(isPartValid))
+
+// Supplier yang tersedia untuk satu split = semua supplier MINUS yang sudah dipakai di split lain
+function availableForSplit(part: PartItem, split: ItemSplit): SupplierOption[] {
+  const usedIds = new Set(
+    part.splits
+      .filter(s => s._key !== split._key)
+      .map(s => getSupplierId(s.supplier_id))
+      .filter(id => id !== null)
+  )
+  return part.available_suppliers.filter(s => !usedIds.has(s.id))
+}
+
+// ─── Preview MPO count ────────────────────────────────────────────────────────
+
+const dynamicMpoCount = computed(() => {
+  const ids = new Set<number>()
+  state.parts.forEach(p => p.splits.forEach(s => { if (s.supplier_id) ids.add(s.supplier_id) }))
+  return ids.size
+})
 
 // ─── Submit ───────────────────────────────────────────────────────────────────
-function submitForm() {
-  formRef.value?.submit()
-}
 
-function onSubmit(event: FormSubmitEvent<any>) {
+function onSubmit(_event: FormSubmitEvent<any>) {
   if (props.mode === 'add') {
-    emit('save', {
-      source_type: selectedSource.value?.source_type ?? undefined,
-      source_id: selectedSource.value?.source_id ?? undefined,
-      supplier_id: state.supplier_id,
-      description: event.data.description || undefined,
-      po_date: state.po_date,
-      payment_term: state.payment_term || undefined,
-      remarks: state.remarks || undefined,
-      action: state.save_as_draft ? 'draft' : 'submit',
-      details: cartItems.value.map(d => ({
-        part_id: d.part_id,
-        qty: d.qty,
-        price: d.price,
-        notes: d.notes
+    // Flatten semua splits ke flat items array yang backend sudah handle
+    const items = state.parts.flatMap(p =>
+      p.splits.map(s => ({
+        part_id: p.part_id,
+        qty: Number(s.qty),
+        price: p.price,
+        notes: p.notes,
+        supplier_id: getSupplierId(s.supplier_id)
       }))
-    })
-  } else {
+    )
+
     emit('save', {
-      supplier_id: state.supplier_id || undefined,
-      description: event.data.description || undefined,
+      isAutoGenerate: true,
+      source_type: selectedSource.value?.source_type,
+      source_id: selectedSource.value?.source_id,
+      description: state.description || undefined,
       po_date: state.po_date,
       payment_term: state.payment_term || undefined,
       remarks: state.remarks || undefined,
       action: state.save_as_draft ? 'draft' : 'submit',
+      items
     })
   }
-}
-
-function close() {
-  emit('update:open', false)
 }
 </script>
 
 <template>
-  <UModal
-    :open="props.open"
-    :title="props.mode === 'add' ? 'Create MPO' : 'Edit MPO'"
-    :description="props.mode === 'add'
-      ? 'Create a new Material Purchase Order.'
-      : 'Update MPO header information.'"
-    class="sm:max-w-5xl"
-    @update:open="emit('update:open', $event)"
-  >
+  <UModal :open="props.open" :title="'Auto-Generate MPO'" class="sm:max-w-3xl" @update:open="emit('update:open', $event)">
     <template #body>
-      <UForm
-        ref="formRef"
-        :schema="schema"
-        :state="state"
-        class="space-y-5"
-        @submit="onSubmit"
-      >
-        <!-- ── Source Dropdown (Add only) ──────────────────────────────────── -->
+      <UForm ref="formRef" :schema="schema" :state="state" class="space-y-5" @submit="onSubmit">
+
         <template v-if="mode === 'add'">
-          <UFormField label="Source (MRP / MPR)" name="source">
-            <USelectMenu
-              v-model="selectedSourceLabel"
-              :items="sourceItems.map(s => s.label)"
-              class="w-full"
-              placeholder="Pilih dokumen MRP atau MPR..."
-              searchable
-              clear
-            />
+          <UFormField label="Source Document (MRP / MPR)" name="source">
+            <USelectMenu v-model="selectedSourceLabel" :items="sourceItems.map(s => s.label)" class="w-full" placeholder="Select source document..." searchable clear />
           </UFormField>
 
-          <!-- Loading indicator -->
-          <div v-if="isLoadingSource" class="flex items-center gap-2 text-sm text-muted">
-            <UIcon name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
-            Memuat item dari dokumen sumber...
-          </div>
+          <div v-if="isLoadingSource" class="text-sm text-muted animate-pulse">Loading data...</div>
 
-          <!-- ── Supplier Header (muncul setelah source dipilih) ───────────── -->
-          <template v-if="loadedSourceData && !isLoadingSource">
-            <UFormField label="Supplier" name="supplier_id">
-              <template #hint>
-                <span class="text-xs text-muted">
-                  1 MPO = 1 Supplier. Panel kiri otomatis terfilter.
-                </span>
-              </template>
-              <USelectMenu
-                v-model="selectedSupplierLabel"
-                :items="supplierOptionLabels"
-                class="w-full"
-                placeholder="Pilih supplier atau klik Tambah pada part..."
-                searchable
-                clear
+          <div v-if="state.parts.length > 0" class="p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 rounded-xl space-y-3">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-lucide-zap" class="w-5 h-5 text-primary" />
+              <h3 class="font-bold text-primary-700">
+                Determine Supplier (Automatically split into {{ dynamicMpoCount }} MPO)
+              </h3>
+            </div>
+
+            <div class="max-h-96 overflow-y-auto pr-1 space-y-3">
+              <!-- ── Per Part ── -->
+              <div
+                v-for="part in state.parts"
+                :key="part.part_id"
+                class="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-default"
+                :class="!isPartValid(part) ? 'border-error-400' : ''"
               >
-                <template #leading>
-                  <UIcon name="i-lucide-building-2" class="w-4 h-4 text-muted" />
-                </template>
-              </USelectMenu>
-            </UFormField>
-          </template>
-
-          <!-- ── Dua kolom: Daftar Part (kiri) | Keranjang MPO (kanan) ─────── -->
-          <div v-if="loadedSourceData && !isLoadingSource" class="grid grid-cols-2 gap-4">
-            <!-- KIRI: Daftar Part dari Source -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between gap-2">
-                <p class="text-xs font-semibold text-muted uppercase tracking-wide">
-                  Part dari {{ loadedSourceData.source_number }}
-                </p>
-                <UBadge
-                  v-if="state.supplier_id"
-                  color="warning"
-                  variant="subtle"
-                  size="xs"
-                  icon="i-lucide-filter"
-                >
-                  Filter: {{ state.supplier_name }}
-                </UBadge>
-              </div>
-              <div class="border border-default rounded-lg overflow-hidden">
-                <div
-                  v-for="part in filteredSourceParts"
-                  :key="part.part_id"
-                  class="flex items-center justify-between gap-2 px-3 py-2 border-b border-default last:border-0 hover:bg-elevated/30 transition-colors"
-                  :class="part.inCart ? 'opacity-40' : ''"
-                >
-                  <div class="min-w-0 flex-1">
-                    <p class="text-xs font-medium truncate">
-                      {{ part.part_number }}
-                    </p>
-                    <p class="text-xs text-muted truncate">
-                      {{ part.part_name }}
-                    </p>
-                    <p class="text-xs text-muted/70 mt-0.5">
-                      Qty: <span class="font-semibold">{{ part.qty }} {{ part.uom_code }}</span>
-                    </p>
-                    <!-- [M2M] Tampilkan semua nama supplier, primary diberi bintang -->
-                    <p class="text-xs text-muted/70 mt-0.5 truncate" :title="supplierNames(part)">
-                      Supplier: <span class="font-medium">{{ supplierNames(part) }}</span>
+                <!-- Part header -->
+                <div class="flex items-center justify-between px-3 py-2 border-b border-default">
+                  <div>
+                    <p class="font-semibold text-sm">{{ part.part_name }}</p>
+                    <p class="text-xs text-muted">
+                      Total: {{ part.original_qty }} pcs
+                      <span
+                        class="ml-2 font-medium"
+                        :class="splitTotal(part) === part.original_qty ? 'text-success-600' : 'text-error-500'"
+                      >
+                        (split: {{ splitTotal(part) }} / {{ part.original_qty }})
+                      </span>
                     </p>
                   </div>
+                  <!-- Tombol split hanya muncul kalau masih ada supplier lain yang belum dipakai -->
                   <UButton
+                    v-if="part.splits.length < part.available_suppliers.length"
                     size="xs"
-                    :icon="part.inCart ? 'i-lucide-check' : 'i-lucide-plus'"
-                    :color="part.inCart ? 'success' : 'primary'"
-                    variant="soft"
-                    :disabled="part.inCart"
-                    :title="part.inCart ? 'Sudah ditambahkan' : 'Tambah ke MPO'"
-                    @click="addToCart(part)"
+                    color="neutral"
+                    variant="ghost"
+                    icon="i-lucide-git-branch"
+                    label="Split"
+                    @click="addSplit(part)"
                   />
                 </div>
-                <div v-if="filteredSourceParts.length === 0" class="p-4 text-center text-xs text-muted">
-                  <template v-if="state.supplier_id">
-                    Tidak ada part lain dari supplier ini.
-                  </template>
-                  <template v-else>
-                    Tidak ada part ditemukan.
-                  </template>
-                </div>
-              </div>
-            </div>
 
-            <!-- KANAN: Keranjang MPO -->
-            <div class="space-y-2">
-              <div class="flex items-center justify-between">
-                <p class="text-xs font-semibold text-muted uppercase tracking-wide">
-                  Item MPO
-                </p>
-                <UBadge color="primary" variant="subtle" size="xs">
-                  {{ cartItems.length }} item
-                </UBadge>
-              </div>
-
-              <!-- Info supplier Header (read-only di keranjang) -->
-              <div
-                v-if="cartItems.length > 0"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
-              >
-                <UIcon name="i-lucide-building-2" class="w-3.5 h-3.5 text-primary shrink-0" />
-                <p class="text-xs text-primary-700 dark:text-primary-300">
-                  Supplier: <span class="font-semibold">{{ state.supplier_name }}</span>
-                </p>
-              </div>
-
-              <div class="border border-default rounded-lg overflow-hidden">
-                <div v-if="cartItems.length === 0" class="p-4 text-center text-xs text-muted">
-                  Klik <UIcon name="i-lucide-plus" class="inline w-3 h-3" /> pada part di kiri untuk menambahkan.
-                </div>
-
-                <div
-                  v-for="item in cartItems"
-                  :key="item.part_id"
-                  class="border-b border-default last:border-0 px-3 py-2"
-                >
-                  <div class="flex items-start justify-between gap-2 mb-1.5">
-                    <div class="min-w-0 flex-1">
-                      <p class="text-xs font-medium truncate">
-                        {{ item.part_number }}
-                      </p>
-                      <p class="text-xs text-muted truncate">
-                        {{ item.part_name }}
-                      </p>
+                <!-- Split rows -->
+                <div class="divide-y divide-default">
+                  <div
+                    v-for="split in part.splits"
+                    :key="split._key"
+                    class="flex items-center gap-3 px-3 py-2"
+                  >
+                    <!-- Supplier dropdown -->
+                    <div class="flex-1">
+                      <USelectMenu
+                        v-model="split.supplier_id"
+                        :items="availableForSplit(part, split)"
+                        value-key="id"
+                        label-key="name"
+                        placeholder="Select supplier..."
+                        class="w-full"
+                        size="sm"
+                      />
                     </div>
+
+                    <!-- Qty input -->
+                    <div class="w-28">
+                      <UInput
+                        v-model.number="split.qty"
+                        type="number"
+                        :min="1"
+                        :max="part.original_qty"
+                        size="sm"
+                        class="w-full"
+                        placeholder="Qty"
+                        @change="clampQty(part, split)"
+                        @blur="clampQty(part, split)"
+                      />
+                    </div>
+
+                    <!-- Hapus split (hanya kalau lebih dari 1 baris) -->
                     <UButton
-                      icon="i-lucide-trash-2"
+                      v-if="part.splits.length > 1"
+                      size="xs"
                       color="error"
                       variant="ghost"
-                      size="xs"
-                      @click="removeFromCart(item.part_id)"
+                      icon="i-lucide-x"
+                      @click="removeSplit(part, split._key)"
                     />
+                    <!-- Spacer supaya layout tidak geser saat tombol hapus tidak muncul -->
+                    <div v-else class="w-7 shrink-0" />
                   </div>
-
-                  <!-- [STRICT SOURCE] Qty, Price, Subtotal — semua read-only -->
-                  <div class="flex gap-2">
-                    <!-- Qty — teks statis + ikon gembok -->
-                    <div class="flex-1">
-                      <p class="text-xs text-muted mb-0.5">Qty ({{ item.uom_code }})</p>
-                      <div class="flex items-center h-8 px-2.5 rounded-md border border-default bg-elevated/60 text-xs font-semibold text-highlighted">
-                        {{ item.qty }}
-                        <UIcon
-                          name="i-lucide-lock"
-                          class="w-3 h-3 ml-1.5 text-muted/60 shrink-0"
-                          title="Qty dikunci dari dokumen source"
-                        />
-                      </div>
-                    </div>
-
-                    <!-- Price/Pcs — read-only -->
-                    <div class="flex-1">
-                      <p class="text-xs text-muted mb-0.5">Price/Pcs</p>
-                      <div class="flex items-center h-8 px-2.5 rounded-md border border-default bg-elevated/40 text-xs text-highlighted opacity-70">
-                        {{ item.price.toLocaleString('id-ID') }}
-                      </div>
-                    </div>
-
-                    <!-- Subtotal = qty × price -->
-                    <div class="flex-1">
-                      <p class="text-xs text-muted mb-0.5">Subtotal</p>
-                      <div class="flex items-center h-8 px-2.5 rounded-md border border-default bg-elevated/40 text-xs font-semibold text-highlighted whitespace-nowrap overflow-hidden">
-                        {{ subtotal(item).toLocaleString('id-ID') }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Grand Total -->
-                <div
-                  v-if="cartItems.length > 0"
-                  class="flex items-center justify-between px-3 py-2 bg-elevated/50 border-t border-default"
-                >
-                  <p class="text-xs text-muted font-medium">Total</p>
-                  <p class="text-xs font-bold text-primary-600 dark:text-primary-400">
-                    {{ grandTotal.toLocaleString('id-ID') }}
-                  </p>
                 </div>
               </div>
             </div>
-          </div>
-        </template>
 
-        <!-- ── Supplier Header (Edit mode) ────────────────────────────────── -->
-        <template v-if="mode === 'edit'">
-          <UFormField label="Supplier" name="supplier_id">
-            <USelectMenu
-              v-model="selectedSupplierLabel"
-              :items="store.supplierDropdown?.map((s: any) => s.name) ?? []"
-              class="w-full"
-              placeholder="Pilih supplier..."
-              searchable
-            >
-              <template #leading>
-                <UIcon name="i-lucide-building-2" class="w-4 h-4 text-muted" />
-              </template>
-            </USelectMenu>
-          </UFormField>
-        </template>
-
-        <!-- ── PO Date & Payment Term ───────────────────────────────────────── -->
-        <div class="grid grid-cols-2 gap-4">
-          <UFormField label="PO Date" name="po_date" required>
-            <UInput v-model="state.po_date" type="date" class="w-full" />
-          </UFormField>
-          <UFormField label="Payment Term" name="payment_term">
-            <UInput v-model="state.payment_term" placeholder="e.g. Net 30" class="w-full" />
-          </UFormField>
-        </div>
-
-        <UFormField label="Description" name="description">
-          <UInput v-model="state.description" placeholder="Enter PO description..." class="w-full" />
-        </UFormField>
-
-        <UFormField label="Remarks" name="remarks">
-          <UTextarea
-            v-model="state.remarks"
-            placeholder="Additional remarks..."
-            class="w-full"
-            rows="2"
-          />
-        </UFormField>
-
-        <!-- ── Save mode toggle ────────────────────────────────────────────── -->
-        <div class="flex items-center gap-3 pt-1">
-          <UCheckbox v-model="state.save_as_draft" />
-          <div>
-            <p class="text-sm font-medium">Save as Draft</p>
-            <p class="text-xs text-muted">
-              Uncheck to directly submit to Supervisor for review.
+            <!-- Warning kalau ada part yang belum valid -->
+            <p v-if="!allValid" class="text-xs text-error-500 flex items-center gap-1">
+              <UIcon name="i-lucide-triangle-alert" class="w-3.5 h-3.5" />
+              Make sure the total qty for each part is fully distributed and all suppliers are selected.
             </p>
           </div>
+
+          <div v-else-if="loadedSourceData && state.parts.length === 0" class="p-4 text-center text-error border border-error-200 rounded-xl bg-error-50">
+            All materials from this document have already been purchased.
+          </div>
+        </template>
+
+        <div class="grid grid-cols-2 gap-4">
+          <UFormField label="PO Date" name="po_date" required><UInput v-model="state.po_date" type="date" class="w-full" /></UFormField>
+          <UFormField label="Payment Term" name="payment_term"><UInput v-model="state.payment_term" placeholder="e.g. Net 30" class="w-full" /></UFormField>
+        </div>
+
+        <UFormField label="Description" name="description"><UInput v-model="state.description" placeholder="Optional description..." class="w-full" /></UFormField>
+        <UFormField label="Remarks" name="remarks"><UTextarea v-model="state.remarks" placeholder="Optional remarks..." class="w-full" rows="2" /></UFormField>
+
+        <div class="flex items-center gap-3 pt-1">
+          <UCheckbox v-model="state.save_as_draft" />
+          <div><p class="text-sm font-medium">Save as Draft</p><p class="text-xs text-muted">Uncheck to submit directly to Supervisor.</p></div>
         </div>
       </UForm>
     </template>
 
     <template #footer>
       <div class="flex gap-2 justify-end w-full">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          label="Cancel"
-          @click="close"
-        />
+        <UButton color="neutral" variant="ghost" label="Cancel" @click="emit('update:open', false)" />
         <UButton
           color="primary"
-          :label="state.save_as_draft ? 'Save as Draft' : 'Submit'"
-          :icon="state.save_as_draft ? 'i-lucide-save' : 'i-lucide-send'"
+          :label="state.save_as_draft ? 'Generate Drafts' : 'Generate & Submit'"
+          icon="i-lucide-zap"
           :loading="props.loading"
-          @click="submitForm"
+          :disabled="mode === 'add' && (state.parts.length === 0 || !allValid)"
+          @click="formRef?.submit()"
         />
       </div>
     </template>
