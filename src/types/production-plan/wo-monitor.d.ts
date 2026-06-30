@@ -3,11 +3,16 @@ import type { WorkOrderStatus, IssueType, IssueSeverity } from './work-order'
 export type WOHealth = 'not_started' | 'on_track' | 'at_risk' | 'critical' | 'completed'
 
 export interface MonitorIssue {
-  id:                number
-  issue_type:        IssueType
-  severity?:         IssueSeverity | null
-  reported_time:     string
-  issue_description: string
+  id:                 number
+  wo_station_id:      number
+  station_name?:      string | null
+  station_code?:      string | null
+  wo_station_number?: string | null
+  issue_type:         IssueType
+  severity?:          IssueSeverity | null
+  reported_time:      string
+  issue_description:  string
+  paused_at?:         string | null
 }
 
 export interface MonitorWO {

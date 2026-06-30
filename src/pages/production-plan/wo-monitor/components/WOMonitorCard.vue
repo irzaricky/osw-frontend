@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import type { MonitorWO, WOHealth } from '../../../../types/production-plan/wo-monitor'
 
 const props = defineProps<{ wo: MonitorWO }>()
 
-const router = useRouter()
+const emit = defineEmits<{
+  'select': [wo: MonitorWO]
+}>()
 
 const HEALTH_CONFIG: Record<WOHealth, { border: string; badge: string; color: string; label: string }> = {
   not_started: { border: 'border-default',          badge: 'neutral', color: 'text-muted',        label: 'Not Started' },
@@ -37,9 +38,8 @@ function fmtTime(d?: string | null) {
       config.border,
       wo.health === 'critical' ? 'shadow-error-100 dark:shadow-error-900/30 shadow-md' : '',
     ]"
-    @click="router.push(`/production-plan/work-order/${wo.id}`)"
+    @click="emit('select', wo)"
   >
-    <!-- Card Header -->
     <div class="flex items-start justify-between px-4 pt-4 pb-2 gap-2">
       <div class="min-w-0">
         <p class="text-xs font-mono text-muted truncate">{{ wo.line?.name ?? '-' }}</p>
@@ -57,7 +57,6 @@ function fmtTime(d?: string | null) {
       </div>
     </div>
 
-    <!-- Progress Bar -->
     <div class="px-4 pb-2">
       <div class="flex items-center justify-between mb-1">
         <span class="text-xs text-muted">Progress</span>
@@ -74,7 +73,6 @@ function fmtTime(d?: string | null) {
       </div>
     </div>
 
-    <!-- Metrics -->
     <div class="grid grid-cols-3 border-t border-default divide-x divide-default">
       <div class="px-3 py-2 text-center">
         <p class="text-xs text-muted">Good</p>
@@ -94,7 +92,6 @@ function fmtTime(d?: string | null) {
       </div>
     </div>
 
-    <!-- Footer -->
     <div class="flex items-center justify-between px-4 py-2.5 border-t border-default text-xs text-muted">
       <div class="flex items-center gap-1">
         <UIcon name="i-lucide-clock" class="w-3 h-3" />

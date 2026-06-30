@@ -50,6 +50,7 @@ export interface WorkOrderStation {
   completed_at?:     string | null
   notes?:            string | null  // new
   station?:          { id: number; station_code: string; name: string; sequence: number }
+  open_issue_count?: number
 }
 
 export interface WorkOrderStationDetail extends WorkOrderStation {

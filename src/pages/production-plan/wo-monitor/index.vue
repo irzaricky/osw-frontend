@@ -2,22 +2,29 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { storeToRefs }              from 'pinia'
 import { useWorkOrderMonitorStore } from '../../../stores/production-plan/wo-monitor.store'
-import type { WOHealth }            from '../../../types/production-plan/wo-monitor'
+import { useAppToast }              from '../../../composables/useAppToast'
+import type { WOHealth, MonitorWO } from '../../../types/production-plan/wo-monitor'
 
 import Breadcrumbs         from '../../../components/Breadcrumbs.vue'
 import WOMonitorSummaryBar from './components/WOMonitorSummaryBar.vue'
 import WOMonitorCard       from './components/WOMonitorCard.vue'
 import WOMonitorFilters    from './components/WOMonitorFilters.vue'
+import WOResolveIssueModal from './components/WOResolveIssueModal.vue'
 
 const store = useWorkOrderMonitorStore()
-const { summary, workOrders, loading, lastFetched } = storeToRefs(store)
+const { summary, workOrders, loading, saving, lastFetched } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
-// Otomatis set ke hari ini saat halaman dibuka
 const today = new Date()
-const workDate = ref(
-  `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
-)
+const workDate     = ref(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`)
 const filterHealth = ref<WOHealth | undefined>(undefined)
+
+const showResolveModal = ref(false)
+const activeWoId       = ref<number | null>(null)
+
+const activeWo = computed<MonitorWO | null>(() =>
+  workOrders.value.find((w) => w.id === activeWoId.value) ?? null,
+)
 
 const REFRESH_INTERVAL = 60_000
 let refreshTimer: ReturnType<typeof setInterval> | null = null
@@ -56,6 +63,35 @@ const lastFetchedLabel = computed(() => {
     hour12: false,
   })}`
 })
+
+function openResolveModal(wo: MonitorWO) {
+  activeWoId.value       = wo.id
+  showResolveModal.value = true
+}
+
+async function handleResolveIssue(payload: {
+  woStationId:           number
+  issueId:               number
+  resolution:            string
+  resolvedBy:            number
+  resumedBy?:            number
+  resumedAt?:            string | null
+  pauseDurationMinutes?: number | null
+}) {
+  if (!activeWoId.value) return
+  try {
+    const res = await store.resolveIssue(activeWoId.value, payload.woStationId, payload.issueId, {
+      resolution:             payload.resolution,
+      resolved_by:            payload.resolvedBy,
+      resumed_by:             payload.resumedBy ?? null,
+      resumed_at:             payload.resumedAt ?? null,
+      pause_duration_minutes: payload.pauseDurationMinutes ?? null,
+    })
+    toastSuccess(res?.message || 'Issue resolved')
+  } catch (e) {
+    toastError(e)
+  }
+}
 
 watch(workDate, fetchData)
 
@@ -143,12 +179,12 @@ onUnmounted(() => {
                 <UBadge :label="`${wos.length} WO`" color="neutral" variant="soft" size="xs" />
               </div>
 
-              <!-- 3 kolom saja di semua breakpoint -->
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <WOMonitorCard
                   v-for="wo in wos"
                   :key="wo.id"
                   :wo="wo"
+                  @select="openResolveModal"
                 />
               </div>
             </div>
@@ -159,6 +195,13 @@ onUnmounted(() => {
           <UIcon name="i-lucide-monitor-x" class="w-10 h-10" />
           <p class="text-sm">No data available. Select a date to load monitor data.</p>
         </div>
+
+        <WOResolveIssueModal
+          v-model:open="showResolveModal"
+          :wo="activeWo"
+          :saving="saving"
+          @resolve="handleResolveIssue"
+        />
       </div>
     </template>
   </UDashboardPanel>

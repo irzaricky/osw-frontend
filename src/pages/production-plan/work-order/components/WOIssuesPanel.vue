@@ -115,7 +115,7 @@ function fmtDateTime(d?: string | null) {
             </div>
           </div>
 
-          <UButton
+          <!-- <UButton
             v-if="!issue.resolved_time"
             label="Resolve"
             icon="i-lucide-check"
@@ -124,7 +124,7 @@ function fmtDateTime(d?: string | null) {
             size="xs"
             :loading="saving"
             @click="emit('resolve', issue.id)"
-          />
+          /> -->
         </div>
       </div>
     </div>

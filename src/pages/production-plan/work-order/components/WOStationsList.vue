@@ -98,6 +98,18 @@ function progressPct(station: WorkOrderStation): number {
         </div>
       </div>
 
+      <!-- Issue indicator -->
+      <div
+        v-if="station.open_issue_count ?? 0 > 0"
+        class="flex items-center gap-1.5 text-xs font-semibold text-error-600 flex-shrink-0"
+      >
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error-400 opacity-75" />
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-error-500" />
+        </span>
+        {{ station.open_issue_count }} issue{{ station.open_issue_count ?? 1 ? 's' : '' }}
+      </div>
+
       <UBadge
         :label="station.status.replace('_', ' ')"
         :color="STATION_STATUS_COLOR[station.status]"
