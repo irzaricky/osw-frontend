@@ -53,7 +53,7 @@ function fmtTime(d?: string | null) {
           variant="subtle"
           size="xs"
         />
-        <span v-if="wo.stage" class="text-xs text-muted">Stage {{ wo.stage }}</span>
+        <span v-if="wo.shift?.name" class="text-xs text-muted">{{ wo.shift.name }}</span>
       </div>
     </div>
 

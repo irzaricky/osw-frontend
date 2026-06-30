@@ -76,6 +76,15 @@ export function useWorkOrderColumns(
         h('span', { class: 'text-sm' }, fmtDate(row.original.work_date)),
     },
     {
+      accessorKey: 'shift',
+      header:      'Shift',
+      cell:        ({ row }) =>
+        h('div', [
+          h('div', { class: 'text-sm' }, row.original.shift?.name ?? '-'),
+          h('div', { class: 'text-xs text-muted' }, `${row.original.shift?.start_time ?? '-'} - ${row.original.shift?.end_time ?? '-'}`),
+        ]),
+    },
+    {
       id:     'qty',
       header: 'Qty (Plan / Actual)',
       cell:   ({ row }) => {

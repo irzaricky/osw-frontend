@@ -6,7 +6,6 @@ import { useDebounceFn }      from '@vueuse/core'
 import { useWorkOrderStore }  from '../../../stores/production-plan/work-order.store'
 import { useWorkOrderColumns } from './composables/useWorkOrderColumns'
 import { useWorkOrderActions } from './composables/useWorkOrderActions'
-import { useAppToast }        from '../../../composables/useAppToast'
 import type { WorkOrder, WorkOrderStatus } from '../../../types/production-plan/work-order'
 import type { Range }         from '../../../types'
 import Breadcrumbs    from '../../../components/Breadcrumbs.vue'
@@ -33,8 +32,6 @@ const pagination = computed(() => ({ page: meta.value.page, limit: meta.value.li
 const selectedCount = computed((): number =>
   (table.value as any)?.tableApi?.getFilteredSelectedRowModel().rows.length || 0,
 )
-
-// ── Filters ───────────────────────────────────────────────────────────────────
 
 const search = ref('')
 
@@ -63,8 +60,6 @@ function resetFilters() {
   fetchData()
 }
 
-// ── Fetch ─────────────────────────────────────────────────────────────────────
-
 async function fetchData() {
   const params: Record<string, any> = {
     page:    meta.value.page,
@@ -76,7 +71,6 @@ async function fetchData() {
   }
   if (filters.date_range?.start) params.start_date = formatLocalDate(filters.date_range.start)
   if (filters.date_range?.end)   params.end_date   = formatLocalDate(filters.date_range.end)
-
   await woStore.fetchWorkOrders(params)
 }
 
@@ -85,15 +79,12 @@ const debouncedFetch = useDebounceFn(() => {
   fetchData()
 }, 300)
 
-// ── Summary ───────────────────────────────────────────────────────────────────
-
-const summaryDate = ref(new Date().toISOString().split('T')[0])
+// summaryDate default ke hari ini — auto-refresh saat tanggal berubah
+const summaryDate = ref(formatLocalDate(today))
 
 async function refreshSummary() {
   await woStore.fetchDailySummary({ work_date: summaryDate.value })
 }
-
-// ── Actions ───────────────────────────────────────────────────────────────────
 
 const { confirm, handleStart } = useWorkOrderActions(() => fetchData())
 
@@ -106,19 +97,15 @@ const { columns } = useWorkOrderColumns(
   pagination,
 )
 
-// ── Watchers ──────────────────────────────────────────────────────────────────
-
-watch(search, () => debouncedFetch())
-watch(filters, () => { meta.value.page = 1; fetchData() }, { deep: true })
-watch(summaryDate, refreshSummary)
-
-// ── Breadcrumbs ───────────────────────────────────────────────────────────────
-
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
   { label: 'Production Plan' },
   { label: 'Work Orders' },
 ]
+
+watch(search, () => debouncedFetch())
+watch(filters, () => { meta.value.page = 1; fetchData() }, { deep: true })
+watch(summaryDate, refreshSummary)
 
 onMounted(async () => {
   await Promise.all([fetchData(), refreshSummary()])
@@ -146,6 +133,7 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- WODailySummary sekarang hanya terima workDate — shift dan stage dihapus -->
         <WODailySummary
           v-model:work-date="summaryDate"
           :summary="dailySummary"
@@ -183,9 +171,9 @@ onMounted(async () => {
         </div>
 
         <div class="flex items-center justify-between gap-3 border-t border-default pt-4">
-          <p class="text-sm text-muted">
-            Total {{ meta.total }} work order(s).
-          </p>
+          <div class="text-sm text-muted">
+            {{ meta.total === 0 ? '0' : ((meta.page - 1) * meta.limit) + 1 }}–{{ Math.min(meta.page * meta.limit, meta.total) }} of {{ meta.total }} row(s)
+          </div>
           <UPagination
             v-model:page="meta.page"
             :total="meta.total"

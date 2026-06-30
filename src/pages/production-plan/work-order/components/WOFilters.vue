@@ -74,16 +74,5 @@ const hasActiveFilters = computed(() =>
       class="w-full md:w-64 ml-auto"
       @update:model-value="emit('update:search', $event as string)"
     />
-
-    <UButton
-      v-if="hasActiveFilters"
-      label="Reset"
-      icon="i-lucide-x"
-      color="neutral"
-      variant="ghost"
-      size="sm"
-      @click="emit('reset')"
-    />
-
   </div>
 </template>

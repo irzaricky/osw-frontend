@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import type { PlanDetail, CalendarDayPreview, AdjustmentType, CalendarAdjustment } from '../../../../types/production-plan/plan'
 
 const props = defineProps<{
@@ -232,14 +232,12 @@ const dayModal = reactive({
   shiftInputs: [] as ShiftInputRow[],
 })
 
-function openDayModal(day: CalendarDayPreview) {
-  if (!props.isEditable) return
-
+function buildShiftInputs(day: CalendarDayPreview): ShiftInputRow[] {
   const usedShifts   = getUsedShiftNumbersOnDay(day)
   const otByShift    = existingOtByShiftOnDay(day)
   const otAdjByShift = existingOtAdjustmentByShiftOnDay(day)
 
-  dayModal.shiftInputs = allShiftGroups.value.map(s => ({
+  return allShiftGroups.value.map(s => ({
     shift_number:      s.shift_number,
     name:              s.name,
     isAlreadyActive:   usedShifts.has(s.shift_number),
@@ -248,7 +246,32 @@ function openDayModal(day: CalendarDayPreview) {
     existingOtMinutes: otByShift.get(s.shift_number) ?? 0,
     existingOtAdjId:   otAdjByShift.get(s.shift_number)?.id ?? null,
   }))
+}
 
+// Sync existing rows in-place so pending user input (addShift/overtimeMinutes
+// on OTHER shifts) is not reset, only the fields derived from server data.
+function syncShiftInputsFromDay(day: CalendarDayPreview) {
+  const fresh = buildShiftInputs(day)
+  for (const freshRow of fresh) {
+    const existing = dayModal.shiftInputs.find(r => r.shift_number === freshRow.shift_number)
+    if (!existing) {
+      dayModal.shiftInputs.push(freshRow)
+      continue
+    }
+    existing.isAlreadyActive   = freshRow.isAlreadyActive
+    existing.existingOtMinutes = freshRow.existingOtMinutes
+    existing.existingOtAdjId   = freshRow.existingOtAdjId
+    // Shift just got removed -> also clear any stale pending overtime input
+    if (!existing.isAlreadyActive) {
+      existing.overtimeMinutes = existing.addShift ? existing.overtimeMinutes : null
+    }
+  }
+}
+
+function openDayModal(day: CalendarDayPreview) {
+  if (!props.isEditable) return
+
+  dayModal.shiftInputs = buildShiftInputs(day)
   dayModal.day    = day
   dayModal.reason = ''
   dayModal.open   = true
@@ -393,6 +416,13 @@ function requestDelete(adjId: number, date: string) {
   confirmDeleteId.value  = adjId
   confirmDeleteDay.value = date
 }
+
+// Keep shiftInputs reactive to changes in calendarPreview while the modal is open
+watch(activeDay, (newDay) => {
+  if (newDay && dayModal.open) {
+    syncShiftInputsFromDay(newDay)
+  }
+})
 </script>
 
 <template>
@@ -924,29 +954,29 @@ function requestDelete(adjId: number, date: string) {
             <p class="text-xs font-semibold text-muted uppercase tracking-wide">Day Status</p>
             <div class="flex flex-wrap gap-2">
               <UBadge
-                :label="getDayStatusLabel(dayModal.day)"
-                :color="dayModal.day.master_status === 'WORKING_DAY' ? 'success' : dayModal.day.master_status === 'HOLIDAY' ? 'error' : 'neutral'"
+                :label="getDayStatusLabel(activeDay!)"
+                :color="activeDay!.master_status === 'WORKING_DAY' ? 'success' : activeDay!.master_status === 'HOLIDAY' ? 'error' : 'neutral'"
                 variant="soft"
                 size="sm"
               />
               <UBadge
-                v-if="dayModal.day.adjustments.some(a => a.adjustment_type === 'ADD_SHIFT')"
+                v-if="activeDay!.adjustments.some(a => a.adjustment_type === 'ADD_SHIFT')"
                 label="Added as Working Day"
                 color="warning"
                 variant="soft"
                 size="sm"
               />
               <UBadge
-                :label="`${getUsedShiftNumbersOnDay(dayModal.day).size}/${MAX_SHIFTS} Shifts Active`"
+                :label="`${getUsedShiftNumbersOnDay(activeDay!).size}/${MAX_SHIFTS} Shifts Active`"
                 color="primary"
                 variant="soft"
                 size="sm"
               />
             </div>
-            <p v-if="getUsedShiftNumbersOnDay(dayModal.day).size > 0" class="text-xs text-muted">
+            <p v-if="getUsedShiftNumbersOnDay(activeDay!).size > 0" class="text-xs text-muted">
               Active shifts:
               <span class="font-medium text-default">
-                {{ [...getUsedShiftNumbersOnDay(dayModal.day)].sort().map(n => `Shift ${n}`).join(', ') }}
+                {{ [...getUsedShiftNumbersOnDay(activeDay!)].sort().map(n => `Shift ${n}`).join(', ') }}
               </span>
             </p>
           </div>

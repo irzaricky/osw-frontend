@@ -61,6 +61,10 @@ const workOrderService = {
     return api.post(`${BASE}/${wo_id}/stations/${station_id}/progresses`, data)
   },
 
+  editLastStationProgress(wo_id: number | string, station_id: number | string, data: AddProgressPayload) {
+    return api.patch(`${BASE}/${wo_id}/stations/${station_id}/progresses/last`, data)
+  },
+
   // ── Station Issues ───────────────────────────────────────────────────────────
 
   getStationIssues(wo_id: number | string, station_id: number | string, resolved?: 'true' | 'false') {

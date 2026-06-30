@@ -58,6 +58,12 @@ export interface WorkOrderStationDetail extends WorkOrderStation {
   materials?:  WorkOrderMaterial[]
 }
 
+interface WorkOrderOutputPart {
+  part_id:          number
+  part_number: string
+  part_name:   string
+}
+
 // wo_station_id replaces wo_id — FK now points to s_work_order_stations
 export interface WorkOrderProgress {
   id:                  number

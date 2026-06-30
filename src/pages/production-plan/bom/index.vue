@@ -12,7 +12,6 @@ import type { Row } from '@tanstack/table-core'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import BomFilters from './components/BomFilters.vue'
-import BomBulkActions from './components/BomBulkActions.vue'
 
 const router = useRouter()
 const bomStore = useBomStore()
@@ -202,9 +201,6 @@ onMounted(() => {
           @update:search="search = $event"
           @update:filters="Object.assign(filters, $event)"
         />
-
-        <!-- Bulk actions -->
-        <BomBulkActions :count="selectedCount" @delete="confirmBulkDelete" />
 
         <!-- Table -->
         <UTable

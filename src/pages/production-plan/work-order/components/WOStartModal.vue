@@ -11,9 +11,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:open':   [val: boolean]
-  'check':         []
-  'confirm':       [payload: StartWorkOrderPayload]
+  'update:open': [val: boolean]
+  'check':       []
+  'confirm':     [payload: StartWorkOrderPayload]
 }>()
 
 const forceStart   = ref(false)
@@ -23,6 +23,9 @@ const hasShortage = computed(() =>
   props.materialCheck !== null && !props.materialCheck.all_sufficient,
 )
 
+// Start bisa dilakukan jika:
+// 1. Stock sudah dicek dan semua cukup, atau
+// 2. Stock sudah dicek, ada shortage, tapi forceStart diaktifkan
 const canStart = computed(() => {
   if (!props.materialCheck) return false
   if (props.materialCheck.all_sufficient) return true
@@ -97,35 +100,32 @@ function handleConfirm() {
             />
           </div>
 
-          <!-- Not yet checked -->
           <div v-if="!materialCheck && !checkingStock" class="flex items-center gap-2 p-3 bg-elevated rounded-lg text-sm text-muted">
             <UIcon name="i-lucide-package" class="w-4 h-4 flex-shrink-0" />
             Click "Check Stock" to verify material availability before starting.
           </div>
 
-          <!-- Checking -->
           <div v-else-if="checkingStock" class="flex items-center gap-2 p-3 bg-elevated rounded-lg text-sm text-muted">
             <UIcon name="i-lucide-loader-2" class="w-4 h-4 animate-spin flex-shrink-0" />
             Checking warehouse stock...
           </div>
 
-          <!-- All sufficient -->
           <UAlert
             v-else-if="materialCheck?.all_sufficient"
             color="success"
             variant="soft"
             icon="i-lucide-check-circle-2"
             title="All materials available"
-            description="Warehouse stock meets all planned quantities."
+            description="Warehouse stock meets all planned quantities. Material actuals have been pre-filled."
           />
 
-          <!-- Shortages found -->
           <div v-else-if="materialCheck && !materialCheck.all_sufficient" class="space-y-2">
             <UAlert
               color="error"
               variant="soft"
               icon="i-lucide-package-x"
               :title="`${materialCheck.shortage_count} material shortage(s) detected`"
+              description="Actual quantities have been pre-filled with available stock. Shortages will be recorded as issues per station."
             />
 
             <div class="rounded-lg border border-default overflow-hidden">
@@ -148,7 +148,7 @@ function handleConfirm() {
                       <div class="font-medium">{{ m.material_part?.part_name ?? '-' }}</div>
                       <div class="text-muted font-mono">{{ m.material_part?.part_number }}</div>
                     </td>
-                    <td class="px-3 py-2 text-right font-mono">{{ Number(m.total_planned ?? 0).toLocaleString() }}</td>
+                    <td class="px-3 py-2 text-right font-mono">{{ Number(m.planned_quantity ?? 0).toLocaleString() }}</td>
                     <td class="px-3 py-2 text-right font-mono" :class="m.sufficient ? 'text-success-600' : 'text-error-600'">
                       {{ Number(m.current_stock ?? 0).toLocaleString() }}
                     </td>
@@ -165,7 +165,7 @@ function handleConfirm() {
               <label class="flex items-start gap-2.5 cursor-pointer">
                 <UCheckbox v-model="forceStart" class="mt-0.5 flex-shrink-0" />
                 <span class="text-sm font-medium text-warning-700 dark:text-warning-400">
-                  I acknowledge the shortage and want to start anyway. The shortage will be recorded as an issue.
+                  I acknowledge the shortage and want to start anyway. A material issue will be recorded on each affected station.
                 </span>
               </label>
               <UInput
@@ -178,11 +178,12 @@ function handleConfirm() {
           </div>
         </div>
 
+        <!-- Koreksi: semua stasiun langsung In_Progress bersamaan (assembly line model) -->
         <UAlert
           color="info"
           variant="soft"
           icon="i-lucide-info"
-          description="Only the first process station will be activated. Subsequent stations remain Pending until the active station is completed."
+          description="All process stations will be activated simultaneously. Each station operator can report progress and complete their station independently."
         />
       </div>
     </template>
