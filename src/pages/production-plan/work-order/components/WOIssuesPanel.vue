@@ -7,10 +7,6 @@ const props = defineProps<{
   saving:  boolean
 }>()
 
-const emit = defineEmits<{
-  'resolve': [issueId: number]
-}>()
-
 const issueTypeColor: Record<IssueType, 'error' | 'warning' | 'info' | 'neutral'> = {
   DOWNTIME: 'error',
   DEFECT:   'warning',
@@ -114,17 +110,6 @@ function fmtDateTime(d?: string | null) {
               <p class="text-xs text-muted mt-1">{{ fmtDateTime(issue.resolved_time) }}</p>
             </div>
           </div>
-
-          <UButton
-            v-if="!issue.resolved_time"
-            label="Resolve"
-            icon="i-lucide-check"
-            color="success"
-            variant="soft"
-            size="xs"
-            :loading="saving"
-            @click="emit('resolve', issue.id)"
-          />
         </div>
       </div>
     </div>

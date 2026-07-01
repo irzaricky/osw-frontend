@@ -169,6 +169,12 @@ const router = createRouter({
       component: () => import('./pages/production-plan/wo-monitor/index.vue'),
       meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
     },
+    {
+      path: '/production-plan/analytics',
+      name: 'production-plan-analytics',
+      component: () => import('./pages/production-plan/analytics/index.vue'),
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+    },
     // { 
     //   path: '/production-plan/work-order/create', 
     //   name: 'work-order-create',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { WorkOrderStation, StationStatus, WorkOrderStatus } from '../../../../types/production-plan/work-order'
 
 const props = defineProps<{
@@ -17,9 +17,29 @@ const STATION_STATUS_COLOR: Record<StationStatus, 'neutral' | 'warning' | 'succe
   Completed:   'success',
 }
 
+// ── Sort: In_Progress first, then by sequence ─────────────────────────────────
+// Within "In_Progress" and "everything else" groups, order falls back to sequence.
 const sortedStations = computed(() =>
-  [...props.stations].sort((a, b) => a.sequence - b.sequence),
+  [...props.stations].sort((a, b) => {
+    const aPriority = a.status === 'In_Progress' ? 0 : 1
+    const bPriority = b.status === 'In_Progress' ? 0 : 1
+    if (aPriority !== bPriority) return aPriority - bPriority
+    return a.sequence - b.sequence
+  }),
 )
+
+// ── Pagination (client-side) ──────────────────────────────────────────────────
+const page = ref(1)
+const limit = 5
+
+const paginatedStations = computed(() => {
+  const start = (page.value - 1) * limit
+  return sortedStations.value.slice(start, start + limit)
+})
+
+// Reset to page 1 if the station list changes size (e.g. after a refetch)
+// so the user isn't stranded on a page that no longer exists.
+watch(() => props.stations.length, () => { page.value = 1 })
 
 function progressPct(station: WorkOrderStation): number {
   if (!station.planned_quantity || !station.actual_quantity) return 0
@@ -39,7 +59,7 @@ function progressPct(station: WorkOrderStation): number {
 
     <!-- Clickable station card -->
     <button
-      v-for="station in sortedStations"
+      v-for="station in paginatedStations"
       :key="station.id"
       class="w-full text-left flex items-center gap-4 px-5 py-4 bg-default border border-default rounded-xl transition-colors hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       :class="{
@@ -78,6 +98,18 @@ function progressPct(station: WorkOrderStation): number {
         </div>
       </div>
 
+      <!-- Issue indicator -->
+      <div
+        v-if="station.open_issue_count ?? 0 > 0"
+        class="flex items-center gap-1.5 text-xs font-semibold text-error-600 flex-shrink-0"
+      >
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error-400 opacity-75" />
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-error-500" />
+        </span>
+        {{ station.open_issue_count }} issue{{ station.open_issue_count ?? 1 ? 's' : '' }}
+      </div>
+
       <UBadge
         :label="station.status.replace('_', ' ')"
         :color="STATION_STATUS_COLOR[station.status]"
@@ -88,5 +120,20 @@ function progressPct(station: WorkOrderStation): number {
 
       <UIcon name="i-lucide-chevron-right" class="w-4 h-4 text-muted flex-shrink-0" />
     </button>
+
+    <!-- Pagination -->
+    <div
+      v-if="sortedStations.length > limit"
+      class="flex items-center justify-between gap-3 pt-2"
+    >
+      <div class="text-sm text-muted">
+        {{ sortedStations.length === 0 ? '0' : (page - 1) * limit + 1 }}–{{ Math.min(page * limit, sortedStations.length) }} of {{ sortedStations.length }} row(s)
+      </div>
+      <UPagination
+        v-model:page="page"
+        :total="sortedStations.length"
+        :items-per-page="limit"
+      />
+    </div>
   </div>
 </template>

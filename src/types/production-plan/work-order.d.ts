@@ -50,12 +50,19 @@ export interface WorkOrderStation {
   completed_at?:     string | null
   notes?:            string | null  // new
   station?:          { id: number; station_code: string; name: string; sequence: number }
+  open_issue_count?: number
 }
 
 export interface WorkOrderStationDetail extends WorkOrderStation {
   progresses?: WorkOrderProgress[]
   issues?:     WorkOrderIssue[]
   materials?:  WorkOrderMaterial[]
+}
+
+interface WorkOrderOutputPart {
+  part_id:          number
+  part_number: string
+  part_name:   string
 }
 
 // wo_station_id replaces wo_id — FK now points to s_work_order_stations
@@ -219,6 +226,7 @@ export interface ResolveIssuePayload {
   resumed_by?:             number | null
   resumed_at?:             string | null
   pause_duration_minutes?: number | null
+  downtime_end?:           string | null
 }
 
 export interface CompleteStationPayload {

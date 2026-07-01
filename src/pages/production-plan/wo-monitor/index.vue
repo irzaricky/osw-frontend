@@ -1,28 +1,38 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { storeToRefs }               from 'pinia'
-import { useWorkOrderMonitorStore }  from '../../../stores/production-plan/wo-monitor.store'
-import type { WOHealth }             from '../../../types/production-plan/wo-monitor'
+import { storeToRefs }              from 'pinia'
+import { useWorkOrderMonitorStore } from '../../../stores/production-plan/wo-monitor.store'
+import { useAppToast }              from '../../../composables/useAppToast'
+import type { WOHealth, MonitorWO } from '../../../types/production-plan/wo-monitor'
 
 import Breadcrumbs         from '../../../components/Breadcrumbs.vue'
 import WOMonitorSummaryBar from './components/WOMonitorSummaryBar.vue'
 import WOMonitorCard       from './components/WOMonitorCard.vue'
 import WOMonitorFilters    from './components/WOMonitorFilters.vue'
+import WOResolveIssueModal from './components/WOResolveIssueModal.vue'
 
 const store = useWorkOrderMonitorStore()
-const { summary, workOrders, loading, lastFetched } = storeToRefs(store)
+const { summary, workOrders, loading, saving, lastFetched } = storeToRefs(store)
+const { toastSuccess, toastError } = useAppToast()
 
-const workDate   = ref(new Date().toISOString().split('T')[0])
+const today = new Date()
+const workDate     = ref(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`)
 const filterHealth = ref<WOHealth | undefined>(undefined)
 
-// Auto-refresh every 60 seconds
+const showResolveModal = ref(false)
+const activeWoId       = ref<number | null>(null)
+
+const activeWo = computed<MonitorWO | null>(() =>
+  workOrders.value.find((w) => w.id === activeWoId.value) ?? null,
+)
+
 const REFRESH_INTERVAL = 60_000
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 const breadcrumbItems = [
   { label: 'Home', to: '/' },
-  { label: 'Manufacturing' },
-  { label: 'Live Monitor' },
+  { label: 'Production Plan' },
+  { label: 'Work Order Monitoring' },
 ]
 
 async function fetchData() {
@@ -46,8 +56,44 @@ const groupedByLine = computed(() => {
 
 const lastFetchedLabel = computed(() => {
   if (!lastFetched.value) return ''
-  return `Updated ${lastFetched.value.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`
+  return `Updated ${lastFetched.value.toLocaleTimeString('en-US', {
+    hour:   '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })}`
 })
+
+function openResolveModal(wo: MonitorWO) {
+  activeWoId.value       = wo.id
+  showResolveModal.value = true
+}
+
+async function handleResolveIssue(payload: {
+  woStationId:           number
+  issueId:               number
+  resolution:            string
+  resolvedBy:            number
+  resumedBy?:            number
+  resumedAt?:            string | null
+  pauseDurationMinutes?: number | null
+  downtimeEnd?:          string | null
+}) {
+  if (!activeWoId.value) return
+  try {
+    const res = await store.resolveIssue(activeWoId.value, payload.woStationId, payload.issueId, {
+      resolution:             payload.resolution,
+      resolved_by:            payload.resolvedBy,
+      resumed_by:             payload.resumedBy             ?? null,
+      resumed_at:             payload.resumedAt             ?? null,
+      pause_duration_minutes: payload.pauseDurationMinutes  ?? null,
+      downtime_end:           payload.downtimeEnd           ?? null,
+    })
+    toastSuccess(res?.message || 'Issue resolved')
+  } catch (e) {
+    toastError(e)
+  }
+}
 
 watch(workDate, fetchData)
 
@@ -105,11 +151,10 @@ onUnmounted(() => {
         <WOMonitorFilters
           :filters="{ health: filterHealth }"
           :work-date="workDate"
-          @update:filters="(v) => { if (v.health !== undefined) filterHealth = v.health }"
+          @update:filters="(v) => { filterHealth = v.health }"
           @update:work-date="workDate = $event"
         />
 
-        <!-- Loading skeleton -->
         <div v-if="loading && !summary" class="flex items-center justify-center py-24">
           <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-muted" />
         </div>
@@ -117,7 +162,6 @@ onUnmounted(() => {
         <template v-else-if="summary">
           <WOMonitorSummaryBar :summary="summary" />
 
-          <!-- Empty state -->
           <div
             v-if="filteredWOs.length === 0"
             class="flex flex-col items-center justify-center py-20 text-center text-muted gap-3"
@@ -126,7 +170,6 @@ onUnmounted(() => {
             <p class="text-sm font-medium">No Work Orders found for this date.</p>
           </div>
 
-          <!-- WO cards grouped by line -->
           <div v-else class="space-y-6">
             <div
               v-for="(wos, lineName) in groupedByLine"
@@ -138,23 +181,29 @@ onUnmounted(() => {
                 <UBadge :label="`${wos.length} WO`" color="neutral" variant="soft" size="xs" />
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <WOMonitorCard
                   v-for="wo in wos"
                   :key="wo.id"
                   :wo="wo"
+                  @select="openResolveModal"
                 />
               </div>
             </div>
           </div>
         </template>
 
-        <!-- No data -->
         <div v-else class="flex flex-col items-center justify-center py-24 text-center text-muted gap-3">
           <UIcon name="i-lucide-monitor-x" class="w-10 h-10" />
           <p class="text-sm">No data available. Select a date to load monitor data.</p>
         </div>
 
+        <WOResolveIssueModal
+          v-model:open="showResolveModal"
+          :wo="activeWo"
+          :saving="saving"
+          @resolve="handleResolveIssue"
+        />
       </div>
     </template>
   </UDashboardPanel>

@@ -39,8 +39,6 @@ const form = reactive({
   issue_description: '',
   severity:          'MEDIUM' as IssueSeverity,
   downtime_start:    '',
-  downtime_end:      '',
-  downtime_minutes:  null as number | null,
   defect_qty:        null as number | null,
   defect_type:       '',
   pause_reason:      '',
@@ -58,42 +56,44 @@ watch(() => props.open, (v) => {
   if (v) {
     Object.assign(form, {
       issue_type: '', issue_description: '', severity: 'MEDIUM',
-      downtime_start: '', downtime_end: '', downtime_minutes: null,
-      defect_qty: null, defect_type: '', pause_reason: '',
-      shift_end_qty: null, paused_at: '',
+      downtime_start: '', defect_qty: null, defect_type: '',
+      pause_reason: '', shift_end_qty: null, paused_at: '',
     })
-    errors.issue_type = ''
+    errors.issue_type        = ''
     errors.issue_description = ''
-    errors.session = ''
+    errors.session           = ''
   }
 })
 
 function validate(): boolean {
   let valid = true
-  errors.issue_type = ''
+  errors.issue_type        = ''
   errors.issue_description = ''
-  errors.session = ''
-  if (!form.issue_type)               { errors.issue_type        = 'Issue type is required.'; valid = false }
-  if (!form.issue_description.trim()) { errors.issue_description = 'Description is required.'; valid = false }
+  errors.session           = ''
+  if (!form.issue_type)               { errors.issue_type        = 'Issue type is required.';   valid = false }
+  if (!form.issue_description.trim()) { errors.issue_description = 'Description is required.';  valid = false }
   if (!authStore.user?.id)            { errors.session            = 'User session not found. Please refresh and try again.'; valid = false }
   return valid
 }
 
 function handleSubmit() {
   if (!validate()) return
+
+  const now = new Date().toISOString()
+
   const payload: ReportIssuePayload = {
     issue_type:        form.issue_type as IssueType,
     issue_description: form.issue_description.trim(),
     reported_by:       authStore.user!.id,
     severity:          form.severity,
-    downtime_start:    form.downtime_start || null,
-    downtime_end:      form.downtime_end   || null,
-    downtime_minutes:  form.downtime_minutes,
+    downtime_start:    form.issue_type === 'DOWNTIME' ? (form.downtime_start || now) : null,
+    downtime_end:      null,
+    downtime_minutes:  null,
     defect_qty:        form.defect_qty,
-    defect_type:       form.defect_type   || null,
-    pause_reason:      form.pause_reason  || null,
+    defect_type:       form.defect_type  || null,
+    pause_reason:      form.pause_reason || null,
     paused_by:         form.issue_type === 'PAUSE' ? (authStore.user?.id ?? null) : null,
-    paused_at:         form.paused_at || null,
+    paused_at:         form.issue_type === 'PAUSE' ? (form.paused_at || now) : null,
     shift_end_qty:     form.shift_end_qty,
   }
   emit('submit', payload)
@@ -111,7 +111,6 @@ function handleSubmit() {
     <template #body>
       <div class="space-y-4">
 
-        <!-- Issue Type -->
         <UFormField label="Issue Type" :error="errors.issue_type" required>
           <div class="grid grid-cols-2 gap-2 mt-1">
             <button
@@ -130,7 +129,6 @@ function handleSubmit() {
           </div>
         </UFormField>
 
-        <!-- Severity -->
         <UFormField label="Severity">
           <div class="flex items-center gap-2 mt-1">
             <button
@@ -152,27 +150,16 @@ function handleSubmit() {
           </p>
         </UFormField>
 
-        <!-- Description -->
         <UFormField label="Description" :error="errors.issue_description" required>
           <UTextarea v-model="form.issue_description" placeholder="Describe the issue in detail..." :rows="3" class="w-full" />
         </UFormField>
 
-        <!-- DOWNTIME fields -->
         <template v-if="form.issue_type === 'DOWNTIME'">
-          <div class="grid grid-cols-2 gap-3">
-            <UFormField label="Downtime Start">
-              <UInput v-model="form.downtime_start" type="datetime-local" class="w-full" />
-            </UFormField>
-            <UFormField label="Downtime End">
-              <UInput v-model="form.downtime_end" type="datetime-local" class="w-full" />
-            </UFormField>
-          </div>
-          <UFormField label="Downtime Minutes (Override)" description="Leave blank to auto-calculate from start/end.">
-            <UInput v-model.number="form.downtime_minutes" type="number" min="0" placeholder="Auto-calculated..." class="w-full font-mono" />
+          <UFormField label="Downtime Start" description="Leave blank to use current time.">
+            <UInput v-model="form.downtime_start" type="datetime-local" class="w-full" />
           </UFormField>
         </template>
 
-        <!-- DEFECT fields -->
         <template v-if="form.issue_type === 'DEFECT'">
           <div class="grid grid-cols-2 gap-3">
             <UFormField label="Defect Quantity">
@@ -184,7 +171,6 @@ function handleSubmit() {
           </div>
         </template>
 
-        <!-- PAUSE fields -->
         <template v-if="form.issue_type === 'PAUSE'">
           <UFormField label="Pause Reason">
             <UInput v-model="form.pause_reason" placeholder="e.g. Shift change, waiting for material..." class="w-full" />
@@ -193,7 +179,7 @@ function handleSubmit() {
             <UFormField label="Units Completed at Pause">
               <UInput v-model.number="form.shift_end_qty" type="number" min="0" placeholder="0" class="w-full font-mono" />
             </UFormField>
-            <UFormField label="Paused At">
+            <UFormField label="Paused At" description="Leave blank to use current time.">
               <UInput v-model="form.paused_at" type="datetime-local" class="w-full" />
             </UFormField>
           </div>

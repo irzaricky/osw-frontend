@@ -232,7 +232,6 @@ export interface AddCalendarAdjustmentPayload {
   adjustment_type:   AdjustmentType
   shift_number?:     number | null
   overtime_minutes?: number | null
-  reason:            string
 }
 
 export interface ApprovePayload {

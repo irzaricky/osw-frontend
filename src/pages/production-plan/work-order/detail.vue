@@ -9,6 +9,7 @@ import type { StartWorkOrderPayload } from '../../../types/production-plan/work-
 
 import Breadcrumbs     from '../../../components/Breadcrumbs.vue'
 import WOInfoBar       from './components/WOInfoBar.vue'
+import WOQualityMetrics from './components/WOQualityMetrics.vue'
 import WOStationsList  from './components/WOStationsList.vue'
 import WOStartModal    from './components/WOStartModal.vue'
 
@@ -123,7 +124,15 @@ watch(
           />
         </div>
 
-        <WOInfoBar :wo="currentWO" />
+        <!-- ✅ MAIN INFO BAR - Final Output Metrics -->
+        <WOInfoBar 
+          :wo="currentWO"
+        />
+
+        <!-- ✅ NEW: Quality Metrics Bar - Upstream defects + total loss -->
+        <WOQualityMetrics 
+          :wo="currentWO"
+        />
 
         <!-- Station list — click to navigate into station detail -->
         <div>
