@@ -291,6 +291,14 @@ const staticLinks = [[{
       onSelect: () => {
         open.value = false
       }
+    },
+    {
+      label: 'Analytics',
+      icon: 'i-lucide-chart-column',
+      to: '/production-plan/analytics',
+      onSelect: () => {
+        open.value = false
+      }
     }
   ]
 }, 
