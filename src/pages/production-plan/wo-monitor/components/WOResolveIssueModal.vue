@@ -16,10 +16,11 @@ const emit = defineEmits<{
     woStationId:           number
     issueId:               number
     resolution:            string
-    resolvedBy:             number
-    resumedBy?:             number
-    resumedAt?:             string | null
-    pauseDurationMinutes?:  number | null
+    resolvedBy:            number
+    resumedBy?:            number
+    resumedAt?:            string | null
+    pauseDurationMinutes?: number | null
+    downtimeEnd?:          string | null
   }]
 }>()
 
@@ -27,8 +28,11 @@ const authStore = useAuthStore()
 
 const activeIssueId = ref<number | null>(null)
 
-const form = reactive({ resolution: '' })
-const errors = reactive({ resolution: '', session: '' })
+const form = reactive({
+  resolution:   '',
+  downtime_end: '',
+})
+const errors = reactive({ resolution: '', downtime_end: '', session: '' })
 
 const issueTypeColor: Record<IssueType, 'error' | 'warning' | 'info' | 'neutral'> = {
   DOWNTIME: 'error',
@@ -55,8 +59,10 @@ watch(() => props.open, (v) => {
 
 function resetForm() {
   form.resolution   = ''
-  errors.resolution = ''
-  errors.session     = ''
+  form.downtime_end = ''
+  errors.resolution   = ''
+  errors.downtime_end = ''
+  errors.session       = ''
 }
 
 function startResolve(issue: MonitorIssue) {
@@ -66,8 +72,7 @@ function startResolve(issue: MonitorIssue) {
 
 function calcPauseDuration(issue: MonitorIssue, resumedAt: Date): number | null {
   if (!issue.paused_at) return null
-  const pausedAt = new Date(issue.paused_at)
-  const diffMs   = resumedAt.getTime() - pausedAt.getTime()
+  const diffMs = resumedAt.getTime() - new Date(issue.paused_at).getTime()
   return Math.max(0, Math.round(diffMs / 60000))
 }
 
@@ -92,13 +97,22 @@ function stationLabel(issue: MonitorIssue): string {
 }
 
 function submitResolve(issue: MonitorIssue) {
-  errors.resolution = ''
-  errors.session     = ''
+  errors.resolution   = ''
+  errors.downtime_end = ''
+  errors.session       = ''
 
   if (!form.resolution.trim()) {
     errors.resolution = 'Resolution details are required.'
     return
   }
+
+  if (issue.issue_type === 'DOWNTIME' && form.downtime_end && issue.downtime_start) {
+    if (new Date(form.downtime_end) <= new Date(issue.downtime_start)) {
+      errors.downtime_end = `Must be after downtime start (${fmtDateTime(issue.downtime_start)}).`
+      return
+    }
+  }
+  
   if (!authStore.user?.id) {
     errors.session = 'User session not found. Please refresh and try again.'
     return
@@ -114,6 +128,7 @@ function submitResolve(issue: MonitorIssue) {
     resumedBy:            issue.issue_type === 'PAUSE' ? authStore.user!.id : undefined,
     resumedAt:            issue.issue_type === 'PAUSE' ? now.toISOString() : undefined,
     pauseDurationMinutes: issue.issue_type === 'PAUSE' ? calcPauseDuration(issue, now) : undefined,
+    downtimeEnd:          issue.issue_type === 'DOWNTIME' ? (form.downtime_end || null) : undefined,
   })
 }
 </script>
@@ -176,6 +191,15 @@ function submitResolve(issue: MonitorIssue) {
                 :rows="3"
                 class="w-full"
               />
+            </UFormField>
+
+            <UFormField
+              v-if="issue.issue_type === 'DOWNTIME'"
+              label="Downtime End"
+              description="Leave blank to use current time."
+              :error="errors.downtime_end"
+            >
+              <UInput v-model="form.downtime_end" type="datetime-local" class="w-full" />
             </UFormField>
 
             <UAlert

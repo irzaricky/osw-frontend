@@ -226,6 +226,7 @@ export interface ResolveIssuePayload {
   resumed_by?:             number | null
   resumed_at?:             string | null
   pause_duration_minutes?: number | null
+  downtime_end?:           string | null
 }
 
 export interface CompleteStationPayload {

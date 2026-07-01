@@ -137,6 +137,25 @@ function handleSubmit() {
     reason:      form.reason || undefined,
   })
 }
+
+const isFormValid = computed(() => {
+  if (form.qty_good === 0 && form.qty_reject === 0 && form.qty_scrap === 0) {
+    return false
+  }
+  if (form.qty_reject < 0 || form.qty_scrap < 0) return false
+
+  if (isCorrection.value) {
+    if (!form.reason.trim()) return false
+    if (newCumGood.value < 0) return false
+    return true
+  }
+
+  if (newCumTotal.value > maxAllowed.value) return false
+  if (willExceedUpstream.value) return false
+  if (newCumGood.value > maxAllowed.value) return false
+
+  return true
+})
 </script>
 
 <template>
@@ -274,7 +293,7 @@ function handleSubmit() {
           :icon="isCorrection ? 'i-lucide-pencil' : 'i-lucide-trending-up'"
           :color="isCorrection ? 'warning' : 'primary'"
           :loading="loading"
-          :disabled="Object.values(errors).some(e => e)"
+          :disabled="!isFormValid"
           @click="handleSubmit"
         />
       </div>

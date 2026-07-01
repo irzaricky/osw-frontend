@@ -8,7 +8,6 @@ import type {
   WorkOrderProgress,
   AddProgressPayload,
   ReportIssuePayload,
-  ResolveIssuePayload,
   CompleteStationPayload,
 } from '../../../types/production-plan/work-order'
 
@@ -20,7 +19,6 @@ import WOStationMaterialsPanel from './components/WOStationMaterialsPanel.vue'
 import WOProgressModal         from './components/WOProgressModal.vue'
 import WOEditProgressModal     from './components/WOEditProgressModal.vue'
 import WOIssueModal            from './components/WOIssueModal.vue'
-import WOResolveModal          from './components/WOResolveModal.vue'
 import WOCompleteStationModal  from './components/WOCompleteStationModal.vue'
 
 const route  = useRoute()
@@ -35,9 +33,7 @@ const stationId = computed(() => Number(route.params.station_id))
 const showProgressModal     = ref(false)
 const showEditProgressModal = ref(false)
 const showIssueModal        = ref(false)
-const showResolveModal      = ref(false)
 const showCompleteModal     = ref(false)
-const resolveTargetId       = ref<number | null>(null)
 const editTargetProgress    = ref<WorkOrderProgress | null>(null)
 
 const breadcrumbItems = computed(() => [
@@ -145,21 +141,6 @@ async function handleReportIssue(payload: ReportIssuePayload) {
     const res = await store.reportIssue(woId.value, stationId.value, payload)
     toastSuccess(res.message || 'Issue reported')
     showIssueModal.value = false
-  } catch (e) { toastError(e) }
-}
-
-function openResolveModal(issueId: number) {
-  resolveTargetId.value  = issueId
-  showResolveModal.value = true
-}
-
-async function handleResolveIssue(payload: ResolveIssuePayload) {
-  if (!resolveTargetId.value) return
-  try {
-    const res = await store.resolveIssue(woId.value, stationId.value, resolveTargetId.value, payload)
-    toastSuccess(res.message || 'Issue resolved')
-    showResolveModal.value = false
-    resolveTargetId.value  = null
   } catch (e) { toastError(e) }
 }
 
@@ -324,7 +305,6 @@ watch([woId, stationId], loadAll)
               :issues="issues"
               :loading="loading"
               :saving="saving"
-              @resolve="openResolveModal"
             />
           </template>
           <template #materials>
@@ -360,12 +340,6 @@ watch([woId, stationId], loadAll)
           v-model:open="showIssueModal"
           :loading="saving"
           @submit="handleReportIssue"
-        />
-
-        <WOResolveModal
-          v-model:open="showResolveModal"
-          :loading="saving"
-          @submit="handleResolveIssue"
         />
 
         <WOCompleteStationModal

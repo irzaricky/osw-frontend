@@ -13,6 +13,7 @@ export interface MonitorIssue {
   reported_time:      string
   issue_description:  string
   paused_at?:         string | null
+  downtime_start?:    string | null
 }
 
 export interface MonitorWO {

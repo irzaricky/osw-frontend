@@ -77,15 +77,17 @@ async function handleResolveIssue(payload: {
   resumedBy?:            number
   resumedAt?:            string | null
   pauseDurationMinutes?: number | null
+  downtimeEnd?:          string | null
 }) {
   if (!activeWoId.value) return
   try {
     const res = await store.resolveIssue(activeWoId.value, payload.woStationId, payload.issueId, {
       resolution:             payload.resolution,
       resolved_by:            payload.resolvedBy,
-      resumed_by:             payload.resumedBy ?? null,
-      resumed_at:             payload.resumedAt ?? null,
-      pause_duration_minutes: payload.pauseDurationMinutes ?? null,
+      resumed_by:             payload.resumedBy             ?? null,
+      resumed_at:             payload.resumedAt             ?? null,
+      pause_duration_minutes: payload.pauseDurationMinutes  ?? null,
+      downtime_end:           payload.downtimeEnd           ?? null,
     })
     toastSuccess(res?.message || 'Issue resolved')
   } catch (e) {
