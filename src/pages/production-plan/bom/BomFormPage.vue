@@ -12,7 +12,7 @@ import BomDetailModal from './components/BomAddDetailModal.vue'
 
 const {
   // route
-  router, isCreate, bomId,
+  router, isCreate, bomId, canApprove, canActivate,
   // store refs
   currentBom, loading, saving,
   partDropdown, uomDropdown, bomDropdown,
@@ -62,10 +62,11 @@ function setNotes(v: string) { headerForm.notes = v }
       :current-bom="currentBom"
       :saving="saving"
       :doc-status-color="docStatusColor"
+      :can-approve="canApprove"
+      :can-activate="canActivate"
       @approve="openApproveConfirm"
       @reject="openRejectConfirm"
       @activate="openActivationConfirm"
-      @new-version="handleNewVersion"
     />
 
     <!-- Info bar (edit mode) -->

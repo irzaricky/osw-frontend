@@ -1,7 +1,5 @@
-// Path: src/views/production-plan/bom/composables/useBomColumns.ts
-// Import path matches the uploaded reference file
-
 import { h } from "vue";
+import { usePpicPermission } from "../../../../composables/usePpicPermission";
 import type { Bom } from "../../../../types/production-plan/bom";
 import type { ColumnDef } from "@tanstack/table-core";
 
@@ -42,6 +40,7 @@ function activationColor(code?: string): "success" | "neutral" {
 }
 
 export function useBomColumns(actions: Actions, ui: UIComponents) {
+  const { can } = usePpicPermission();
   const columns: ColumnDef<Bom>[] = [
     // ── No ──────────────────────────────────────────────────────────────────
     {
@@ -179,7 +178,7 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
         ])
 
         // Group 2 — draft workflow
-        if (isDraft) {
+        if (isDraft && can("bom", "edit")) {
           groups.push([
             {
               label: "Submit for Approval",
@@ -192,30 +191,34 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
 
         // Group 3 — approval workflow
         if (isSubmitted) {
-          groups.push([
-            {
+          const approvalActions = []
+          if (can("bom", "approve")) {
+            approvalActions.push({
               label: "Approve",
               icon: "i-lucide-check",
               color: "success" as const,
               onSelect: () => actions.onApprove(row.original),
-            },
-            {
+            })
+          }
+          if (can("bom", "reject")) {
+            approvalActions.push({
               label: "Reject",
               icon: "i-lucide-x",
               color: "error" as const,
               onSelect: () => actions.onReject(row.original),
-            },
-            {
+            }),
+            approvalActions.push({
               label: "Return to Draft",
               icon: "i-lucide-rotate-ccw",
               color: "warning" as const,
               onSelect: () => actions.onReturnToDraft(row.original),
-            },
-          ])
+            })
+          }
+          if (approvalActions.length) groups.push(approvalActions)
         }
 
         // Group 4 — activation toggle (only when approved)
-        if (isApproved) {
+        if (isApproved && can("bom", "activate" as any)) {
           groups.push([
             isActive
               ? {
@@ -234,15 +237,17 @@ export function useBomColumns(actions: Actions, ui: UIComponents) {
         }
 
         // Group 5 — danger zone (always visible, disabled when not draft)
-        groups.push([
-          {
-            label: "Delete",
-            icon: "i-lucide-trash-2",
-            color: "error" as const,
-            disabled: !isDraft,
-            onSelect: () => actions.onDelete(row.original),
-          },
-        ])
+        if (can("bom", "delete")) {
+          groups.push([
+            {
+              label: "Delete",
+              icon: "i-lucide-trash-2",
+              color: "error" as const,
+              disabled: !isDraft,
+              onSelect: () => actions.onDelete(row.original),
+            },
+          ])
+        }
 
         return h("div", { class: "flex justify-end" }, [
           h(

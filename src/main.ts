@@ -149,19 +149,19 @@ const router = createRouter({
       path: '/production-plan/work-order',
       name: 'work-order-list',
       component: () => import('./pages/production-plan/work-order/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC', 'Foreman'] }
     },
     {
       path: '/production-plan/work-order/:id',
       name: 'work-order-detail-edit',
       component: () => import('./pages/production-plan/work-order/detail.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC', 'Foreman'] }
     },
     {
       path: '/production-plan/work-order/:id/stations/:station_id',
       name: 'work-order-station-detail',
       component: () => import('./pages/production-plan/work-order/detail-wo-station.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin PPIC', 'Supervisor PPIC', 'Staff PPIC', 'Foreman'] }
     },
     {
       path: '/production-plan/work-order-monitor',

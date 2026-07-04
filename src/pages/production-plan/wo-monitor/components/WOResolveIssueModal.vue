@@ -236,7 +236,14 @@ function submitResolve(issue: MonitorIssue) {
     </template>
 
     <template #footer>
-      <div class="flex items-center justify-end w-full">
+      <div class="flex items-center justify-between w-full">
+        <UButton
+          label="View Detail"
+          icon="i-lucide-external-link"
+          color="neutral"
+          variant="ghost"
+          :to="`/production-plan/work-order/${wo?.id}`"
+        />
         <UButton label="Close" color="neutral" variant="ghost" @click="emit('update:open', false)" />
       </div>
     </template>
