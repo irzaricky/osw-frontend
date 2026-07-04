@@ -3,6 +3,7 @@ import { ref, reactive, computed, onMounted, watch, useTemplateRef, resolveCompo
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
 import { useRouter } from 'vue-router'
+import { usePpicPermission } from '../../../composables/usePpicPermission.ts'
 import { useBomStore } from '../../../stores/production-plan/bom.store'
 import { useBomColumns } from './composables/useBomColumns'
 import { useAppToast } from '../../../composables/useAppToast'
@@ -17,6 +18,7 @@ const router = useRouter()
 const bomStore = useBomStore()
 const { boms, meta, loading, docStatuses, activationStatuses } = storeToRefs(bomStore)
 const { toastSuccess, toastError } = useAppToast()
+const { can } = usePpicPermission()
 
 const table = useTemplateRef('table')
 
@@ -185,6 +187,7 @@ onMounted(() => {
             </p>
           </div>
           <UButton
+            v-if="can('bom', 'create')"
             icon="i-lucide-plus"
             color="primary"
             label="New BOM"
