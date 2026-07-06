@@ -10,12 +10,16 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import { useAppToast } from '../../../composables/useAppToast'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn, useIntersectionObserver } from '@vueuse/core'
+import { useAuthStore } from '../../../stores/auth.store'
 
 // Store
 const store = useForecastStore()
 const router = useRouter()
+const authStore = useAuthStore()
 const { loading, meta, forecasts } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
+
+const isSupervisorSales = computed(() => authStore.user?.role?.toLowerCase() === 'supervisor sales')
 
 // Breadcrumbs
 const breadcrumbItems = [
@@ -402,6 +406,7 @@ onMounted(() => {
           Sales Forecast
         </h1>
         <UButton
+          v-if="!isSupervisorSales"
           icon="i-lucide-plus"
           color="primary"
           label="Add Forecast"
@@ -502,7 +507,7 @@ onMounted(() => {
                 </p>
               </div>
               <UButton
-                v-if="!searchFilter && !customerFilter && !forecastTypeFilter && !statusFilter"
+                v-if="!searchFilter && !customerFilter && !forecastTypeFilter && !statusFilter && !isSupervisorSales"
                 icon="i-lucide-plus"
                 color="primary"
                 size="xs"

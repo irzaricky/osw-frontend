@@ -79,11 +79,15 @@ const isSupervisorSales = computed(() => {
   return role === 'superadmin' || role === 'supervisor sales'
 })
 
+const isSupervisorSalesOnly = computed(() => {
+  return authStore.user?.role?.toLowerCase() === 'supervisor sales'
+})
+
 // ─── Computed State Guards ────────────────────────────────────────────────────
 const isEditable = computed(() => {
   const isDraft = store.detail?.status === 'Draft'
   const isAdminSales = authStore.user?.role?.toLowerCase() === 'admin sales'
-  return isDraft || isAdminSales
+  return (isDraft || isAdminSales) && !isSupervisorSalesOnly.value
 })
 
 const canSubmit = computed(() =>
@@ -295,7 +299,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
             variant="ghost"
             size="md"
             label="Delete"
-            :disabled="store.detail?.status !== 'Draft'"
+            :disabled="store.detail?.status !== 'Draft' || isSupervisorSalesOnly"
             @click="emit('delete', sprId)"
           />
 

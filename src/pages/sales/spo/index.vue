@@ -11,11 +11,15 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import { useAppToast } from '../../../composables/useAppToast'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
+import { useAuthStore } from '../../../stores/auth.store'
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 const store = useSpoStore()
+const authStore = useAuthStore()
 const { loading, kanbanSpos } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
+
+const isSupervisorSales = computed(() => authStore.user?.role?.toLowerCase() === 'supervisor sales')
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
 const breadcrumbItems = [
@@ -137,6 +141,7 @@ onMounted(() => {
             />
           </div>
           <UButton
+            v-if="!isSupervisorSales"
             icon="i-lucide-file-plus"
             color="primary"
             label="Generate"
