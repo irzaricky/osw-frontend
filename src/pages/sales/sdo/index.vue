@@ -238,6 +238,16 @@ function getSlaBadgeConfig(status?: string) {
   }
 }
 
+const isTakeoutComplete = computed(() => {
+  if (!store.detail?.take_out_wos || store.detail.take_out_wos.length === 0) {
+    return true
+  }
+  return store.detail.take_out_wos.every((wo: any) => {
+    const name = wo.status?.name?.toLowerCase() || ''
+    return wo.wo_status_id === 4 || name.includes('complete') || name.includes('selesai')
+  })
+})
+
 // Granular logistics handler functions
 const loadingPhotoFile = ref<File | null>(null)
 const loadingPhotoPreview = ref<string | null>(null)
@@ -815,17 +825,19 @@ onUnmounted(() => {
                                   This shipment is loaded and waiting for a Sales Supervisor to authorize and approve dispatch.
                                 </p>
                                 <div class="flex justify-end">
-                                  <UButton
-                                    v-if="authStore.user?.role === 'Supervisor Sales' || authStore.user?.role === 'Superadmin'"
-                                    color="warning"
-                                    variant="solid"
-                                    icon="i-lucide-lock-keyhole-open"
-                                    size="sm"
-                                    :loading="approvingDispatch"
-                                    @click="submitApproveDispatch(store.detail.id)"
-                                  >
-                                    Approve Dispatch
-                                  </UButton>
+                                  <UTooltip v-if="authStore.user?.role === 'Supervisor Sales' || authStore.user?.role === 'Superadmin'" :text="isTakeoutComplete ? 'Approve Dispatch' : 'Menunggu Takeout selesai'">
+                                    <UButton
+                                      color="warning"
+                                      variant="solid"
+                                      icon="i-lucide-lock-keyhole-open"
+                                      size="sm"
+                                      :loading="approvingDispatch"
+                                      :disabled="!isTakeoutComplete"
+                                      @click="submitApproveDispatch(store.detail.id)"
+                                    >
+                                      Approve Dispatch
+                                    </UButton>
+                                  </UTooltip>
                                   <span v-else class="text-xs font-semibold text-warning bg-warning/10 border border-warning/20 px-3 py-1.5 rounded-lg block w-full text-center">
                                     Waiting for Sales Supervisor approval
                                   </span>
