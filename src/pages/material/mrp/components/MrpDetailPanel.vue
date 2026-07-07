@@ -12,6 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: [mrp: Mrp]
+  editRejected: [mrp: Mrp]
   delete: [id: number]
   refreshList: []
 }>()
@@ -52,8 +53,10 @@ const isSupervisor = computed(() => {
 })
 
 const isEditable = computed(() =>
-  localDetail.value?.status === 'Draft' || localDetail.value?.status === 'Submitted'
+  localDetail.value?.status === 'Draft' || localDetail.value?.status === 'Rejected'
 )
+
+const isRejected = computed(() => localDetail.value?.status === 'Rejected')
 
 // ─── Load ──────────────────────────────────────────────────────────────────────
 async function loadDetail() {
@@ -185,7 +188,7 @@ async function submitMrp() {
   try {
     await store.submitMrp(localDetail.value.id)
     toastSuccess('MRP submitted successfully')
-    loadDetail()
+    await loadDetail()
     emit('refreshList')
   } catch (e: any) {
     toastError(e)
@@ -276,22 +279,35 @@ async function confirmReview() {
 
         <!-- Row 2: Action buttons — same layout as forecast -->
         <div class="flex items-center gap-1">
+          <!-- Edit: hanya untuk Draft -->
           <UButton
+            v-if="localDetail.status === 'Draft'"
             icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
             size="sm"
             label="Edit"
-            :disabled="!isEditable"
             @click="mrpSummary && emit('edit', mrpSummary as any)"
           />
+
+          <!-- Edit & Resubmit: hanya untuk Rejected -->
+          <UButton
+            v-if="isRejected"
+            icon="i-lucide-pencil"
+            color="warning"
+            variant="subtle"
+            size="sm"
+            label="Edit & Resubmit"
+            @click="localDetail && emit('editRejected', localDetail as Mrp)"
+          />
+
           <UButton
             icon="i-lucide-trash-2"
             color="error"
             variant="ghost"
             size="sm"
             label="Delete"
-            :disabled="localDetail.status !== 'Draft'"
+            :disabled="localDetail.status !== 'Draft' && localDetail.status !== 'Rejected'"
             @click="emit('delete', mrpId)"
           />
 
@@ -318,7 +334,7 @@ async function confirmReview() {
             @click="openReviewModal"
           />
           <UButton
-            v-if="localDetail.status === 'Draft' || localDetail.status === 'Submitted'"
+            v-if="localDetail.status === 'Draft' || localDetail.status === 'Rejected'"
             icon="i-lucide-save"
             color="primary"
             size="sm"

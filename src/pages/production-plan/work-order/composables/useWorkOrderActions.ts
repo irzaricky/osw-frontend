@@ -1,10 +1,12 @@
-import { reactive } from 'vue'
-import { useWorkOrderStore } from '../../../../stores/production-plan/work-order.store'
-import { useAppToast }       from '../../../../composables/useAppToast'
-import type { WorkOrder }    from '../../../../types/production-plan/work-order'
+import { reactive }          from 'vue'
+import { useRouter }          from 'vue-router'
+import { useWorkOrderStore }  from '../../../../stores/production-plan/work-order.store'
+import { useAppToast }        from '../../../../composables/useAppToast'
+import type { WorkOrder }     from '../../../../types/production-plan/work-order'
 
 export function useWorkOrderActions(onRefresh: () => void) {
   const store  = useWorkOrderStore()
+  const router = useRouter()
   const { toastSuccess, toastError } = useAppToast()
 
   const confirm = reactive({
@@ -36,21 +38,10 @@ export function useWorkOrderActions(onRefresh: () => void) {
     confirm.action = null
   }
 
-  async function handleStart(wo: WorkOrder) {
-    openConfirm({
-      title:        'Start Work Order',
-      description:  `Start WO "${wo.wo_number}"? Status will change to In Progress and the first station will be activated.`,
-      confirmLabel: 'Start',
-      confirmColor: 'primary',
-      action:       async () => {
-        try {
-          const res = await store.startWorkOrder(wo.id)
-          toastSuccess(res.message || 'Work Order started')
-          closeConfirm()
-          onRefresh()
-        } catch (e) { toastError(e); closeConfirm() }
-      },
-    })
+  // Start dari list page diarahkan ke halaman detail karena memerlukan material check
+  // sebelum start (auto-fill actual_quantity dari stok gudang terjadi saat start dipanggil)
+  function handleStart(wo: WorkOrder) {
+    router.push(`/production-plan/work-order/${wo.id}`)
   }
 
   return { confirm, openConfirm, closeConfirm, handleStart }

@@ -5,6 +5,7 @@ import { useAuthStore } from '../../stores/auth.store'
 import sprService from '../../services/sales/spr.service'
 import spoService from '../../services/sales/spo.service'
 import forecastService from '../../services/sales/forecast.service'
+import sdoService from '../../services/sales/sdo.service'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -38,56 +39,79 @@ const filteredQuickLinks = computed(() => {
 
 // ─── Needs Review Table ────────────────────────────────────────────────────────
 interface ReviewItem {
-  type: 'SPR' | 'SPO' | 'Forecast'
   doc_number: string
   date: string
   to: string
 }
 
-const reviewItems = ref<ReviewItem[]>([])
+const sprReviewItems = ref<ReviewItem[]>([])
+const spoReviewItems = ref<ReviewItem[]>([])
+const forecastReviewItems = ref<ReviewItem[]>([])
+const sdoReviewItems = ref<ReviewItem[]>([])
 const reviewLoading = ref(false)
+
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+}
 
 async function fetchReviewItems() {
   reviewLoading.value = true
   try {
-    const [sprRes, spoRes, frcRes] = await Promise.allSettled([
+    const [sprRes, spoRes, frcRes, sdoRes] = await Promise.allSettled([
       sprService.getSprs({ status: 'Waiting Review Sales', limit: 10 }),
       spoService.getSpos({ status: 'Submitted', limit: 10 }),
-      forecastService.getForecasts({ status: 'Submitted', limit: 10 })
+      forecastService.getForecasts({ status: 'Submitted', limit: 10 }),
+      sdoService.getSdos({ delivery_status: 'Loading', limit: 10 })
     ])
-
-    const items: ReviewItem[] = []
 
     if (sprRes.status === 'fulfilled') {
       const rows = sprRes.value?.data?.data?.rows || sprRes.value?.data?.data || []
-      for (const row of rows) {
-        items.push({ type: 'SPR', doc_number: row.spr_number, date: row.request_date, to: '/sales/spr' })
-      }
+      sprReviewItems.value = rows.map((row: any) => ({
+        doc_number: row.spr_number,
+        date: row.request_date,
+        to: '/sales/spr'
+      }))
     }
 
     if (spoRes.status === 'fulfilled') {
       const rows = spoRes.value?.data?.data?.rows || spoRes.value?.data?.data || []
-      for (const row of rows) {
-        items.push({ type: 'SPO', doc_number: row.spo_number, date: row.spo_date, to: '/sales/spo' })
-      }
+      spoReviewItems.value = rows.map((row: any) => ({
+        doc_number: row.spo_number,
+        date: row.spo_date,
+        to: '/sales/spo'
+      }))
     }
 
     if (frcRes.status === 'fulfilled') {
       const rows = frcRes.value?.data?.data?.rows || frcRes.value?.data?.data || []
-      for (const row of rows) {
-        items.push({ type: 'Forecast', doc_number: row.forecast_number, date: row.start_period, to: '/sales/forecast' })
-      }
+      forecastReviewItems.value = rows.map((row: any) => ({
+        doc_number: row.forecast_number,
+        date: row.start_period,
+        to: '/sales/forecast'
+      }))
     }
 
-    // Sort by date descending
-    items.sort((a, b) => (a.date < b.date ? 1 : -1))
-    reviewItems.value = items
+    if (sdoRes.status === 'fulfilled') {
+      const rows = sdoRes.value?.data?.data?.rows || sdoRes.value?.data?.data || []
+      sdoReviewItems.value = rows
+        .filter((row: any) => !row.dispatch_approved_by)
+        .map((row: any) => ({
+          doc_number: row.do_number,
+          date: row.shipment_date,
+          to: '/sales/sdo'
+        }))
+    }
   } catch (e) {
     console.error('Error fetching review items:', e)
   } finally {
     reviewLoading.value = false
   }
 }
+
+const totalPending = computed(() => {
+  return sprReviewItems.value.length + spoReviewItems.value.length + forecastReviewItems.value.length + sdoReviewItems.value.length
+})
 
 onMounted(() => {
   if (isSupervisor.value) {
@@ -115,7 +139,7 @@ onMounted(() => {
       </UBadge>
     </div>
 
-    <!-- Supervisor Pending Actions — Combined Needs Review Table -->
+    <!-- Supervisor Pending Actions — Divided Needs Review -->
     <div v-if="isSupervisor" class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-bold text-default flex items-center gap-2 uppercase tracking-wider">
@@ -123,54 +147,152 @@ onMounted(() => {
           Needs Review
         </h2>
         <UBadge
-          v-if="reviewItems.length"
+          v-if="totalPending"
           color="warning"
           variant="subtle"
           size="sm"
         >
-          {{ reviewItems.length }} pending
+          {{ totalPending }} pending
         </UBadge>
       </div>
 
-      <UCard>
-        <!-- Loading skeleton -->
-        <div v-if="reviewLoading" class="space-y-3">
-          <USkeleton v-for="i in 3" :key="i" class="h-10 w-full" />
-        </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 1. Forecast Review Card -->
+        <UCard class="flex flex-col h-full bg-elevated/40">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold flex items-center gap-2 text-primary uppercase tracking-wider">
+                <UIcon name="i-lucide-badge-dollar-sign" class="w-4 h-4" />
+                Forecast Reviews
+              </h3>
+              <UBadge v-if="forecastReviewItems.length" color="primary" variant="subtle" size="sm">
+                {{ forecastReviewItems.length }}
+              </UBadge>
+            </div>
+          </template>
 
-        <!-- Empty state -->
-        <div v-else-if="!reviewItems.length" class="text-center py-8 text-muted">
-          <UIcon name="i-lucide-check-circle" class="w-10 h-10 mx-auto mb-2 text-success" />
-          <p class="text-sm font-medium">
-            All caught up!
-          </p>
-          <p class="text-xs mt-1">
-            No documents pending your review.
-          </p>
-        </div>
-
-        <!-- Review item rows -->
-        <div v-else class="divide-y divide-default">
-          <RouterLink
-            v-for="item in reviewItems"
-            :key="`${item.type}-${item.doc_number}`"
-            :to="item.to"
-            class="flex items-center gap-3 py-3 px-2 hover:bg-elevated rounded-lg transition-colors cursor-pointer"
-          >
-            <UBadge
-              :color="item.type === 'SPR' ? 'warning' : item.type === 'SPO' ? 'primary' : 'success'"
-              variant="subtle"
-              size="xs"
-              class="w-20 justify-center shrink-0"
+          <div v-if="reviewLoading" class="space-y-2">
+            <USkeleton v-for="i in 2" :key="i" class="h-8 w-full" />
+          </div>
+          <div v-else-if="!forecastReviewItems.length" class="text-center py-4 text-xs text-muted">
+            <UIcon name="i-lucide-check-circle" class="w-5 h-5 mx-auto mb-1 text-success/60" />
+            No Forecasts pending review.
+          </div>
+          <div v-else class="divide-y divide-default max-h-[160px] overflow-y-auto pr-1">
+            <RouterLink
+              v-for="item in forecastReviewItems"
+              :key="item.doc_number"
+              :to="item.to"
+              class="flex items-center justify-between py-2 px-1 hover:bg-elevated rounded transition-colors"
             >
-              {{ item.type }}
-            </UBadge>
-            <span class="font-mono text-sm font-semibold text-default flex-1">{{ item.doc_number }}</span>
-            <span class="text-xs text-muted shrink-0">{{ item.date }}</span>
-            <UIcon name="i-lucide-chevron-right" class="w-4 h-4 text-muted shrink-0" />
-          </RouterLink>
-        </div>
-      </UCard>
+              <span class="font-mono text-xs font-semibold text-default">{{ item.doc_number }}</span>
+              <span class="text-[10px] text-muted">{{ formatDate(item.date) }}</span>
+            </RouterLink>
+          </div>
+        </UCard>
+
+        <!-- 2. SPR Review Card -->
+        <UCard class="flex flex-col h-full bg-elevated/40">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold flex items-center gap-2 text-warning uppercase tracking-wider">
+                <UIcon name="i-lucide-file-text" class="w-4 h-4" />
+                SPR Reviews
+              </h3>
+              <UBadge v-if="sprReviewItems.length" color="warning" variant="subtle" size="sm">
+                {{ sprReviewItems.length }}
+              </UBadge>
+            </div>
+          </template>
+
+          <div v-if="reviewLoading" class="space-y-2">
+            <USkeleton v-for="i in 2" :key="i" class="h-8 w-full" />
+          </div>
+          <div v-else-if="!sprReviewItems.length" class="text-center py-4 text-xs text-muted">
+            <UIcon name="i-lucide-check-circle" class="w-5 h-5 mx-auto mb-1 text-success/60" />
+            No SPRs pending review.
+          </div>
+          <div v-else class="divide-y divide-default max-h-[160px] overflow-y-auto pr-1">
+            <RouterLink
+              v-for="item in sprReviewItems"
+              :key="item.doc_number"
+              :to="item.to"
+              class="flex items-center justify-between py-2 px-1 hover:bg-elevated rounded transition-colors"
+            >
+              <span class="font-mono text-xs font-semibold text-default">{{ item.doc_number }}</span>
+              <span class="text-[10px] text-muted">{{ formatDate(item.date) }}</span>
+            </RouterLink>
+          </div>
+        </UCard>
+
+        <!-- 3. SPO Review Card -->
+        <UCard class="flex flex-col h-full bg-elevated/40">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold flex items-center gap-2 text-info uppercase tracking-wider">
+                <UIcon name="i-lucide-file-check" class="w-4 h-4" />
+                SPO Reviews
+              </h3>
+              <UBadge v-if="spoReviewItems.length" color="info" variant="subtle" size="sm">
+                {{ spoReviewItems.length }}
+              </UBadge>
+            </div>
+          </template>
+
+          <div v-if="reviewLoading" class="space-y-2">
+            <USkeleton v-for="i in 2" :key="i" class="h-8 w-full" />
+          </div>
+          <div v-else-if="!spoReviewItems.length" class="text-center py-4 text-xs text-muted">
+            <UIcon name="i-lucide-check-circle" class="w-5 h-5 mx-auto mb-1 text-success/60" />
+            No SPOs pending review.
+          </div>
+          <div v-else class="divide-y divide-default max-h-[160px] overflow-y-auto pr-1">
+            <RouterLink
+              v-for="item in spoReviewItems"
+              :key="item.doc_number"
+              :to="item.to"
+              class="flex items-center justify-between py-2 px-1 hover:bg-elevated rounded transition-colors"
+            >
+              <span class="font-mono text-xs font-semibold text-default">{{ item.doc_number }}</span>
+              <span class="text-[10px] text-muted">{{ formatDate(item.date) }}</span>
+            </RouterLink>
+          </div>
+        </UCard>
+
+        <!-- 4. SDO Review Card -->
+        <UCard class="flex flex-col h-full bg-elevated/40">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold flex items-center gap-2 text-success uppercase tracking-wider">
+                <UIcon name="i-lucide-truck" class="w-4 h-4" />
+                SDO Dispatch Reviews
+              </h3>
+              <UBadge v-if="sdoReviewItems.length" color="success" variant="subtle" size="sm">
+                {{ sdoReviewItems.length }}
+              </UBadge>
+            </div>
+          </template>
+
+          <div v-if="reviewLoading" class="space-y-2">
+            <USkeleton v-for="i in 2" :key="i" class="h-8 w-full" />
+          </div>
+          <div v-else-if="!sdoReviewItems.length" class="text-center py-4 text-xs text-muted">
+            <UIcon name="i-lucide-check-circle" class="w-5 h-5 mx-auto mb-1 text-success/60" />
+            No SDOs pending dispatch approval.
+          </div>
+          <div v-else class="divide-y divide-default max-h-[160px] overflow-y-auto pr-1">
+            <RouterLink
+              v-for="item in sdoReviewItems"
+              :key="item.doc_number"
+              :to="item.to"
+              class="flex items-center justify-between py-2 px-1 hover:bg-elevated rounded transition-colors"
+            >
+              <span class="font-mono text-xs font-semibold text-default">{{ item.doc_number }}</span>
+              <span class="text-[10px] text-muted">{{ formatDate(item.date) }}</span>
+            </RouterLink>
+          </div>
+        </UCard>
+      </div>
     </div>
 
     <!-- Quick Links -->

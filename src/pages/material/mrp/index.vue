@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRouter } from 'vue-router'
 import { useMrpStore } from '../../../stores/material/mrp.store'
 import type { Mrp } from '../../../types/material/mrp'
 import MrpCreateModal from './components/MrpCreateModal.vue'
+import MrpEditRejectedModal from './components/MrpEditRejectedModal.vue'
 import MrpDetailPanel from './components/MrpDetailPanel.vue'
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import ConfirmDialog from '../../../components/ConfirmDialog.vue'
@@ -132,6 +133,47 @@ function toggleStatusCollapse(status: string) {
   collapsedStatuses[status] = !collapsedStatuses[status]
 }
 
+// ─── Bulk Submit (Staff/Maker) ────────────────────────────────────────────────
+const selectedDraftIds = ref<number[]>([])
+const isBulkSubmitOpen = ref(false)
+
+function toggleSelectDraft(id: number) {
+  const idx = selectedDraftIds.value.indexOf(id)
+  if (idx === -1) selectedDraftIds.value.push(id)
+  else selectedDraftIds.value.splice(idx, 1)
+}
+
+function toggleSelectAllDraft() {
+  const draftIds = mrps.value
+    .filter(m => m.status === 'Draft')
+    .map(m => m.id)
+  if (selectedDraftIds.value.length === draftIds.length) {
+    selectedDraftIds.value = []
+  } else {
+    selectedDraftIds.value = draftIds
+  }
+}
+
+function openBulkSubmit() {
+  isBulkSubmitOpen.value = true
+}
+
+async function confirmBulkSubmit() {
+  try {
+    await store.bulkSubmitMrp(selectedDraftIds.value)
+    toastSuccess(`${selectedDraftIds.value.length} MRP(s) submitted successfully`)
+    // Kalau MRP yang sedang dibuka di detail panel ikut di-submit, reload detailnya
+    if (selectedMrpId.value && selectedDraftIds.value.includes(selectedMrpId.value)) {
+      detailPanelRef.value?.loadDetail?.()
+    }
+    selectedDraftIds.value = []
+    isBulkSubmitOpen.value = false
+    fetchData()
+  } catch (e: any) {
+    toastError(e)
+  }
+}
+
 // ─── Bulk Review (Supervisor) ────────────────────────────────────────────────
 const selectedIds = ref<number[]>([])
 const isBulkReviewOpen = ref(false)
@@ -174,6 +216,10 @@ async function confirmBulkReview() {
       notes: bulkReviewForm.value.notes || undefined
     })
     toastSuccess(`${selectedIds.value.length} MRP(s) ${bulkReviewForm.value.action === 'Approve' ? 'approved' : 'rejected'}`)
+    // Kalau MRP yang sedang dibuka ikut di-review, reload detailnya
+    if (selectedMrpId.value && selectedIds.value.includes(selectedMrpId.value)) {
+      detailPanelRef.value?.loadDetail?.()
+    }
     selectedIds.value = []
     isBulkReviewOpen.value = false
     fetchData()
@@ -230,6 +276,10 @@ function openAddModal() {
 }
 
 function openEditModal(mrp: Mrp) {
+  if (!['Draft', 'Rejected'].includes(mrp.status)) {
+    toastError('Only Draft or Rejected MRPs can be edited.')
+    return
+  }
   modalMode.value = 'edit'
   Object.assign(currentMrp, mrp)
   isModalOpen.value = true
@@ -246,6 +296,9 @@ async function handleSave(data: any) {
     }
     isModalOpen.value = false
     fetchData()
+    // Refetch dropdown supaya SPR yang baru dipakai langsung hilang dari list
+    // tanpa perlu reload halaman
+    store.fetchDropdownSalesPlans()
     if (modalMode.value === 'edit' && selectedMrpId.value) {
       // refresh detail panel
       detailPanelRef.value?.loadDetail?.()
@@ -253,6 +306,24 @@ async function handleSave(data: any) {
   } catch (e: any) {
     toastError(e)
   }
+}
+
+// ─── Modal: Edit Rejected MRP ─────────────────────────────────────────────────
+const isEditRejectedOpen = ref(false)
+const rejectedMrpToEdit = ref<Mrp | null>(null)
+
+function openEditRejectedModal(mrp: Mrp) {
+  rejectedMrpToEdit.value = mrp
+  isEditRejectedOpen.value = true
+}
+
+function onRejectedEditSaved() {
+  toastSuccess('MRP updated successfully')
+  isEditRejectedOpen.value = false
+  fetchData()
+  // Refetch dropdown — setelah rejected MRP di-resubmit, SPR-nya kembali terkunci
+  store.fetchDropdownSalesPlans()
+  detailPanelRef.value?.loadDetail?.()
 }
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
@@ -294,6 +365,9 @@ async function executeDelete() {
     toastSuccess('MRP deleted successfully')
     if (selectedMrpId.value === confirmDialog.value.id) selectedMrpId.value = null
     fetchData()
+    // Refetch dropdown — MRP Draft/Rejected yang dihapus melepaskan SPR-nya
+    // kembali ke dropdown tanpa perlu reload halaman
+    store.fetchDropdownSalesPlans()
     confirmDialog.value.open = false
   } catch (e: any) {
     toastError(e)
@@ -322,6 +396,19 @@ onMounted(() => {
           Material Requirements Planning
         </h1>
         <div class="flex items-center gap-2">
+          <!-- Bulk Submit (Staff) -->
+          <template v-if="isStaff && selectedDraftIds.length > 0">
+            <span class="text-sm text-muted">{{ selectedDraftIds.length }} selected</span>
+            <UButton
+              icon="i-lucide-send"
+              color="warning"
+              variant="outline"
+              size="sm"
+              label="Submit Selected"
+              @click="openBulkSubmit"
+            />
+          </template>
+
           <!-- Bulk Review (Supervisor) -->
           <template v-if="isSupervisor && selectedIds.length > 0">
             <span class="text-sm text-muted">{{ selectedIds.length }} selected</span>
@@ -376,18 +463,6 @@ onMounted(() => {
             size="sm"
             clear
           />
-
-          <!-- Select all submitted (Supervisor) -->
-          <div v-if="isSupervisor" class="flex items-center justify-between text-xs text-muted pt-0.5">
-            <span>Select submitted MRPs to bulk review</span>
-            <UButton
-              color="neutral"
-              variant="ghost"
-              size="xs"
-              :label="selectedIds.length > 0 ? 'Deselect All' : 'Select All Submitted'"
-              @click="toggleSelectAll"
-            />
-          </div>
         </div>
 
         <!-- List -->
@@ -399,7 +474,6 @@ onMounted(() => {
           </template>
 
           <template v-for="statusGroup in groupedMrps" :key="statusGroup.status">
-            <!-- Status Group Header -->
             <div
               class="sticky top-0 z-10 px-3 py-2 bg-default/95 backdrop-blur border-b border-default flex items-center gap-2 cursor-pointer hover:bg-elevated/80 transition-colors"
               @click="toggleStatusCollapse(statusGroup.status)"
@@ -407,6 +481,18 @@ onMounted(() => {
               <UIcon
                 :name="collapsedStatuses[statusGroup.status] ? 'i-lucide-chevron-right' : 'i-lucide-chevron-down'"
                 class="w-4 h-4 text-muted transition-transform"
+              />
+              <UCheckbox
+                v-if="isStaff && statusGroup.status === 'Draft'"
+                :model-value="selectedDraftIds.length > 0 && selectedDraftIds.length === statusGroup.items.length"
+                :indeterminate="selectedDraftIds.length > 0 && selectedDraftIds.length < statusGroup.items.length"
+                @click.stop="toggleSelectAllDraft"
+              />
+              <UCheckbox
+                v-if="isSupervisor && statusGroup.status === 'Submitted'"
+                :model-value="selectedIds.length > 0 && selectedIds.length === statusGroup.items.length"
+                :indeterminate="selectedIds.length > 0 && selectedIds.length < statusGroup.items.length"
+                @click.stop="toggleSelectAll"
               />
               <UBadge :color="getStatusColor(statusGroup.status)" variant="subtle" size="xs">
                 {{ statusGroup.status }}
@@ -423,6 +509,15 @@ onMounted(() => {
                 @click="selectMrp(mrp)"
               >
                 <div class="flex items-start justify-between gap-2">
+                  <!-- Checkbox for bulk submit (Staff, Draft only) -->
+                  <div
+                    v-if="isStaff && mrp.status === 'Draft'"
+                    class="mt-0.5 shrink-0"
+                    @click.stop="toggleSelectDraft(mrp.id)"
+                  >
+                    <UCheckbox :model-value="selectedDraftIds.includes(mrp.id)" />
+                  </div>
+
                   <!-- Checkbox for bulk review (Supervisor, Submitted only) -->
                   <div
                     v-if="isSupervisor && mrp.status === 'Submitted'"
@@ -487,6 +582,7 @@ onMounted(() => {
           :mrp-id="selectedMrpId"
           :mrp-summary="selectedMrpData"
           @edit="openEditModal"
+          @edit-rejected="openEditRejectedModal"
           @delete="handleDelete"
           @refresh-list="fetchData"
         />
@@ -501,6 +597,36 @@ onMounted(() => {
       :loading="loading"
       @save="handleSave"
     />
+
+    <!-- Edit Rejected Modal -->
+    <MrpEditRejectedModal
+      v-model:open="isEditRejectedOpen"
+      :mrp="rejectedMrpToEdit"
+      @saved="onRejectedEditSaved"
+    />
+
+    <!-- Bulk Submit Modal -->
+    <UModal
+      v-model:open="isBulkSubmitOpen"
+      title="Bulk Submit MRP"
+      :description="`You are about to submit ${selectedDraftIds.length} Draft MRP document(s) to Supervisor for review.`"
+    >
+      <template #body>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
+          <UIcon name="i-lucide-send" class="w-5 h-5 shrink-0 text-warning-500" />
+          <div class="text-sm">
+            <p class="font-medium">{{ selectedDraftIds.length }} MRP(s) selected</p>
+            <p class="text-muted text-xs mt-0.5">MRP IDs: {{ selectedDraftIds.join(', ') }}</p>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex gap-2 justify-end w-full">
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="isBulkSubmitOpen = false" />
+          <UButton color="warning" label="Submit All" icon="i-lucide-send" :loading="loading" @click="confirmBulkSubmit" />
+        </div>
+      </template>
+    </UModal>
 
     <!-- Bulk Review Modal -->
     <UModal

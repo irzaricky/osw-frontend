@@ -74,7 +74,7 @@ const canLock = computed(() =>
 )
 const canDelete = computed(() => store.detail?.status === 'Draft')
 const canCreateDelivery = computed(() =>
-  store.detail?.status === 'Locked' || store.detail?.status === 'Processing'
+  (store.detail?.status === 'Locked' || store.detail?.status === 'Processing') && isSupervisor.value === false
 )
 
 // ─── Workflow: Submit ─────────────────────────────────────────────────────────

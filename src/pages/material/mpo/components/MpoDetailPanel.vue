@@ -12,6 +12,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   edit: [mpo: Mpo]
+  editRejected: [mpo: Mpo]   // NEW: trigger modal edit khusus MPO rejected
   delete: [id: number]
   refreshList: []
 }>()
@@ -25,22 +26,17 @@ const toast = useToast()
 const localDetail = ref<Mpo | null>(null)
 const loadingDetail = ref(false)
 
-// [REFACTOR] Detail items sekarang pure read-only — tidak ada state editable.
-// Struktur tetap ada untuk memudahkan render template.
 const detailItems = ref<{
   id?: number
   part_id: number
-  qty: number           // Read-only — strict dari source
-  price: number         // Read-only
-  notes?: string        // Read-only
+  qty: number
+  price: number
+  notes?: string
   part_number?: string
   part_name?: string
   uom_code?: string
-  supplier_name?: string // Supplier milik Header MPO, ditampilkan info saja
+  supplier_name?: string
 }[]>([])
-
-// [HAPUS] isDirty, editableDetails, saveChanges tidak lagi relevan karena
-// tidak ada field yang bisa diedit di dalam tabel detail.
 
 defineExpose({
   loadDetail
@@ -57,11 +53,14 @@ const isStaff = computed(() => {
   return role === 'Superadmin' || role === 'Staff Material'
 })
 
-// Status draft/rejected = boleh di-edit via modal (bukan via tabel)
 const isEditable = computed(() => {
   const status = localDetail.value?.status?.toLowerCase()
   return status === 'draft' || status === 'rejected'
 })
+
+const isRejected = computed(() =>
+  localDetail.value?.status?.toLowerCase() === 'rejected'
+)
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function getStatusIcon(status: string): string {
@@ -102,7 +101,6 @@ const sourceLabel = computed(() => {
   return '-'
 })
 
-// ─── Supplier Header (dari MPO, bukan per-item) ───────────────────────────────
 const headerSupplierName = computed(() =>
   (localDetail.value as any)?.supplier?.name ?? '-'
 )
@@ -134,7 +132,6 @@ function setupDetailItems(mpo: Mpo) {
     part_number: d.part?.part_number,
     part_name: d.part?.part_name,
     uom_code: d.part?.uom?.code,
-    // Supplier info informatif dari Header — bukan per-item
     supplier_name: (mpo as any).supplier?.name ?? d.supplier?.name ?? '-'
   }))
 }
@@ -156,26 +153,28 @@ async function submitMpo() {
 
 // ─── Review (Approve / Reject) ────────────────────────────────────────────────
 const isReviewOpen = ref(false)
-const reviewForm = ref<{ action: 'approve' | 'reject'; remarks: string }>({
+const reviewForm = ref<{ action: 'approve' | 'reject'; notes: string }>({
   action: 'approve',
-  remarks: ''
+  notes: ''
 })
 
 function openReviewModal() {
-  reviewForm.value = { action: 'approve', remarks: '' }
+  reviewForm.value = { action: 'approve', notes: '' }
   isReviewOpen.value = true
 }
 
 async function confirmReview() {
-  if (reviewForm.value.action === 'reject' && !reviewForm.value.remarks.trim()) {
+  if (reviewForm.value.action === 'reject' && !reviewForm.value.notes.trim()) {
     toast.add({ title: 'Error', description: 'Remarks are required when rejecting', color: 'error' })
     return
   }
   if (!localDetail.value) return
   try {
+    // FIXED: field yang dikirim ke backend adalah `notes`, bukan `remarks`
+    // Backend updateStatus mengekstrak { action, notes } dari req.body
     await store.updateStatus(localDetail.value.id, {
       action: reviewForm.value.action,
-      remarks: reviewForm.value.remarks || undefined
+      notes: reviewForm.value.notes || undefined
     })
     toastSuccess(`MPO ${reviewForm.value.action === 'approve' ? 'approved' : 'rejected'} successfully`)
     isReviewOpen.value = false
@@ -223,18 +222,30 @@ async function confirmReview() {
         </div>
 
         <!-- Row 2: Action buttons -->
-        <!-- [REFACTOR] Tombol "Save" dihapus — tidak ada lagi edit per-baris.
-             Edit dilakukan via tombol "Edit" yang membuka MpoCreateModal. -->
         <div class="flex items-center gap-1">
+          <!-- Tombol Edit biasa — untuk status Draft, membuka modal edit lengkap -->
           <UButton
+            v-if="localDetail.status?.toLowerCase() === 'draft'"
             icon="i-lucide-pencil"
             color="neutral"
             variant="ghost"
             size="sm"
             label="Edit"
-            :disabled="!isEditable || !isStaff"
-            @click="mpoSummary && emit('edit', mpoSummary as any)"
+            :disabled="!isStaff"
+            @click="localDetail && emit('editRejected', localDetail as Mpo)"
           />
+
+          <!-- Tombol Edit Rejected — untuk status Rejected, membuka modal split-update -->
+          <UButton
+            v-if="isRejected && isStaff"
+            icon="i-lucide-pencil"
+            color="warning"
+            variant="subtle"
+            size="sm"
+            label="Edit & Resubmit"
+            @click="localDetail && emit('editRejected', localDetail as Mpo)"
+          />
+
           <UButton
             icon="i-lucide-trash-2"
             color="error"
@@ -266,7 +277,6 @@ async function confirmReview() {
             label="Review"
             @click="openReviewModal"
           />
-          <!-- [HAPUS] Tombol Save tidak ada lagi karena tabel sudah pure read-only -->
         </div>
       </div>
     </div>
@@ -281,9 +291,7 @@ async function confirmReview() {
         <!-- Summary Cards -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
-              Total Price
-            </div>
+            <div class="text-xs text-muted mb-1">Total Price</div>
             <div class="text-sm font-semibold truncate text-primary-600 dark:text-primary-400">
               {{ formatCurrency(totalPrice) }}
             </div>
@@ -292,38 +300,28 @@ async function confirmReview() {
             <div class="text-xs text-muted mb-1">
               {{ localDetail.mrp_id ? 'MRP Number' : 'MPR Number' }}
             </div>
-            <div class="text-sm font-semibold truncate">
-              {{ sourceLabel }}
-            </div>
+            <div class="text-sm font-semibold truncate">{{ sourceLabel }}</div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
-              Created By
-            </div>
+            <div class="text-xs text-muted mb-1">Created By</div>
             <div class="text-sm font-semibold truncate">
               {{ localDetail.creator?.user_detail?.full_name || localDetail.creator?.email || '-' }}
             </div>
           </div>
           <div class="bg-elevated/50 rounded-xl border border-default p-3">
-            <div class="text-xs text-muted mb-1">
-              Approved By
-            </div>
+            <div class="text-xs text-muted mb-1">Approved By</div>
             <div class="text-sm font-semibold truncate">
               {{ localDetail.approver?.user_detail?.full_name || localDetail.approver?.email || '-' }}
             </div>
           </div>
         </div>
 
-        <!-- [BARU] Supplier Header Card — 1 MPO = 1 Supplier -->
+        <!-- Supplier Header Card -->
         <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-default bg-elevated/50">
           <UIcon name="i-lucide-building-2" class="w-4 h-4 text-primary shrink-0" />
           <div>
-            <div class="text-xs text-muted mb-0.5 uppercase tracking-wider font-bold">
-              Supplier
-            </div>
-            <div class="text-sm font-semibold">
-              {{ headerSupplierName }}
-            </div>
+            <div class="text-xs text-muted mb-0.5 uppercase tracking-wider font-bold">Supplier</div>
+            <div class="text-sm font-semibold">{{ headerSupplierName }}</div>
           </div>
           <UBadge color="neutral" variant="outline" size="xs" class="ml-auto" icon="i-lucide-info">
             1 MPO = 1 Supplier
@@ -332,9 +330,7 @@ async function confirmReview() {
 
         <!-- Description -->
         <div v-if="localDetail.description" class="bg-elevated/50 rounded-xl border border-default p-4">
-          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">
-            Description
-          </div>
+          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">Description</div>
           <div class="text-sm text-highlighted whitespace-pre-wrap leading-relaxed">
             {{ localDetail.description }}
           </div>
@@ -342,9 +338,7 @@ async function confirmReview() {
 
         <!-- Remarks -->
         <div v-if="localDetail.remarks" class="bg-elevated/50 rounded-xl border border-default p-4">
-          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">
-            Remarks
-          </div>
+          <div class="text-xs text-muted mb-2 uppercase tracking-wider font-bold">Remarks</div>
           <div class="text-sm text-highlighted whitespace-pre-wrap leading-relaxed">
             {{ localDetail.remarks }}
           </div>
@@ -352,100 +346,63 @@ async function confirmReview() {
 
         <!-- Rejected info box -->
         <div
-          v-if="localDetail.status?.toLowerCase() === 'rejected' && localDetail.remarks"
+          v-if="isRejected"
           class="flex flex-col gap-2 p-4 rounded-xl border border-error-200 dark:border-error-800 bg-error-50 dark:bg-error-900/20 text-error-700 dark:text-error-300"
         >
           <div class="flex items-center gap-3">
             <UIcon name="i-lucide-alert-octagon" class="w-5 h-5 shrink-0" />
-            <p class="text-sm font-bold uppercase tracking-wide">
-              MPO Rejected
-            </p>
+            <p class="text-sm font-bold uppercase tracking-wide">MPO Rejected</p>
           </div>
           <div class="text-sm ml-8">
-            <p class="font-medium italic">
-              "{{ localDetail.remarks }}"
-            </p>
+            <p v-if="localDetail.remarks" class="font-medium italic">"{{ localDetail.remarks }}"</p>
             <p class="opacity-90 mt-1">
-              Please review and update before resubmitting for approval.
+              Click <strong>Edit &amp; Resubmit</strong> to fix it and change the supplier if needed.
             </p>
           </div>
         </div>
 
         <!-- Order Items Table — Pure Read-Only -->
-        <!-- [REFACTOR] Semua cell adalah <span> biasa.
-             Tidak ada UInput, USelectMenu, atau tombol delete per baris.
-             Kolom "Supplier" dihapus dari tabel karena supplier = atribut Header.
-             Kolom "Action" dihapus karena tidak ada aksi per baris. -->
         <div class="overflow-x-auto border border-default rounded-xl">
           <table class="w-full text-left border-collapse text-sm">
             <thead class="bg-elevated/50 border-b border-default">
               <tr>
-                <th class="p-3 font-medium border-r border-default min-w-[200px]">
-                  Part
-                </th>
-                <th class="p-3 font-medium border-r border-default w-32 text-center">
-                  Qty
-                </th>
-                <th class="p-3 font-medium border-r border-default w-24 text-center">
-                  UOM
-                </th>
-                <th class="p-3 font-medium border-r border-default w-40 text-right">
-                  Price/Pcs
-                </th>
-                <th class="p-3 font-medium border-r border-default w-44 text-right">
-                  Subtotal
-                </th>
-                <th class="p-3 font-medium">
-                  Notes
-                </th>
+                <th class="p-3 font-medium border-r border-default min-w-[200px]">Part</th>
+                <th class="p-3 font-medium border-r border-default w-32 text-center">Qty</th>
+                <th class="p-3 font-medium border-r border-default w-24 text-center">UOM</th>
+                <th class="p-3 font-medium border-r border-default w-40 text-right">Price/Pcs</th>
+                <th class="p-3 font-medium border-r border-default w-44 text-right">Subtotal</th>
+                <th class="p-3 font-medium">Notes</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="detailItems.length === 0">
-                <td colspan="6" class="p-8 text-center text-muted text-sm">
-                  No items in this MPO.
-                </td>
+                <td colspan="6" class="p-8 text-center text-muted text-sm">No items in this MPO.</td>
               </tr>
               <tr
                 v-for="item in detailItems"
                 :key="item.part_id"
                 class="border-b border-default last:border-b-0 hover:bg-elevated/20"
               >
-                <!-- Part -->
                 <td class="p-3 border-r border-default">
-                  <div class="font-medium">
-                    {{ item.part_number }}
-                  </div>
-                  <div class="text-xs text-muted line-clamp-1">
-                    {{ item.part_name }}
-                  </div>
+                  <div class="font-medium">{{ item.part_number }}</div>
+                  <div class="text-xs text-muted line-clamp-1">{{ item.part_name }}</div>
                 </td>
-
-                <!-- Qty — read-only span -->
                 <td class="p-3 border-r border-default text-center">
                   <span class="font-mono font-semibold">{{ item.qty }}</span>
                 </td>
-
-                <!-- UOM -->
                 <td class="p-2 border-r border-default text-center">
                   <UBadge color="neutral" variant="subtle" size="xs">
                     {{ item.uom_code || '-' }}
                   </UBadge>
                 </td>
-
-                <!-- Price — read-only span -->
                 <td class="p-3 border-r border-default text-right">
                   <span class="font-mono text-xs">{{ formatCurrency(item.price) }}</span>
                 </td>
-
-                <!-- Subtotal — computed read-only -->
                 <td class="p-3 border-r border-default text-right">
                   <span class="font-mono text-xs font-semibold text-primary-600 dark:text-primary-400">
                     {{ formatCurrency(item.qty * item.price) }}
                   </span>
                 </td>
-
-                <!-- Notes — read-only span -->
                 <td class="p-3">
                   <span class="text-xs text-muted">{{ item.notes || '-' }}</span>
                 </td>
@@ -481,17 +438,17 @@ async function confirmReview() {
               class="w-full"
             />
           </UFormField>
-          <UFormField v-if="reviewForm.action === 'reject'" label="Rejection Remarks" required>
+          <UFormField v-if="reviewForm.action === 'reject'" label="Rejection Notes" required>
             <UTextarea
-              v-model="reviewForm.remarks"
+              v-model="reviewForm.notes"
               placeholder="Enter rejection reason..."
               class="w-full"
               rows="3"
             />
           </UFormField>
-          <UFormField v-else label="Remarks (Optional)">
+          <UFormField v-else label="Notes (Optional)">
             <UTextarea
-              v-model="reviewForm.remarks"
+              v-model="reviewForm.notes"
               placeholder="Add approval notes if needed..."
               class="w-full"
               rows="2"
@@ -501,12 +458,7 @@ async function confirmReview() {
       </template>
       <template #footer>
         <div class="flex gap-2 justify-end w-full">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            label="Cancel"
-            @click="isReviewOpen = false"
-          />
+          <UButton color="neutral" variant="ghost" label="Cancel" @click="isReviewOpen = false" />
           <UButton
             color="primary"
             label="Submit Review"

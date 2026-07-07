@@ -4,6 +4,7 @@ import workOrderService from '../../services/production-plan/work-order.service'
 import type {
   WorkOrder,
   WorkOrderStationDetail,
+  WorkOrderOutputPart,
   WorkOrderProgress,
   WorkOrderIssue,
   WorkOrderMaterial,
@@ -14,18 +15,16 @@ import type {
   UpdateMaterialActualPayload,
 } from '../../types/production-plan/work-order'
 
-// Manages state for a single WO Station detail page.
-// Separate from workOrderStore to avoid shared-state collisions.
 export const useWorkOrderStationStore = defineStore('workOrderStation', () => {
 
   // ── State ────────────────────────────────────────────────────────────────────
 
-  // Parent WO kept for header display (wo_number, planned_quantity, status)
-  const parentWO      = ref<WorkOrder | null>(null)
+  const parentWO       = ref<WorkOrder | null>(null)
   const currentStation = ref<WorkOrderStationDetail | null>(null)
-  const progresses    = ref<WorkOrderProgress[]>([])
-  const issues        = ref<WorkOrderIssue[]>([])
-  const materials     = ref<WorkOrderMaterial[]>([])
+  const outputParts    = ref<WorkOrderOutputPart[]>([])
+  const progresses     = ref<WorkOrderProgress[]>([])
+  const issues         = ref<WorkOrderIssue[]>([])
+  const materials      = ref<WorkOrderMaterial[]>([])
 
   const loading = ref(false)
   const saving  = ref(false)
@@ -41,6 +40,7 @@ export const useWorkOrderStationStore = defineStore('workOrderStation', () => {
       if (data.status) {
         parentWO.value       = data.data.wo
         currentStation.value = data.data.station
+        outputParts.value    = data.data.output_parts
       }
       return data
     } catch (e: any) {
@@ -99,7 +99,31 @@ export const useWorkOrderStationStore = defineStore('workOrderStation', () => {
         if (currentStation.value) {
           currentStation.value = {
             ...currentStation.value,
-            actual_quantity: data.data.cumulative_qty ?? currentStation.value.actual_quantity,
+            actual_quantity: data.data.cumulative_qty_good ?? currentStation.value.actual_quantity,
+          }
+        }
+      }
+      return data
+    } catch (e: any) {
+      error.value = e.response?.data?.error || e.message
+      throw e
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function editLastProgress(wo_id: number | string, station_id: number | string, payload: AddProgressPayload) {
+    saving.value = true
+    error.value  = null
+    try {
+      const { data } = await workOrderService.editLastStationProgress(wo_id, station_id, payload)
+      if (data.status) {
+        // Ganti record pertama (terakhir dilaporkan) dengan record baru
+        progresses.value = [data.data, ...progresses.value.slice(1)]
+        if (currentStation.value) {
+          currentStation.value = {
+            ...currentStation.value,
+            actual_quantity: data.data.cumulative_qty_good ?? currentStation.value.actual_quantity,
           }
         }
       }
@@ -218,6 +242,7 @@ export const useWorkOrderStationStore = defineStore('workOrderStation', () => {
   return {
     parentWO,
     currentStation,
+    outputParts,
     progresses,
     issues,
     materials,
@@ -228,6 +253,7 @@ export const useWorkOrderStationStore = defineStore('workOrderStation', () => {
     completeStation,
     fetchProgresses,
     addProgress,
+    editLastProgress,
     fetchIssues,
     reportIssue,
     resolveIssue,

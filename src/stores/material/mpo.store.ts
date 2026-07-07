@@ -169,11 +169,56 @@ export const useMpoStore = defineStore('mpo', () => {
     }
   }
 
-  async function updateStatus(id: number | string, data: { status: string; remarks?: string }) {
+  // FIXED: parameter pakai { action, notes } agar match dengan backend updateStatus
+  // Bug sebelumnya: MpoDetailPanel mengirim { action, remarks } tapi backend ekspektasi notes
+  async function updateStatus(id: number | string, data: { action: 'approve' | 'reject'; notes?: string }) {
     loading.value = true
     error.value = null
     try {
       const response = await mpoService.updateStatus(id, data)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Split-update MPO rejected (edit detail + pindah supplier + otomatis split)
+  async function splitUpdateMpo(id: number | string, data: Record<string, any>) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await mpoService.splitUpdateMpo(id, data)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function bulkSubmitMpo(ids: (number | string)[]) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await mpoService.bulkSubmitMpo({ ids })
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function bulkReviewMpo(payload: { ids: (number | string)[]; action: 'approve' | 'reject'; notes?: string }) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await mpoService.bulkReviewMpo(payload)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -188,6 +233,20 @@ export const useMpoStore = defineStore('mpo', () => {
     error.value = null
     try {
       const response = await mpoService.getMdoHistory(id)
+      return response.data
+    } catch (e: any) {
+      error.value = e.response?.data?.message || e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function autoGenerateMpo(data: Record<string, any>) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await mpoService.autoGenerateMpo(data)
       return response.data
     } catch (e: any) {
       error.value = e.response?.data?.message || e.message
@@ -221,6 +280,10 @@ export const useMpoStore = defineStore('mpo', () => {
     updateMpo,
     deleteMpo,
     updateStatus,
-    fetchMdoHistory
+    splitUpdateMpo,
+    bulkSubmitMpo,
+    bulkReviewMpo,
+    fetchMdoHistory,
+    autoGenerateMpo
   }
 })

@@ -148,7 +148,16 @@ const selectedDock = computed({
 })
 
 // Available SPO Items
-const readySpoItems = computed(() => store.availableSpoItems)
+const readySpoItems = computed(() => {
+  const items = store.availableSpoItems || []
+  if (state.selectedSpoItems.length === 0) return items
+  
+  const firstSelectedDetail = items.find(item => item.id === state.selectedSpoItems[0].spo_detail_id)
+  if (!firstSelectedDetail) return items
+  
+  const customerId = firstSelectedDetail.order?.customer_id
+  return items.filter(item => item.order?.customer_id === customerId)
+})
 
 // Local Client-Side conflict tracking
 const conflictData = ref<{ message: string; conflicting_plan?: string } | null>(null)

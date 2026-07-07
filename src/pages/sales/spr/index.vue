@@ -10,11 +10,15 @@ import ConfirmDialog from '../../../components/ConfirmDialog.vue'
 import { useAppToast } from '../../../composables/useAppToast'
 import { storeToRefs } from 'pinia'
 import { useDebounceFn } from '@vueuse/core'
+import { useAuthStore } from '../../../stores/auth.store'
 
 // ─── Store ────────────────────────────────────────────────────────────────────
 const store = useSprStore()
+const authStore = useAuthStore()
 const { loading, meta, sprs } = storeToRefs(store)
 const { toastSuccess, toastError } = useAppToast()
+
+const isSupervisorSales = computed(() => authStore.user?.role?.toLowerCase() === 'supervisor sales')
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
 const breadcrumbItems = [
@@ -241,6 +245,7 @@ const excelActions = computed(() => [
     {
       label: 'Upload',
       icon: 'i-lucide-upload',
+      disabled: isSupervisorSales.value,
       onSelect: () => { isUploadOpen.value = true }
     },
     {
@@ -281,6 +286,7 @@ onMounted(() => {
             />
           </UDropdownMenu>
           <UButton
+            v-if="!isSupervisorSales"
             icon="i-lucide-plus"
             color="primary"
             label="Create SPR"

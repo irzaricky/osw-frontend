@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import HomeDateRangePicker from '../../../../components/home/HomeDateRangePicker.vue'
+import type { Range } from '../../../../types'
 
 const props = defineProps<{
   open:          boolean
@@ -17,16 +19,37 @@ const emit = defineEmits<{
   (e: 'select-all', ids: number[], select: boolean): void
 }>()
 
-const doSearch = ref('')
+const doSearch    = ref('')
+const dateRange   = ref<Range | undefined>(undefined)
 
 const filteredDOs = computed(() => {
-  if (!doSearch.value) return props.availableDos
-  const q = doSearch.value.toLowerCase()
-  return props.availableDos.filter(
-    (d) =>
-      d.do_number.toLowerCase().includes(q) ||
-      d.customer?.name?.toLowerCase().includes(q),
-  )
+  let result = props.availableDos
+
+  // Filter by search
+  if (doSearch.value) {
+    const q = doSearch.value.toLowerCase()
+    result = result.filter(
+      (d) =>
+        d.do_number.toLowerCase().includes(q) ||
+        d.customer?.name?.toLowerCase().includes(q),
+    )
+  }
+
+  // Filter by date range
+  if (dateRange.value?.start || dateRange.value?.end) {
+    const start = dateRange.value.start ? new Date(dateRange.value.start) : null
+    const end   = dateRange.value.end   ? new Date(dateRange.value.end)   : null
+
+    result = result.filter((d) => {
+      if (!d.shipment_date) return false
+      const date = new Date(d.shipment_date)
+      if (start && date < start) return false
+      if (end   && date > end)   return false
+      return true
+    })
+  }
+
+  return result
 })
 
 const allSelected = computed(() => {
@@ -50,12 +73,21 @@ function handleToggleAll() {
   >
     <template #body>
       <div class="space-y-4">
-        <UInput
-          v-model="doSearch"
-          icon="i-lucide-search"
-          placeholder="Search by DO number or customer..."
-          class="w-full"
-        />
+
+        <!-- Row: Date Range + Search -->
+        <div class="flex flex-wrap items-center gap-3">
+          <HomeDateRangePicker
+            v-model="dateRange"
+            class="w-full md:flex-1"
+            clear
+          />
+          <UInput
+            v-model="doSearch"
+            icon="i-lucide-search"
+            placeholder="Search by DO number or customer..."
+            class="w-full md:flex-1"
+          />
+        </div>
 
         <div v-if="loading" class="flex justify-center py-10">
           <UIcon name="i-lucide-loader-2" class="w-6 h-6 animate-spin text-muted" />

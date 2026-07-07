@@ -65,6 +65,10 @@ const mrpService = {
     return api.put(`${BASE}/${id}/review`, data)
   },
 
+  bulkSubmitMrp(ids: number[]) {
+    return api.put(`${BASE}/bulk-submit`, { ids })
+  },
+
   bulkReviewMrp(data: { ids: number[]; action: 'approve' | 'reject'; notes?: string }) {
     return api.put(`${BASE}/bulk-review`, data)
   },

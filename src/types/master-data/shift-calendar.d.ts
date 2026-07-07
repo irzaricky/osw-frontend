@@ -1,6 +1,7 @@
 export interface CalendarType {
   id: number;
   name: string;
+  is_holiday: boolean;
 }
 
 export interface ShiftCalendar {

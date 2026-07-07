@@ -14,7 +14,7 @@ export interface MpoParams {
 const BASE = '/material/mpo'
 
 const mpoService = {
-  // ─── List & Detail ────────────────────────────────────────────────────────
+  // List & Detail
   getMpos(params?: MpoParams) {
     return api.get(`${BASE}/`, { params })
   },
@@ -23,7 +23,7 @@ const mpoService = {
     return api.get(`${BASE}/${id}`)
   },
 
-  // ─── Dropdowns ────────────────────────────────────────────────────────────
+  // Dropdowns
   ddStatus() {
     return api.get(`${BASE}/dd-status`)
   },
@@ -36,12 +36,12 @@ const mpoService = {
     return api.get(`${BASE}/dd-supplier`, { params })
   },
 
-  // ─── Source Data (pre-fill form from MPR or MRP) ──────────────────────────
+  // Source Data (pre-fill form from MPR or MRP)
   getSourceData(sourceType: 'mpr' | 'mrp', sourceId: number | string) {
     return api.get(`${BASE}/source-data/${sourceType}/${sourceId}`)
   },
 
-  // ─── CRUD ─────────────────────────────────────────────────────────────────
+  // CRUD
   createMpo(data: Record<string, any>) {
     return api.post(`${BASE}/`, data)
   },
@@ -54,15 +54,34 @@ const mpoService = {
     return api.delete(`${BASE}/${id}`)
   },
 
-  // ─── Workflow ─────────────────────────────────────────────────────────────
-  updateStatus(id: number | string, data: { status: string; remarks?: string }) {
+  // Workflow — FIXED: backend menggunakan { action, notes }, bukan { status, remarks }
+  updateStatus(id: number | string, data: { action: 'approve' | 'reject'; notes?: string }) {
     return api.put(`${BASE}/${id}/status`, data)
   },
 
-  // ─── MDO History ─────────────────────────────────────────────────────────
+  // Split-update MPO rejected (edit + pindah supplier + split)
+  splitUpdateMpo(id: number | string, data: Record<string, any>) {
+    return api.put(`${BASE}/${id}/split-update`, data)
+  },
+
+  // Bulk Workflow
+  bulkSubmitMpo(data: { ids: (number | string)[] }) {
+    return api.put(`${BASE}/bulk-submit`, data)
+  },
+
+  bulkReviewMpo(data: { ids: (number | string)[]; action: 'approve' | 'reject'; notes?: string }) {
+    return api.put(`${BASE}/bulk-review`, data)
+  },
+
+  // MDO History
   getMdoHistory(id: number | string) {
     return api.get(`${BASE}/${id}/mdo-history`)
-  }
+  },
+
+  // Auto-Generate MPO
+  autoGenerateMpo(data: Record<string, any>) {
+    return api.post(`${BASE}/auto-generate`, data)
+  },
 }
 
 export default mpoService

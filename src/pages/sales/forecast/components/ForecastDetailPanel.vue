@@ -521,10 +521,12 @@ function getLogActionColor(action: string): string {
   return 'text-primary'
 }
 
+const isSupervisorSalesOnly = computed(() => authStore.user?.role?.toLowerCase() === 'supervisor sales')
+
 // ─── Forecast type helper ─────────────────────────────────────────────────────
 const forecastType = computed(() => store.detail?.forecast_type || '')
 const is4Month = computed(() => forecastType.value === '4-Month')
-const isEditable = computed(() => store.detail?.status === 'Draft' || store.detail?.status === 'Rejected')
+const isEditable = computed(() => (store.detail?.status === 'Draft' || store.detail?.status === 'Rejected') && !isSupervisorSalesOnly.value)
 
 const latestRejectionRemarks = computed(() => {
   if (!store.detail?.logs) return ''
@@ -781,7 +783,7 @@ onMounted(() => {
             variant="ghost"
             size="md"
             label="Delete"
-            :disabled="store.detail?.status !== 'Draft'"
+            :disabled="store.detail?.status !== 'Draft' || isSupervisorSalesOnly"
             @click="emit('delete', forecastId)"
           />
 
@@ -808,7 +810,7 @@ onMounted(() => {
             @click="openReviewModal"
           />
           <UButton
-            v-if="store.detail.status === 'Draft' || store.detail.status === 'Rejected'"
+            v-if="(store.detail.status === 'Draft' || store.detail.status === 'Rejected') && !isSupervisorSalesOnly"
             icon="i-lucide-save"
             :color="dirtyCells.size > 0 ? 'warning' : 'primary'"
             size="sm"

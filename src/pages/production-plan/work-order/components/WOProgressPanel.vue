@@ -1,21 +1,27 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { WorkOrderProgress } from '../../../../types/production-plan/work-order'
 
 const props = defineProps<{
-  progresses: WorkOrderProgress[]
-  plannedQty: number
-  actualQty:  number
-  loading:    boolean
+  progresses:  WorkOrderProgress[]
+  plannedQty:  number
+  actualQty:   number
+  loading:     boolean
+  canEdit:     boolean  // hanya true jika station masih In_Progress
 }>()
+
+const emit = defineEmits<{ 'edit-last': [progress: WorkOrderProgress] }>()
+
+// Hanya record terakhir yang bisa diedit
+const lastProgressId = computed(() =>
+  props.progresses.length > 0 ? props.progresses[0].id : null
+)
 
 function fmtDateTime(d?: string | null) {
   if (!d) return '-'
   return new Date(d).toLocaleString('en-US', {
-    day:    '2-digit',
-    month:  'short',
-    year:   'numeric',
-    hour:   '2-digit',
-    minute: '2-digit',
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
   })
 }
 
@@ -59,6 +65,7 @@ function pct(cumulative: number): number {
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Scrap</th>
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Cumulative</th>
             <th class="text-right px-4 py-3 text-xs font-semibold text-muted uppercase tracking-wide">Progress</th>
+            <th v-if="canEdit" class="px-4 py-3" />
           </tr>
         </thead>
         <tbody class="divide-y divide-default">
@@ -93,6 +100,17 @@ function pct(cumulative: number): number {
                   {{ pct(p.cumulative_qty_good ?? p.cumulative_qty ?? 0) }}%
                 </span>
               </div>
+            </td>
+            <!-- Tombol edit hanya di record terakhir -->
+            <td v-if="canEdit" class="px-4 py-3 text-right">
+              <UButton
+                v-if="p.id === lastProgressId"
+                icon="i-lucide-pencil"
+                color="neutral"
+                variant="ghost"
+                size="xs"
+                @click="emit('edit-last', p)"
+              />
             </td>
           </tr>
         </tbody>
