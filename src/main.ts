@@ -231,17 +231,17 @@ const router = createRouter({
     {
       path: '/warehouse/stock-monitoring',
       component: () => import('./pages/warehouse/stock-monitoring/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff'] }
     },
     {
       path: '/warehouse/critical-stock',
       component: () => import('./pages/warehouse/critical-stock/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'supervisor warehouse', 'staff material'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'staff material'] }
     },
     {
       path: '/warehouse/analytics',
       component: () => import('./pages/warehouse/analytics/index.vue'),
-      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff', 'supervisor warehouse'] }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'Admin warehouse', 'warehouse staff'] }
     },
     {
       path: '/production/production-material-control/production-result',
@@ -249,28 +249,28 @@ const router = createRouter({
       meta: {
         layout: 'default',
         requiresAuth: true,
-        allowedRoles: ['Superadmin', 'Admin production', 'Staff production', 'Supervisor production']
+        allowedRoles: ['Superadmin', 'warehouse staff']
       }
     },
     {
       path: '/production/production-material-control/replacement',
       component: () => import('./pages/production/production-material-control/replacement/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/production/production-material-control/scrap',
       component: () => import('./pages/production/production-material-control/scrap/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/production/production-material-control/buffer-status',
       component: () => import('./pages/production/production-material-control/buffer-status/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
     {
       path: '/production/production-material-control/dashboard',
       component: () => import('./pages/production/production-material-control/dashboard/index.vue'),
-      meta: { layout: 'default', requiresAuth: true }
+      meta: { layout: 'default', requiresAuth: true, allowedRoles: ['Superadmin', 'warehouse staff'] }
     },
 
     // master data
