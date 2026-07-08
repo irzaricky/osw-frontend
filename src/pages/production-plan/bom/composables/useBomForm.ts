@@ -439,14 +439,28 @@ export function useBomForm() {
     wfModal.open = true;
   }
 
-  async function handleNewVersion() {
-    try {
-      const res = await bomStore.newVersion(bomId.value!);
-      toastSuccess(res.message || "New version created");
-      router.push(`/production-plan/bom/${res.data.id}`);
-    } catch (e) {
-      toastError(e);
-    }
+  function openNewVersionConfirm() {
+    Object.assign(wfModal, {
+      title: "Create New Version",
+      description: `A new version will be created from BOM "${currentBom.value?.bom_number}". The current version will remain unchanged.`,
+      inputLabel: "",
+      inputRequired: false,
+      inputValue: "",
+    });
+    wfModal.action = async () => {
+      try {
+        wfModal.actionLoading = true;
+        const res = await bomStore.newVersion(bomId.value!);
+        toastSuccess(res.message || "New version created");
+        wfModal.open = false;
+        router.push(`/production-plan/bom/${res.data.id}`);
+      } catch (e) {
+        toastError(e);
+      } finally {
+        wfModal.actionLoading = false;
+      }
+    };
+    wfModal.open = true;
   }
 
   // ─── UOM resolver ───────────────────────────────────────────────────────────
@@ -551,6 +565,6 @@ export function useBomForm() {
     openApproveConfirm,
     openRejectConfirm,
     openActivationConfirm,
-    handleNewVersion,
+    openNewVersionConfirm,
   };
 }
