@@ -70,10 +70,12 @@ export interface MpoLog {
   id: number
   mpo_id: number
   action: string
+  status: string | null
   notes: string | null
-  created_by: number
-  createdAt: string
+  user_id: number | null
+  created_at: string
   user?: {
+    id: number
     email: string
     user_detail?: { full_name: string }
   }
