@@ -486,7 +486,7 @@ function getStepState(step: number): 'complete' | 'current' | 'pending' {
                   #
                 </th>
                 <th class="p-3 font-medium border-r border-default">
-                  Part Number
+                  Product Number
                 </th>
                 <th class="p-3 font-medium border-r border-default">
                   Part Name

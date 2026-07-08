@@ -111,7 +111,7 @@ const chartSeries = computed(() => [
           Shipment Quantity Deficit (Sent vs Received)
         </h3>
         <p class="text-xs text-muted">
-          Comparison of sent vs received quantity per part number
+          Comparison of sent vs received quantity per product number
         </p>
       </div>
     </template>

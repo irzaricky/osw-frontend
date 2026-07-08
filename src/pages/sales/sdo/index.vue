@@ -656,7 +656,7 @@ onUnmounted(() => {
                                       No.
                                     </th>
                                     <th class="pb-2 pr-4">
-                                      Part Number
+                                      Product Number
                                     </th>
                                     <th class="pb-2 pr-4">
                                       Part Name
@@ -726,7 +726,7 @@ onUnmounted(() => {
                                 <table class="w-full text-left border-collapse text-xs">
                                   <thead>
                                     <tr class="border-b border-default/40 text-muted-foreground font-semibold">
-                                      <th class="pb-1.5 pr-2">Part Number</th>
+                                      <th class="pb-1.5 pr-2">Product Number</th>
                                       <th class="pb-1.5 pr-2">Part Name</th>
                                       <th class="pb-1.5 pr-2 text-right">Total Kanban</th>
                                     </tr>

@@ -1049,7 +1049,7 @@ onMounted(() => {
         <div class="flex items-center gap-4 p-4 bg-elevated/30 rounded-xl border border-default">
           <!-- Bagian Add Part (kiri) -->
           <div class="flex items-end gap-2 flex-1">
-            <UFormField label="Add Part to Forecast" class="flex-1 max-w-sm">
+            <UFormField label="Add Product to Forecast" class="flex-1 max-w-sm">
               <USelectMenu v-model="selectedPartLabels" :items="partItems" placeholder="Search and select parts..."
                 class="w-full" clear searchable multiple :disabled="!isEditable" />
             </UFormField>
@@ -1489,7 +1489,7 @@ onMounted(() => {
           <!-- Part and Period Summary Info -->
           <div class="grid grid-cols-2 gap-4 bg-elevated/50 p-4 rounded-xl border border-default">
             <div>
-              <div class="text-[11px] text-muted font-medium mb-0.5 tracking-wider">PART NUMBER & NAME</div>
+              <div class="text-[11px] text-muted font-medium mb-0.5 tracking-wider">PRODUCT NUMBER & NAME</div>
               <div class="font-semibold text-foreground">{{ breakdownData.partNumber }}</div>
               <div class="text-xs text-muted mt-0.5">{{ breakdownData.partName }}</div>
             </div>
