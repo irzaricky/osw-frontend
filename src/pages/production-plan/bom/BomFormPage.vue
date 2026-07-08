@@ -33,7 +33,7 @@ const {
   handleSave,
   // workflow
   wfModal, openApproveConfirm, openRejectConfirm,
-  openActivationConfirm, handleNewVersion,
+  openActivationConfirm, openNewVersionConfirm,
 } = useBomForm()
 
 // ─── Breadcrumbs ──────────────────────────────────────────────────────────────
@@ -67,6 +67,7 @@ function setNotes(v: string) { headerForm.notes = v }
       @approve="openApproveConfirm"
       @reject="openRejectConfirm"
       @activate="openActivationConfirm"
+      @new-version="openNewVersionConfirm"
     />
 
     <!-- Info bar (edit mode) -->
