@@ -283,6 +283,20 @@ async function confirmAdvanceStatus() {
     advanceConfirmOpen.value = false
   }
 }
+
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+const isLogsOpen = ref(false)
+
+function getLogActionColor(action: string): string {
+  const a = action.toLowerCase()
+  if (a.includes('arrived') || a.includes('scheduled')) return 'text-success-600 dark:text-success-400'
+  if (a.includes('reject') || a.includes('cancel')) return 'text-error-600 dark:text-error-400'
+  if (a.includes('transit')) return 'text-warning-600 dark:text-warning-400'
+  if (a.includes('create')) return 'text-blue-600 dark:text-blue-400'
+  if (a.includes('update')) return 'text-primary-600 dark:text-primary-400'
+  if (a.includes('delete')) return 'text-error-400 dark:text-error-300'
+  return 'text-primary'
+}
 </script>
 
 <template>
@@ -303,6 +317,16 @@ async function confirmAdvanceStatus() {
         </div>
       </div>
       <div class="flex items-center gap-1">
+        <!-- Logs -->
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-lucide-history"
+          size="sm"
+          class="rounded-full"
+          title="Logs"
+          @click="isLogsOpen = true"
+        />
         <!-- Edit trigger (only draft) -->
         <UButton
           v-if="canEdit && !isEditing"
@@ -789,5 +813,61 @@ async function confirmAdvanceStatus() {
       :loading="isAdvancing"
       @confirm="confirmAdvanceStatus"
     />
+
+    <!-- ── Logs Modal ── -->
+    <UModal
+      v-model:open="isLogsOpen"
+      title="MDO Logs"
+      description="Historical changes of this Material Delivery Order"
+      class="sm:max-w-3xl"
+    >
+      <template #body>
+        <div class="max-h-[60vh] overflow-y-auto pr-2">
+          <div v-if="!props.order?.logs || props.order.logs.length === 0" class="text-center py-8 text-muted">
+            No logs found for this MDO.
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="log in props.order.logs"
+              :key="log.id"
+              class="relative pl-6 pb-4 border-l border-default last:pb-0"
+            >
+              <div class="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary" />
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold" :class="getLogActionColor(log.action)">{{ log.action }}</span>
+                  <span class="text-sm text-muted">{{ new Date(log.created_at).toLocaleString() }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-2">
+                    <span class="text-muted">By:</span>
+                    <span class="font-medium">{{ log.user?.user_detail?.full_name || log.user?.email || '-' }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span class="text-muted">Status:</span>
+                    <span class="font-medium capitalize">{{ log.status || '-' }}</span>
+                  </div>
+                </div>
+                <div v-if="log.notes" class="mt-1">
+                  <div class="p-2 rounded bg-elevated/50 border border-default text-sm italic text-muted">
+                    {{ log.notes }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Close"
+            @click="isLogsOpen = false"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

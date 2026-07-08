@@ -40,6 +40,24 @@ export interface MdoDetail {
   part?: PartWithWeight
 }
 
+// ─── MDO Log (audit trail) ──────────────────────────────────────────────────────
+export interface MdoLog {
+  id: number
+  mdo_id: number
+  action: string
+  status: string | null
+  notes: string | null
+  user_id: number | null
+  created_at: string
+  user?: {
+    id: number
+    email: string
+    user_detail?: {
+      full_name: string
+    }
+  }
+}
+
 // ─── MDO Header ────────────────────────────────────────────────────────────────
 export interface Mdo {
   id: number
@@ -54,13 +72,14 @@ export interface Mdo {
   transporter: string | null
   description: string | null
   remarks: string | null
-  status: 'draft' | 'scheduled' | 'in_transit' | 'arrived'
+  status: 'draft' | 'scheduled' | 'in_transit' | 'arrived' | 'cancelled' | 'rejected'
   created_by: number
   createdAt: string
   updatedAt: string
   deleted_at: string | null
   /** Backend relation alias is 'mdo_details', not 'details' */
   mdo_details?: MdoDetail[]
+  logs?: MdoLog[]
   mpo?: {
     id: number
     number: string
@@ -302,21 +321,3 @@ export interface MdoPreviewSplit {
   capacity_usage_pct: number
   warnings: string[]
 }
-
-// ─── Utility: hitung berat total di frontend ──────────────────────────────────
-/**
- * Contoh penggunaan di Vue 3 / TypeScript:
- *
- * import type { MdoDetail } from '@/types/material/mdo'
- *
- * function calcTotalWeightKg(details: MdoDetail[]): number {
- *   return details.reduce((sum, d) => {
- *     const w = d.part?.weight ?? 0   // weight NULL dianggap 0
- *     return sum + d.qty * w
- *   }, 0)
- * }
- *
- * const hasWeightWarning = computed(() =>
- *   props.details.some(d => !d.part?.weight)
- * )
- */
