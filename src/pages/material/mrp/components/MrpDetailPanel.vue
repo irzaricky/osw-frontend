@@ -226,6 +226,20 @@ async function confirmReview() {
     toastError(e)
   }
 }
+
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+const isLogsOpen = ref(false)
+
+function getLogActionColor(action: string): string {
+  const a = action.toLowerCase()
+  if (a.includes('approve')) return 'text-success-600 dark:text-success-400'
+  if (a.includes('reject')) return 'text-error-600 dark:text-error-400'
+  if (a.includes('submit')) return 'text-warning-600 dark:text-warning-400'
+  if (a.includes('create')) return 'text-blue-600 dark:text-blue-400'
+  if (a.includes('edit') || a.includes('update') || a.includes('split')) return 'text-primary-600 dark:text-primary-400'
+  if (a.includes('delete')) return 'text-error-400 dark:text-error-300'
+  return 'text-primary'
+}
 </script>
 
 <template>
@@ -245,7 +259,7 @@ async function confirmReview() {
               {{ localDetail.number }}
             </h2>
             <p class="text-sm text-muted truncate">
-              {{ localDetail.sales_plan?.spr_number || localDetail.production_plan?.plan_number || '-' }}
+              {{ localDetail.sales_plan?.spr_number || '-' }}
             </p>
           </div>
 
@@ -279,6 +293,18 @@ async function confirmReview() {
 
         <!-- Row 2: Action buttons — same layout as forecast -->
         <div class="flex items-center gap-1">
+          <!-- Logs -->
+          <UButton
+            label="Logs"
+            icon="i-lucide-history"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            @click="isLogsOpen = true"
+          />
+
+          <div class="w-px h-5 bg-default mx-1" />
+
           <!-- Edit: hanya untuk Draft -->
           <UButton
             v-if="localDetail.status === 'Draft'"
@@ -607,6 +633,62 @@ async function confirmReview() {
             label="Submit Review"
             :loading="store.loading"
             @click="confirmReview"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- ── Logs Modal ── -->
+    <UModal
+      v-model:open="isLogsOpen"
+      title="MRP Logs"
+      description="Historical changes of this Material Requirement Plan"
+      class="sm:max-w-3xl"
+    >
+      <template #body>
+        <div class="max-h-[60vh] overflow-y-auto pr-2">
+          <div v-if="!localDetail?.logs || localDetail.logs.length === 0" class="text-center py-8 text-muted">
+            No logs found for this MRP.
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="log in localDetail.logs"
+              :key="log.id"
+              class="relative pl-6 pb-4 border-l border-default last:pb-0"
+            >
+              <div class="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-primary" />
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-bold" :class="getLogActionColor(log.action)">{{ log.action }}</span>
+                  <span class="text-sm text-muted">{{ new Date(log.created_at).toLocaleString() }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-2">
+                    <span class="text-muted">By:</span>
+                    <span class="font-medium">{{ log.user?.user_detail?.full_name || log.user?.email || '-' }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span class="text-muted">Status:</span>
+                    <span class="font-medium capitalize">{{ log.status || '-' }}</span>
+                  </div>
+                </div>
+                <div v-if="log.notes" class="mt-1">
+                  <div class="p-2 rounded bg-elevated/50 border border-default text-sm italic text-muted">
+                    {{ log.notes }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end w-full">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            label="Close"
+            @click="isLogsOpen = false"
           />
         </div>
       </template>

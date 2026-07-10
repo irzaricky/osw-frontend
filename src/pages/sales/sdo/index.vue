@@ -656,7 +656,7 @@ onUnmounted(() => {
                                       No.
                                     </th>
                                     <th class="pb-2 pr-4">
-                                      Part Number
+                                      Product Number
                                     </th>
                                     <th class="pb-2 pr-4">
                                       Part Name
@@ -726,10 +726,9 @@ onUnmounted(() => {
                                 <table class="w-full text-left border-collapse text-xs">
                                   <thead>
                                     <tr class="border-b border-default/40 text-muted-foreground font-semibold">
-                                      <th class="pb-1.5 pr-2">Part Number</th>
+                                      <th class="pb-1.5 pr-2">Product Number</th>
                                       <th class="pb-1.5 pr-2">Part Name</th>
                                       <th class="pb-1.5 pr-2 text-right">Total Kanban</th>
-                                      <th class="pb-1.5 text-right">Scan Out</th>
                                     </tr>
                                   </thead>
                                   <tbody class="divide-y divide-default/10">
@@ -737,11 +736,6 @@ onUnmounted(() => {
                                       <td class="py-1.5 pr-2 font-mono text-[11px]">{{ item.part?.part_number || '-' }}</td>
                                       <td class="py-1.5 pr-2 text-[11px]">{{ item.part?.part_name || '-' }}</td>
                                       <td class="py-1.5 pr-2 text-right font-semibold">{{ item.total_kanban }}</td>
-                                      <td class="py-1.5 text-right">
-                                        <UBadge :color="item.is_scanned_out ? 'success' : 'neutral'" variant="subtle" size="xs" class="font-bold">
-                                          {{ item.is_scanned_out ? 'Scanned Out' : 'Pending' }}
-                                        </UBadge>
-                                      </td>
                                     </tr>
                                   </tbody>
                                 </table>

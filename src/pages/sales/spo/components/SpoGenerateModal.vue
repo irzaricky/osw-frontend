@@ -356,7 +356,7 @@ function close() {
                     #
                   </th>
                   <th class="p-2.5 text-left font-medium">
-                    Part Number
+                    Product Number
                   </th>
                   <th class="p-2.5 text-left font-medium">
                     Part Name

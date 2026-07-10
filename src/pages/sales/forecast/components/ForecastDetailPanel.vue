@@ -24,12 +24,35 @@ const toast = useToast()
 // ─── Data ────────────────────────────────────────────────────────────────────
 const periods = ref<{ date: string; label: string; isCurrent: boolean; isPast: boolean }[]>([])
 const parts = ref<{ id: number; part_number: string; part_name: string }[]>([])
-const dataEntry = ref<Record<number, Record<string, { forecast_qty: number; qty_status: string; isNew?: boolean; isRecommended?: boolean; recommended_qty?: number }>>>({})
+const dataEntry = ref<Record<number, Record<string, { forecast_qty: number; qty_status: string; isNew?: boolean; isRecommended?: boolean; recommended_qty?: number; calculation_breakdown?: any }>>>({})
 const loadingDetail = ref(false)
 const loadingRecommendation = ref(false)
 const isDirty = ref(false)
 const initialDataEntry = ref<Record<number, Record<string, number>>>({})
 const searchQuery = ref('')
+
+// Recommendation breakdown modal state
+const showBreakdownModal = ref(false)
+const breakdownData = ref<any>(null)
+
+function viewCalculationBreakdown(part: any, period: any) {
+  console.log('[GSD] viewCalculationBreakdown clicked for part:', part.part_number, 'period:', period.date)
+  const entry = dataEntry.value[part.id]?.[period.date]
+  console.log('[GSD] entry data:', JSON.parse(JSON.stringify(entry || {})))
+  if (!entry) return
+  if (!entry.calculation_breakdown) {
+    console.warn('[GSD] entry.calculation_breakdown is missing!')
+    return
+  }
+  breakdownData.value = {
+    partNumber: part.part_number,
+    partName: part.part_name,
+    periodDate: period.date,
+    periodLabel: period.label,
+    breakdown: entry.calculation_breakdown
+  }
+  showBreakdownModal.value = true
+}
 
 // Compute dirty cells (manually edited or newly added)
 const dirtyCells = computed(() => {
@@ -221,18 +244,6 @@ async function setupAdaptableTable(forecast: any) {
 
   if (forecast.details) {
     forecast.details.forEach((d: any) => {
-      if (!dataEntry.value[d.part_id]) {
-        dataEntry.value[d.part_id] = {}
-      }
-      const dDate = new Date(d.period_date)
-      const dKey = getPeriodKey(dDate.getFullYear(), dDate.getMonth() + 1)
-
-      dataEntry.value[d.part_id][dKey] = {
-        forecast_qty: Number(d.forecast_qty),
-        qty_status: d.qty_status,
-        isNew: false,
-        isRecommended: false
-      }
       if (!partsMap.has(d.part_id) && d.part) {
         partsMap.set(d.part_id, d.part)
       }
@@ -241,9 +252,75 @@ async function setupAdaptableTable(forecast: any) {
 
   parts.value = Array.from(partsMap.values())
 
+  // Pre-initialize dataEntry for all parts and periods
+  parts.value.forEach(part => {
+    if (!dataEntry.value[part.id]) {
+      dataEntry.value[part.id] = {}
+    }
+    periods.value.forEach(p => {
+      const d = forecast.details?.find((det: any) => {
+        if (det.part_id !== part.id) return false
+        const detDate = new Date(det.period_date)
+        const detKey = getPeriodKey(detDate.getFullYear(), detDate.getMonth() + 1)
+        return detKey === p.date
+      })
+
+      if (d) {
+        dataEntry.value[part.id][p.date] = {
+          forecast_qty: Number(d.forecast_qty),
+          qty_status: d.qty_status,
+          isNew: false,
+          isRecommended: false,
+          recommended_qty: undefined,
+          calculation_breakdown: undefined
+        }
+      } else {
+        dataEntry.value[part.id][p.date] = {
+          forecast_qty: 0,
+          qty_status: getAutoQtyStatus(p.date),
+          isNew: true,
+          isRecommended: false,
+          recommended_qty: undefined,
+          calculation_breakdown: undefined
+        }
+      }
+    })
+  })
+
+  parts.value = Array.from(partsMap.values())
+
   // Trigger auto-fill for parts that are completely empty (all periods 0)
   if (isEditable.value && parts.value.length > 0) {
     await autoFillEmptyParts()
+  }
+
+  // Load recommendation quantities and breakdowns for all parts
+  if (parts.value.length > 0) {
+    const partIds = parts.value.map(p => p.id)
+    try {
+      console.log('[GSD] setupAdaptableTable: loading recommendations for parts:', partIds)
+      const res = await store.fetchHistoricalQty(props.forecastId, partIds)
+      console.log('[GSD] setupAdaptableTable: recommendations response res:', res)
+      if (res.status && res.data) {
+        parts.value.forEach(part => {
+          periods.value.forEach(p => {
+            const entry = dataEntry.value[part.id]?.[p.date]
+            const rec = res.data[part.id]?.[p.date]
+            if (entry && rec) {
+              dataEntry.value[part.id][p.date] = {
+                ...entry,
+                recommended_qty: rec.qty,
+                calculation_breakdown: rec.calculation_breakdown,
+                isRecommended: rec.qty > 0 && entry.forecast_qty === rec.qty
+              }
+              console.log(`[GSD] Set isRecommended=${dataEntry.value[part.id][p.date].isRecommended} for part ${part.part_number} period ${p.date}`, dataEntry.value[part.id][p.date])
+            }
+          })
+        })
+      }
+    } catch (err) {
+      console.error('[GSD] Error fetching recommendations for details:', err)
+    }
   }
 
   // Store initial baseline for dirty state tracking
@@ -296,12 +373,13 @@ async function autoFillEmptyParts() {
             }
             
             const entry = dataEntry.value[partId][p.date]
-            const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false }
+            const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false, calculation_breakdown: null }
 
             entry.qty_status = rec.status
             entry.forecast_qty = rec.qty
             entry.recommended_qty = rec.qty
             entry.isRecommended = rec.isRecommended
+            entry.calculation_breakdown = rec.calculation_breakdown
           })
         }
       })
@@ -328,7 +406,7 @@ async function addNewPart() {
   }
 
   loadingRecommendation.value = true
-  let historicalData: Record<number, Record<string, { qty: number; status: string; isRecommended: boolean }>> = {}
+  let historicalData: Record<number, Record<string, { qty: number; status: string; isRecommended: boolean; calculation_breakdown?: any }>> = {}
   try {
     const res = await store.fetchHistoricalQty(props.forecastId, newPartIds)
     if (res.status && res.data) {
@@ -350,14 +428,15 @@ async function addNewPart() {
     const partHist = historicalData[partToAdd.id] || {}
 
     periods.value.forEach((p, index) => {
-      const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false }
+      const rec = partHist[p.date] || { qty: 0, status: is4Month.value ? (index === 0 ? 'Fix' : 'Temporary') : 'Temporary', isRecommended: false, calculation_breakdown: null }
       
       dataEntry.value[partToAdd.id][p.date] = {
         forecast_qty: rec.qty,
         qty_status: rec.status,
         isNew: true,
         isRecommended: rec.isRecommended,
-        recommended_qty: rec.qty
+        recommended_qty: rec.qty,
+        calculation_breakdown: rec.calculation_breakdown
       }
     })
   })
@@ -970,7 +1049,7 @@ onMounted(() => {
         <div class="flex items-center gap-4 p-4 bg-elevated/30 rounded-xl border border-default">
           <!-- Bagian Add Part (kiri) -->
           <div class="flex items-end gap-2 flex-1">
-            <UFormField label="Add Part to Forecast" class="flex-1 max-w-sm">
+            <UFormField label="Add Product to Forecast" class="flex-1 max-w-sm">
               <USelectMenu v-model="selectedPartLabels" :items="partItems" placeholder="Search and select parts..."
                 class="w-full" clear searchable multiple :disabled="!isEditable" />
             </UFormField>
@@ -1066,7 +1145,10 @@ onMounted(() => {
                         dataEntry[part.id][period.date] = {
                           forecast_qty: 0,
                           qty_status: getAutoQtyStatus(period.date),
-                          isNew: true
+                          isNew: true,
+                          isRecommended: false,
+                          recommended_qty: undefined,
+                          calculation_breakdown: undefined
                         }
                       }
                       return ''
@@ -1086,15 +1168,20 @@ onMounted(() => {
                     />
 
                     <div class="flex flex-col gap-1 items-center">
-                      <UBadge
+                      <span
                         v-if="dataEntry[part.id][period.date].isRecommended"
-                        color="primary"
-                        variant="subtle"
-                        size="sm"
-                        class="w-full justify-center"
+                        class="w-full inline-flex justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                        @click="viewCalculationBreakdown(part, period)"
                       >
-                        Recommendation QTY
-                      </UBadge>
+                        <UBadge
+                          color="primary"
+                          variant="subtle"
+                          size="sm"
+                          class="w-full justify-center pointer-events-none"
+                        >
+                          Recommendation QTY
+                        </UBadge>
+                      </span>
                       <UBadge
                         :color="getQtyStatusColor(dataEntry[part.id][period.date].qty_status)"
                         variant="subtle"
@@ -1178,7 +1265,10 @@ onMounted(() => {
                         dataEntry[part.id][key] = {
                           forecast_qty: 0,
                           qty_status: getAutoQtyStatus(key),
-                          isNew: true
+                          isNew: true,
+                          isRecommended: false,
+                          recommended_qty: undefined,
+                          calculation_breakdown: undefined
                         }
                       }
                       return ''
@@ -1198,8 +1288,17 @@ onMounted(() => {
                       }"
                     />
 
-                    <div v-if="dataEntry[part.id][periods[0].date].isRecommended" class="flex justify-center mt-1">
-                      <UBadge color="primary" variant="subtle" size="xs">
+                    <div 
+                      v-if="dataEntry[part.id][periods[0].date].isRecommended" 
+                      class="flex justify-center mt-1 cursor-pointer hover:opacity-80 transition-opacity"
+                      @click="viewCalculationBreakdown(part, periods[0])"
+                    >
+                      <UBadge
+                        color="primary"
+                        variant="subtle"
+                        size="xs"
+                        class="pointer-events-none"
+                      >
                         Recommended
                       </UBadge>
                     </div>
@@ -1373,6 +1472,165 @@ onMounted(() => {
             variant="ghost"
             label="Close"
             @click="isLogsOpen = false"
+          />
+        </div>
+      </template>
+    </UModal>
+
+    <!-- ── Recommendation Qty Breakdown Modal ── -->
+    <UModal
+      v-model:open="showBreakdownModal"
+      title="Calculation Breakdown"
+      description="Mathematical steps to calculate the recommended sales quantity"
+      :ui="{ content: 'max-w-2xl' }"
+    >
+      <template #body>
+        <div v-if="breakdownData" class="space-y-5 text-sm">
+          <!-- Part and Period Summary Info -->
+          <div class="grid grid-cols-2 gap-4 bg-elevated/50 p-4 rounded-xl border border-default">
+            <div>
+              <div class="text-[11px] text-muted font-medium mb-0.5 tracking-wider">PRODUCT NUMBER & NAME</div>
+              <div class="font-semibold text-foreground">{{ breakdownData.partNumber }}</div>
+              <div class="text-xs text-muted mt-0.5">{{ breakdownData.partName }}</div>
+            </div>
+            <div>
+              <div class="text-[11px] text-muted font-medium mb-0.5 tracking-wider">TARGET PERIOD</div>
+              <div class="font-semibold text-foreground">{{ breakdownData.periodLabel }}</div>
+              <div class="text-xs text-muted mt-0.5">{{ formatPeriodDate(breakdownData.periodDate) }}</div>
+            </div>
+          </div>
+
+          <!-- Calculated Summary Qty -->
+          <div class="flex items-center justify-between p-4 rounded-xl bg-primary/5 border border-primary/20">
+            <div>
+              <span class="font-medium text-foreground text-sm">Recommended Quantity</span>
+              <div class="text-xs text-muted mt-0.5">Calculated using historical demand trends</div>
+            </div>
+            <div class="text-3xl font-bold text-primary">
+              {{ breakdownData.breakdown.final_qty }} <span class="text-sm font-medium text-muted">pcs</span>
+            </div>
+          </div>
+
+          <!-- Mode description -->
+          <div v-if="breakdownData.breakdown.type === 'fallback'">
+            <h4 class="font-semibold text-foreground mb-2 flex items-center gap-1.5">
+              <UIcon name="i-lucide-alert-circle" class="text-amber-500 w-4 h-4 animate-pulse" />
+              Baseline Fallback Used
+            </h4>
+            <p class="text-muted text-xs leading-relaxed mb-3">
+              No historical Fix data was found for the target month ({{ breakdownData.periodLabel }}) in any of the past 4 years.
+              The system fell back to the nearest chronological approved Fix quantity:
+            </p>
+            <div class="bg-elevated/30 rounded-xl border border-default p-4 space-y-2.5">
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2 border-r border-default last:border-r-0">
+                  <div class="text-muted mb-0.5">Fallback Period</div>
+                  <div class="font-medium text-foreground">{{ formatPeriodDate(breakdownData.breakdown.fallback_details?.period_date) }}</div>
+                </div>
+                <div class="p-2 border-r border-default last:border-r-0">
+                  <div class="text-muted mb-0.5">Source Forecast</div>
+                  <div class="font-medium text-foreground">{{ breakdownData.breakdown.fallback_details?.forecast_number }}</div>
+                </div>
+                <div class="p-2 border-r border-default last:border-r-0">
+                  <div class="text-muted mb-0.5">Quantity</div>
+                  <div class="font-bold text-primary text-sm">{{ breakdownData.breakdown.fallback_details?.forecast_qty }} pcs</div>
+                </div>
+              </div>
+              <div class="text-[11px] text-muted border-t border-dashed border-default pt-2.5">
+                <strong>Calculation:</strong> Fallback Qty ({{ breakdownData.breakdown.fallback_details?.forecast_qty }}) &times; Graduation Multiplier ({{ breakdownData.breakdown.multiplier }}x) = <strong>{{ breakdownData.breakdown.final_qty }} pcs</strong>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="breakdownData.breakdown.type === 'exponential_smoothing'">
+            <!-- Historical Data Table -->
+            <div>
+              <h4 class="font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <UIcon name="i-lucide-history" class="text-primary w-4 h-4" />
+                1. Historical Fix Quantities Checked (Past 4 Years)
+              </h4>
+              <table class="w-full text-left border-collapse text-xs border border-default rounded-lg overflow-hidden">
+                <thead class="bg-elevated/50">
+                  <tr>
+                    <th class="p-2 border-b border-default text-muted font-medium">Historical Date</th>
+                    <th class="p-2 border-b border-default text-muted font-medium">Source Forecast</th>
+                    <th class="p-2 border-b border-default text-muted font-medium text-right">Fix Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="(item, idx) in breakdownData.breakdown.historical_data" 
+                    :key="idx"
+                    class="hover:bg-elevated/20 border-b border-default last:border-b-0"
+                  >
+                    <td class="p-2">{{ formatPeriodDate(item.date) }}</td>
+                    <td class="p-2">{{ item.forecast_number || 'No approved Fix data found' }}</td>
+                    <td class="p-2 text-right font-medium" :class="item.qty !== null ? 'text-foreground' : 'text-muted'">
+                      {{ item.qty !== null ? `${item.qty} pcs` : '-' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Exponential Smoothing math -->
+            <div class="mt-4">
+              <h4 class="font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                <UIcon name="i-lucide-calculator" class="text-primary w-4 h-4" />
+                2. Single Exponential Smoothing (&alpha; = 0.3)
+              </h4>
+              <div class="bg-elevated/30 p-3 rounded-lg border border-default space-y-2">
+                <p class="text-xs text-muted mb-2 leading-relaxed">
+                  Calculated chronologically starting from the oldest available historical quantity:
+                </p>
+                <div 
+                  v-for="step in breakdownData.breakdown.ses_steps" 
+                  :key="step.step" 
+                  class="flex flex-col md:flex-row md:items-center justify-between text-xs py-1.5 border-b border-default last:border-b-0"
+                >
+                  <div class="font-medium text-foreground">
+                    Step {{ step.step }}: Month {{ formatPeriodDate(breakdownData.breakdown.historical_data[step.step]?.date) }} (Input: {{ step.input_value }} pcs)
+                  </div>
+                  <div class="text-primary font-mono text-[11px] md:text-right mt-1 md:mt-0">
+                    {{ step.formula }} &rArr; <strong class="text-foreground">{{ step.smoothed_value }}</strong>
+                  </div>
+                </div>
+                <div class="text-[11px] text-muted border-t border-dashed border-default pt-2.5 mt-2">
+                  Smoothed Baseline Value: <strong>{{ breakdownData.breakdown.smoothed_value }} pcs</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Graduation Multiplier Info -->
+          <div v-if="breakdownData.breakdown.type !== 'none'" class="mt-4 p-3 bg-elevated/20 rounded-lg border border-default">
+            <h4 class="font-semibold text-foreground mb-1.5 flex items-center gap-1.5 text-xs">
+              <UIcon name="i-lucide-trending-up" class="text-primary w-3.5 h-3.5" />
+              Graduation Multiplier (Period Trend factor)
+            </h4>
+            <p class="text-[11px] text-muted leading-relaxed">
+              Target month is the <strong>{{ breakdownData.breakdown.temp_period_count }}th</strong> temporary period in this forecast. 
+              The system applies a trend factor of <strong>+5%</strong> for each subsequent temporary month:
+            </p>
+            <div class="text-xs font-mono text-primary font-semibold mt-1">
+              Multiplier = 1 + ({{ breakdownData.breakdown.temp_period_count }} - 1) &times; 0.05 = {{ breakdownData.breakdown.multiplier }}x
+            </div>
+          </div>
+
+          <!-- Final Rounded Formula -->
+          <div v-if="breakdownData.breakdown.type !== 'none'" class="pt-2 border-t border-default flex justify-between text-xs text-muted">
+            <span>Formula:</span>
+            <span>Math.round({{ breakdownData.breakdown.smoothed_value }} &times; {{ breakdownData.breakdown.multiplier }}) = <strong>{{ breakdownData.breakdown.final_qty }} pcs</strong></span>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end w-full">
+          <UButton
+            color="neutral"
+            variant="outline"
+            label="Close"
+            @click="showBreakdownModal = false"
           />
         </div>
       </template>

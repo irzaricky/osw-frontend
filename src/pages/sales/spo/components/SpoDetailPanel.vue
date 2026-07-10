@@ -490,7 +490,7 @@ async function handleDownloadPdf() {
                   #
                 </th>
                 <th class="p-3 font-medium border-r border-default">
-                  Part Number
+                  Product Number
                 </th>
                 <th class="p-3 font-medium border-r border-default">
                   Part Name

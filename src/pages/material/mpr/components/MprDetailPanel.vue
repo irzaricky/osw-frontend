@@ -528,7 +528,7 @@ function getLogActionColor(action: string): string {
       v-model:open="isLogsOpen"
       title="MPR Logs"
       description="Historical changes of this MPR"
-      class="sm:max-w-2xl"
+      class="sm:max-w-3xl"
     >
       <template #body>
         <div class="max-h-[60vh] overflow-y-auto pr-2">
@@ -545,7 +545,22 @@ function getLogActionColor(action: string): string {
               <div class="flex flex-col gap-1">
                 <div class="flex items-center justify-between">
                   <span class="text-sm font-bold" :class="getLogActionColor(log.action)">{{ log.action }}</span>
-                  <span class="text-xs text-muted">{{ new Date(log.created_at).toLocaleString() }}</span>
+                  <span class="text-sm text-muted">{{ new Date(log.created_at).toLocaleString() }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div class="flex gap-2">
+                    <span class="text-muted">By:</span>
+                    <span class="font-medium">{{ log.user?.user_detail?.full_name || log.user?.email || '-' }}</span>
+                  </div>
+                  <div class="flex gap-2">
+                    <span class="text-muted">Status:</span>
+                    <span class="font-medium capitalize">{{ log.status || '-' }}</span>
+                  </div>
+                </div>
+                <div v-if="log.remarks || log.notes" class="mt-1">
+                  <div class="p-2 rounded bg-elevated/50 border border-default text-sm italic text-muted">
+                    {{ log.remarks || log.notes }}
+                  </div>
                 </div>
               </div>
             </div>

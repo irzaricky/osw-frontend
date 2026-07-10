@@ -161,7 +161,7 @@ const staticLinks = [[{
       }
     },
     {
-      label: 'SPR',
+      label: 'Sales Purchase Request',
       icon: 'i-lucide-file-text',
       to: '/sales/spr',
       onSelect: () => {
@@ -169,7 +169,7 @@ const staticLinks = [[{
       }
     },
     {
-      label: 'SPO',
+      label: 'Sales Purchase Order',
       icon: 'i-lucide-file-plus',
       to: '/sales/spo',
       onSelect: () => {

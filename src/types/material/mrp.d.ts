@@ -62,6 +62,24 @@ export interface Mrp {
     }
   }
   details?: MrpDetail[]
+  logs?: MrpLog[]
+}
+
+export interface MrpLog {
+  id: number
+  mrp_id: number
+  action: string
+  status: string | null
+  notes: string | null
+  user_id: number | null
+  created_at: string
+  user?: {
+    id: number
+    email: string
+    user_detail?: {
+      full_name: string
+    }
+  }
 }
 
 // Payload for loadSalesPlanData response

@@ -241,7 +241,7 @@ function close() {
               <thead class="bg-elevated/50">
                 <tr>
                   <th class="p-2.5 text-left font-medium border-b border-default">
-                    Part
+                    Product
                   </th>
                   <th class="p-2.5 text-center font-medium border-b border-default w-32">
                     Qty
