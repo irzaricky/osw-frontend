@@ -59,37 +59,62 @@ const violationColumns = [
 <template>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
     <UCard>
-      <p class="text-sm text-muted">
-        FIFO Compliance
-      </p>
+  <p class="text-sm text-muted">
+    FIFO Compliance
+  </p>
 
-      <p class="text-3xl font-bold mt-2 text-success">
-        {{ fifoCompliance.fifo_compliance_rate }}%
-      </p>
+  <p class="text-3xl font-bold mt-2 text-success">
+    {{ fifoCompliance.fifo_compliance_rate }}%
+  </p>
 
-      <UProgress :model-value="fifoCompliance.fifo_compliance_rate" color="success" class="mt-4" />
+  <UProgress
+    :model-value="fifoCompliance.fifo_compliance_rate"
+    color="success"
+    class="mt-4"
+  />
 
-      <p class="text-xs text-muted mt-2">
+  <div class="mt-3 space-y-1 text-xs">
+    <div class="flex items-center justify-between">
+      <span class="text-muted">Follow FIFO</span>
+      <span class="font-semibold text-success">
         {{ fifoCompliance.fifo_compliant }}
-        of
+        /
         {{ fifoCompliance.total_takeout }}
-        take out transactions followed FIFO.
-      </p>
-    </UCard>
+      </span>
+    </div>
 
-    <UCard>
-      <p class="text-sm text-muted">
-        FIFO Violations
-      </p>
-
-      <p class="text-3xl font-bold mt-2 text-error">
+    <div class="flex items-center justify-between">
+      <span class="text-muted">Violation</span>
+      <span class="font-semibold text-error">
         {{ fifoCompliance.fifo_override }}
-      </p>
+        /
+        {{ fifoCompliance.total_takeout }}
+      </span>
+    </div>
 
-      <p class="text-xs text-muted mt-4">
-        Take out transactions not following FIFO recommendation.
-      </p>
-    </UCard>
+    <p class="text-muted pt-3">
+      {{ fifoCompliance.fifo_compliant }} dari
+      {{ fifoCompliance.total_takeout }} transaksi take out mengikuti rekomendasi FIFO.
+    </p>
+  </div>
+</UCard>
+
+<UCard>
+  <p class="text-sm text-muted">
+    FIFO Violations
+  </p>
+
+  <p class="text-3xl font-bold mt-2 text-error">
+    {{ fifoCompliance.fifo_override }}
+  </p>
+
+  <div class="mt-4 space-y-1 text-s">
+
+    <p class="text-muted pt-2">
+      Transaksi Take Out yang tidak mengikuti rekomendasi FIFO.
+    </p>
+  </div>
+</UCard>
 
     <UCard>
       <template #header>

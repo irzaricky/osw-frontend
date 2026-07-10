@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, reactive, watch } from 'vue'
 import { storeToRefs } from 'pinia'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 import Breadcrumbs from '../../../components/Breadcrumbs.vue'
 import { useStockMonitoringStore } from '../../../stores/warehouse/stock-monitoring.store'
@@ -177,6 +179,16 @@ const exportItems = computed(() => [
       label: 'Export Full Warehouse Report',
       icon: 'i-lucide-files',
       onSelect: () => exportFullReport()
+    },
+    {
+      label: 'Export Current View PDF',
+      icon: 'i-lucide-file-text',
+      onSelect: () => exportCurrentViewPdf()
+    },
+    {
+      label: 'Export Full Warehouse Report PDF',
+      icon: 'i-lucide-files',
+      onSelect: () => exportFullReportPdf()
     }
   ]
 ])
@@ -627,6 +639,256 @@ async function exportFullReport() {
       workbook,
       `stock-monitoring-full report-${formatted}.xlsx`
     )
+  } catch (error) {
+    console.error(error)
+  } finally {
+    exporting.value = false
+  }
+}
+function formatFileDate() {
+  const now = new Date()
+
+  return (
+    now.getFullYear() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0') +
+    '_' +
+    String(now.getHours()).padStart(2, '0') +
+    String(now.getMinutes()).padStart(2, '0')
+  )
+}
+
+function addPdfHeader(doc: jsPDF, title: string) {
+  doc.setFontSize(14)
+  doc.text('WAREHOUSE STOCK MONITORING REPORT', 14, 15)
+
+  doc.setFontSize(10)
+  doc.text(title, 14, 23)
+  doc.text(`Generated At: ${new Date().toLocaleString()}`, 14, 30)
+  doc.text(`Search: ${search.value || '-'}`, 14, 36)
+  doc.text(`Date From: ${filters.date_from || 'All'}`, 14, 42)
+  doc.text(`Date To: ${filters.date_to || 'All'}`, 14, 48)
+  doc.text(`Warehouse Area: ${selectedWarehouseArea.value || 'All'}`, 14, 54)
+}
+
+function addPdfTable(
+  doc: jsPDF,
+  title: string,
+  rows: Record<string, any>[],
+  startY = 62
+) {
+  doc.setFontSize(11)
+  doc.text(title, 14, startY)
+
+  const dataRows = rows.length ? rows : [{ Info: 'No data' }]
+  const headers = Object.keys(dataRows[0])
+
+  autoTable(doc, {
+    startY: startY + 5,
+    head: [headers],
+    body: dataRows.map(row => headers.map(header => row[header] ?? '-')),
+    styles: {
+      fontSize: 7,
+      cellPadding: 2,
+      overflow: 'linebreak'
+    },
+    headStyles: {
+      fontStyle: 'bold'
+    },
+    margin: { left: 14, right: 14 }
+  })
+}
+async function exportCurrentViewPdf() {
+  exporting.value = true
+
+  try {
+    const doc = new jsPDF('landscape', 'mm', 'a4')
+
+    if (activeTab.value === 'parts') {
+      await Promise.all(
+        filteredParts.value.map(part =>
+          stockMonitoringStore.fetchPartLabels(part.part_number)
+        )
+      )
+
+      const summaryPartRows = filteredParts.value.map((row, index) => ({
+        No: index + 1,
+        'Part Number': row.part_number,
+        'Part Name': row.part_name,
+        Category: row.part_category || '-',
+        'Total Kanban': row.total_kanban,
+        'Safety Stock': row.safety_stock,
+        'Coverage (%)': row.coverage_percentage,
+        Status: row.stock_status,
+        'Total PCS': row.total_pcs,
+        'Total Bin': row.total_bins
+      }))
+
+      const filteredPartNumbers = filteredParts.value.map(part => part.part_number)
+
+      const labelDetailRows = Object.values(partLabels.value)
+        .flat()
+        .filter((row: any) => filteredPartNumbers.includes(row.part_number))
+        .map((row: any, index) => ({
+          No: index + 1,
+          'Label Number': row.label_number,
+          'Part Number': row.part_number,
+          'Bin Code': row.bin_code,
+          Area: row.warehouse_area || '-',
+          'Qty/Kanban': row.qty_per_kanban,
+          'Placement At': row.placement_date
+            ? new Date(row.placement_date).toLocaleString()
+            : '-'
+        }))
+
+      addPdfHeader(doc, 'Current View - Stock by Part')
+      addPdfTable(doc, 'Stock by Part', summaryPartRows)
+
+      doc.addPage()
+      addPdfHeader(doc, 'Current View - Label Detail')
+      addPdfTable(doc, 'Label Detail', labelDetailRows)
+    } else {
+      await Promise.all(
+        filteredBins.value.map(bin =>
+          stockMonitoringStore.fetchBinStocks(bin.bin_id)
+        )
+      )
+
+      const summaryBinRows = filteredBins.value.map((row, index) => ({
+        No: index + 1,
+        'Bin Code': row.bin_code,
+        Area: row.warehouse_area || '-',
+        Status: row.status,
+        Capacity: row.capacity,
+        Used: row.used_capacity,
+        Remaining: row.remaining_capacity,
+        'Total Kanban': row.total_kanban,
+        'Total PCS': row.total_pcs
+      }))
+
+      const filteredBinIds = filteredBins.value.map(bin => String(bin.bin_id))
+
+      const binContentRows = Object.entries(binStocks.value)
+        .filter(([binId]) => filteredBinIds.includes(String(binId)))
+        .flatMap(([binId, stocks]) => {
+          const bin = bins.value.find(item => String(item.bin_id) === String(binId))
+
+          return stocks.map((stock: any) => ({
+            'Bin Code': bin?.bin_code || '-',
+            Area: bin?.warehouse_area || '-',
+            'Label Number': stock.label_number,
+            'Part Number': stock.part_number,
+            'Part Name': stock.part_name,
+            'Qty/Kanban': stock.qty_per_kanban,
+            'Placement At': stock.placement_date
+              ? new Date(stock.placement_date).toLocaleString()
+              : '-'
+          }))
+        })
+        .map((row, index) => ({ No: index + 1, ...row }))
+
+      addPdfHeader(doc, 'Current View - Stock by Storage Bin')
+      addPdfTable(doc, 'Stock by Bin', summaryBinRows)
+
+      doc.addPage()
+      addPdfHeader(doc, 'Current View - Bin Content Detail')
+      addPdfTable(doc, 'Bin Content', binContentRows)
+    }
+
+    doc.save(`stock-monitoring-current-view-${formatFileDate()}.pdf`)
+  } catch (error) {
+    console.error(error)
+  } finally {
+    exporting.value = false
+  }
+}
+async function exportFullReportPdf() {
+  exporting.value = true
+
+  try {
+    await Promise.all([
+      stockMonitoringStore.fetchParts({}),
+      stockMonitoringStore.fetchBins({})
+    ])
+
+    await loadAllExportDetails()
+
+    const doc = new jsPDF('landscape', 'mm', 'a4')
+
+    const summaryPartRows = parts.value.map((row, index) => ({
+      No: index + 1,
+      'Part Number': row.part_number,
+      'Part Name': row.part_name,
+      Category: row.part_category || '-',
+      'Total Kanban': row.total_kanban,
+      'Safety Stock': row.safety_stock,
+      'Coverage (%)': row.coverage_percentage,
+      Status: row.stock_status,
+      'Total PCS': row.total_pcs,
+      'Total Bin': row.total_bins
+    }))
+
+    const summaryBinRows = bins.value.map((row, index) => ({
+      No: index + 1,
+      'Bin Code': row.bin_code,
+      Area: row.warehouse_area || '-',
+      Status: row.status,
+      Capacity: row.capacity,
+      Used: row.used_capacity,
+      Remaining: row.remaining_capacity,
+      'Total Kanban': row.total_kanban,
+      'Total PCS': row.total_pcs
+    }))
+
+    const labelDetailRows = Object.values(partLabels.value)
+      .flat()
+      .map((row: any, index) => ({
+        No: index + 1,
+        'Label Number': row.label_number,
+        'Part Number': row.part_number,
+        'Part Name': row.part_name,
+        'Bin Code': row.bin_code,
+        Area: row.warehouse_area || '-',
+        'Qty/Kanban': row.qty_per_kanban,
+        'Placement At': row.placement_date
+          ? new Date(row.placement_date).toLocaleString()
+          : '-'
+      }))
+
+    const binContentRows = Object.entries(binStocks.value)
+      .flatMap(([binId, stocks]) => {
+        const bin = bins.value.find(item => String(item.bin_id) === String(binId))
+
+        return stocks.map((stock: any) => ({
+          'Bin Code': bin?.bin_code || '-',
+          Area: bin?.warehouse_area || '-',
+          'Label Number': stock.label_number,
+          'Part Number': stock.part_number,
+          'Part Name': stock.part_name,
+          'Qty/Kanban': stock.qty_per_kanban,
+          'Placement At': stock.placement_date
+            ? new Date(stock.placement_date).toLocaleString()
+            : '-'
+        }))
+      })
+      .map((row, index) => ({ No: index + 1, ...row }))
+
+    addPdfHeader(doc, 'Full Warehouse Report - Stock by Part')
+    addPdfTable(doc, 'Summary Part', summaryPartRows)
+
+    doc.addPage()
+    addPdfHeader(doc, 'Full Warehouse Report - Stock by Bin')
+    addPdfTable(doc, 'Summary Bin', summaryBinRows)
+
+    doc.addPage()
+    addPdfHeader(doc, 'Full Warehouse Report - Label Detail')
+    addPdfTable(doc, 'Label Detail', labelDetailRows)
+
+    doc.addPage()
+    addPdfHeader(doc, 'Full Warehouse Report - Bin Content')
+    addPdfTable(doc, 'Bin Content', binContentRows)
+
+    doc.save(`stock-monitoring-full-report-${formatFileDate()}.pdf`)
   } catch (error) {
     console.error(error)
   } finally {
