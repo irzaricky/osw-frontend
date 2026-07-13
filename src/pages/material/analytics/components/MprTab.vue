@@ -3,9 +3,6 @@ import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useColorMode } from '@vueuse/core'
 import { useMaterialAnalyticsStore } from '../../../../stores/material/analytics.store'
-import { defineAsyncComponent } from 'vue'
-const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
-
 
 defineProps<{
   startDate: string

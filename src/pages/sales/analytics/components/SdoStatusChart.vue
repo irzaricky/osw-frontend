@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import { useColorMode } from '@vueuse/core'
 import type { SdoAnalyticsStatusCounts } from '../../../../stores/sales/analytics.store'
-import { defineAsyncComponent } from 'vue'
-const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
 
 const props = defineProps<{
   statusCounts: SdoAnalyticsStatusCounts

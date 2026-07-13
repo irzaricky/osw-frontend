@@ -5,9 +5,6 @@ defineProps<{
   topDowntimeStationsChartOptions: any
   topDowntimeStationsChartSeries: any[]
 }>()
-import { defineAsyncComponent } from 'vue'
-const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
-
 </script>
 
 <template>

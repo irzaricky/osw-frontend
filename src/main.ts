@@ -3,6 +3,7 @@ import './assets/css/main.css'
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia } from 'pinia'
+import ui from '@nuxt/ui/vue-plugin'
 
 import { addCollection } from '@iconify/vue'
 import lucideIcons from '@iconify-json/lucide/icons.json'
@@ -10,12 +11,15 @@ import lucideIcons from '@iconify-json/lucide/icons.json'
 import App from './App.vue'
 import { useAuthStore } from './stores/auth.store'
 
+import VueApexCharts from 'vue3-apexcharts'
+
 addCollection(lucideIcons)
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
+app.use(VueApexCharts)
 
 const router = createRouter({
   routes: [
@@ -506,5 +510,6 @@ router.beforeEach(async (to, _from, next) => {
 })
 
 app.use(router)
+app.use(ui)
 
 app.mount('#app')
