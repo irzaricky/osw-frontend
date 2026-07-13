@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { defineAsyncComponent } from 'vue'
+const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
 
 const props = defineProps<{
   trends: any[]

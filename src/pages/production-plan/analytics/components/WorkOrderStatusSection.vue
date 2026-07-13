@@ -10,6 +10,9 @@ defineProps<{
     not_completed: number
   }
 }>()
+
+import { defineAsyncComponent } from 'vue'
+const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
 </script>
 
 <template>

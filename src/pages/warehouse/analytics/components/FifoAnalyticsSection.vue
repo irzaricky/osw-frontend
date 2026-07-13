@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import dayjs from 'dayjs'
+import { defineAsyncComponent } from 'vue'
+const apexchart = defineAsyncComponent(() => import('vue3-apexcharts'))
 
 defineProps<{
   fifoCompliance: {
