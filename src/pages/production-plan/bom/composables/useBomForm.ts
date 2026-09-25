@@ -1,6 +1,7 @@
 import { ref, reactive, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { storeToRefs } from "pinia";
+import { usePpicPermission } from "../../../../composables/usePpicPermission";
 import { useBomStore } from "../../../../stores/production-plan/bom.store";
 import { usePartStore } from "../../../../stores/master-data/part.store";
 import { useUomStore } from "../../../../stores/master-data/uom.store";
@@ -12,6 +13,7 @@ import type {
   CreateBomPayload,
   UpdateBomPayload,
 } from "../../../../types/production-plan/bom";
+import { ca } from "zod/v4/locales";
 
 // ─── Local detail type ────────────────────────────────────────────────────────
 export interface LocalDetail extends BomDetailItem {
@@ -28,6 +30,7 @@ export function useBomForm() {
   const bomStore = useBomStore();
   const partStore = usePartStore();
   const uomStore = useUomStore();
+  const { can } = usePpicPermission();
 
   const {
     currentBom,
@@ -59,11 +62,23 @@ export function useBomForm() {
     }
   }
 
-  const isEditable = computed(
+  const isEditable = computed(() => {
+    if (isCreate.value) return can("bom", "create");
+    const status = currentBom.value?.doc_status;
+    const editableStatus = status === "Draft" || status === "Rejected";
+    return editableStatus && can("bom", "edit");
+  });
+
+  const canApprove = computed(
     () =>
-      isCreate.value ||
-      currentBom.value?.doc_status === "Draft" ||
-      currentBom.value?.doc_status === "Rejected"
+      currentBom.value?.doc_status === "Pending_Approval" &&
+      can("bom", "approve")
+  );
+  
+  const canActivate = computed(
+    () =>
+      currentBom.value?.doc_status === "Approved" &&
+      can("bom", "activate")
   );
 
   function fmtDate(d?: string | null) {
@@ -424,14 +439,28 @@ export function useBomForm() {
     wfModal.open = true;
   }
 
-  async function handleNewVersion() {
-    try {
-      const res = await bomStore.newVersion(bomId.value!);
-      toastSuccess(res.message || "New version created");
-      router.push(`/production-plan/bom/${res.data.id}`);
-    } catch (e) {
-      toastError(e);
-    }
+  function openNewVersionConfirm() {
+    Object.assign(wfModal, {
+      title: "Create New Version",
+      description: `A new version will be created from BOM "${currentBom.value?.bom_number}". The current version will remain unchanged.`,
+      inputLabel: "",
+      inputRequired: false,
+      inputValue: "",
+    });
+    wfModal.action = async () => {
+      try {
+        wfModal.actionLoading = true;
+        const res = await bomStore.newVersion(bomId.value!);
+        toastSuccess(res.message || "New version created");
+        wfModal.open = false;
+        router.push(`/production-plan/bom/${res.data.id}`);
+      } catch (e) {
+        toastError(e);
+      } finally {
+        wfModal.actionLoading = false;
+      }
+    };
+    wfModal.open = true;
   }
 
   // ─── UOM resolver ───────────────────────────────────────────────────────────
@@ -500,6 +529,8 @@ export function useBomForm() {
     // status helpers
     docStatusColor,
     isEditable,
+    canApprove,
+    canActivate,
     fmtDate,
     // header form
     headerForm,
@@ -534,6 +565,6 @@ export function useBomForm() {
     openApproveConfirm,
     openRejectConfirm,
     openActivationConfirm,
-    handleNewVersion,
+    openNewVersionConfirm,
   };
 }

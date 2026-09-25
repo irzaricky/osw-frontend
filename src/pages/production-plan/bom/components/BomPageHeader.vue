@@ -2,10 +2,12 @@
 import { useRouter } from 'vue-router'
 
 interface Props {
-  isCreate:        boolean
-  currentBom?:     any
-  saving?:         boolean
-  docStatusColor:  (code?: string) => 'neutral' | 'warning' | 'success' | 'error'
+  isCreate: boolean
+  currentBom?: any
+  saving?: boolean
+  docStatusColor: (code?: string) => 'neutral' | 'warning' | 'success' | 'error'
+  canApprove: boolean
+  canActivate: boolean
 }
 
 defineProps<Props>()
@@ -66,7 +68,7 @@ const router = useRouter()
 
     <!-- Workflow buttons (edit mode only) -->
     <div v-if="!isCreate && currentBom" class="flex items-center gap-2 flex-wrap">
-      <template v-if="currentBom.doc_status === 'Pending_Approval'">
+      <template v-if="currentBom.doc_status === 'Pending_Approval' && canApprove">
         <UButton
           label="Approve"
           icon="i-lucide-check"
